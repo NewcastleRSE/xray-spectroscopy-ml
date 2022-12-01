@@ -1,0 +1,19 @@
+{
+    "x_train_path": "data/datasets/fe/preconv/xyz_train",
+    "y_train_path": "data/datasets/fe/preconv/xanes_train",
+    "x_test_path": "data/datasets/fe/preconv/xyz_test",
+    "y_test_path": "data/datasets/fe/preconv/xanes_test",
+    "model_type" : "mlp",
+    "test_params" :{
+        "shuffle_output" : true,
+        "shuffle_input" : true,
+        "mean_train_input" : true,
+        "mean_train_output" : true,
+        "random_train_input" : true,
+        "random_train_output" : true,
+        "gauss_train_input" : true,
+        "gauss_train_output" : true
+    },
+    "save_tensorboard" : true,
+    "seed" : 2021
+}
