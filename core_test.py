@@ -61,6 +61,7 @@ def main(
     x_test_path: str,
     y_test_path: str,
     model_type: str,
+    inf_type: str,
     test_params: dict = {},
     save_tensorboard: bool = True,
     seed: int = None
@@ -141,22 +142,51 @@ def main(
 
     ##################################################################
     
-    test_inout = TestInputOutput(model, x_train, y_train, x_test, y_test)
+    test_inout = TestInputOutput(x_train, y_train, x_test, y_test)
+    infer = ModelInference(model, model_type, inf_type)
+
+    loss_fn = torch.nn.MSELoss(reduction = 'none')
+
+    pred_y = model(x_test)
+    true_loss = torch.sum(loss_fn(y_test,pred_y), dim = 1).detach().numpy()
 
     for k, v in test_params.items():
-
         test_input, test_output = test_inout.get_input_output(k, v)
 
-        print(f">> Test name: {k}, run? {v}, input? {test_input is not None} output? {test_output is not None}")
+        if test_output is not None and test_output is not None:
+            pred = infer.predict(test_input,test_output)
+            alt_loss = torch.sum(loss_fn(y_test,pred), dim = 1).detach().numpy()
+            check = get_ttest_true_loss_less_than_other_loss(true_loss, alt_loss)
+            print(f">> Test name: {k}, run? {v}, passsed? {check}")
 
     ##################################################################
 
+class ModelInference:
+    def __init__(self, model, model_type, inf_type):
+        self.model = model
+        self.model_type = model_type
+        self.inf_type = inf_type
 
+    def predict(self, xyz, xanes):
+        # ORIGINAL MODEL
+        if self.model_type.lower() in ['mlp', 'cnn']:
+            if self.inf_type == 'predict_xanes':
+                pred = self.model(xyz)
+            if self.inf_type == 'predict_xyz':
+                pred = self.model(xanes)
+            return(pred)
 
+        # # TODO: AUTOENCODER MODEL
+        # if model_type.lower() in ['ae_mlp', 'ae_cnn']:
+        #     if inf_type.lower() == 'predict_xanes':
+        #         recon_xyz, pred_xanes = self.model(self.xyz)
+        #     if inf_type.lower() == 'predict_xyz':
+        #         recon_xanes, pred_xanes = self.model(self.xanes)
+
+        # # TODO: AUTOENCODER-GAN MODEL
 
 class TestInputOutput:
-    def __init__(self, model, x_train, y_train, x_test, y_test):
-        self.model = model
+    def __init__(self, x_train, y_train, x_test, y_test):
         self.x_train = x_train
         self.y_train = y_train
         self.x_test = x_test
@@ -264,7 +294,7 @@ def get_density(data):
     density._compute_covariance()
     return xs,density(xs)
 
-def ttest_true_loss_less_than_other_loss(true_loss, other_loss,alpha = 0.05, plot_density = False):
+def get_ttest_true_loss_less_than_other_loss(true_loss, other_loss,alpha = 0.05, plot_density = False):
     """
     Performs a one-tailed two-sample T-Test at (default) 5% level.
     Tests whether the true distribution of errors is less than the alternative using scipy.stats.ttest_ind
@@ -294,9 +324,9 @@ def ttest_true_loss_less_than_other_loss(true_loss, other_loss,alpha = 0.05, plo
         
     if pval < alpha:
         # Model is better than alternative
-        print(f'Model is better than alternative at {int(100*alpha):.0f}% level (pval = {pval:.3e})\n')
+        # print(f'Model is better than alternative at {int(100*alpha):.0f}% level (pval = {pval:.3e})\n')
         return True
     else:
         # Model not better than alternative
-        print(f"Model is NOT better than alternative at {int(100*alpha):.0f}% level (pval = {pval:.3e})\n")
+        # print(f"Model is NOT better than alternative at {int(100*alpha):.0f}% level (pval = {pval:.3e})\n")
         return False

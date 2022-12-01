@@ -4,6 +4,7 @@
     "x_test_path": "data/datasets/fe/preconv/xyz_test",
     "y_test_path": "data/datasets/fe/preconv/xanes_test",
     "model_type" : "mlp",
+    "inf_type" : "predict_xanes",
     "test_params" :{
         "shuffle_output" : true,
         "shuffle_input" : true,
