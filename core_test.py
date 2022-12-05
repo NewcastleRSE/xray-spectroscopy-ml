@@ -1,20 +1,3 @@
-
-
-# if args.mode == 'test':
-# need
-# - model_dir
-# - training input, training output
-# - test input, test output
-
-# - generate the artifical output and input
-# - do model inference on test data
-# - ttests for model output
-# - ttests for model input
-# - write results to tensorboard
-
-
-
-
 ###############################################################################
 ############################### LIBRARY IMPORTS ###############################
 ###############################################################################
@@ -55,278 +38,302 @@ import time
 
 
 def main(
-    model_dir: str,
-    x_train_path: str,
-    y_train_path: str,
-    x_test_path: str,
-    y_test_path: str,
-    model_type: str,
-    inf_type: str,
-    test_params: dict = {},
-    save_tensorboard: bool = True,
-    seed: int = None
-    ):
+	model_dir: str,
+	x_train_path: str,
+	y_train_path: str,
+	x_test_path: str,
+	y_test_path: str,
+	model_mode: str,
+	mode: str,
+	test_params: dict = {},
+	save_tensorboard: bool = True,
+	seed: int = None
+	):
 
 
-    #---------- load model ----------#
-    model_dir = Path(model_dir)
+	#---------- load model ----------#
+	model_dir = Path(model_dir)
 
-    with open(model_dir / "descriptor.pickle", "rb") as f:
-        descriptor = pickle.load(f)
+	with open(model_dir / "descriptor.pickle", "rb") as f:
+		descriptor = pickle.load(f)
 
-    print('>> Loading model from disk...')
-    model = torch.load(model_dir / "model.pt", map_location=torch.device("cpu"))
-    model.eval()
-    print(">> ...loaded!\n")
-    
-    #---------- Load training data ----------#
+	print(">> Loading model from disk...")
+	model = torch.load(model_dir / "model.pt", map_location=torch.device("cpu"))
+	model.eval()
+	print(">> ...loaded!\n")
+	
+	#---------- Load training data ----------#
 
-    x_train_path = Path(x_train_path)
-    y_train_path = Path(y_train_path)
+	x_train_path = Path(x_train_path)
+	y_train_path = Path(y_train_path)
 
-    train_ids = list(set(list_filestems(x_train_path)) & set(list_filestems(y_train_path)))
-    train_ids.sort()
+	train_ids = list(set(list_filestems(x_train_path)) & set(list_filestems(y_train_path)))
+	train_ids.sort()
 
-    n_train_samples = len(train_ids)
-    n_x_train_features = descriptor.get_len()
-    n_y_train_features = linecount(y_train_path / f"{train_ids[0]}.txt") - 2
+	n_train_samples = len(train_ids)
+	n_x_train_features = descriptor.get_len()
+	n_y_train_features = linecount(y_train_path / f"{train_ids[0]}.txt") - 2
 
-    x_train = np.full((n_train_samples, n_x_train_features), np.nan)
-    y_train = np.full((n_train_samples, n_y_train_features), np.nan)
+	x_train = np.full((n_train_samples, n_x_train_features), np.nan)
+	y_train = np.full((n_train_samples, n_y_train_features), np.nan)
 
-    print(">> loading training data into array(s)...")
-    for i, id_ in enumerate(tqdm.tqdm(train_ids)):
-        with open(x_train_path / f"{id_}.xyz", "r") as f:
-            atoms = load_xyz(f)
-        x_train[i, :] = descriptor.transform(atoms)
-        with open(y_train_path / f"{id_}.txt", "r") as f:
-            xanes = load_xanes(f)
-            e, y_train[i, :] = xanes.spectrum
-    print(">> ...loaded!\n")
+	print(">> loading training data into array(s)...")
+	for i, id_ in enumerate(tqdm.tqdm(train_ids)):
+		with open(x_train_path / f"{id_}.xyz", "r") as f:
+			atoms = load_xyz(f)
+		x_train[i, :] = descriptor.transform(atoms)
+		with open(y_train_path / f"{id_}.txt", "r") as f:
+			xanes = load_xanes(f)
+			e, y_train[i, :] = xanes.spectrum
+	print(">> ...loaded!\n")
 
-    #---------- Load test data ----------#
+	#---------- Load test data ----------#
 
-    x_test_path = Path(x_test_path)
-    y_test_path = Path(y_test_path)
+	x_test_path = Path(x_test_path)
+	y_test_path = Path(y_test_path)
 
-    test_ids = list(set(list_filestems(x_test_path)) & set(list_filestems(y_test_path)))
-    test_ids.sort()
-
-
-    n_test_samples = len(test_ids)
-    n_x_test_features = descriptor.get_len()
-    n_y_test_features = linecount(y_test_path / f"{test_ids[0]}.txt") - 2
-
-    x_test = np.full((n_test_samples, n_x_test_features), np.nan)
-    y_test = np.full((n_test_samples, n_y_test_features), np.nan)
-
-    print(">> loading testing data into array(s)...")
-    for i, id_ in enumerate(tqdm.tqdm(test_ids)):
-        with open(x_test_path / f"{id_}.xyz", "r") as f:
-            atoms = load_xyz(f)
-        x_test[i, :] = descriptor.transform(atoms)
-        with open(y_test_path / f"{id_}.txt", "r") as f:
-            xanes = load_xanes(f)
-            e, y_test[i, :] = xanes.spectrum
-    print(">> ...loaded!\n")
+	test_ids = list(set(list_filestems(x_test_path)) & set(list_filestems(y_test_path)))
+	test_ids.sort()
 
 
-    #----------  convert data       ----------#
+	n_test_samples = len(test_ids)
+	n_x_test_features = descriptor.get_len()
+	n_y_test_features = linecount(y_test_path / f"{test_ids[0]}.txt") - 2
 
-    x_train = torch.from_numpy(x_train).float()
-    y_train = torch.from_numpy(y_train).float()
+	x_test = np.full((n_test_samples, n_x_test_features), np.nan)
+	y_test = np.full((n_test_samples, n_y_test_features), np.nan)
 
-    x_test = torch.from_numpy(x_test).float()
-    y_test = torch.from_numpy(y_test).float()
-
-
-    ##################################################################
-    
-    test_inout = TestInputOutput(x_train, y_train, x_test, y_test)
-    infer = ModelInference(model, model_type, inf_type)
-
-    loss_fn = torch.nn.MSELoss(reduction = 'none')
-
-    pred_y = model(x_test)
-    true_loss = torch.sum(loss_fn(y_test,pred_y), dim = 1).detach().numpy()
-
-    for k, v in test_params.items():
-        test_input, test_output = test_inout.get_input_output(k, v)
-
-        if test_output is not None and test_output is not None:
-            pred = infer.predict(test_input,test_output)
-            alt_loss = torch.sum(loss_fn(y_test,pred), dim = 1).detach().numpy()
-            check = get_ttest_true_loss_less_than_other_loss(true_loss, alt_loss)
-            print(f">> Test name: {k}, run? {v}, passsed? {check}")
-
-    ##################################################################
-
-class ModelInference:
-    def __init__(self, model, model_type, inf_type):
-        self.model = model
-        self.model_type = model_type
-        self.inf_type = inf_type
-
-    def predict(self, xyz, xanes):
-        # ORIGINAL MODEL
-        if self.model_type.lower() in ['mlp', 'cnn']:
-            if self.inf_type == 'predict_xanes':
-                pred = self.model(xyz)
-            if self.inf_type == 'predict_xyz':
-                pred = self.model(xanes)
-            return(pred)
-
-        # # TODO: AUTOENCODER MODEL
-        # if model_type.lower() in ['ae_mlp', 'ae_cnn']:
-        #     if inf_type.lower() == 'predict_xanes':
-        #         recon_xyz, pred_xanes = self.model(self.xyz)
-        #     if inf_type.lower() == 'predict_xyz':
-        #         recon_xanes, pred_xanes = self.model(self.xanes)
-
-        # # TODO: AUTOENCODER-GAN MODEL
-
-class TestInputOutput:
-    def __init__(self, x_train, y_train, x_test, y_test):
-        self.x_train = x_train
-        self.y_train = y_train
-        self.x_test = x_test
-        self.y_test = y_test
-        self.n_train_samples = x_train.size(0)
-        self.n_test_samples = x_test.size(0)
-        self.n_x_features = x_test.size(1)
-        self.n_y_features = y_test.size(1)
+	print(">> loading testing data into array(s)...")
+	for i, id_ in enumerate(tqdm.tqdm(test_ids)):
+		with open(x_test_path / f"{id_}.xyz", "r") as f:
+			atoms = load_xyz(f)
+		x_test[i, :] = descriptor.transform(atoms)
+		with open(y_test_path / f"{id_}.txt", "r") as f:
+			xanes = load_xanes(f)
+			e, y_test[i, :] = xanes.spectrum
+	print(">> ...loaded!\n")
 
 
-    def get_input_output(self, test_name, run_test):
-        if run_test is True:
-            return getattr(self, f"test_function_{test_name.lower()}", lambda: (None, None))()
-        else:
-            return None, None
+	#----------  convert data       ----------#
+
+	xyz_train = torch.from_numpy(x_train).float()
+	xanes_train = torch.from_numpy(y_train).float()
+
+	xyz_test = torch.from_numpy(x_test).float()
+	xanes_test = torch.from_numpy(y_test).float()
 
 
-    def test_function_shuffle_input(self):
-        # input
-        test_input = self.x_test[np.random.permutation(self.n_test_samples)]
-        # output
-        test_output = self.y_test
-        return test_input, test_output
+	#---------- tensorboard ----------#
 
-    def test_function_shuffle_output(self):
-        # input
-        test_input = self.x_test
-        # output
-        test_output = self.y_test[np.random.permutation(self.n_test_samples)]
-        return test_input, test_output
+	# if save_tensorboard:
+	# 	writer = SummaryWriter(log_dir = f"{model_dir}/tensorboard/tmp")
 
-    def test_function_mean_train_input(self):
-        # input
-        mu_x = np.mean(self.x_train.detach().numpy(),axis = 0)
-        test_input = torch.from_numpy(np.repeat([mu_x],self.n_test_samples,0)).float()
-        # output
-        test_output = self.y_test
-        return test_input, test_output
+	##################################################################
+	
+	modeltest = ModelTestInit(model, model_mode, mode, xyz_train, xanes_train, xyz_test, xanes_test)
 
-    def test_function_mean_train_output(self):
-        # input
-        test_input = self.x_test
-        # output
-        mu_y = np.mean(self.y_train.detach().numpy(),axis = 0)
-        test_output = torch.from_numpy(np.repeat([mu_y],self.n_test_samples,0)).float()
-        return test_input, test_output
+	print("********** Running tests **********")
+	print("\n")	
+	print("[?] Output tests:")
+	print("    Are true losses better than losses from artifical model output?")
+	print("[?] Input tests:")
+	print("    Are true losses better than losses from model predictions from artifical input?")
+	print("\n")
+	print("[!] True if model passes check")
+	print("[!] False if model fails check")
 
-    def test_function_random_train_input(self):
-        # input
-        test_input = self.x_train[np.random.choice(np.arange(self.n_train_samples),self.n_test_samples,replace = False),:].float()
-        # output
-        test_output = self.y_test
-        return test_input, test_output
-
-    def test_function_random_train_output(self):
-        # input
-        test_input = self.x_test
-        # output
-        test_output = self.y_train[np.random.choice(np.arange(self.n_train_samples),self.n_test_samples,replace = False),:].float()
-        return test_input, test_output
-
-    def test_function_gauss_train_input(self):
-        # input
-        mu_x = np.mean(self.x_train.detach().numpy(),axis = 0)
-        sd_x = np.std(self.x_train.detach().numpy(),axis = 0)
-        test_input = np.transpose(np.array([[None for i in range(self.n_test_samples)] for j in range(self.n_x_features)]))
-        for i in range(self.n_test_samples):
-            for j in range(self.n_x_features):
-                test_input[i,j] = np.float64(mu_x[j] + np.random.normal(0,sd_x[j],1))
-
-        test_input = torch.from_numpy(test_input.astype(np.float64)).float()
-        # output
-        test_output = self.y_test
-        return test_input, test_output
-
-    def test_function_gauss_train_output(self):
-        # input
-        test_input = self.x_test
-        # output
-        mu_y = np.mean(self.y_train.detach().numpy(),axis = 0)
-        sd_y = np.std(self.y_train.detach().numpy(),axis = 0)
-        test_output = np.transpose(np.array([[None for i in range(self.n_test_samples)] for j in range(self.n_y_features)]))
-        for i in range(self.n_test_samples):
-            for j in range(self.n_y_features):
-                test_output[i,j] = np.float64(mu_y[j] + np.random.normal(0,sd_y[j],1))
-        test_output = torch.from_numpy(test_output.astype(np.float64)).float()
-        return test_input, test_output
+	for test_name, run_test,  in test_params.items():
+		if run_test:
+			check = modeltest.run(test_name)
+			print(f">> Test {test_name:20}: {check}")
+			# if save_tensorboard:
+				# writer.add_text(test_name, str(check))
 
 
-###############################################################################
-###############################################################################
-###############################################################################
+	# if save_tensorboard:
+	# 	writer.close()
+
+	##################################################################
+
+class ModelTestInit:
+	def __init__(self, model, model_mode, mode, x_train, y_train, x_test, y_test):
+		self.model = model
+		self.model_mode = model_mode
+		self.mode = mode
+		self.x_train = x_train
+		self.y_train = y_train
+		self.x_test = x_test
+		self.y_test = y_test
+		self.n_train_samples = x_train.size(0)
+		self.n_test_samples = x_test.size(0)
+		self.n_x_features = x_test.size(1)
+		self.n_y_features = y_test.size(1)
+
+		# Init true model losses
+		self.true_label, self.true_pred = self.predict(self.x_test, self.y_test)
+		self.loss_fn = torch.nn.MSELoss(reduction = "none")
+		self.true_loss = torch.sum(self.loss_fn(self.true_label, self.true_pred), dim = 1).detach().numpy()
+
+	def run(self,test_name):
+		
+		# Create artifical source/targets from test set
+		alt_xyz, alt_xanes = self.get_test_data(test_name)
+
+		if "input" in test_name:
+
+			alt_label, alt_pred = self.predict(alt_xyz, alt_xanes)
+
+		if "output" in  test_name:
+			if 'xyz' in self.mode:
+				alt_label = self.true_label
+				alt_pred = alt_xyz
+			if 'xanes' in self.mode:
+				alt_label = self.true_label
+				alt_pred = alt_xanes
+
+		fake_loss = torch.sum(self.loss_fn(alt_label, alt_pred), dim = 1).detach().numpy()
+
+		check = perform_ttest(self.true_loss, fake_loss)
+
+		return check
+
+	def get_test_data(self, test_name):
+		return getattr(self, f"test_function_{test_name.lower()}", lambda: (None, None))()
 
 
-###############################################################################
-################################### FUNCTIONS #################################
-###############################################################################
+	def test_function_shuffle_input(self):
+		# input
+		test_input = self.x_test[np.random.permutation(self.n_test_samples)]
+		# output
+		test_output = self.y_test
+		return test_input, test_output
+
+	def test_function_shuffle_output(self):
+		# input
+		test_input = self.x_test
+		# output
+		test_output = self.y_test[np.random.permutation(self.n_test_samples)]
+		return test_input, test_output
+
+	def test_function_mean_train_input(self):
+		# input
+		mu_x = np.mean(self.x_train.detach().numpy(),axis = 0)
+		test_input = torch.from_numpy(np.repeat([mu_x],self.n_test_samples,0)).float()
+		# output
+		test_output = self.y_test
+		return test_input, test_output
+
+	def test_function_mean_train_output(self):
+		# input
+		test_input = self.x_test
+		# output
+		mu_y = np.mean(self.y_train.detach().numpy(),axis = 0)
+		test_output = torch.from_numpy(np.repeat([mu_y],self.n_test_samples,0)).float()
+		return test_input, test_output
+
+	def test_function_random_train_input(self):
+		# input
+		test_input = self.x_train[np.random.choice(np.arange(self.n_train_samples),self.n_test_samples,replace = False),:].float()
+		# output
+		test_output = self.y_test
+		return test_input, test_output
+
+	def test_function_random_train_output(self):
+		# input
+		test_input = self.x_test
+		# output
+		test_output = self.y_train[np.random.choice(np.arange(self.n_train_samples),self.n_test_samples,replace = False),:].float()
+		return test_input, test_output
+
+	def test_function_gauss_train_input(self):
+		# input
+		mu_x = np.mean(self.x_train.detach().numpy(),axis = 0)
+		sd_x = np.std(self.x_train.detach().numpy(),axis = 0)
+		test_input = np.transpose(np.array([[None for i in range(self.n_test_samples)] for j in range(self.n_x_features)]))
+		for i in range(self.n_test_samples):
+			for j in range(self.n_x_features):
+				test_input[i,j] = np.float64(mu_x[j] + np.random.normal(0,sd_x[j],1))
+
+		test_input = torch.from_numpy(test_input.astype(np.float64)).float()
+		# output
+		test_output = self.y_test
+		return test_input, test_output
+
+	def test_function_gauss_train_output(self):
+		# input
+		test_input = self.x_test
+		# output
+		mu_y = np.mean(self.y_train.detach().numpy(),axis = 0)
+		sd_y = np.std(self.y_train.detach().numpy(),axis = 0)
+		test_output = np.transpose(np.array([[None for i in range(self.n_test_samples)] for j in range(self.n_y_features)]))
+		for i in range(self.n_test_samples):
+			for j in range(self.n_y_features):
+				test_output[i,j] = np.float64(mu_y[j] + np.random.normal(0,sd_y[j],1))
+		test_output = torch.from_numpy(test_output.astype(np.float64)).float()
+		return test_input, test_output
+
+	def predict(self, xyz, xanes):
+
+		if self.model_mode.lower() in ["mlp", "cnn"]:
+			# ORGINAL MODEL
+			if self.mode.lower() == "predict_xanes":
+				out = self.model(xyz)
+			if self.mode == "predict_xyz":
+				out = self.model(xanes)
+
+		if self.model_mode.lower() in ["ae_mlp", "ae_cnn"]:
+			# AUTOENCODER MODEL
+			if self.mode.lower() in ["predict_xyz", "reconstruct_xanes"]:
+				recon, pred = self.model(xanes)
+			elif self.mode.lower() in ["predict_xanes", "reconstruct_xyz"]:
+				recon, pred = self.model(xyz)
+			if "reconstruct" in self.mode.lower():
+				out = recon
+			else:
+				out = pred
+
+		if self.model_mode.lower() in ["aegan_mlp", "aegan_cnn"]:
+			# AUTOENCODER GAN MODEL
+			if self.mode.lower()  == "predict_xanes":
+				out = self.model.predict_spectrum(xyz)
+			elif self.mode.lower() == "predict_xyz":
+				out = self.model.predict_structure(xanes)
+			elif self.mode.lower() == "reconstruct_xyz":
+				out = model.reconstruct_structure(xyz)
+			elif self.mode.lower() == "reconstruct_xanes":
+				out = model.reconstruct_spectrum(xanes)
+
+		if "xyz" in self.mode.lower():
+			compare = xyz
+		elif "xanes" in self.mode.lower():
+			compare = xanes
+
+		return compare, out
 
 
 
-def get_density(data):
-    density = gaussian_kde(data)
-    xs = np.linspace(0,max(data),200)
-    density.covariance_factor = lambda : .25
-    density._compute_covariance()
-    return xs,density(xs)
-
-def get_ttest_true_loss_less_than_other_loss(true_loss, other_loss,alpha = 0.05, plot_density = False):
-    """
-    Performs a one-tailed two-sample T-Test at (default) 5% level.
-    Tests whether the true distribution of errors is less than the alternative using scipy.stats.ttest_ind
-    Returns True if true errors are less than alternative
-    Returns False if true errors are not less than alternative
+def perform_ttest(true_loss, other_loss, alpha = 0.05):
+	"""
+	Performs a one-tailed two-sample T-Test at (default) 5% level.
+	Tests whether the true distribution of errors is less than the alternative using scipy.stats.ttest_ind
+	Returns True if true errors are less than alternative
+	Returns False if true errors are not less than alternative
 
 
-    Args:
-        true_loss, other_loss : array_like
-            The arrays must have the same shape, except in the dimension
-            corresponding to `axis` (the first, by default).
-        alpha (float, optional, default = 0.05) : p-value significance level
-        plot_density (bool, optional, default = False) : Plot normalised density of the two distributions 
+	Args:
+		true_loss, other_loss : array_like
+			The arrays must have the same shape, except in the dimension
+			corresponding to `axis` (the first, by default).
+		alpha (float, optional, default = 0.05) : p-value significance level
 
-    """
-    tstat, pval = ttest_ind(true_loss, other_loss,alternative = 'less')
+	"""
+	tstat, pval = ttest_ind(true_loss, other_loss,alternative = "less")
 
-    if plot_density:
-        xs_true, ds_true = get_density(true_loss)
-        xs_other, ds_other = get_density(other_loss)
-        ds_true_norm = ds_true/sum(ds_true)
-        ds_other_norm = ds_other/sum(ds_other)
-        plt.plot(xs_true, ds_true_norm, label = 'True loss')
-        plt.plot(xs_other, ds_other_norm, label = 'Other loss')
-        plt.legend(loc = 'upper right')
-        plt.show()
-        
-    if pval < alpha:
-        # Model is better than alternative
-        # print(f'Model is better than alternative at {int(100*alpha):.0f}% level (pval = {pval:.3e})\n')
-        return True
-    else:
-        # Model not better than alternative
-        # print(f"Model is NOT better than alternative at {int(100*alpha):.0f}% level (pval = {pval:.3e})\n")
-        return False
+	if pval < alpha:
+		# Model is better than alternative
+		# print(f"Model is better than alternative at {int(100*alpha):.0f}% level (pval = {pval:.3e})\n")
+		return True
+	else:
+		# Model not better than alternative
+		# print(f"Model is NOT better than alternative at {int(100*alpha):.0f}% level (pval = {pval:.3e})\n")
+		return False

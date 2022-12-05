@@ -83,8 +83,8 @@ def main(args: list):
     else:
         args = parse_args(args)
         
-    banner = importlib.resources.read_text(resources, 'banner_open.txt')
-    print(banner, '\n')
+    # banner = importlib.resources.read_text(resources, 'banner_open.txt')
+    # print(banner, '\n')
 
     if args.mode == 'learn':
         print(f'>> loading JSON input @ {args.inp_f}\n')
