@@ -50,7 +50,7 @@ def y_predict_dim(y_predict, ids, model_dir):
     with open(model_dir / "dataset.npz", "rb") as f:
         e = np.load(f)["e"]
 
-    return y_predict, e
+    return y_predict, e.flatten()
 
 
 ###############################################################################
@@ -124,6 +124,9 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
 
     model = torch.load(model_dir / "model.pt", map_location=torch.device("cpu"))
     model.eval()
+    input_size = list(model.parameters())[1].shape[1]
+    # print(input_size)
+    # print(xyz_data.shape)
     print("Loaded model from disk")
 
     if model_mode == "mlp" or model_mode == "cnn":
@@ -131,7 +134,7 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
         if mode == "predict_xyz":
 
             print("predict xyz structure")
-
+            assert input_size == xanes_data.shape[1], 'the model was not train for this, please swap your predict mode'
 
             xanes = torch.from_numpy(xanes_data)
             xanes = xanes.float()
@@ -145,6 +148,8 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
 
             print("predict xanes structure")
 
+            assert input_size == xyz_data.shape[1], 'the model was not train for this, please swap your predict mode'
+
             xyz = torch.from_numpy(xyz_data)
             xyz = xyz.float()
 
@@ -156,6 +161,7 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
         print("MSE y to y pred : ", mean_squared_error(y, y_predict.detach().numpy()))
 
         y_predict, e = y_predict_dim(y_predict, ids, model_dir)
+
         from plot import plot_predict
 
         plot_predict(ids, y, y_predict, e, predict_dir, mode)
