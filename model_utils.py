@@ -69,3 +69,30 @@ def weight_init(m):
     if isinstance(m, nn.Linear):
         nn.init.xavier_uniform_(m.weight)
         nn.init.zeros_(m.bias)
+
+def model_mode_error(model, mode, model_mode, xyz_shape, xanes_shape):
+
+    from utils import unique_path
+    from pathlib import Path
+
+    for child in model.modules():
+        if type(child).__name__ == 'Linear':
+            output_size = child.weight.shape[0]
+            print(output_size)
+            
+    if mode == "predict_xyz":
+        input_data = xanes_shape
+        output_data = xyz_shape
+    elif mode == "predict_xanes":
+        input_data = xyz_shape
+        output_data = xanes_shape
+    
+    if model_mode == "mlp" or model_mode == "cnn" or model_mode == "ae_cnn":
+        assert output_size == output_data, 'the model was not train for this, please swap your predict mode'
+    if model_mode == "ae_mlp":
+        assert output_size == input_data, 'the model was not train for this, please swap your predict mode'
+
+    predict_dir = unique_path(Path("."), "predictions")
+    predict_dir.mkdir()
+
+    return predict_dir

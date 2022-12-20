@@ -34,6 +34,7 @@ from utils import linecount
 from structure.rdc import RDC
 from structure.wacsf import WACSF
 from spectrum.xanes import XANES
+from model_utils import model_mode_error
 
 import torch
 from sklearn.metrics import mean_squared_error
@@ -87,9 +88,6 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
 
     ids.sort()
 
-    predict_dir = unique_path(Path("."), "predictions")
-    predict_dir.mkdir()
-
     with open(model_dir / "descriptor.pickle", "rb") as f:
         descriptor = pickle.load(f)
 
@@ -124,18 +122,17 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
 
     model = torch.load(model_dir / "model.pt", map_location=torch.device("cpu"))
     model.eval()
-    input_size = list(model.parameters())[1].shape[1]
-    # print(input_size)
-    # print(xyz_data.shape)
+
     print("Loaded model from disk")
+
+    predict_dir = model_mode_error(model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1])
 
     if model_mode == "mlp" or model_mode == "cnn":
 
         if mode == "predict_xyz":
 
             print("predict xyz structure")
-            assert input_size == xanes_data.shape[1], 'the model was not train for this, please swap your predict mode'
-
+            
             xanes = torch.from_numpy(xanes_data)
             xanes = xanes.float()
 
@@ -146,10 +143,8 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
 
         elif mode == "predict_xanes":
 
-            print("predict xanes structure")
-
-            assert input_size == xyz_data.shape[1], 'the model was not train for this, please swap your predict mode'
-
+            print("predict xanes spectrum")
+            
             xyz = torch.from_numpy(xyz_data)
             xyz = xyz.float()
 
@@ -159,11 +154,9 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
             y_predict = pred_xanes
 
         print("MSE y to y pred : ", mean_squared_error(y, y_predict.detach().numpy()))
-
         y_predict, e = y_predict_dim(y_predict, ids, model_dir)
 
         from plot import plot_predict
-
         plot_predict(ids, y, y_predict, e, predict_dir, mode)
 
     elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
@@ -172,6 +165,8 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
 
             print("predict xyz structure")
 
+            print(model)
+            print(xanes_data.shape)
             xanes = torch.from_numpy(xanes_data)
             xanes = xanes.float()
 
@@ -184,7 +179,9 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
 
         elif mode == "predict_xanes":
 
-            print("predict xyz structure")
+            print("predict xanes spectrum")
+            print(model)
+            print(xyz_data.shape)
 
             xyz = torch.from_numpy(xyz_data)
             xyz = xyz.float()
