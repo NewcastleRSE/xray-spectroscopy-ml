@@ -126,7 +126,6 @@ def parse_args(args: list):
     )
     predict_p_xanes.add_argument(
         "inp_f", type=str, help="path to .json input file w/ variable definitions"
-
     )
 
     args = p.parse_args()

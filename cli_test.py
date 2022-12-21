@@ -39,42 +39,55 @@ from core_test import main as test_model
 ############################## ARGUMENT PARSING ###############################
 ###############################################################################
 
+
 def parse_args(args: list):
 
     p = ArgumentParser()
 
-    # p.add_argument('-v', '--version', action = 'version', 
+    # p.add_argument('-v', '--version', action = 'version',
     #     version = xanesnet.__version__)
-    
-    sub_p = p.add_subparsers(dest = 'mode')
 
-    learn_p = sub_p.add_parser('learn')
-    learn_p.add_argument('inp_f', type = str, 
-        help = 'path to .json input file w/ variable definitions')
-    learn_p.add_argument('--no-save', dest = 'save', action = 'store_false',
-        help = 'toggles model directory creation and population to <off>')
+    sub_p = p.add_subparsers(dest="mode")
 
-    predict_p = sub_p.add_parser('predict')
-    predict_p.add_argument('mdl_dir', type = str, 
-        help = 'path to populated model directory')
-    predict_p.add_argument('xyz_dir', type = str, 
-        help = 'path to .xyz input directory for prediction')
-    predict_p.add_argument('--shap', dest = 'save', action = 'store_true', 
-        help = 'toggles the use of SHAP analysis for prediction')
+    learn_p = sub_p.add_parser("learn")
+    learn_p.add_argument(
+        "inp_f", type=str, help="path to .json input file w/ variable definitions"
+    )
+    learn_p.add_argument(
+        "--no-save",
+        dest="save",
+        action="store_false",
+        help="toggles model directory creation and population to <off>",
+    )
 
+    predict_p = sub_p.add_parser("predict")
+    predict_p.add_argument(
+        "mdl_dir", type=str, help="path to populated model directory"
+    )
+    predict_p.add_argument(
+        "xyz_dir", type=str, help="path to .xyz input directory for prediction"
+    )
+    predict_p.add_argument(
+        "--shap",
+        dest="save",
+        action="store_true",
+        help="toggles the use of SHAP analysis for prediction",
+    )
 
-    test_p = sub_p.add_parser('test')
-    test_p.add_argument('mdl_dir', type = str, 
-        help = 'path to populated model directory')
-    test_p.add_argument('inp_f', type = str, 
-        help = 'path to .json input file w/ variable definitions')    
+    test_p = sub_p.add_parser("test")
+    test_p.add_argument("mdl_dir", type=str, help="path to populated model directory")
+    test_p.add_argument(
+        "inp_f", type=str, help="path to .json input file w/ variable definitions"
+    )
     args = p.parse_args()
 
-    return args  
+    return args
+
 
 ###############################################################################
 ################################ MAIN FUNCTION ################################
 ###############################################################################
+
 
 def main(args: list):
 
@@ -82,39 +95,38 @@ def main(args: list):
         sys.exit()
     else:
         args = parse_args(args)
-        
+
     # banner = importlib.resources.read_text(resources, 'banner_open.txt')
     # print(banner, '\n')
 
-    if args.mode == 'learn':
-        print(f'>> loading JSON input @ {args.inp_f}\n')
+    if args.mode == "learn":
+        print(f">> loading JSON input @ {args.inp_f}\n")
         with open(args.inp_f) as f:
             inp = json.load(f)
-        print_nested_dict(inp, nested_level = 1)
-        print('')
-        learn(**inp, save = args.save)
+        print_nested_dict(inp, nested_level=1)
+        print("")
+        learn(**inp, save=args.save)
 
-    if args.mode == 'predict':
-            predict(args.mdl_dir, args.xyz_dir, run_shap = args.save)
+    if args.mode == "predict":
+        predict(args.mdl_dir, args.xyz_dir, run_shap=args.save)
 
-
-    if args.mode == 'test':
-        print(f'>> loading JSON input @ {args.inp_f}\n')
+    if args.mode == "test":
+        print(f">> loading JSON input @ {args.inp_f}\n")
         with open(args.inp_f) as f:
             inp = json.load(f)
-        print_nested_dict(inp, nested_level = 1)
-        print('')
+        print_nested_dict(inp, nested_level=1)
+        print("")
         test_model(args.mdl_dir, **inp)
 
-        
     # banner = importlib.resources.read_text(resources, 'banner_close.txt')
     # print(banner)
+
 
 ################################################################################
 ############################## PROGRAM STARTS HERE #############################
 ################################################################################
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])
 
 ################################################################################

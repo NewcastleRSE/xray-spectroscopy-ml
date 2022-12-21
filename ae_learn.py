@@ -143,9 +143,9 @@ def train(x, y, model_mode, hyperparams, n_epoch):
             valid_loss_p += loss_pred.item()
 
             # print("valid:", loss_recon.item(), loss_pred.item(), loss.item())
-        
+
             total_step_valid += 1
-        
+
         # print(total_step_train, total_step_valid)
         # print(len(trainloader),len(validloader) )
 

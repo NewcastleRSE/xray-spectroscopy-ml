@@ -94,16 +94,13 @@ class CNN(nn.Module):
 
         self.dense_layer1 = nn.Sequential(
             nn.Linear(
-                self.conv2_shape * (self.out_channel * self.channel_mul), self.hidden_layer
+                self.conv2_shape * (self.out_channel * self.channel_mul),
+                self.hidden_layer,
             ),
             self.act_fn,
         )
 
-        self.dense_layer2 = nn.Sequential(
-            nn.Linear(
-                self.hidden_layer, self.out_dim
-            )
-        )
+        self.dense_layer2 = nn.Sequential(nn.Linear(self.hidden_layer, self.out_dim))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
 

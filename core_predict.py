@@ -132,7 +132,6 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
 
             print("predict xyz structure")
 
-
             xanes = torch.from_numpy(xanes_data)
             xanes = xanes.float()
 

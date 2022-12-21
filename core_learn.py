@@ -125,90 +125,88 @@ def main(
 
     rng = RandomState(seed=seed)
 
-    xyz_path = [Path(p) for p in glob (x_path)]
-    xanes_path = [Path(p) for p in glob (y_path)]
-    
+    xyz_path = [Path(p) for p in glob(x_path)]
+    xanes_path = [Path(p) for p in glob(y_path)]
+
     xyz_list = []
     xanes_list = []
-    e_list = []  
+    e_list = []
     element_label = []
 
-    for n_element in range (0, len(xyz_path)):
-        
+    for n_element in range(0, len(xyz_path)):
+
         element_name = str(xyz_path[n_element]).split("/")[-3]
 
         for path in (xyz_path[n_element], xanes_path[n_element]):
             if not path.exists():
-                err_str = f'path to X/Y data ({path}) doesn\'t exist'
+                err_str = f"path to X/Y data ({path}) doesn't exist"
                 raise FileNotFoundError(err_str)
 
         if xyz_path[n_element].is_dir() and xanes_path[n_element].is_dir():
-            print('>> loading data from directories...\n')
+            print(">> loading data from directories...\n")
 
             ids = list(
-                set(list_filestems(xyz_path[n_element])) & set(list_filestems(xanes_path[n_element]))
+                set(list_filestems(xyz_path[n_element]))
+                & set(list_filestems(xanes_path[n_element]))
             )
 
             ids.sort()
 
-            descriptors = {
-                'rdc': RDC,
-                'wacsf': WACSF
-            }
-            
-            descriptor = (
-                descriptors.get(descriptor_type)(**descriptor_params)
-            )
+            descriptors = {"rdc": RDC, "wacsf": WACSF}
+
+            descriptor = descriptors.get(descriptor_type)(**descriptor_params)
 
             n_samples = len(ids)
             n_x_features = descriptor.get_len()
-            n_y_features = linecount(xanes_path[n_element] / f'{ids[0]}.txt') - 2
+            n_y_features = linecount(xanes_path[n_element] / f"{ids[0]}.txt") - 2
 
             xyz_data = np.full((n_samples, n_x_features), np.nan)
-            print('>> preallocated {}x{} array for X data...'.format(*xyz_data.shape))
+            print(">> preallocated {}x{} array for X data...".format(*xyz_data.shape))
             xanes_data = np.full((n_samples, n_y_features), np.nan)
-            print('>> preallocated {}x{} array for Y data...'.format(*xanes_data.shape))
-            print('>> ...everything preallocated!\n')
+            print(">> preallocated {}x{} array for Y data...".format(*xanes_data.shape))
+            print(">> ...everything preallocated!\n")
 
-            print('>> loading data into array(s)...')
+            print(">> loading data into array(s)...")
             for i, id_ in enumerate(tqdm.tqdm(ids)):
                 element_label.append(element_name)
-                with open(xyz_path[n_element] / f'{id_}.xyz', 'r') as f:
+                with open(xyz_path[n_element] / f"{id_}.xyz", "r") as f:
                     atoms = load_xyz(f)
-                xyz_data[i,:] = descriptor.transform(atoms)
-                with open(xanes_path[n_element] / f'{id_}.txt', 'r') as f:
+                xyz_data[i, :] = descriptor.transform(atoms)
+                with open(xanes_path[n_element] / f"{id_}.txt", "r") as f:
                     xanes = load_xanes(f)
-                e, xanes_data[i,:] = xanes.spectrum
-            print('>> ...loaded into array(s)!\n')
+                e, xanes_data[i, :] = xanes.spectrum
+            print(">> ...loaded into array(s)!\n")
 
             xyz_list.append(xyz_data)
             xanes_list.append(xanes_data)
             e_list.append(e)
 
         elif x_path[n_element].is_file() and y_path[n_element].is_file():
-            print('>> loading data from .npz archive(s)...\n')
-            
-            with open(x_path[n_element], 'rb') as f:
-                xyz_data = np.load(f)['x']
-            print('>> ...loaded {}x{} array of X data'.format(*xyz_data.shape))
-            with open(y_path[n_element], 'rb') as f:
-                xanes_data = np.load(f)['y']
-                e = np.load(f)['e']
-            print('>> ...loaded {}x{} array of Y data'.format(*xanes_data.shape))
-            print('>> ...everything loaded!\n')
+            print(">> loading data from .npz archive(s)...\n")
+
+            with open(x_path[n_element], "rb") as f:
+                xyz_data = np.load(f)["x"]
+            print(">> ...loaded {}x{} array of X data".format(*xyz_data.shape))
+            with open(y_path[n_element], "rb") as f:
+                xanes_data = np.load(f)["y"]
+                e = np.load(f)["e"]
+            print(">> ...loaded {}x{} array of Y data".format(*xanes_data.shape))
+            print(">> ...everything loaded!\n")
 
             xyz_list.append(xyz_data)
             xanes_list.append(xanes_data)
             e_list.append(e)
 
             if save:
-                print('>> overriding save flag (running in `--no-save` mode)\n')
+                print(">> overriding save flag (running in `--no-save` mode)\n")
                 save = False
 
         else:
 
-            err_str = 'paths to X/Y data are expected to be either a) both ' \
-                'files (.npz archives), or b) both directories'
+            err_str = (
+                "paths to X/Y data are expected to be either a) both "
+                "files (.npz archives), or b) both directories"
+            )
             raise TypeError(err_str)
 
     xyz_data = np.vstack(xyz_list)
@@ -220,16 +218,18 @@ def main(
     print(element_label.shape)
 
     if save:
-        model_dir = unique_path(Path('.'), 'model')
+        model_dir = unique_path(Path("."), "model")
         model_dir.mkdir()
-        with open(model_dir / 'descriptor.pickle', 'wb') as f:
+        with open(model_dir / "descriptor.pickle", "wb") as f:
             pickle.dump(descriptor, f)
-        with open(model_dir / 'dataset.npz', 'wb') as f:
-            np.savez_compressed(f, ids = ids, x = xyz_data, y = xanes_data, e = e)
+        with open(model_dir / "dataset.npz", "wb") as f:
+            np.savez_compressed(f, ids=ids, x=xyz_data, y=xanes_data, e=e)
 
-    print('>> shuffling and selecting data...')
-    xyz, xanes, element = shuffle(xyz_data, xanes_data, element_label, random_state = rng, n_samples = max_samples)
-    print('>> ...shuffled and selected!\n')
+    print(">> shuffling and selecting data...")
+    xyz, xanes, element = shuffle(
+        xyz_data, xanes_data, element_label, random_state=rng, n_samples=max_samples
+    )
+    print(">> ...shuffled and selected!\n")
 
     # if kfold_params:
 

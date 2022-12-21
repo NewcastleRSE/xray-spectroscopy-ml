@@ -93,6 +93,7 @@ class ActivationSwitch:
     def activation_function_selu(self):
         return nn.SELU()
 
+
 def train_mlp(x, y, hyperparams, n_epoch):
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -109,7 +110,6 @@ def train_mlp(x, y, hyperparams, n_epoch):
     X_train, X_test, y_train, y_test = train_test_split(
         x, y, test_size=0.2, random_state=42
     )
-
 
     trainset = torch.utils.data.TensorDataset(X_train, y_train)
     trainloader = torch.utils.data.DataLoader(
@@ -151,7 +151,6 @@ def train_mlp(x, y, hyperparams, n_epoch):
             # else:
             #     print('no noise')
 
-
             optimizer.zero_grad()
             logps = mlp(inputs)
 
@@ -179,7 +178,6 @@ def train_mlp(x, y, hyperparams, n_epoch):
         writer.add_scalar("loss/train", (running_loss / len(trainloader)), epoch)
         writer.add_scalar("loss/validation", (valid_loss / len(validloader)), epoch)
     print("total step =", total_step)
-
 
     writer.close()
     return mlp, running_loss / len(trainloader)

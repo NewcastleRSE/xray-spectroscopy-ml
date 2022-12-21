@@ -103,6 +103,7 @@ def earth_mover_distance(y_true, y_pred):
         dim=-1,
     )
 
+
 # Select activation function from hyperparams inputs
 class ActivationSwitch:
     def fn(self, activation):
@@ -131,6 +132,7 @@ class ActivationSwitch:
 
     def activation_function_selu(self):
         return nn.SELU()
+
 
 def train_cnn(x, y, hyperparams, n_epoch):
 
