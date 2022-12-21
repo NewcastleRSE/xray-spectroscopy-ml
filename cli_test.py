@@ -25,12 +25,12 @@ import importlib.resources
 
 from argparse import ArgumentParser
 
-import xanesnet
+# import xanesnet
 
-from xanesnet import resources
-from xanesnet.core_learn import main as learn
-from xanesnet.core_predict import main as predict
-from xanesnet.utils import print_nested_dict
+# from xanesnet import resources
+from core_learn import main as learn
+from core_predict import main as predict
+from utils import print_nested_dict
 
 
 from core_test import main as test_model
@@ -43,8 +43,8 @@ def parse_args(args: list):
 
     p = ArgumentParser()
 
-    p.add_argument('-v', '--version', action = 'version', 
-        version = xanesnet.__version__)
+    # p.add_argument('-v', '--version', action = 'version', 
+    #     version = xanesnet.__version__)
     
     sub_p = p.add_subparsers(dest = 'mode')
 
@@ -107,8 +107,8 @@ def main(args: list):
         test_model(args.mdl_dir, **inp)
 
         
-    banner = importlib.resources.read_text(resources, 'banner_close.txt')
-    print(banner)
+    # banner = importlib.resources.read_text(resources, 'banner_close.txt')
+    # print(banner)
 
 ################################################################################
 ############################## PROGRAM STARTS HERE #############################
