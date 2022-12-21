@@ -28,6 +28,7 @@ from pathlib import Path
 # from sklearn.pipeline import Pipeline
 from typing import TextIO
 from typing import BinaryIO
+
 # from tensorflow.keras.models import load_model
 # from tensorflow.keras.models import save_model
 
@@ -127,6 +128,7 @@ def save_xanes(xanes_f: TextIO, xanes: XANES):
 
     return 0
 
+
 # def load_pipeline(keras_f: Path, pipeline_f: Path) -> Pipeline:
 #     # loads an sklearn pipeline with a Keras Sequential model; the pipeline
 #     # is reconstructed to add the Keras elements that were removed when the
@@ -135,7 +137,7 @@ def save_xanes(xanes_f: TextIO, xanes: XANES):
 #     # load pipeline from pipeline_f
 #     with open(pipeline_f, 'rb') as f:
 #         pipeline = pickle.load(f)
-    
+
 #     # load Keras model from keras_f and add the Keras elements to the pipeline
 #     # (pipeline.named_steps['net'].model)
 #     pipeline.named_steps['net'].model = load_model(keras_f)

@@ -1,6 +1,6 @@
 {
-    "x_path": "/data/datasets/fe/preconv/xyz_train",
-    "y_path": "/data/datasets/fe/preconv/xanes_train",
+    "x_path": "/Users/nnn28/data/xanes/data/datasets/*/preconv/xyz_train",
+    "y_path": "/Users/nnn28/data/xanes/data/datasets/*/preconv/xanes_train",
     "descriptor_type": "wacsf",
     "descriptor_params": {
         "r_min": 1.0,
@@ -9,19 +9,20 @@
         "n_g4": 32
     },
     "hyperparams": {
+        "batch_size": 32,
         "out_channel": 16,
         "channel_mul": 2,
         "hidden_layer": 128,
-        "activation": "tanh",
+        "activation": "prelu",
         "loss": "mse",
-        "lr": 0.0001,
-        "dropout": 0.1,
+        "lr": 0.00001,
+        "dropout": 0.0,
         "kernel_init": "he_uniform",
         "bias_init": "zeros",
         "kernel_size": 3,
         "stride": 2
     },
     "seed": 2021,
-    "epochs": 5,
+    "epochs": 10,
     "variance_threshold": 0.0
 }

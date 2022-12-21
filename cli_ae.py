@@ -43,6 +43,7 @@ def parse_args(args: list):
     learn_p.add_argument(
         "inp_f", type=str, help="path to .json input file w/ variable definitions"
     )
+    learn_p.add_argument("--model_mode", type=str, help="the model", required=True)
     learn_p.add_argument(
         "--no-save",
         dest="save",
@@ -51,6 +52,7 @@ def parse_args(args: list):
     )
 
     learn_p = sub_p.add_parser("train_xanes")
+    learn_p.add_argument("--model_mode", type=str, help="the model", required=True)
     learn_p.add_argument(
         "inp_f", type=str, help="path to .json input file w/ variable definitions"
     )
@@ -100,17 +102,17 @@ def main(args: list):
             inp = json.load(f)
         print_nested_dict(inp, nested_level=1)
         print("")
-        ae_learn(args.mode, **inp, save=args.save)
+        ae_learn(args.mode, args.model_mode, **inp, save=args.save)
 
-    if args.mode == "train_xanes":
+    elif args.mode == "train_xanes":
         print(f">> loading JSON input @ {args.inp_f}\n")
         with open(args.inp_f) as f:
             inp = json.load(f)
         print_nested_dict(inp, nested_level=1)
         print("")
-        ae_learn(args.mode, **inp, save=args.save)
+        ae_learn(args.mode, args.model_mode, **inp, save=args.save)
 
-    if args.mode == "predict_xanes":
+    elif args.mode == "predict_xanes":
         print(f">> loading JSON input @ {args.inp_f}\n")
         with open(args.inp_f) as f:
             inp = json.load(f)
@@ -118,7 +120,7 @@ def main(args: list):
         print("")
         ae_predict(args.mode, args.mdl_dir, **inp)
 
-    if args.mode == "predict_xyz":
+    elif args.mode == "predict_xyz":
         print(f">> loading JSON input @ {args.inp_f}\n")
         with open(args.inp_f) as f:
             inp = json.load(f)

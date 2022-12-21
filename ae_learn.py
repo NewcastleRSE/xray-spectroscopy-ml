@@ -1,235 +1,165 @@
-"""
-XANESNET
-Copyright (C) 2021  Conor D. Rankine
-
-This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software 
-Foundation, either Version 3 of the License, or (at your option) any later 
-version.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
-PARTICULAR PURPOSE. See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with 
-this program.  If not, see <https://www.gnu.org/licenses/>.
-"""
-
-###############################################################################
-############################### LIBRARY IMPORTS ###############################
-###############################################################################
-
-import numpy as np
-import pickle as pickle
-import tqdm as tqdm
-import time
-
-from pathlib import Path
-from glob import glob
-from numpy.random import RandomState
-from sklearn.model_selection import RepeatedKFold
-from sklearn.utils import shuffle
-
-from inout import load_xyz
-from inout import load_xanes
-
-from utils import unique_path
-from utils import linecount
-from utils import list_filestems
-from utils import print_cross_validation_scores
-from structure.rdc import RDC
-from structure.wacsf import WACSF
-
-from AE import train_ae
 import torch
-from torchinfo import summary
+from torch import nn, optim
+import numpy as np
+from sklearn import preprocessing
+from sklearn.model_selection import train_test_split
+from torch.utils.tensorboard import SummaryWriter
+import time
+from model_utils import ActivationSwitch
 
-###############################################################################
-################################ MAIN FUNCTION ################################
-###############################################################################
-
-
-def main(
-    aemode: str,
-    x_path: str,
-    y_path: str,
-    descriptor_type: str,
-    descriptor_params: dict = {},
-    kfold_params: dict = {},
-    hyperparams: dict = {},
-    max_samples: int = None,
-    variance_threshold: float = 0.0,
-    epochs: int = 100,
-    callbacks: dict = {},
-    seed: int = None,
-    save: bool = True,
-):
-    """
-    LEARN. The .xyz (X) and XANES spectral (Y) data are loaded and transformed;
-    a neural network is set up and fit to these data to find an Y <- X mapping.
-    K-fold cross-validation is possible if {kfold_params} are provided.
-
-    Args:
-        x_path (str): The path to the .xyz (X) data; expects either a directory
-            containing .xyz files or a .npz archive file containing an 'x' key,
-            e.g. the `dataset.npz` file created when save == True. If a .npz
-            archive is provided, save is toggled to False, and the data are not
-            preprocessed, i.e. they are expected to be ready to be passed into
-            the neural net.
-        y_path (str): The path to the XANES spectral (Y) data; expects either a
-            directory containing .txt FDMNES output files or a .npz archive
-            file containing 'y' and 'e' keys, e.g. the `dataset.npz` file
-            created when save == True. If a .npz archive is provided, save is
-            toggled to False, and the data are not preprocessed, i.e. they are
-            expected to be ready to be passed into the neural net.
-        descriptor_type (str): The type of descriptor to use; the descriptor
-            transforms molecular systems into fingerprint feature vectors
-            that encodes the local environment around absorption sites. See
-            xanesnet.descriptors for additional information.
-        descriptor_params (dict, optional): A dictionary of keyword
-            arguments passed to the descriptor on initialisation.
-            Defaults to {}.
-        kfold_params (dict, optional): A dictionary of keyword arguments
-            passed to a scikit-learn K-fold splitter (KFold or RepeatedKFold).
-            If an empty dictionary is passed, no K-fold splitting is carried
-            out, and all available data are exposed to the neural network.
-            Defaults to {}.
-        hyperparams (dict, optional): A dictionary of hyperparameter
-            definitions used to configure a Sequential Keras neural network.
-            Defaults to {}.
-        max_samples (int, optional): The maximum number of samples to select
-            from the X/Y data; the samples are chosen according to a uniform
-            distribution from the full X/Y dataset.
-            Defaults to None.
-        variance_threshold (float, optional): The minimum variance threshold
-            tolerated for input features; input features with variances below
-            the variance threshold are eliminated.
-            Defaults to 0.0.
-        epochs (int, optional): The maximum number of epochs/cycles.
-            Defaults to 100.
-        callbacks (dict, optional): A dictionary of keyword arguments passed
-            to set up Keras neural network callbacks; each argument is
-            expected to be dictionary of arguments for the defined callback,
-            e.g. "earlystopping": {"patience": 10, "verbose": 1}
-            Defaults to {}.
-        seed (int, optional): A random seed used to initialise a Numpy
-            RandomState random number generator; set the seed explicitly for
-            reproducible results over repeated calls to the `learn` routine.
-            Defaults to None.
-        save (bool, optional): If True, a model directory (containing data,
-            serialised scaling/pipeline objects, and the serialised model)
-            is created; this is required to restore the model state later.
-            Defaults to True.
-    """
-
-    rng = RandomState(seed=seed)
-
-    xyz_path = Path(x_path)
-    xanes_path = Path(y_path)
-
-    print(xyz_path)
+# setup tensorboard stuff
+layout = {
+    "Multi": {
+        "recon_loss": ["Multiline", ["loss/train", "loss/validation"]],
+        "pred_loss": ["Multiline", ["loss_p/train", "loss_p/validation"]],
+    },
+}
+writer = SummaryWriter(f"/tmp/tensorboard/{int(time.time())}")
+writer.add_custom_scalars(layout)
 
 
-    for path in (xyz_path, xanes_path):
-        if not path.exists():
-            err_str = f"path to X/Y data ({path}) doesn't exist"
-            raise FileNotFoundError(err_str)
+def train(x, y, model_mode, hyperparams, n_epoch):
 
-    if xyz_path.is_dir() and xanes_path.is_dir():
-        print(">> loading data from directories...\n")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-        ids = list(
-            set(list_filestems(xyz_path))
-            & set(list_filestems(xanes_path))
-        )
+    out_dim = y[0].size
+    n_in = x.shape[1]
 
-        ids.sort()
+    le = preprocessing.LabelEncoder()
 
-        descriptors = {"rdc": RDC, "wacsf": WACSF}
+    x = torch.from_numpy(x)
+    y = torch.from_numpy(y)
 
-        descriptor = descriptors.get(descriptor_type)(**descriptor_params)
+    activation_switch = ActivationSwitch()
+    act_fn = activation_switch.fn(hyperparams["activation"])
 
-        n_samples = len(ids)
-        n_x_features = descriptor.get_len()
-        n_y_features = linecount(xanes_path / f"{ids[0]}.txt") - 2
-
-        xyz_data = np.full((n_samples, n_x_features), np.nan)
-        print(">> preallocated {}x{} array for X data...".format(*xyz_data.shape))
-        xanes_data = np.full((n_samples, n_y_features), np.nan)
-        print(">> preallocated {}x{} array for Y data...".format(*xanes_data.shape))
-        print(">> ...everything preallocated!\n")
-
-        print(">> loading data into array(s)...")
-        for i, id_ in enumerate(tqdm.tqdm(ids)):
-            with open(xyz_path / f"{id_}.xyz", "r") as f:
-                atoms = load_xyz(f)
-            xyz_data[i, :] = descriptor.transform(atoms)
-            with open(xanes_path / f"{id_}.txt", "r") as f:
-                xanes = load_xanes(f)
-            e, xanes_data[i, :] = xanes.spectrum
-        print(">> ...loaded into array(s)!\n")
-
-        if save:
-            model_dir = unique_path(Path("."), "model")
-            model_dir.mkdir()
-            with open(model_dir / "descriptor.pickle", "wb") as f:
-                pickle.dump(descriptor, f)
-            with open(model_dir / "dataset.npz", "wb") as f:
-                np.savez_compressed(f, x=xyz_data, y=xanes_data, e=e)
-
-
-    elif x_path.is_file() and y_path.is_file():
-        print(">> loading data from .npz archive(s)...\n")
-
-        with open(x_path, "rb") as f:
-            xyz_data = np.load(f)["x"]
-        print(">> ...loaded {}x{} array of X data".format(*xyz_data.shape))
-        with open(y_path, "rb") as f:
-            xanes_data = np.load(f)["y"]
-            e = np.load(f)["e"]
-        print(">> ...loaded {}x{} array of Y data".format(*xanes_data.shape))
-        print(">> ...everything loaded!\n")
-
-        if save:
-            print(">> overriding save flag (running in `--no-save` mode)\n")
-            save = False
-
-    else:
-
-        err_str = (
-            "paths to X/Y data are expected to be either a) both "
-            "files (.npz archives), or b) both directories"
-        )
-        raise TypeError(err_str)
-
-    print(">> shuffling and selecting data...")
-    xyz, xanes = shuffle(
-        xyz_data, xanes_data, random_state=rng, n_samples=max_samples
+    X_train, X_test, y_train, y_test = train_test_split(
+        x, y, test_size=0.2, random_state=42
     )
-    print(">> ...shuffled and selected!\n")
 
-    if aemode == "train_xyz":
-        print("training xyz structure")
+    trainset = torch.utils.data.TensorDataset(X_train, y_train)
+    trainloader = torch.utils.data.DataLoader(
+        trainset, batch_size=hyperparams["batch_size"]
+    )
 
-        print(">> fitting neural net...")
+    validset = torch.utils.data.TensorDataset(X_test, y_test)
+    validloader = torch.utils.data.DataLoader(
+        validset, batch_size=hyperparams["batch_size"]
+    )
 
-        epoch, model, optimizer = train_ae(xyz, xanes, hyperparams, epochs)
-        summary(model, (1, xyz.shape[1]))
+    if model_mode == "ae_mlp":
+        from model import AE_mlp
 
-    elif aemode == "train_xanes":
-        print("training xanes spectrum")
+        model = AE_mlp(
+            n_in,
+            hyperparams["hl_ini_dim"],
+            hyperparams["dropout"],
+            int(hyperparams["hl_ini_dim"] * hyperparams["hl_shrink"]),
+            out_dim,
+            act_fn,
+        )
 
-        print(">> fitting neural net...")
+    elif model_mode == "ae_cnn":
+        from model import AE_cnn
 
-        epoch, model, optimizer = train_ae(xanes, xyz, hyperparams, epochs)
-        summary(model, (1, xanes.shape[1]))
+        model = AE_cnn(
+            n_in,
+            hyperparams["out_channel"],
+            hyperparams["channel_mul"],
+            hyperparams["hidden_layer"],
+            out_dim,
+            hyperparams["dropout"],
+            hyperparams["kernel_size"],
+            hyperparams["stride"],
+            act_fn,
+        )
 
-    if save:
+    model.to(device)
 
-        torch.save(model, model_dir / f"model.pt")
-        print("Saved model to disk")
+    model.train()
+    optimizer = optim.Adam(
+        model.parameters(), lr=hyperparams["lr"], weight_decay=0.0000
+    )
+    criterion = nn.MSELoss()
 
-    else:
-        print("none")
+    total_step = 0
+    for epoch in range(n_epoch):
+        running_loss = 0
+        loss_r = 0
+        loss_p = 0
 
-    return
+        total_step_train = 0
+        for inputs, labels in trainloader:
+            inputs, labels = (
+                inputs.to(device),
+                labels.to(device),
+            )
+            inputs, labels = (
+                inputs.float(),
+                labels.float(),
+            )
+
+            # if total_step % 20 == 0:
+            #     noise = torch.randn_like(inputs) * 0.3
+            #     inputs = noise + inputs
+
+            optimizer.zero_grad()
+
+            recon_input, outputs = model(inputs)
+
+            loss_recon = criterion(recon_input, inputs)
+            loss_pred = criterion(outputs, labels)
+
+            loss = loss_recon + loss_pred
+            loss.backward()
+
+            optimizer.step()
+            running_loss += loss.mean().item()
+            loss_r += loss_recon.item()
+            loss_p += loss_pred.item()
+
+            # print("train:", loss_recon.item(), loss_pred.item(), loss.item())
+
+            total_step_train += 1
+
+        valid_loss = 0
+        valid_loss_r = 0
+        valid_loss_p = 0
+        model.eval()
+        total_step_valid = 0
+        for inputs, labels in validloader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            inputs, labels = inputs.float(), labels.float()
+
+            recon_input, outputs = model(inputs)
+
+            loss_recon = criterion(recon_input, inputs)
+            loss_pred = criterion(outputs, labels)
+
+            loss = loss_recon + loss_pred
+
+            valid_loss = loss.item()
+            valid_loss_r += loss_recon.item()
+            valid_loss_p += loss_pred.item()
+
+            # print("valid:", loss_recon.item(), loss_pred.item(), loss.item())
+        
+            total_step_valid += 1
+        
+        # print(total_step_train, total_step_valid)
+        # print(len(trainloader),len(validloader) )
+
+        print("Training loss:", running_loss / len(trainloader))
+        print("Validation loss:", valid_loss / len(validloader))
+
+        writer.add_scalar("loss/train", (loss_r / len(trainloader)), epoch)
+        writer.add_scalar("loss/validation", (valid_loss_r / len(validloader)), epoch)
+
+        writer.add_scalar("loss_p/train", (loss_p / len(trainloader)), epoch)
+        writer.add_scalar("loss_p/validation", (valid_loss_p / len(validloader)), epoch)
+
+    # print('total step =', total_step)
+
+    writer.close()
+
+    return model, running_loss / len(trainloader)

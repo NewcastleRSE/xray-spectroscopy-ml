@@ -40,7 +40,6 @@ from utils import print_cross_validation_scores
 from structure.rdc import RDC
 from structure.wacsf import WACSF
 
-from mlp_pytorch import train_mlp
 import torch
 from torchinfo import summary
 from sklearn.metrics import mean_squared_error
@@ -51,6 +50,8 @@ from sklearn.metrics import mean_squared_error
 
 
 def main(
+    mode: str,
+    model_mode: str,
     x_path: str,
     y_path: str,
     descriptor_type: str,
@@ -122,137 +123,212 @@ def main(
             Defaults to True.
     """
 
-    rng = RandomState(seed = seed)
+    rng = RandomState(seed=seed)
 
-    x_path = Path(x_path)
-    y_path = Path(y_path) 
+    xyz_path = [Path(p) for p in glob (x_path)]
+    xanes_path = [Path(p) for p in glob (y_path)]
+    
+    xyz_list = []
+    xanes_list = []
+    e_list = []  
+    element_label = []
 
-    for path in (x_path, y_path):
-        if not path.exists():
-            err_str = f'path to X/Y data ({path}) doesn\'t exist'
-            raise FileNotFoundError(err_str)
-
-    if x_path.is_dir() and y_path.is_dir():
-        print('>> loading data from directories...\n')
-
-        ids = list(
-            set(list_filestems(x_path)) & set(list_filestems(y_path))
-        )
-
-        ids.sort()
-
-        descriptors = {
-            'rdc': RDC,
-            'wacsf': WACSF
-        }
+    for n_element in range (0, len(xyz_path)):
         
-        descriptor = (
-            descriptors.get(descriptor_type)(**descriptor_params)
-        )
+        element_name = str(xyz_path[n_element]).split("/")[-3]
 
-        n_samples = len(ids)
-        n_x_features = descriptor.get_len()
-        n_y_features = linecount(y_path / f'{ids[0]}.txt') - 2
+        for path in (xyz_path[n_element], xanes_path[n_element]):
+            if not path.exists():
+                err_str = f'path to X/Y data ({path}) doesn\'t exist'
+                raise FileNotFoundError(err_str)
 
-        x = np.full((n_samples, n_x_features), np.nan)
-        print('>> preallocated {}x{} array for X data...'.format(*x.shape))
-        y = np.full((n_samples, n_y_features), np.nan)
-        print('>> preallocated {}x{} array for Y data...'.format(*y.shape))
-        print('>> ...everything preallocated!\n')
+        if xyz_path[n_element].is_dir() and xanes_path[n_element].is_dir():
+            print('>> loading data from directories...\n')
 
-        print('>> loading data into array(s)...')
-        for i, id_ in enumerate(tqdm.tqdm(ids)):
-            with open(x_path / f'{id_}.xyz', 'r') as f:
-                atoms = load_xyz(f)
-                # print(type(atoms))
-            x[i,:] = descriptor.transform(atoms)
-            with open(y_path / f'{id_}.txt', 'r') as f:
-                xanes = load_xanes(f)
-                # print(xanes.spectrum)
-            e, y[i,:] = xanes.spectrum
-        print('>> ...loaded into array(s)!\n')
+            ids = list(
+                set(list_filestems(xyz_path[n_element])) & set(list_filestems(xanes_path[n_element]))
+            )
 
-        if save:
-            model_dir = unique_path(Path('.'), 'model')
-            model_dir.mkdir()
-            with open(model_dir / 'descriptor.pickle', 'wb') as f:
-                pickle.dump(descriptor, f)
-            with open(model_dir / 'dataset.npz', 'wb') as f:
-                np.savez_compressed(f, ids = ids, x = x, y = y, e = e)
+            ids.sort()
 
-    elif x_path[i].is_file() and y_path[i].is_file():
-        print('>> loading data from .npz archive(s)...\n')
-        
-        with open(x_path, 'rb') as f:
-            x = np.load(f)['x']
-        print('>> ...loaded {}x{} array of X data'.format(*x.shape))
-        with open(y_path, 'rb') as f:
-            y = np.load(f)['y']
-            e = np.load(f)['e']
-        print('>> ...loaded {}x{} array of Y data'.format(*y.shape))
-        print('>> ...everything loaded!\n')
+            descriptors = {
+                'rdc': RDC,
+                'wacsf': WACSF
+            }
+            
+            descriptor = (
+                descriptors.get(descriptor_type)(**descriptor_params)
+            )
 
-        if save:
-            print('>> overriding save flag (running in `--no-save` mode)\n')
-            save = False
+            n_samples = len(ids)
+            n_x_features = descriptor.get_len()
+            n_y_features = linecount(xanes_path[n_element] / f'{ids[0]}.txt') - 2
 
-    else:
+            xyz_data = np.full((n_samples, n_x_features), np.nan)
+            print('>> preallocated {}x{} array for X data...'.format(*xyz_data.shape))
+            xanes_data = np.full((n_samples, n_y_features), np.nan)
+            print('>> preallocated {}x{} array for Y data...'.format(*xanes_data.shape))
+            print('>> ...everything preallocated!\n')
 
-        err_str = 'paths to X/Y data are expected to be either a) both ' \
-            'files (.npz archives), or b) both directories'
-        raise TypeError(err_str)
+            print('>> loading data into array(s)...')
+            for i, id_ in enumerate(tqdm.tqdm(ids)):
+                element_label.append(element_name)
+                with open(xyz_path[n_element] / f'{id_}.xyz', 'r') as f:
+                    atoms = load_xyz(f)
+                xyz_data[i,:] = descriptor.transform(atoms)
+                with open(xanes_path[n_element] / f'{id_}.txt', 'r') as f:
+                    xanes = load_xanes(f)
+                e, xanes_data[i,:] = xanes.spectrum
+            print('>> ...loaded into array(s)!\n')
+
+            xyz_list.append(xyz_data)
+            xanes_list.append(xanes_data)
+            e_list.append(e)
+
+        elif x_path[n_element].is_file() and y_path[n_element].is_file():
+            print('>> loading data from .npz archive(s)...\n')
+            
+            with open(x_path[n_element], 'rb') as f:
+                xyz_data = np.load(f)['x']
+            print('>> ...loaded {}x{} array of X data'.format(*xyz_data.shape))
+            with open(y_path[n_element], 'rb') as f:
+                xanes_data = np.load(f)['y']
+                e = np.load(f)['e']
+            print('>> ...loaded {}x{} array of Y data'.format(*xanes_data.shape))
+            print('>> ...everything loaded!\n')
+
+            xyz_list.append(xyz_data)
+            xanes_list.append(xanes_data)
+            e_list.append(e)
+
+            if save:
+                print('>> overriding save flag (running in `--no-save` mode)\n')
+                save = False
+
+        else:
+
+            err_str = 'paths to X/Y data are expected to be either a) both ' \
+                'files (.npz archives), or b) both directories'
+            raise TypeError(err_str)
+
+    xyz_data = np.vstack(xyz_list)
+    xanes_data = np.vstack(xanes_list)
+    e = np.vstack(e_list)
+    element_label = np.asarray(element_label)
+
+    print(xyz_data.shape)
+    print(element_label.shape)
+
+    if save:
+        model_dir = unique_path(Path('.'), 'model')
+        model_dir.mkdir()
+        with open(model_dir / 'descriptor.pickle', 'wb') as f:
+            pickle.dump(descriptor, f)
+        with open(model_dir / 'dataset.npz', 'wb') as f:
+            np.savez_compressed(f, ids = ids, x = xyz_data, y = xanes_data, e = e)
 
     print('>> shuffling and selecting data...')
-    x, y = shuffle(x, y, random_state = rng, n_samples = max_samples)
+    xyz, xanes, element = shuffle(xyz_data, xanes_data, element_label, random_state = rng, n_samples = max_samples)
     print('>> ...shuffled and selected!\n')
 
-    if kfold_params:
+    # if kfold_params:
 
-        kfold_spooler = RepeatedKFold(**kfold_params, random_state = rng)
-        
-        fit_time = []
-        train_score = []
-        test_score =[]
-        prev_score = 1
+    #     kfold_spooler = RepeatedKFold(**kfold_params, random_state=rng)
 
-        for train_index, test_index in kfold_spooler.split(x):
+    #     fit_time = []
+    #     train_score = []
+    #     test_score = []
+    #     prev_score = 1
 
-            start = time.time()
-            model, score = train_mlp(x[train_index], y[train_index], hyperparams, epochs)
-            train_score.append(score)
-            
-            fit_time.append(time.time()- start)
-            
-            model.eval()
-            x_test = torch.from_numpy(x[test_index])
-            x_test = x_test.float()
-            y_predict = model(x_test)
-            y_score = mean_squared_error(y[test_index], y_predict.detach().numpy())
+    #     for train_index, test_index in kfold_spooler.split(x):
 
-            test_score.append(y_score)
+    #         start = time.time()
+    #         model, score = train_mlp(
+    #             x[train_index], y[train_index], hyperparams, epochs
+    #         )
+    #         # model, score = train_cnn(
+    #         #     x[train_index], y[train_index], hyperparams, epochs
+    #         # )
+    #         train_score.append(score)
 
-            if y_score < prev_score:
-                best_model = model
-            
-            prev_score = y_score
+    #         fit_time.append(time.time() - start)
 
-        result = {"fit_time": fit_time, "train_score": train_score, "test_score": test_score}
-        print_cross_validation_scores(result)
-        
-        if save:
-            torch.save(best_model, model_dir / f"model.pt")
-            print("Saved model to disk")
+    #         model.eval()
+    #         x_test = torch.from_numpy(x[test_index])
+    #         x_test = x_test.float()
+    #         y_predict = model(x_test)
+    #         y_score = mean_squared_error(y[test_index], y_predict.detach().numpy())
+
+    #         test_score.append(y_score)
+
+    #         if y_score < prev_score:
+    #             best_model = model
+
+    #         prev_score = y_score
+
+    #     result = {
+    #         "fit_time": fit_time,
+    #         "train_score": train_score,
+    #         "test_score": test_score,
+    #     }
+    #     print_cross_validation_scores(result)
+
+    #     if save:
+    #         torch.save(best_model, model_dir / f"model.pt")
+    #         print("Saved model to disk")
+
+    # else:
+
+    if mode == "train_xyz":
+        print("training xyz structure")
+
+        print(">> fitting neural net...")
+
+        if model_mode == "mlp" or model_mode == "cnn":
+            from learn import train
+
+            model, score = train(xyz, xanes, model_mode, hyperparams, epochs)
+
+        elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
+            from ae_learn import train
+
+            model, score = train(xyz, xanes, model_mode, hyperparams, epochs)
+
+        summary(model, (1, xyz.shape[1]))
+
+    elif mode == "train_xanes":
+        print("training xanes spectrum")
+
+        print(">> fitting neural net...")
+
+        if model_mode == "mlp" or model_mode == "cnn":
+            from learn import train
+
+            model, score = train(xanes, xyz, model_mode, hyperparams, epochs)
+
+        elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
+            from ae_learn import train
+
+            model, score = train(xanes, xyz, model_mode, hyperparams, epochs)
+
+        summary(model, (1, xanes.shape[1]))
+
+    elif mode == "train_aegan":
+        from aegan_learn import train_aegan
+
+        losses, model = train_aegan(xyz, xanes, hyperparams, epochs)
+        summary(model)
+
+        from plot import plot_running_aegan
+
+        plot_running_aegan(losses, model_dir)
+
+    if save:
+
+        torch.save(model, model_dir / f"model.pt")
+        print("Saved model to disk")
 
     else:
-        
-        print('>> fitting neural net...')
-        
-        model, score = train_mlp(x, y, hyperparams, epochs)
-        summary(model, (1, x.shape[1]))
-        print(model)
+        print("none")
 
-        if save:
-            torch.save(model, model_dir / f"model.pt")
-            print("Saved model to disk")
-    
     return

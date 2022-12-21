@@ -9,21 +9,21 @@
         "n_g4": 32
     },
     "hyperparams": {
+        "batch_size": 64,
         "n_hl": 2,
         "hl_ini_dim": 512,
-        "hl_shrink": 1.0,
-        "activation": "tanh",
+        "hl_shrink": 0.5,
+        "activation": "prelu",
         "loss": "mse",
-        "lr": 0.0001,
-        "dropout": 0.25,
-
+        "lr": 0.00001,
+        "dropout": 0.2,
         "kernel_init": "he_uniform",
         "bias_init": "zeros"
     },
     "seed": 2021,
 
 
-    "epochs": 100,
+    "epochs": 1,
 
     "variance_threshold": 0.0
 

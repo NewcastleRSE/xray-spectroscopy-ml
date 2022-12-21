@@ -1,36 +1,34 @@
 import torch
 from torch import nn, optim
+import math
+
 import numpy as np
-from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 from torch.utils.tensorboard import SummaryWriter
 import time
-from model_utils import ActivationSwitch
+import model_utils
 
 # setup tensorboard stuff
 layout = {
     "Multi": {
-        "recon_loss": ["Multiline", ["loss/train", "loss/validation"]],
-        "pred_loss": ["Multiline", ["loss_p/train", "loss_p/validation"]],
+        "loss": ["Multiline", ["loss/train", "loss/validation"]],
     },
 }
 writer = SummaryWriter(f"/tmp/tensorboard/{int(time.time())}")
 writer.add_custom_scalars(layout)
 
 
-def train_ae(x, y, model_mode, hyperparams, n_epoch):
+def train(x, y, model_mode, hyperparams, n_epoch):
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     out_dim = y[0].size
     n_in = x.shape[1]
 
-    le = preprocessing.LabelEncoder()
-
     x = torch.from_numpy(x)
     y = torch.from_numpy(y)
 
-    activation_switch = ActivationSwitch()
+    activation_switch = model_utils.ActivationSwitch()
     act_fn = activation_switch.fn(hyperparams["activation"])
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -47,10 +45,10 @@ def train_ae(x, y, model_mode, hyperparams, n_epoch):
         validset, batch_size=hyperparams["batch_size"]
     )
 
-    if model_mode == "ae_mlp":
-        from model import AE_mlp
+    if model_mode == "mlp":
+        from model import MLP
 
-        model = AE_mlp(
+        model = MLP(
             n_in,
             hyperparams["hl_ini_dim"],
             hyperparams["dropout"],
@@ -59,10 +57,10 @@ def train_ae(x, y, model_mode, hyperparams, n_epoch):
             act_fn,
         )
 
-    elif model_mode == "ae_cnn":
-        from model import AE_cnn
+    elif model_mode == "cnn":
+        from model import CNN
 
-        model = AE_cnn(
+        model = CNN(
             n_in,
             hyperparams["out_channel"],
             hyperparams["channel_mul"],
@@ -71,76 +69,55 @@ def train_ae(x, y, model_mode, hyperparams, n_epoch):
             hyperparams["dropout"],
             hyperparams["kernel_size"],
             hyperparams["stride"],
+            act_fn,
         )
 
     model.to(device)
-
+    model.apply(model_utils.weight_init)
     model.train()
-    optimizer = optim.Adam(
-        model.parameters(), lr=hyperparams["lr"], weight_decay=0.0000
-    )
+    optimizer = optim.Adam(model.parameters(), lr=hyperparams["lr"])
+
     criterion = nn.MSELoss()
-    print(n_epoch)
+
+    total_step = 0
     for epoch in range(n_epoch):
         running_loss = 0
-        loss_r = 0
-        loss_p = 0
-
         for inputs, labels in trainloader:
-            inputs, labels = (
-                inputs.to(device),
-                labels.to(device),
-            )
-            inputs, labels = (
-                inputs.float(),
-                labels.float(),
-            )
+            inputs, labels = inputs.to(device), labels.to(device)
+            inputs, labels = inputs.float(), labels.float()
+
+            # print(total_step % n_noise)
+            if total_step % 20 == 0:
+                noise = torch.randn_like(inputs) * 0.3
+                inputs = noise + inputs
 
             optimizer.zero_grad()
+            logps = model(inputs)
 
-            recon_input, outputs = model(inputs)
-
-            loss_recon = criterion(recon_input, inputs)
-            loss_pred = criterion(outputs, labels)
-
-            loss = loss_recon + loss_pred
-            loss.backward()
-
+            loss = criterion(logps, labels)
+            loss.mean().backward()
             optimizer.step()
-            running_loss += loss.mean().item()
-            loss_r += loss_recon.item()
-            loss_p += loss_pred.item()
+            total_step += 1
+
+            running_loss += loss.item()
 
         valid_loss = 0
-        valid_loss_r = 0
-        valid_loss_p = 0
         model.eval()
         for inputs, labels in validloader:
             inputs, labels = inputs.to(device), labels.to(device)
             inputs, labels = inputs.float(), labels.float()
 
-            recon_input, outputs = model(inputs)
+            target = model(inputs)
 
-            loss_recon = criterion(recon_input, inputs)
-            loss_pred = criterion(outputs, labels)
-
-            loss = loss_recon + loss_pred
-
-            valid_loss = loss.item()
-            valid_loss_r += loss_recon.item()
-            valid_loss_p += loss_pred.item()
+            loss = criterion(target, labels)
+            valid_loss += loss.item()
 
         print("Training loss:", running_loss / len(trainloader))
         print("Validation loss:", valid_loss / len(validloader))
 
-        writer.add_scalar("loss/train", (loss_r / len(trainloader)), epoch)
-        writer.add_scalar("loss/validation", (valid_loss_r / len(validloader)), epoch)
-
-        writer.add_scalar("loss_p/train", (loss_p / len(trainloader)), epoch)
-        writer.add_scalar("loss_p/validation", (valid_loss_p / len(validloader)), epoch)
-
-    # print('total step =', total_step)
+        writer.add_scalar("loss/train", (running_loss / len(trainloader)), epoch)
+        writer.add_scalar("loss/validation", (valid_loss / len(validloader)), epoch)
+    print("total step =", total_step)
 
     writer.close()
-
-    return model
+    return model, running_loss / len(trainloader)

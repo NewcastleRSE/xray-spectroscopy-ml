@@ -1,6 +1,6 @@
 {
-    "x_path": "data/datasets/fe/preconv/xyz_train",
-    "y_path": "data/datasets/fe/preconv/xanes_train",
+    "x_path": "/data/datasets/fe/preconv/xyz_train",
+    "y_path": "/data/datasets/fe/preconv/xanes_train",
 
     "descriptor_type": "wacsf",
     "descriptor_params": {
@@ -30,7 +30,7 @@
 
     "seed": 2021,
 
-    "epochs": 10,
+    "epochs": 1,
 
     "variance_threshold": 0.0
 

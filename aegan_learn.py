@@ -1,267 +1,127 @@
-"""
-XANESNET
-Copyright (C) 2021  Conor D. Rankine
-This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software 
-Foundation, either Version 3 of the License, or (at your option) any later 
-version.
-This program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
-PARTICULAR PURPOSE. See the GNU General Public License for more details.
-You should have received a copy of the GNU General Public License along with 
-this program.  If not, see <https://www.gnu.org/licenses/>.
-"""
-
-###############################################################################
-############################### LIBRARY IMPORTS ###############################
-###############################################################################
-
-import numpy as np
-import pickle as pickle
-import tqdm as tqdm
-import time
-
-from pathlib import Path
-from numpy.random import RandomState
-from sklearn.model_selection import RepeatedKFold
-from sklearn.utils import shuffle
-# import tensorflow as tf
-
-from inout import load_xyz
-from inout import load_xanes
-# from dnn import check_gpu_support
-# from dnn import build_mlp
-from utils import unique_path
-from utils import linecount
-from utils import list_filestems
-from utils import print_cross_validation_scores
-from structure.rdc import RDC
-from structure.wacsf import WACSF
-
-from AEGAN import train_aegan
 import torch
-from torchinfo import summary
+from torch import nn
 
-import seaborn as sns
-import matplotlib.pyplot as plt
-###############################################################################
-################################ MAIN FUNCTION ################################
-###############################################################################
+from model import AEGANTrainer
+from model_utils import weight_init
 
-def main(
-    x_path: str,
-    y_path: str,
-    descriptor_type: str,
-    descriptor_params: dict = {},
-    kfold_params: dict = {},
-    hyperparams: dict = {},
-    max_samples: int = None,
-    variance_threshold: float = 0.0,
-    epochs: int = 100,
-    callbacks: dict = {},
-    seed: int = None,
-    save: bool = True,
 
-):
-    """
-    TODO: MODIFY DOCSTRING FOR AEGAN
-    LEARN. The .xyz (X) and XANES spectral (Y) data are loaded and transformed;
-    a neural network is set up and fit to these data to find an Y <- X mapping.
-    K-fold cross-validation is possible if {kfold_params} are provided. 
-    
-    Args:
-        x_path (str): The path to the .xyz (X) data; expects either a directory
-            containing .xyz files or a .npz archive file containing an 'x' key,
-            e.g. the `dataset.npz` file created when save == True. If a .npz
-            archive is provided, save is toggled to False, and the data are not
-            preprocessed, i.e. they are expected to be ready to be passed into
-            the neural net.
-        y_path (str): The path to the XANES spectral (Y) data; expects either a
-            directory containing .txt FDMNES output files or a .npz archive
-            file containing 'y' and 'e' keys, e.g. the `dataset.npz` file
-            created when save == True. If a .npz archive is provided, save is
-            toggled to False, and the data are not preprocessed, i.e. they are
-            expected to be ready to be passed into the neural net.
-        descriptor_type (str): The type of descriptor to use; the descriptor
-            transforms molecular systems into fingerprint feature vectors
-            that encodes the local environment around absorption sites. See
-            xanesnet.descriptors for additional information.
-        descriptor_params (dict, optional): A dictionary of keyword
-            arguments passed to the descriptor on initialisation.
-            Defaults to {}.
-        kfold_params (dict, optional): A dictionary of keyword arguments
-            passed to a scikit-learn K-fold splitter (KFold or RepeatedKFold).
-            If an empty dictionary is passed, no K-fold splitting is carried
-            out, and all available data are exposed to the neural network.
-            Defaults to {}.
-        hyperparams (dict, optional): A dictionary of hyperparameter
-            definitions used to configure a Sequential Keras neural network.
-            Defaults to {}.
-        max_samples (int, optional): The maximum number of samples to select
-            from the X/Y data; the samples are chosen according to a uniform
-            distribution from the full X/Y dataset.
-            Defaults to None.
-        variance_threshold (float, optional): The minimum variance threshold
-            tolerated for input features; input features with variances below
-            the variance threshold are eliminated.
-            Defaults to 0.0.
-        epochs (int, optional): The maximum number of epochs/cycles.
-            Defaults to 100.
-        callbacks (dict, optional): A dictionary of keyword arguments passed
-            to set up Keras neural network callbacks; each argument is
-            expected to be dictionary of arguments for the defined callback,
-            e.g. "earlystopping": {"patience": 10, "verbose": 1}
-            Defaults to {}.
-        seed (int, optional): A random seed used to initialise a Numpy
-            RandomState random number generator; set the seed explicitly for
-            reproducible results over repeated calls to the `learn` routine.
-            Defaults to None.
-        save (bool, optional): If True, a model directory (containing data,
-            serialised scaling/pipeline objects, and the serialised model)
-            is created; this is required to restore the model state later.
-            Defaults to True.
-    """
+def train_aegan(x, y, hyperparams, n_epoch):
 
-    rng = RandomState(seed = seed)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    x_path = Path(x_path)
-    y_path = Path(y_path)
+    torch.manual_seed(1)
 
-    for path in (x_path, y_path):
-        if not path.exists():
-            err_str = f'path to X/Y data ({path}) doesn\'t exist'
-            raise FileNotFoundError(err_str)
+    x = torch.from_numpy(x)
+    y = torch.from_numpy(y)
 
-    if x_path.is_dir() and y_path.is_dir():
-        print('>> loading data from directories...\n')
+    n_x_features = x.shape[1]
+    n_y_features = y.shape[1]
 
-        ids = list(
-            set(list_filestems(x_path)) & set(list_filestems(y_path))
+    dataset = torch.utils.data.TensorDataset(x, y)
+    trainloader = torch.utils.data.DataLoader(dataset, batch_size=64)
+
+    hyperparams["input_size_a"] = n_x_features
+    hyperparams["input_size_b"] = n_y_features
+
+    model = AEGANTrainer(
+        dim_a=hyperparams["input_size_a"],
+        dim_b=hyperparams["input_size_b"],
+        hidden_size=hyperparams["hidden_size"],
+        dropout=hyperparams["dropout"],
+        n_hl_gen=hyperparams["n_hl_gen"],
+        n_hl_shared=hyperparams["n_hl_shared"],
+        n_hl_dis=hyperparams["n_hl_dis"],
+        activation=hyperparams["activation"],
+        loss_gen=hyperparams["loss_gen"],
+        loss_dis=hyperparams["loss_dis"],
+        lr_gen=hyperparams["lr_gen"],
+        lr_dis=hyperparams["lr_dis"],
+    )
+
+    model.to(device)
+
+    # Initialise weights
+    model.apply(weight_init)
+
+    model.train()
+    loss_fn = nn.MSELoss()
+
+    train_total_loss = [None] * n_epoch
+    train_loss_x_recon = [None] * n_epoch
+    train_loss_y_recon = [None] * n_epoch
+    train_loss_x_pred = [None] * n_epoch
+    train_loss_y_pred = [None] * n_epoch
+
+    for epoch in range(n_epoch):
+        running_loss_recon_x = 0
+        running_loss_recon_y = 0
+        running_loss_pred_x = 0
+        running_loss_pred_y = 0
+        running_gen_loss = 0
+        running_dis_loss = 0
+        for inputs_x, inputs_y in trainloader:
+            inputs_x, inputs_y = inputs_x.to(device), inputs_y.to(device)
+            inputs_x, inputs_y = inputs_x.float(), inputs_y.float()
+
+            model.gen_update(inputs_x, inputs_y)
+            model.dis_update(inputs_x, inputs_y)
+
+            recon_x, recon_y, pred_x, pred_y = model.reconstruct_all_predict_all(
+                inputs_x, inputs_y
+            )
+
+            # Track running losses
+            running_loss_recon_x += loss_fn(recon_x, inputs_x)
+            running_loss_recon_y += loss_fn(recon_y, inputs_y)
+            running_loss_pred_x += loss_fn(pred_x, inputs_x)
+            running_loss_pred_y += loss_fn(pred_y, inputs_y)
+
+            loss_gen_total = (
+                running_loss_recon_x
+                + running_loss_recon_y
+                + running_loss_pred_x
+                + running_loss_pred_y
+            )
+            loss_dis = model.loss_dis_total
+
+            running_gen_loss += loss_gen_total.item()
+            running_dis_loss += loss_dis.item()
+
+        running_gen_loss = running_gen_loss / len(trainloader)
+        running_dis_loss = running_dis_loss / len(trainloader)
+
+        running_loss_recon_x = running_loss_recon_x.item() / len(trainloader)
+        running_loss_recon_y = running_loss_recon_y.item() / len(trainloader)
+        running_loss_pred_x = running_loss_pred_x.item() / len(trainloader)
+        running_loss_pred_y = running_loss_pred_y.item() / len(trainloader)
+
+        train_loss_x_recon[epoch] = running_loss_recon_x
+        train_loss_y_recon[epoch] = running_loss_recon_y
+        train_loss_x_pred[epoch] = running_loss_pred_x
+        train_loss_y_pred[epoch] = running_loss_pred_y
+
+        train_total_loss[epoch] = running_gen_loss
+
+        print(f">>> Epoch {epoch}...")
+        print(
+            f">>> Running reconstruction loss (structure) = {running_loss_recon_x:.4f}"
+        )
+        print(
+            f">>> Running reconstruction loss (spectrum) =  {running_loss_recon_y:.4f}"
+        )
+        print(
+            f">>> Running prediction loss (structure) =     {running_loss_pred_x:.4f}"
+        )
+        print(
+            f">>> Running prediction loss (spectrum) =      {running_loss_pred_y:.4f}"
         )
 
-        ids.sort()
-
-        descriptors = {
-            'rdc': RDC,
-            'wacsf': WACSF
+        losses = {
+            "train_loss": train_total_loss,
+            "loss_x_recon": train_loss_x_recon,
+            "loss_y_recon": train_loss_y_recon,
+            "loss_x_pred": train_loss_x_pred,
+            "loss_y_pred": train_loss_y_pred,
         }
-        
-        descriptor = (
-            descriptors.get(descriptor_type)(**descriptor_params)
-        )
 
-        n_samples = len(ids)
-        n_x_features = descriptor.get_len()
-        n_y_features = linecount(y_path / f'{ids[0]}.txt') - 2
-
-        x = np.full((n_samples, n_x_features), np.nan)
-        print('>> preallocated {}x{} array for X data...'.format(*x.shape))
-        y = np.full((n_samples, n_y_features), np.nan)
-        print('>> preallocated {}x{} array for Y data...'.format(*y.shape))
-        print('>> ...everything preallocated!\n')
-
-        print('>> loading data into array(s)...')
-        for i, id_ in enumerate(tqdm.tqdm(ids)):
-            with open(x_path / f'{id_}.xyz', 'r') as f:
-                atoms = load_xyz(f)
-                # print(type(atoms))
-            x[i,:] = descriptor.transform(atoms)
-            with open(y_path / f'{id_}.txt', 'r') as f:
-                xanes = load_xanes(f)
-                # print(xanes.spectrum)
-            e, y[i,:] = xanes.spectrum
-        print('>> ...loaded into array(s)!\n')
-
-        if save:
-            model_dir = unique_path(Path('.'), 'model')
-            model_dir.mkdir()
-            with open(model_dir / 'descriptor.pickle', 'wb') as f:
-                pickle.dump(descriptor, f)
-            with open(model_dir / 'dataset.npz', 'wb') as f:
-                np.savez_compressed(f, ids = ids, x = x, y = y, e = e)
-
-    elif x_path.is_file() and y_path.is_file():
-        print('>> loading data from .npz archive(s)...\n')
-        
-        with open(x_path, 'rb') as f:
-            x = np.load(f)['x']
-        print('>> ...loaded {}x{} array of X data'.format(*x.shape))
-        with open(y_path, 'rb') as f:
-            y = np.load(f)['y']
-            e = np.load(f)['e']
-        print('>> ...loaded {}x{} array of Y data'.format(*y.shape))
-        print('>> ...everything loaded!\n')
-
-        if save:
-            print('>> overriding save flag (running in `--no-save` mode)\n')
-            save = False
-
-    else:
-
-        err_str = 'paths to X/Y data are expected to be either a) both ' \
-            'files (.npz archives), or b) both directories'
-        raise TypeError(err_str)
-
-    print('>> shuffling and selecting data...')
-    x, y = shuffle(x, y, random_state = rng, n_samples = max_samples)
-    print('>> ...shuffled and selected!\n')
-
-    
-
-        
-    print('>> fitting neural net...')
-    losses, model = train_aegan(x, y, hyperparams, epochs)
-    summary(model)
-
-    if save:
-        # state = {
-        #     "epoch": epoch,
-        #     "state_dict": model.state_dict,
-        #     "optimizer": optimizer
-        # }
-    
-        # torch.save(model.state_dict(), model_dir / f"model.cpt")
-        torch.save(model, model_dir / f"model.pt")
-        print("Saved model to disk")
-
-    # net.fit(
-    #     x, y, epochs
-    #     )
-    # print(net.summary())
-    # print('>> ...neural net fit!\n')
-
-    # if save:
-    #     model_json = net.to_json()
-    #     with open(model_dir / f"model.json", "w") as json_file:
-    #         json_file.write(model_json)
-    #     net.save_weights(model_dir / f"model.h")
-    #     print("Saved model to disk")
-
-    print('>> Plotting running losses...')
-
-    sns.set()
-    cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
-
-    fig, (ax1,ax2,ax3) = plt.subplots(3,figsize=(10,10))
-
-
-    ax1.plot(losses['train_loss'], label="Total training loss",color = cycle[0])
-    ax1.legend(loc="upper right")
-
-    ax2.plot(losses['loss_x_recon'], label="Training Structure Reconstruction",color = cycle[1])
-    ax2.plot(losses['loss_x_pred'], label="Training Structure Prediction",color = cycle[2])
-    ax2.legend(loc="upper right")
-
-    ax3.plot(losses['loss_y_recon'], label="Training Spectrum Reconstruction",color = cycle[3])
-    ax3.plot(losses['loss_y_pred'], label="Training Spectrum Prediction",color = cycle[4])
-    ax3.legend(loc="upper right")
-
-    # # with open(predict_dir / f'{id_}.txt', 'w') as f:
-    #     # save_xanes(f, XANES(e, y_predict_.detach().numpy()))
-    plt.savefig(f"{model_dir}/training-mse-loss.pdf")
-    fig.clf()
-    plt.close(fig)
-    print('...saved!\n')
-
-    
-    return
+    return losses, model

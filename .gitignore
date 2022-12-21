@@ -2,3 +2,5 @@ __pycache__/
 .DS_Store
 model*/
 predictions*/
+plots_predictions*/
+analysis*/

@@ -70,10 +70,7 @@ def main(aemode: str, model_dir: str, x_path: str, y_path: str):
     predict_dir = unique_path(Path("."), "predictions")
     predict_dir.mkdir()
 
-    ids = list(
-        set(list_filestems(xyz_path))
-        & set(list_filestems(xanes_path))
-    )
+    ids = list(set(list_filestems(xyz_path)) & set(list_filestems(xanes_path)))
 
     ids.sort()
 
@@ -104,7 +101,6 @@ def main(aemode: str, model_dir: str, x_path: str, y_path: str):
     model = torch.load(model_dir / "model.pt", map_location=torch.device("cpu"))
     model.eval()
     print("Loaded model from disk")
-
 
     if aemode == "predict_xyz":
 
@@ -142,9 +138,7 @@ def main(aemode: str, model_dir: str, x_path: str, y_path: str):
     total_x = []
     total_x_recon = []
 
-    for id_, y_predict_, y_, x_recon_, x_ in tqdm.tqdm(
-        zip(ids, y_pred, y, x_recon, x)
-    ):
+    for id_, y_predict_, y_, x_recon_, x_ in tqdm.tqdm(zip(ids, y_pred, y, x_recon, x)):
         sns.set()
         fig, (ax1, ax2) = plt.subplots(2)
 
