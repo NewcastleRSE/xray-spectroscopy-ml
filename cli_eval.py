@@ -33,7 +33,7 @@ from core_predict import main as predict
 from utils import print_nested_dict
 
 
-from core_test import main as eval_model
+from core_eval import main as eval_model
 
 ###############################################################################
 ############################## ARGUMENT PARSING ###############################
