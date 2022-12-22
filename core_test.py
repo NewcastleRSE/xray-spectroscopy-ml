@@ -38,13 +38,13 @@ import time
 
 
 def main(
+    mode: str,
     model_dir: str,
+    model_mode: str,
     x_train_path: str,
     y_train_path: str,
     x_test_path: str,
     y_test_path: str,
-    model_mode: str,
-    mode: str,
     test_params: dict = {},
     save_tensorboard: bool = True,
     seed: int = None,
@@ -134,15 +134,11 @@ def main(
 
     print("********** Running tests **********")
     print("\n")
-    print("[?] Output tests:")
-    print("    Are true losses better than losses from artifical model output?")
-    print("[?] Input tests:")
-    print(
-        "    Are true losses better than losses from model predictions from artifical input?"
-    )
+    print("[?] Output tests: Are true losses better than losses from artifical model output?")
+    print("[?] Input tests:  Are true losses better than losses from model predictions from artifical input?")
+    print("[+] True if model passes check")
+    print("[-] False if model fails check")
     print("\n")
-    print("[!] True if model passes check")
-    print("[!] False if model fails check")
 
     for (
         test_name,
@@ -314,16 +310,16 @@ class ModelTestInit:
 
         if self.model_mode.lower() in ["mlp", "cnn"]:
             # ORGINAL MODEL
-            if self.mode.lower() == "predict_xanes":
+            if self.mode.lower() == "eval_pred_xanes":
                 out = self.model(xyz)
-            if self.mode == "predict_xyz":
+            if self.mode == "eval_pred_xyz":
                 out = self.model(xanes)
 
         if self.model_mode.lower() in ["ae_mlp", "ae_cnn"]:
             # AUTOENCODER MODEL
-            if self.mode.lower() in ["predict_xyz", "reconstruct_xanes"]:
+            if self.mode.lower() in ["eval_pred_xyz", "eval_recon_xanes"]:
                 recon, pred = self.model(xanes)
-            elif self.mode.lower() in ["predict_xanes", "reconstruct_xyz"]:
+            elif self.mode.lower() in ["eval_pred_xanes", "eval_recon_xyz"]:
                 recon, pred = self.model(xyz)
             if "reconstruct" in self.mode.lower():
                 out = recon
@@ -332,13 +328,13 @@ class ModelTestInit:
 
         if self.model_mode.lower() in ["aegan_mlp", "aegan_cnn"]:
             # AUTOENCODER GAN MODEL
-            if self.mode.lower() == "predict_xanes":
+            if self.mode.lower() == "eval_pred_xanes":
                 out = self.model.predict_spectrum(xyz)
-            elif self.mode.lower() == "predict_xyz":
+            elif self.mode.lower() == "eval_pred_xyz":
                 out = self.model.predict_structure(xanes)
-            elif self.mode.lower() == "reconstruct_xyz":
+            elif self.mode.lower() == "eval_recon_xyz":
                 out = model.reconstruct_structure(xyz)
-            elif self.mode.lower() == "reconstruct_xanes":
+            elif self.mode.lower() == "eval_recon_xanes":
                 out = model.reconstruct_spectrum(xanes)
 
         if "xyz" in self.mode.lower():

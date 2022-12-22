@@ -33,7 +33,7 @@ from core_predict import main as predict
 from utils import print_nested_dict
 
 
-from core_test import main as test_model
+from core_test import main as eval_model
 
 ###############################################################################
 ############################## ARGUMENT PARSING ###############################
@@ -74,9 +74,17 @@ def parse_args(args: list):
         help="toggles the use of SHAP analysis for prediction",
     )
 
-    test_p = sub_p.add_parser("test")
-    test_p.add_argument("mdl_dir", type=str, help="path to populated model directory")
-    test_p.add_argument(
+    eval_p_xanes = sub_p.add_parser("eval_pred_xanes")
+    eval_p_xanes.add_argument("--model_mode", type=str, help="the model", required=True)
+    eval_p_xanes.add_argument("mdl_dir", type=str, help="path to populated model directory")
+    eval_p_xanes.add_argument(
+        "inp_f", type=str, help="path to .json input file w/ variable definitions"
+    )
+
+    eval_p_xyz = sub_p.add_parser("eval_pred_xyz")
+    eval_p_xyz.add_argument("--model_mode", type=str, help="the model", required=True)
+    eval_p_xyz.add_argument("mdl_dir", type=str, help="path to populated model directory")
+    eval_p_xyz.add_argument(
         "inp_f", type=str, help="path to .json input file w/ variable definitions"
     )
     args = p.parse_args()
@@ -110,13 +118,13 @@ def main(args: list):
     if args.mode == "predict":
         predict(args.mdl_dir, args.xyz_dir, run_shap=args.save)
 
-    if args.mode == "test":
+    if "eval" in args.mode:
         print(f">> loading JSON input @ {args.inp_f}\n")
         with open(args.inp_f) as f:
             inp = json.load(f)
         print_nested_dict(inp, nested_level=1)
         print("")
-        test_model(args.mdl_dir, **inp)
+        eval_model(args.mode, args.mdl_dir, args.model_mode, **inp)
 
     # banner = importlib.resources.read_text(resources, 'banner_close.txt')
     # print(banner)

@@ -3,8 +3,6 @@
     "y_train_path": "data/datasets/fe/preconv/xanes_train",
     "x_test_path": "data/datasets/fe/preconv/xyz_train",
     "y_test_path": "data/datasets/fe/preconv/xanes_train",
-    "model_mode" : "mlp",
-    "mode" : "predict_xanes",
     "test_params" :{
         "shuffle_output" : true,
         "mean_train_output" : true,
