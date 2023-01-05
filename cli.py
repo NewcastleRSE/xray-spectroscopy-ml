@@ -129,20 +129,33 @@ def parse_args(args: list):
         "inp_f", type=str, help="path to .json input file w/ variable definitions"
     )
 
-    eval_p_xanes = sub_p.add_parser("eval_pred_xanes")
-    eval_p_xanes.add_argument("--model_mode", type=str, help="the model", required=True)
-    eval_p_xanes.add_argument("mdl_dir", type=str, help="path to populated model directory")
-    eval_p_xanes.add_argument(
+    eval_p_pred_xanes = sub_p.add_parser("eval_pred_xanes")
+    eval_p_pred_xanes.add_argument("--model_mode", type=str, help="the model", required=True)
+    eval_p_pred_xanes.add_argument("mdl_dir", type=str, help="path to populated model directory")
+    eval_p_pred_xanes.add_argument(
         "inp_f", type=str, help="path to .json input file w/ variable definitions"
     )
 
-    eval_p_xyz = sub_p.add_parser("eval_pred_xyz")
-    eval_p_xyz.add_argument("--model_mode", type=str, help="the model", required=True)
-    eval_p_xyz.add_argument("mdl_dir", type=str, help="path to populated model directory")
-    eval_p_xyz.add_argument(
+    eval_p_pred_xyz = sub_p.add_parser("eval_pred_xyz")
+    eval_p_pred_xyz.add_argument("--model_mode", type=str, help="the model", required=True)
+    eval_p_pred_xyz.add_argument("mdl_dir", type=str, help="path to populated model directory")
+    eval_p_pred_xyz.add_argument(
         "inp_f", type=str, help="path to .json input file w/ variable definitions"
     )
-    args = p.parse_args()
+
+    eval_p_recon_xanes = sub_p.add_parser("eval_recon_xanes")
+    eval_p_recon_xanes.add_argument("--model_mode", type=str, help="the model", required=True)
+    eval_p_recon_xanes.add_argument("mdl_dir", type=str, help="path to populated model directory")
+    eval_p_recon_xanes.add_argument(
+        "inp_f", type=str, help="path to .json input file w/ variable definitions"
+    )
+
+    eval_p_recon_xyz = sub_p.add_parser("eval_recon_xyz")
+    eval_p_recon_xyz.add_argument("--model_mode", type=str, help="the model", required=True)
+    eval_p_recon_xyz.add_argument("mdl_dir", type=str, help="path to populated model directory")
+    eval_p_recon_xyz.add_argument(
+        "inp_f", type=str, help="path to .json input file w/ variable definitions"
+    )
 
     args = p.parse_args()
 

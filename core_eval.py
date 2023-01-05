@@ -321,7 +321,7 @@ class ModelTestInit:
                 recon, pred = self.model(xanes)
             elif self.mode.lower() in ["eval_pred_xanes", "eval_recon_xyz"]:
                 recon, pred = self.model(xyz)
-            if "reconstruct" in self.mode.lower():
+            if "recon" in self.mode.lower():
                 out = recon
             else:
                 out = pred
@@ -333,9 +333,9 @@ class ModelTestInit:
             elif self.mode.lower() == "eval_pred_xyz":
                 out = self.model.predict_structure(xanes)
             elif self.mode.lower() == "eval_recon_xyz":
-                out = model.reconstruct_structure(xyz)
+                out = self.model.reconstruct_structure(xyz)
             elif self.mode.lower() == "eval_recon_xanes":
-                out = model.reconstruct_spectrum(xanes)
+                out = self.model.reconstruct_spectrum(xanes)
 
         if "xyz" in self.mode.lower():
             compare = xyz
