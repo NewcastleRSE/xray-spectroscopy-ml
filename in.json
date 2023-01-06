@@ -21,10 +21,6 @@
         "bias_init": "zeros"
     },
     "seed": 2021,
-
-
     "epochs": 1,
-
     "variance_threshold": 0.0
-
 }

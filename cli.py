@@ -28,6 +28,7 @@ from argparse import ArgumentParser
 from core_learn import main as learn
 from core_predict import main as predict
 from utils import print_nested_dict
+from model_utils import json_check
 
 ###############################################################################
 ############################## ARGUMENT PARSING ###############################
@@ -126,7 +127,6 @@ def parse_args(args: list):
     )
     predict_p_xanes.add_argument(
         "inp_f", type=str, help="path to .json input file w/ variable definitions"
-
     )
 
     args = p.parse_args()
@@ -146,68 +146,37 @@ def main(args: list):
     else:
         args = parse_args(args)
 
+    print(f">> loading JSON input @ {args.inp_f}\n")
+    with open(args.inp_f) as f:
+        inp = json.load(f)
+    print_nested_dict(inp, nested_level=1)
+    print("")
+
     if args.mode == "train_xyz":
-        print(f">> loading JSON input @ {args.inp_f}\n")
-        with open(args.inp_f) as f:
-            inp = json.load(f)
-        print_nested_dict(inp, nested_level=1)
-        print("")
+        json_check(inp)
         learn(args.mode, args.model_mode, **inp, save=args.save)
 
     elif args.mode == "train_xanes":
-        print(f">> loading JSON input @ {args.inp_f}\n")
-        with open(args.inp_f) as f:
-            inp = json.load(f)
-        print_nested_dict(inp, nested_level=1)
-        print("")
+        json_check(inp)
         learn(args.mode, args.model_mode, **inp, save=args.save)
 
     elif args.mode == "train_aegan":
-        print(f">> loading JSON input @ {args.inp_f}\n")
-        with open(args.inp_f) as f:
-            inp = json.load(f)
-        print_nested_dict(inp, nested_level=1)
-        print("")
+        json_check(inp)
         learn(args.mode, args.model_mode, **inp, save=args.save)
 
     elif args.mode == "predict_xanes":
-        print(f">> loading JSON input @ {args.inp_f}\n")
-        with open(args.inp_f) as f:
-            inp = json.load(f)
-        print_nested_dict(inp, nested_level=1)
-        print("")
-        print(args.mode, args.mdl_dir)
         predict(args.mode, args.model_mode, args.mdl_dir, **inp)
 
     elif args.mode == "predict_xyz":
-        print(f">> loading JSON input @ {args.inp_f}\n")
-        with open(args.inp_f) as f:
-            inp = json.load(f)
-        print_nested_dict(inp, nested_level=1)
-        print("")
-        print(args.mode, args.mdl_dir)
         predict(args.mode, args.model_mode, args.mdl_dir, **inp)
 
     elif args.mode == "predict_aegan":
-        print(f">> loading JSON input @ {args.inp_f}\n")
-        with open(args.inp_f) as f:
-            inp = json.load(f)
-        print_nested_dict(inp, nested_level=1)
         predict(args.mode, args.model_mode, args.mdl_dir, inp["x_path"], inp["y_path"])
 
     elif args.mode == "predict_aegan_xanes":
-        print(f">> loading JSON input @ {args.inp_f}\n")
-        with open(args.inp_f) as f:
-            inp = json.load(f)
-        print_nested_dict(inp, nested_level=1)
         predict(args.mode, args.model_mode, args.mdl_dir, inp["x_path"], None)
 
     elif args.mode == "predict_aegan_xyz":
-
-        print(f">> loading JSON input @ {args.inp_f}\n")
-        with open(args.inp_f) as f:
-            inp = json.load(f)
-        print_nested_dict(inp, nested_level=1)
         predict(args.mode, args.model_mode, args.mdl_dir, None, inp["y_path"])
 
 
