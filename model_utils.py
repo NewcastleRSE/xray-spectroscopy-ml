@@ -1,4 +1,5 @@
 from torch import nn
+import numpy as np
 
 # Select activation function from hyperparams inputs
 class ActivationSwitch:
@@ -104,9 +105,35 @@ def model_mode_error(model, mode, model_mode, xyz_shape, xanes_shape):
 
 
 def json_check(inp):
+
     assert isinstance(
         inp["hyperparams"]["loss"], str
     ), "wrong type for loss param in json"
     assert isinstance(
         inp["hyperparams"]["activation"], str
     ), "wrong type for activation param in json"
+
+
+# def json_cnn_check(inp, model):
+#     assert isinstance(
+#         inp["hyperparams"]["loss"], str
+#     ), "wrong type for loss param in json"
+#     assert isinstance(
+#         inp["hyperparams"]["activation"], str
+#     ), "wrong type for activation param in json"
+
+
+def montecarlo_dropout(model, input_data, output_shape):
+
+    model.train()
+    T = 10
+
+    prob_output = np.zeros(output_shape)
+    print(prob_output.shape)
+    for t in range(T):
+        output = model(input_data)
+        prob_output = prob_output + output.cpu().detach().numpy()
+
+    prob_pred = prob_output / T
+
+    return prob_pred

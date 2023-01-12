@@ -40,6 +40,15 @@ import torch
 from sklearn.metrics import mean_squared_error
 
 
+def average(lst):
+    for lstNum in range(len(lst)):
+        print(lstNum)
+        for sublistItem in range(len(lst[lstNum])):
+            lst[lstNum] / lst[sublistItem]  # <-- ??
+    print(type(lst))
+    return lst
+
+
 def y_predict_dim(y_predict, ids, model_dir):
     if y_predict.ndim == 1:
         if len(ids) == 1:
@@ -125,14 +134,16 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
 
     print("Loaded model from disk")
 
-    predict_dir = model_mode_error(model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1])
+    predict_dir = model_mode_error(
+        model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1]
+    )
 
     if model_mode == "mlp" or model_mode == "cnn":
 
         if mode == "predict_xyz":
 
             print("predict xyz structure")
-            
+
             xanes = torch.from_numpy(xanes_data)
             xanes = xanes.float()
 
@@ -141,10 +152,16 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
             y = xyz_data
             y_predict = pred_xyz
 
+            from model_utils import montecarlo_dropout
+
+            prob_pred = montecarlo_dropout(
+                model, xanes, pred_xyz.detach().numpy().shape
+            )
+
         elif mode == "predict_xanes":
 
             print("predict xanes spectrum")
-            
+
             xyz = torch.from_numpy(xyz_data)
             xyz = xyz.float()
 
@@ -154,10 +171,16 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
             y_predict = pred_xanes
 
         print("MSE y to y pred : ", mean_squared_error(y, y_predict.detach().numpy()))
+        print(
+            "MSE of Monte Carlo dropout : ",
+            mean_squared_error(y, prob_pred),
+        )
         y_predict, e = y_predict_dim(y_predict, ids, model_dir)
 
         from plot import plot_predict
+
         plot_predict(ids, y, y_predict, e, predict_dir, mode)
+        # plot_predict(ids, y, prob_pred, e, predict_dir, mode)
 
     elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
 

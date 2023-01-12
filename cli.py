@@ -161,7 +161,6 @@ def main(args: list):
         learn(args.mode, args.model_mode, **inp, save=args.save)
 
     elif args.mode == "train_aegan":
-        json_check(inp)
         learn(args.mode, args.model_mode, **inp, save=args.save)
 
     elif args.mode == "predict_xanes":
