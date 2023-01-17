@@ -1,6 +1,6 @@
 {
-    "x_path": "/data/datasets/fe/preconv/xyz_train",
-    "y_path": "/data/datasets/fe/preconv/xanes_train",
+    "x_path": "data/datasets/fe/preconv/xyz_train",
+    "y_path": "data/datasets/fe/preconv/xanes_train",
 
     "descriptor_type": "wacsf",
     "descriptor_params": {
@@ -20,18 +20,18 @@
         "loss_dis": "bce",
         "lr_gen": 0.01,
         "lr_dis": 0.0001,
-        "dropout": 0.0
+        "dropout": 0.0,
+        "weight_init_seed":2023,
+        "kernel_init": "he_uniform",
+        "bias_init": "zeros"
     },
 
     "kfold_params": {
         "n_splits": 5,
         "n_repeats": 5
     },
-
     "seed": 2021,
-
-    "epochs": 1,
-
+    "epochs": 10,
     "variance_threshold": 0.0
 
 

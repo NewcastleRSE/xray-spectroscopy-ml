@@ -73,7 +73,14 @@ def train(x, y, model_mode, hyperparams, n_epoch):
         )
 
     model.to(device)
+
+    # Set seed for weight initialisation
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(hyperparams['weight_init_seed'])
+    else:
+        torch.manual_seed(hyperparams['weight_init_seed'])
     model.apply(model_utils.weight_init)
+    
     model.train()
     optimizer = optim.Adam(model.parameters(), lr=hyperparams["lr"])
 

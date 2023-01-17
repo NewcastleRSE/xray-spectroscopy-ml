@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 from model import AEGANTrainer
-from model_utils import weight_init
+import model_utils
 
 
 def train_aegan(x, y, hyperparams, n_epoch):
@@ -40,8 +40,12 @@ def train_aegan(x, y, hyperparams, n_epoch):
 
     model.to(device)
 
-    # Initialise weights
-    model.apply(weight_init)
+    # Set seed for weight initialisation
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(hyperparams['weight_init_seed'])
+    else:
+        torch.manual_seed(hyperparams['weight_init_seed'])
+    model.apply(model_utils.weight_init)
 
     model.train()
     loss_fn = nn.MSELoss()

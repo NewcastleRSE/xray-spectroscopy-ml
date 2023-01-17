@@ -69,3 +69,9 @@ def weight_init(m):
     if isinstance(m, nn.Linear):
         nn.init.xavier_uniform_(m.weight)
         nn.init.zeros_(m.bias)
+    elif isinstance(m, nn.Conv1d):
+        nn.init.xavier_uniform_(m.weight)
+        nn.init.zeros_(m.bias)
+    elif isinstance(m, nn.ConvTranspose1d):
+        nn.init.xavier_uniform_(m.weight)
+        nn.init.zeros_(m.bias)
