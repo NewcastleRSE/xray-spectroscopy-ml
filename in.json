@@ -18,7 +18,7 @@
         "lr": 0.00001,
         "dropout": 0.2,
         "weight_init_seed":2023,
-        "kernel_init": "he_uniform",
+        "kernel_init": "xavier_uniform",
         "bias_init": "zeros"
     },
     "seed": 2021,

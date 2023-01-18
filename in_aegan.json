@@ -9,7 +9,6 @@
         "n_g2": 16,
         "n_g4": 32
     },
-
     "hyperparams": {
         "n_hl_gen": 2,
         "n_hl_shared": 2,
@@ -22,10 +21,9 @@
         "lr_dis": 0.0001,
         "dropout": 0.0,
         "weight_init_seed":2023,
-        "kernel_init": "he_uniform",
+        "kernel_init": "xavier_uniform",
         "bias_init": "zeros"
     },
-
     "kfold_params": {
         "n_splits": 5,
         "n_repeats": 5
@@ -33,6 +31,4 @@
     "seed": 2021,
     "epochs": 10,
     "variance_threshold": 0.0
-
-
 }
