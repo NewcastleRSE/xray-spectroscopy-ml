@@ -68,35 +68,44 @@ class EMDLoss(nn.Module):
 class WeightInitSwitch:
     def fn(self, weight_init_fn):
         default = nn.init.xavier_uniform_
-        return getattr(self, f"weight_init_function_{weight_init_fn.lower()}", lambda: default)()
+        return getattr(
+            self, f"weight_init_function_{weight_init_fn.lower()}", lambda: default
+        )()
+
     # uniform
     def weight_init_function_uniform(self):
         return nn.init.uniform_
+
     # normal
     def weight_init_function_normal(self):
         return nn.init.normal_
+
     # xavier_uniform
-    def weight_init_function_xavier_uniform(self): 
+    def weight_init_function_xavier_uniform(self):
         return nn.init.xavier_uniform_
+
     # xavier_normal
     def weight_init_function_xavier_normal_(self):
         return nn.init.xavier_normal_
+
     # kaiming_uniform
     def weight_init_function_kaiming_uniform(self):
         return nn.init.kaiming_uniform_
+
     # kaiming_normal
     def weight_init_function_kaiming_normal(self):
         return nn.init.kaiming_normal_
+
     # zeros
     def weight_init_function_zeros(self):
         return nn.init.zeros_
+
     # ones
     def weight_init_function_ones(self):
         return nn.init.ones_
+
 
 def weight_bias_init(m, kernel_init_fn, bias_init_fn):
     if isinstance(m, (nn.Linear, nn.Conv1d, nn.ConvTranspose1d)):
         kernel_init_fn(m.weight)
         bias_init_fn(m.bias)
-
-

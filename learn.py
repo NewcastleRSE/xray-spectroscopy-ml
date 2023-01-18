@@ -10,9 +10,7 @@ import model_utils
 
 # setup tensorboard stuff
 layout = {
-    "Multi": {
-        "loss": ["Multiline", ["loss/train", "loss/validation"]],
-    },
+    "Multi": {"loss": ["Multiline", ["loss/train", "loss/validation"]],},
 }
 writer = SummaryWriter(f"/tmp/tensorboard/{int(time.time())}")
 writer.add_custom_scalars(layout)
@@ -75,12 +73,18 @@ def train(x, y, model_mode, hyperparams, n_epoch):
     model.to(device)
 
     # Model weight & bias initialisation
-    weight_seed = hyperparams['weight_init_seed']
-    kernel_init = model_utils.WeightInitSwitch().fn(hyperparams['kernel_init'])
-    bias_init = model_utils.WeightInitSwitch().fn(hyperparams['bias_init'])
+    weight_seed = hyperparams["weight_init_seed"]
+    kernel_init = model_utils.WeightInitSwitch().fn(hyperparams["kernel_init"])
+    bias_init = model_utils.WeightInitSwitch().fn(hyperparams["bias_init"])
     # set seed
-    torch.cuda.manual_seed(weight_seed) if torch.cuda.is_available() else torch.manual_seed(weight_seed)
-    model.apply(lambda m: model_utils.weight_bias_init(m = m, kernel_init_fn = kernel_init, bias_init_fn = bias_init))
+    torch.cuda.manual_seed(
+        weight_seed
+    ) if torch.cuda.is_available() else torch.manual_seed(weight_seed)
+    model.apply(
+        lambda m: model_utils.weight_bias_init(
+            m=m, kernel_init_fn=kernel_init, bias_init_fn=bias_init
+        )
+    )
 
     model.train()
     optimizer = optim.Adam(model.parameters(), lr=hyperparams["lr"])
