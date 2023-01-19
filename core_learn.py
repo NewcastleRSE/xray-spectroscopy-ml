@@ -24,6 +24,7 @@ import pickle as pickle
 import tqdm as tqdm
 import time
 
+
 from pathlib import Path
 from glob import glob
 from numpy.random import RandomState
@@ -256,9 +257,9 @@ def main(
         print(">> fitting neural net...")
 
         if model_mode == "mlp" or model_mode == "cnn":
-            from learn import train
+            from learn import build_model
 
-            model, score = train(xyz, xanes, model_mode, hyperparams, epochs)
+            model, score = build_model(xyz, xanes, model_mode, hyperparams, epochs)
 
         elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
             from ae_learn import train
@@ -273,9 +274,10 @@ def main(
         print(">> fitting neural net...")
 
         if model_mode == "mlp" or model_mode == "cnn":
-            from learn import train
+            from learn import build_model
+
             print(xanes.shape)
-            model, score = train(xanes, xyz, model_mode, hyperparams, epochs)
+            model, score = build_model(xanes, xyz, model_mode, hyperparams, epochs)
 
         elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
             from ae_learn import train

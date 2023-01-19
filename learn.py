@@ -1,12 +1,19 @@
 import torch
 from torch import nn, optim
 import math
-
+import os
+import pickle
 import numpy as np
 from sklearn.model_selection import train_test_split
 from torch.utils.tensorboard import SummaryWriter
+import mlflow
+import mlflow.pytorch
 import time
+from datetime import datetime
 import model_utils
+import tempfile
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # setup tensorboard stuff
 layout = {
@@ -18,9 +25,66 @@ writer = SummaryWriter(f"/tmp/tensorboard/{int(time.time())}")
 writer.add_custom_scalars(layout)
 
 
-def train(x, y, model_mode, hyperparams, n_epoch):
+def log_scalar(name, value, epoch):
+    """Log a scalar value to both MLflow and TensorBoard"""
+    writer.add_scalar(name, value, epoch)
+    mlflow.log_metric(name, value)
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+def train(trainloader, validloader, model, hyperparams, n_epoch):
+
+    model.to(device)
+    model.apply(model_utils.weight_init)
+    model.train()
+    optimizer = optim.Adam(model.parameters(), lr=hyperparams["lr"])
+
+    criterion = nn.MSELoss()
+
+    total_step = 0
+    for epoch in range(n_epoch):
+        running_loss = 0
+        for inputs, labels in trainloader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            inputs, labels = inputs.float(), labels.float()
+
+            # print(total_step % n_noise)
+            # if total_step % 20 == 0:
+            #     noise = torch.randn_like(inputs) * 0.3
+            #     inputs = noise + inputs
+
+            optimizer.zero_grad()
+            logps = model(inputs)
+
+            loss = criterion(logps, labels)
+            loss.mean().backward()
+            optimizer.step()
+            total_step += 1
+
+            running_loss += loss.item()
+
+        valid_loss = 0
+        model.eval()
+        for inputs, labels in validloader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            inputs, labels = inputs.float(), labels.float()
+
+            target = model(inputs)
+
+            loss = criterion(target, labels)
+            valid_loss += loss.item()
+
+        print("Training loss:", running_loss / len(trainloader))
+        print("Validation loss:", valid_loss / len(validloader))
+
+        log_scalar("loss/train", (running_loss / len(trainloader)), epoch)
+        log_scalar("loss/validation", (valid_loss / len(validloader)), epoch)
+    print("total step =", total_step)
+
+    writer.close()
+    return model, running_loss / len(trainloader)
+
+
+def build_model(x, y, model_mode, hyperparams, n_epoch):
 
     out_dim = y[0].size
     n_in = x.shape[1]
@@ -37,12 +101,16 @@ def train(x, y, model_mode, hyperparams, n_epoch):
 
     trainset = torch.utils.data.TensorDataset(X_train, y_train)
     trainloader = torch.utils.data.DataLoader(
-        trainset, batch_size=hyperparams["batch_size"], shuffle=True,
+        trainset,
+        batch_size=hyperparams["batch_size"],
+        shuffle=True,
     )
 
     validset = torch.utils.data.TensorDataset(X_test, y_test)
     validloader = torch.utils.data.DataLoader(
-        validset, batch_size=hyperparams["batch_size"], shuffle=False,
+        validset,
+        batch_size=hyperparams["batch_size"],
+        shuffle=False,
     )
 
     if model_mode == "mlp":
@@ -72,52 +140,56 @@ def train(x, y, model_mode, hyperparams, n_epoch):
             act_fn,
         )
 
-    model.to(device)
-    model.apply(model_utils.weight_init)
-    model.train()
-    optimizer = optim.Adam(model.parameters(), lr=hyperparams["lr"])
+    print(type(hyperparams))
+    model, score = mlflow_train(trainloader, validloader, model, hyperparams, n_epoch)
+    return model, score
 
-    criterion = nn.MSELoss()
 
-    total_step = 0
-    for epoch in range(n_epoch):
-        running_loss = 0
-        for inputs, labels in trainloader:
-            inputs, labels = inputs.to(device), labels.to(device)
-            inputs, labels = inputs.float(), labels.float()
+def mlflow_train(trainloader, validloader, model, hyperparams, n_epoch):
+    EXPERIMENT_NAME = f"model_{datetime.today()}"
+    EXPERIMENT_ID = mlflow.create_experiment(EXPERIMENT_NAME)
+    RUN_NAME = f"run_{time.time()}"
 
-            # print(total_step % n_noise)
-            if total_step % 20 == 0:
-                noise = torch.randn_like(inputs) * 0.3
-                inputs = noise + inputs
+    with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=RUN_NAME):
 
-            optimizer.zero_grad()
-            logps = model(inputs)
+        # Log our parameters into mlflow
+        # for key, value in hyperparams:
+        mlflow.log_params(hyperparams)
 
-            loss = criterion(logps, labels)
-            loss.mean().backward()
-            optimizer.step()
-            total_step += 1
+        # # Create a SummaryWriter to write TensorBoard events locally
+        output_dir = dirpath = tempfile.mkdtemp()
+        # writer = SummaryWriter(output_dir)
+        # print("Writing TensorBoard events locally to %s\n" % output_dir)
 
-            running_loss += loss.item()
+        # Perform the training
+        for epoch in range(1, n_epoch + 1):
+            model, score = train(trainloader, validloader, model, hyperparams, n_epoch)
+        # for epoch in range(1, args.epochs + 1):
+        #     test(epoch)
 
-        valid_loss = 0
-        model.eval()
-        for inputs, labels in validloader:
-            inputs, labels = inputs.to(device), labels.to(device)
-            inputs, labels = inputs.float(), labels.float()
+        # Upload the TensorBoard event logs as a run artifact
+        print("Uploading TensorBoard events as a run artifact...")
+        mlflow.log_artifacts(output_dir, artifact_path="events")
+        print(
+            "\nLaunch TensorBoard with:\n\ntensorboard --logdir=%s"
+            % os.path.join(mlflow.get_artifact_uri(), "events")
+        )
 
-            target = model(inputs)
+        # Log the model as an artifact of the MLflow run.
+        print("\nLogging the trained model as a run artifact...")
+        mlflow.pytorch.log_model(
+            model, artifact_path="pytorch-model", pickle_module=pickle
+        )
+        print(
+            "\nThe model is logged at:\n%s"
+            % os.path.join(mlflow.get_artifact_uri(), "pytorch-model")
+        )
 
-            loss = criterion(target, labels)
-            valid_loss += loss.item()
+        # Since the model was logged as an artifact, it can be loaded to make predictions
+        loaded_model = mlflow.pytorch.load_model(
+            mlflow.get_artifact_uri("pytorch-model")
+        )
 
-        print("Training loss:", running_loss / len(trainloader))
-        print("Validation loss:", valid_loss / len(validloader))
-
-        writer.add_scalar("loss/train", (running_loss / len(trainloader)), epoch)
-        writer.add_scalar("loss/validation", (valid_loss / len(validloader)), epoch)
-    print("total step =", total_step)
-
-    writer.close()
-    return model, running_loss / len(trainloader)
+        # # Extract a few examples from the test dataset to evaluate on
+        # eval_data, eval_labels = next(iter(test_loader))
+        return model, score
