@@ -3,7 +3,7 @@ from torch import nn
 import numpy as np
 import warnings
 
-# Suppress warning for WCCLoss function
+# Suppress non-significant warning for WCCLoss function
 warnings.filterwarnings("ignore")
 
 
