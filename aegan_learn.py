@@ -55,7 +55,11 @@ def train_aegan(x, y, hyperparams, n_epoch):
     )
 
     model.train()
-    loss_fn = nn.MSELoss()
+    
+    # Select running loss function as generative loss function
+    loss_fn = hyperparams['loss_gen']['loss_fn']
+    loss_args = hyperparams['loss_gen']['loss_args']
+    criterion = model_utils.LossSwitch().fn(loss_fn,loss_args)
 
     train_total_loss = [None] * n_epoch
     train_loss_x_recon = [None] * n_epoch
@@ -82,10 +86,10 @@ def train_aegan(x, y, hyperparams, n_epoch):
             )
 
             # Track running losses
-            running_loss_recon_x += loss_fn(recon_x, inputs_x)
-            running_loss_recon_y += loss_fn(recon_y, inputs_y)
-            running_loss_pred_x += loss_fn(pred_x, inputs_x)
-            running_loss_pred_y += loss_fn(pred_y, inputs_y)
+            running_loss_recon_x += criterion(recon_x, inputs_x)
+            running_loss_recon_y += criterion(recon_y, inputs_y)
+            running_loss_pred_x += criterion(pred_x, inputs_x)
+            running_loss_pred_y += criterion(pred_y, inputs_y)
 
             loss_gen_total = (
                 running_loss_recon_x

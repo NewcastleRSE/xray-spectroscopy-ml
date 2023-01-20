@@ -1,4 +1,11 @@
+import torch
 from torch import nn
+import numpy as np
+import warnings
+
+# Suppress warning for WCCLoss function
+warnings.filterwarnings("ignore")
+
 
 # Select activation function from hyperparams inputs
 class ActivationSwitch:
@@ -32,37 +39,27 @@ class ActivationSwitch:
 
 # Select loss function from hyperparams inputs
 class LossSwitch:
-    def fn(self, loss_fn):
+    def fn(self, loss_fn, *args):
         default = nn.MSELoss()
-        return getattr(self, f"loss_function_{loss_fn.lower()}", lambda: default)()
+        return getattr(self, f"loss_function_{loss_fn.lower()}", lambda: default)(*args)
 
-    def loss_function_mse(self):
-        return nn.MSELoss()
+    def loss_function_mse(self,*args):
+        return nn.MSELoss(*args)
 
-    def loss_function_bce(self):
-        return nn.BCEWithLogitsLoss()
+    def loss_function_bce(self,*args):
+        return nn.BCEWithLogitsLoss(*args)
 
-    def loss_function_emd(self):
-        return EMDLoss()
+    def loss_function_emd(self,*args):
+        return EMDLoss(*args)
 
-    def loss_function_cosine(self):
-        return nn.CosineEmbeddingLoss()
+    def loss_function_cosine(self,*args):
+        return nn.CosineEmbeddingLoss(*args)
 
-    def loss_function_l1(self):
-        return nn.L1Loss()
+    def loss_function_l1(self,*args):
+        return nn.L1Loss(*args)
 
-
-# Earth mover distance as loss function
-class EMDLoss(nn.Module):
-    def __init__(self):
-        super().__init__()
-
-    def forward(self, y_true, y_pred):
-        loss = torch.mean(
-            torch.square(torch.cumsum(y_true, dim=-1) - torch.cumsum(y_pred, dim=-1)),
-            dim=-1,
-        ).sum()
-        return loss
+    def loss_function_wcc(self,*args):
+        return WCCLoss(*args)
 
 
 class WeightInitSwitch:
@@ -109,3 +106,69 @@ def weight_bias_init(m, kernel_init_fn, bias_init_fn):
     if isinstance(m, (nn.Linear, nn.Conv1d, nn.ConvTranspose1d)):
         kernel_init_fn(m.weight)
         bias_init_fn(m.bias)
+
+
+class EMDLoss(nn.Module):
+    """
+    Computes the Earth Mover or Wasserstain distance
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, y_true, y_pred):
+        loss = torch.mean(
+            torch.square(torch.cumsum(y_true, dim=-1) - torch.cumsum(y_pred, dim=-1)),
+            dim=-1,
+        ).sum()
+        return loss
+
+
+class WCCLoss(nn.Module):
+    """
+    Computes the weighted cross-correlation loss between y_pred and y_true based on the 
+    method proposed in [1].
+    Args:
+        gaussianHWHM: Scalar value for full-width-at-half-maximum of Gaussian weight function.
+    Reference:
+    [1] Källman, E., Delcey, M.G., Guo, M., Lindh, R. and Lundberg, M., 2020. 
+        "Quantifying similarity for spectra with a large number of overlapping transitions: Examples 
+        from soft X-ray spectroscopy." Chemical Physics, 535, p.110786.
+    """
+
+    def __init__(self, gaussianHWHM):
+        super().__init__()
+        self.gaussianHWHM = gaussianHWHM
+
+    def forward(self, y_true, y_pred):
+
+        n_features = y_true.shape[1]
+        n_samples = y_true.shape[0]
+
+        width2 = (self.gaussianHWHM / np.sqrt(2.0 * np.log(2))) * 2
+
+        corr = nn.functional.conv1d(
+            y_true.unsqueeze(0), y_pred.unsqueeze(1), padding="same", groups=n_samples
+        )
+        corr1 = nn.functional.conv1d(
+            y_true.unsqueeze(0), y_true.unsqueeze(1), padding="same", groups=n_samples
+        )
+        corr2 = nn.functional.conv1d(
+            y_pred.unsqueeze(0), y_pred.unsqueeze(1), padding="same", groups=n_samples
+        )
+
+        corr = corr.squeeze(0)
+        corr1 = corr1.squeeze(0)
+        corr2 = corr2.squeeze(0)
+
+        dx = torch.ones(n_samples)
+        de = ((n_features / 2 - torch.arange(0, n_features))[:, None] * dx[None, :]).T
+        weight = np.exp(-de * de / (2 * width2))
+
+        norm = torch.sum(corr * weight, 1)
+        norm1 = torch.sum(corr1 * weight, 1)
+        norm2 = torch.sum(corr2 * weight, 1)
+        similarity = torch.clip(norm / torch.sqrt(norm1 * norm2), 0, 1)
+
+        loss = 1 - torch.mean(similarity)
+        return loss

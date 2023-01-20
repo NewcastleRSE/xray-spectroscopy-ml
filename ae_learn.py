@@ -94,7 +94,11 @@ def train(x, y, model_mode, hyperparams, n_epoch):
     optimizer = optim.Adam(
         model.parameters(), lr=hyperparams["lr"], weight_decay=0.0000
     )
-    criterion = nn.MSELoss()
+    
+    # Select loss function
+    loss_fn = hyperparams['loss']['loss_fn']
+    loss_args = hyperparams['loss']['loss_args']
+    criterion = model_utils.LossSwitch().fn(loss_fn,loss_args)
 
     total_step = 0
     for epoch in range(n_epoch):

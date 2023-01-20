@@ -361,9 +361,14 @@ class AEGANTrainer(nn.Module):
         self.activation = activation_switch.fn(params["activation"])
 
         # Select loss functions
-        loss_switch = LossSwitch()
-        self.loss_fn_gen = loss_switch.fn(params["loss_gen"])
-        self.loss_fn_dis = loss_switch.fn(params["loss_dis"])
+        loss_gen_fn = params['loss_gen']['loss_fn']
+        loss_dis_fn = params['loss_dis']['loss_fn']
+
+        loss_gen_args = params['loss_gen']['loss_args']
+        loss_dis_args = params['loss_dis']['loss_args']
+        
+        self.loss_fn_gen = LossSwitch().fn(loss_gen_fn, loss_gen_args)
+        self.loss_fn_dis = LossSwitch().fn(loss_dis_fn, loss_dis_args)
 
         # Initialise the generative autoencoder networks
         self.gen_a = AEGen(
