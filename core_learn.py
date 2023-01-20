@@ -44,6 +44,9 @@ import torch
 from torchinfo import summary
 from sklearn.metrics import mean_squared_error
 
+import model_utils
+from xanesnet.utils import print_cross_validation_scores
+
 ###############################################################################
 ################################ MAIN FUNCTION ################################
 ###############################################################################
@@ -279,6 +282,17 @@ def main(
 
     # else:
 
+    # Setup K-fold Cross Validation variables
+    if kfold_params:
+        kfold_spooler = RepeatedKFold(n_splits = kfold_params['n_splits'], n_repeats = kfold_params['n_repeats'], random_state=rng)
+        fit_time = []
+        train_score = []
+        test_score = []
+        prev_score = 1
+        loss_fn = kfold_params['loss']['loss_fn']
+        loss_args = kfold_params['loss']['loss_args']
+        kfold_loss_fn = model_utils.LossSwitch().fn(loss_fn, loss_args)
+
     if mode == "train_xyz":
         print("training xyz structure")
 
@@ -287,7 +301,27 @@ def main(
         if model_mode == "mlp" or model_mode == "cnn":
             from learn import train
 
-            model, score = train(xyz, xanes, model_mode, hyperparams, epochs)
+            if kfold_params:
+                # K-fold Cross Validation model evaluation
+                for fold, (train_index, test_index) in enumerate(kfold_spooler.split(xyz)):
+                    # Training
+                    start = time.time()
+                    model, score = train(xyz[train_index], xanes[train_index], model_mode, hyperparams, epochs)
+                    train_score.append(score)
+                    fit_time.append(time.time() - start)
+                    # Testing
+                    model.eval()
+                    x_test = torch.from_numpy(xyz[test_index]).float()
+                    y_predict = model(x_test)
+                    y_score = kfold_loss_fn(torch.tensor(xanes[test_index]), y_predict).item()
+                    test_score.append(y_score)
+                    if y_score < prev_score:
+                        best_model = model
+                    prev_score = y_score
+                result = {"fit_time": fit_time, "train_score": train_score, "test_score": test_score,}
+                print_cross_validation_scores(result)
+            else:
+                model, score = train(xyz, xanes, model_mode, hyperparams, epochs)
 
         elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
             from ae_learn import train
@@ -304,7 +338,27 @@ def main(
         if model_mode == "mlp" or model_mode == "cnn":
             from learn import train
 
-            model, score = train(xanes, xyz, model_mode, hyperparams, epochs)
+            if kfold_params:
+                # K-fold Cross Validation model evaluation
+                for fold, (train_index, test_index) in enumerate(kfold_spooler.split(xyz)):
+                    # Training
+                    start = time.time()
+                    model, score = train(xanes[train_index], xyz[train_index], model_mode, hyperparams, epochs)
+                    train_score.append(score)
+                    fit_time.append(time.time() - start)
+                    # Testing
+                    model.eval()
+                    x_test = torch.from_numpy(xanes[test_index]).float()
+                    y_predict = model(x_test)
+                    y_score = kfold_loss_fn(torch.tensor(xyz[test_index]), y_predict).item()
+                    test_score.append(y_score)
+                    if y_score < prev_score:
+                        best_model = model
+                    prev_score = y_score
+                result = {"fit_time": fit_time, "train_score": train_score, "test_score": test_score,}
+                print_cross_validation_scores(result)
+            else:
+                model, score = train(xanes, xyz, model_mode, hyperparams, epochs)
 
         elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
             from ae_learn import train
@@ -324,9 +378,12 @@ def main(
         plot_running_aegan(losses, model_dir)
 
     if save:
-
-        torch.save(model, model_dir / f"model.pt")
-        print("Saved model to disk")
+        if kfold_params:
+            torch.save(best_model, model_dir / f"model.pt")
+            print("Saved best model to disk")
+        else:
+            torch.save(model, model_dir / f"model.pt")
+            print("Saved model to disk")
 
     else:
         print("none")

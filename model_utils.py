@@ -110,7 +110,7 @@ def weight_bias_init(m, kernel_init_fn, bias_init_fn):
 
 class EMDLoss(nn.Module):
     """
-    Computes the Earth Mover or Wasserstain distance
+    Computes the Earth Mover or Wasserstein distance
     """
 
     def __init__(self):
