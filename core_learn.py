@@ -220,42 +220,49 @@ def main(
     e = np.vstack(e_list)
     element_label = np.asarray(element_label)
 
-
     # DATA AUGMENTATION
-    if data_params['augment']:
-        data_aug_params = data_params['augment_params']
-        n_aug_samples =  np.multiply(n_samples,data_aug_params['augment_mult']) - n_samples
-        print('>> ...AUGMENTING DATA...\n')
-        if data_params['augment_type'].lower() == 'random_noise':
+    if data_params["augment"]:
+        data_aug_params = data_params["augment_params"]
+        n_aug_samples = (
+            np.multiply(n_samples, data_aug_params["augment_mult"]) - n_samples
+        )
+        print(">> ...AUGMENTING DATA...\n")
+        if data_params["augment_type"].lower() == "random_noise":
             # augment data as random data point + noise
-            
-            rand = random.choices(range(n_samples),k = n_aug_samples)
-            noise1 = np.random.normal(data_aug_params['normal_mean'], data_aug_params['normal_sd'], (n_aug_samples, n_x_features))
-            noise2 = np.random.normal(data_aug_params['normal_mean'], data_aug_params['normal_sd'], (n_aug_samples, n_y_features))
+
+            rand = random.choices(range(n_samples), k=n_aug_samples)
+            noise1 = np.random.normal(
+                data_aug_params["normal_mean"],
+                data_aug_params["normal_sd"],
+                (n_aug_samples, n_x_features),
+            )
+            noise2 = np.random.normal(
+                data_aug_params["normal_mean"],
+                data_aug_params["normal_sd"],
+                (n_aug_samples, n_y_features),
+            )
 
             data1 = xyz_data[rand, :] + noise1
             data2 = xanes_data[rand, :] + noise2
 
-            element_label = np.append(element_label,element_label[rand])
+            element_label = np.append(element_label, element_label[rand])
 
-        elif data_params['augment_type'].lower() == 'random_combination':
+        elif data_params["augment_type"].lower() == "random_combination":
 
-            rand1 = random.choices(range(n_samples),k = n_aug_samples)
-            rand2 = random.choices(range(n_samples),k = n_aug_samples)
+            rand1 = random.choices(range(n_samples), k=n_aug_samples)
+            rand2 = random.choices(range(n_samples), k=n_aug_samples)
 
-            data1 = 0.5*(xyz_data[rand1, :] + xyz_data[rand2, :])
-            data2 = 0.5*(xanes_data[rand1, :] + xanes_data[rand2, :])
+            data1 = 0.5 * (xyz_data[rand1, :] + xyz_data[rand2, :])
+            data2 = 0.5 * (xanes_data[rand1, :] + xanes_data[rand2, :])
 
-            element_label = np.append(element_label,element_label[rand1])
+            element_label = np.append(element_label, element_label[rand1])
         else:
-            raise ValueError('augment_type not found')
+            raise ValueError("augment_type not found")
 
         xyz_data = np.vstack((xyz_data, data1))
         xanes_data = np.vstack((xanes_data, data2))
 
-        print('>> ...FINISHED AUGMENTING DATA...\n')
-
-
+        print(">> ...FINISHED AUGMENTING DATA...\n")
 
     print(xyz_data.shape)
     print(element_label.shape)
