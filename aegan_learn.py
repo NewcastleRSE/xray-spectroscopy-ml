@@ -139,4 +139,4 @@ def train_aegan(x, y, hyperparams, n_epoch):
             "loss_y_pred": train_loss_y_pred,
         }
 
-    return losses, model
+    return model, losses

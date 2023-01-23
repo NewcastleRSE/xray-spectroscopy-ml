@@ -234,59 +234,11 @@ def main(
 	)
 	print(">> ...shuffled and selected!\n")
 
-	# if kfold_params:
-
-	#     kfold_spooler = RepeatedKFold(**kfold_params, random_state=rng)
-
-	#     fit_time = []
-	#     train_score = []
-	#     test_score = []
-	#     prev_score = 1
-
-	#     for train_index, test_index in kfold_spooler.split(x):
-
-	#         start = time.time()
-	#         model, score = train_mlp(
-	#             x[train_index], y[train_index], hyperparams, epochs
-	#         )
-	#         # model, score = train_cnn(
-	#         #     x[train_index], y[train_index], hyperparams, epochs
-	#         # )
-	#         train_score.append(score)
-
-	#         fit_time.append(time.time() - start)
-
-	#         model.eval()
-	#         x_test = torch.from_numpy(x[test_index])
-	#         x_test = x_test.float()
-	#         y_predict = model(x_test)
-	#         y_score = mean_squared_error(y[test_index], y_predict.detach().numpy())
-
-	#         test_score.append(y_score)
-
-	#         if y_score < prev_score:
-	#             best_model = model
-
-	#         prev_score = y_score
-
-	#     result = {
-	#         "fit_time": fit_time,
-	#         "train_score": train_score,
-	#         "test_score": test_score,
-	#     }
-	#     print_cross_validation_scores(result)
-
-	#     if save:
-	#         torch.save(best_model, model_dir / f"model.pt")
-	#         print("Saved model to disk")
-
-	# else:
-
 	# Setup K-fold Cross Validation variables
 	if kfold_params:
 		kfold_spooler = RepeatedKFold(n_splits = kfold_params['n_splits'], n_repeats = kfold_params['n_repeats'], random_state=rng)
 		fit_time = []
-		prev_score = 1
+		prev_score = 1E6
 		loss_fn = kfold_params['loss']['loss_fn']
 		loss_args = kfold_params['loss']['loss_args']
 		kfold_loss_fn = model_utils.LossSwitch().fn(loss_fn, loss_args)
@@ -314,14 +266,15 @@ def main(
 					pred_xanes = model(xyz_test)
 					pred_score = kfold_loss_fn(torch.tensor(xanes[test_index]), pred_xanes).item()
 					test_score.append(pred_score)
-					if y_score < prev_score:
+					if pred_score < prev_score:
 						best_model = model
-					prev_score = y_score
+					prev_score = pred_score
 				result = {"fit_time": fit_time, "train_score": train_score, "test_score": test_score,}
 				print_cross_validation_scores(result, model_mode)
 			else:
 				print(">> fitting neural net...")
 				model, score = train(xyz, xanes, model_mode, hyperparams, epochs)
+				summary(model, (1, xyz.shape[1]))
 
 		elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
 			from ae_learn import train
@@ -347,16 +300,16 @@ def main(
 					pred_score = kfold_loss_fn(xanes_test, pred_xanes).item()
 					test_recon_score.append(recon_score)
 					test_pred_score.append(pred_score)
-					if pred_score < prev_score:
+					mean_score = np.mean([recon_score, pred_score])
+					if mean_score < prev_score:
 						best_model = model
-					prev_score = pred_score
+					prev_score = mean_score
 				result = {"fit_time": fit_time, "train_score": train_score, "test_recon_score": test_recon_score, "test_pred_score" : test_pred_score}
 				print_cross_validation_scores(result, model_mode)
 			else:
 				print(">> fitting neural net...")
 				model, score = train(xyz, xanes, model_mode, hyperparams, epochs)
-
-		summary(model, (1, xyz.shape[1]))
+				summary(model, (1, xyz.shape[1]))
 
 	elif mode == "train_xanes":
 		print("training xanes spectrum")
@@ -383,14 +336,15 @@ def main(
 					pred_xyz = model(xanes_test)
 					pred_score = kfold_loss_fn(torch.tensor(xyz[test_index]), pred_xyz).item()
 					test_score.append(pred_score)
-					if y_score < prev_score:
+					if pred_score < prev_score:
 						best_model = model
-					prev_score = y_score
+					prev_score = pred_score
 				result = {"fit_time": fit_time, "train_score": train_score, "test_score": test_score,}
 				print_cross_validation_scores(result, model_mode)
 			else:
 				print(">> fitting neural net...")
 				model, score = train(xanes, xyz, model_mode, hyperparams, epochs)
+				summary(model, (1, xanes.shape[1]))
 
 		elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
 			from ae_learn import train
@@ -416,26 +370,67 @@ def main(
 					pred_score = kfold_loss_fn(xyz_test, pred_xyz).item()
 					test_recon_score.append(recon_score)
 					test_pred_score.append(pred_score)
-					if pred_score < prev_score:
+					mean_score = np.mean([recon_score, pred_score])
+					if mean_score < prev_score:
 						best_model = model
-					prev_score = pred_score
+					prev_score = mean_score
 				result = {"fit_time": fit_time, "train_score": train_score, "test_recon_score": test_recon_score, "test_pred_score" : test_pred_score}
 				print_cross_validation_scores(result, model_mode)
 			else:
 				print(">> fitting neural net...")
 				model, score = train(xanes, xyz, model_mode, hyperparams, epochs)
-
-		summary(model, (1, xanes.shape[1]))
+				summary(model, (1, xanes.shape[1]))
 
 	elif mode == "train_aegan":
 		from aegan_learn import train_aegan
 
-		losses, model = train_aegan(xyz, xanes, hyperparams, epochs)
-		summary(model)
+		if kfold_params:
+			# K-fold Cross Validation model evaluation
+			train_score = []
+			test_recon_xyz_score = []
+			test_recon_xanes_score = []
+			test_pred_xyz_score = []
+			test_pred_xanes_score = []
+			for fold, (train_index, test_index) in enumerate(kfold_spooler.split(xyz)):
+				print(">> fitting neural net...")
+				# Training
+				start = time.time()
+				model, score = train_aegan(xyz[train_index], xanes[train_index], hyperparams, epochs)
+				train_score.append(score['train_loss'][-1])
+				fit_time.append(time.time() - start)
+				# Testing
+				model.eval()
+				xyz_test = torch.from_numpy(xyz[test_index]).float()
+				xanes_test = torch.from_numpy(xanes[test_index]).float()
+				recon_xyz, recon_xanes, pred_xyz, pred_xanes = model.reconstruct_all_predict_all(xyz_test,xanes_test)
+				recon_xyz_score = kfold_loss_fn(xyz_test, recon_xyz).item()
+				recon_xanes_score = kfold_loss_fn(xanes_test, recon_xanes).item()
+				pred_xyz_score = kfold_loss_fn(xyz_test, pred_xyz).item()
+				pred_xanes_score = kfold_loss_fn(xanes_test, pred_xanes).item()
+				test_recon_xyz_score.append(recon_xyz_score)
+				test_recon_xanes_score.append(recon_xanes_score)
+				test_pred_xyz_score.append(pred_xyz_score)
+				test_pred_xanes_score.append(pred_xanes_score)
+				mean_score = np.mean([recon_xyz_score, recon_xanes_score, pred_xyz_score, pred_xanes_score])
+				if mean_score < prev_score:
+					best_model = model
+				prev_score = mean_score
 
-		from plot import plot_running_aegan
 
-		plot_running_aegan(losses, model_dir)
+			result = {"fit_time": fit_time, "train_score": train_score, 
+						"test_recon_xyz_score": test_recon_xyz_score, 
+						"test_recon_xanes_score" : test_recon_xanes_score,
+						"test_pred_xyz_score" : test_pred_xyz_score,
+						"test_pred_xanes_score" : test_pred_xanes_score}
+			print_cross_validation_scores(result, model_mode)
+		else:
+			print(">> fitting neural net...")
+			model, score = train_aegan(xyz, xanes, hyperparams, epochs)
+			summary(model)
+
+		# from plot import plot_running_aegan
+
+		# plot_running_aegan(losses, model_dir)
 
 	if save:
 		if kfold_params:
