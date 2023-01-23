@@ -53,22 +53,22 @@ from utils import print_cross_validation_scores
 
 
 def main(
-	mode: str,
-	model_mode: str,
-	x_path: str,
-	y_path: str,
-	descriptor_type: str,
-	descriptor_params: dict = {},
-	kfold_params: dict = {},
-	hyperparams: dict = {},
-	max_samples: int = None,
-	variance_threshold: float = 0.0,
-	epochs: int = 100,
-	callbacks: dict = {},
-	seed: int = None,
-	save: bool = True,
+    mode: str,
+    model_mode: str,
+    x_path: str,
+    y_path: str,
+    descriptor_type: str,
+    descriptor_params: dict = {},
+    kfold_params: dict = {},
+    hyperparams: dict = {},
+    max_samples: int = None,
+    variance_threshold: float = 0.0,
+    epochs: int = 100,
+    callbacks: dict = {},
+    seed: int = None,
+    save: bool = True,
 ):
-	"""
+    """
 	LEARN. The .xyz (X) and XANES spectral (Y) data are loaded and transformed;
 	a neural network is set up and fit to these data to find an Y <- X mapping.
 	K-fold cross-validation is possible if {kfold_params} are provided.
@@ -126,321 +126,395 @@ def main(
 			Defaults to True.
 	"""
 
-	rng = RandomState(seed=seed)
+    rng = RandomState(seed=seed)
 
-	xyz_path = [Path(p) for p in glob(x_path)]
-	xanes_path = [Path(p) for p in glob(y_path)]
+    xyz_path = [Path(p) for p in glob(x_path)]
+    xanes_path = [Path(p) for p in glob(y_path)]
 
-	xyz_list = []
-	xanes_list = []
-	e_list = []
-	element_label = []
+    xyz_list = []
+    xanes_list = []
+    e_list = []
+    element_label = []
 
-	for n_element in range(0, len(xyz_path)):
+    for n_element in range(0, len(xyz_path)):
 
-		element_name = str(xyz_path[n_element]).split("/")[-3]
+        element_name = str(xyz_path[n_element]).split("/")[-3]
 
-		for path in (xyz_path[n_element], xanes_path[n_element]):
-			if not path.exists():
-				err_str = f"path to X/Y data ({path}) doesn't exist"
-				raise FileNotFoundError(err_str)
+        for path in (xyz_path[n_element], xanes_path[n_element]):
+            if not path.exists():
+                err_str = f"path to X/Y data ({path}) doesn't exist"
+                raise FileNotFoundError(err_str)
 
-		if xyz_path[n_element].is_dir() and xanes_path[n_element].is_dir():
-			print(">> loading data from directories...\n")
+        if xyz_path[n_element].is_dir() and xanes_path[n_element].is_dir():
+            print(">> loading data from directories...\n")
 
-			ids = list(
-				set(list_filestems(xyz_path[n_element]))
-				& set(list_filestems(xanes_path[n_element]))
-			)
+            ids = list(
+                set(list_filestems(xyz_path[n_element]))
+                & set(list_filestems(xanes_path[n_element]))
+            )
 
-			ids.sort()
+            ids.sort()
 
-			descriptors = {"rdc": RDC, "wacsf": WACSF}
+            descriptors = {"rdc": RDC, "wacsf": WACSF}
 
-			descriptor = descriptors.get(descriptor_type)(**descriptor_params)
+            descriptor = descriptors.get(descriptor_type)(**descriptor_params)
 
-			n_samples = len(ids)
-			n_x_features = descriptor.get_len()
-			n_y_features = linecount(xanes_path[n_element] / f"{ids[0]}.txt") - 2
+            n_samples = len(ids)
+            n_x_features = descriptor.get_len()
+            n_y_features = linecount(xanes_path[n_element] / f"{ids[0]}.txt") - 2
 
-			xyz_data = np.full((n_samples, n_x_features), np.nan)
-			print(">> preallocated {}x{} array for X data...".format(*xyz_data.shape))
-			xanes_data = np.full((n_samples, n_y_features), np.nan)
-			print(">> preallocated {}x{} array for Y data...".format(*xanes_data.shape))
-			print(">> ...everything preallocated!\n")
+            xyz_data = np.full((n_samples, n_x_features), np.nan)
+            print(">> preallocated {}x{} array for X data...".format(*xyz_data.shape))
+            xanes_data = np.full((n_samples, n_y_features), np.nan)
+            print(">> preallocated {}x{} array for Y data...".format(*xanes_data.shape))
+            print(">> ...everything preallocated!\n")
 
-			print(">> loading data into array(s)...")
-			for i, id_ in enumerate(tqdm.tqdm(ids)):
-				element_label.append(element_name)
-				with open(xyz_path[n_element] / f"{id_}.xyz", "r") as f:
-					atoms = load_xyz(f)
-				xyz_data[i, :] = descriptor.transform(atoms)
-				with open(xanes_path[n_element] / f"{id_}.txt", "r") as f:
-					xanes = load_xanes(f)
-				e, xanes_data[i, :] = xanes.spectrum
-			print(">> ...loaded into array(s)!\n")
+            print(">> loading data into array(s)...")
+            for i, id_ in enumerate(tqdm.tqdm(ids)):
+                element_label.append(element_name)
+                with open(xyz_path[n_element] / f"{id_}.xyz", "r") as f:
+                    atoms = load_xyz(f)
+                xyz_data[i, :] = descriptor.transform(atoms)
+                with open(xanes_path[n_element] / f"{id_}.txt", "r") as f:
+                    xanes = load_xanes(f)
+                e, xanes_data[i, :] = xanes.spectrum
+            print(">> ...loaded into array(s)!\n")
 
-			xyz_list.append(xyz_data)
-			xanes_list.append(xanes_data)
-			e_list.append(e)
+            xyz_list.append(xyz_data)
+            xanes_list.append(xanes_data)
+            e_list.append(e)
 
-		elif x_path[n_element].is_file() and y_path[n_element].is_file():
-			print(">> loading data from .npz archive(s)...\n")
+        elif x_path[n_element].is_file() and y_path[n_element].is_file():
+            print(">> loading data from .npz archive(s)...\n")
 
-			with open(x_path[n_element], "rb") as f:
-				xyz_data = np.load(f)["x"]
-			print(">> ...loaded {}x{} array of X data".format(*xyz_data.shape))
-			with open(y_path[n_element], "rb") as f:
-				xanes_data = np.load(f)["y"]
-				e = np.load(f)["e"]
-			print(">> ...loaded {}x{} array of Y data".format(*xanes_data.shape))
-			print(">> ...everything loaded!\n")
+            with open(x_path[n_element], "rb") as f:
+                xyz_data = np.load(f)["x"]
+            print(">> ...loaded {}x{} array of X data".format(*xyz_data.shape))
+            with open(y_path[n_element], "rb") as f:
+                xanes_data = np.load(f)["y"]
+                e = np.load(f)["e"]
+            print(">> ...loaded {}x{} array of Y data".format(*xanes_data.shape))
+            print(">> ...everything loaded!\n")
 
-			xyz_list.append(xyz_data)
-			xanes_list.append(xanes_data)
-			e_list.append(e)
+            xyz_list.append(xyz_data)
+            xanes_list.append(xanes_data)
+            e_list.append(e)
 
-			if save:
-				print(">> overriding save flag (running in `--no-save` mode)\n")
-				save = False
+            if save:
+                print(">> overriding save flag (running in `--no-save` mode)\n")
+                save = False
 
-		else:
+        else:
 
-			err_str = (
-				"paths to X/Y data are expected to be either a) both "
-				"files (.npz archives), or b) both directories"
-			)
-			raise TypeError(err_str)
+            err_str = (
+                "paths to X/Y data are expected to be either a) both "
+                "files (.npz archives), or b) both directories"
+            )
+            raise TypeError(err_str)
 
-	xyz_data = np.vstack(xyz_list)
-	xanes_data = np.vstack(xanes_list)
-	e = np.vstack(e_list)
-	element_label = np.asarray(element_label)
+    xyz_data = np.vstack(xyz_list)
+    xanes_data = np.vstack(xanes_list)
+    e = np.vstack(e_list)
+    element_label = np.asarray(element_label)
 
-	print(xyz_data.shape)
-	print(element_label.shape)
+    print(xyz_data.shape)
+    print(element_label.shape)
 
-	if save:
-		model_dir = unique_path(Path("."), "model")
-		model_dir.mkdir()
-		with open(model_dir / "descriptor.pickle", "wb") as f:
-			pickle.dump(descriptor, f)
-		with open(model_dir / "dataset.npz", "wb") as f:
-			np.savez_compressed(f, ids=ids, x=xyz_data, y=xanes_data, e=e)
+    if save:
+        model_dir = unique_path(Path("."), "model")
+        model_dir.mkdir()
+        with open(model_dir / "descriptor.pickle", "wb") as f:
+            pickle.dump(descriptor, f)
+        with open(model_dir / "dataset.npz", "wb") as f:
+            np.savez_compressed(f, ids=ids, x=xyz_data, y=xanes_data, e=e)
 
-	print(">> shuffling and selecting data...")
-	xyz, xanes, element = shuffle(
-		xyz_data, xanes_data, element_label, random_state=rng, n_samples=max_samples
-	)
-	print(">> ...shuffled and selected!\n")
+    print(">> shuffling and selecting data...")
+    xyz, xanes, element = shuffle(
+        xyz_data, xanes_data, element_label, random_state=rng, n_samples=max_samples
+    )
+    print(">> ...shuffled and selected!\n")
 
-	# Setup K-fold Cross Validation variables
-	if kfold_params:
-		kfold_spooler = RepeatedKFold(n_splits = kfold_params['n_splits'], n_repeats = kfold_params['n_repeats'], random_state=rng)
-		fit_time = []
-		prev_score = 1E6
-		loss_fn = kfold_params['loss']['loss_fn']
-		loss_args = kfold_params['loss']['loss_args']
-		kfold_loss_fn = model_utils.LossSwitch().fn(loss_fn, loss_args)
+    # Setup K-fold Cross Validation variables
+    if kfold_params:
+        kfold_spooler = RepeatedKFold(
+            n_splits=kfold_params["n_splits"],
+            n_repeats=kfold_params["n_repeats"],
+            random_state=rng,
+        )
+        fit_time = []
+        prev_score = 1e6
+        loss_fn = kfold_params["loss"]["loss_fn"]
+        loss_args = kfold_params["loss"]["loss_args"]
+        kfold_loss_fn = model_utils.LossSwitch().fn(loss_fn, loss_args)
 
-	if mode == "train_xyz":
-		print("training xyz structure")
+    if mode == "train_xyz":
+        print("training xyz structure")
 
-		if model_mode == "mlp" or model_mode == "cnn":
-			from learn import train
+        if model_mode == "mlp" or model_mode == "cnn":
+            from learn import train
 
-			if kfold_params:
-				# K-fold Cross Validation model evaluation
-				train_score = []
-				test_score = []
-				for fold, (train_index, test_index) in enumerate(kfold_spooler.split(xyz)):
-					print(">> fitting neural net...")
-					# Training
-					start = time.time()
-					model, score = train(xyz[train_index], xanes[train_index], model_mode, hyperparams, epochs)
-					train_score.append(score)
-					fit_time.append(time.time() - start)
-					# Testing
-					model.eval()
-					xyz_test = torch.from_numpy(xyz[test_index]).float()
-					pred_xanes = model(xyz_test)
-					pred_score = kfold_loss_fn(torch.tensor(xanes[test_index]), pred_xanes).item()
-					test_score.append(pred_score)
-					if pred_score < prev_score:
-						best_model = model
-					prev_score = pred_score
-				result = {"fit_time": fit_time, "train_score": train_score, "test_score": test_score,}
-				print_cross_validation_scores(result, model_mode)
-			else:
-				print(">> fitting neural net...")
-				model, score = train(xyz, xanes, model_mode, hyperparams, epochs)
-				summary(model, (1, xyz.shape[1]))
+            if kfold_params:
+                # K-fold Cross Validation model evaluation
+                train_score = []
+                test_score = []
+                for fold, (train_index, test_index) in enumerate(
+                    kfold_spooler.split(xyz)
+                ):
+                    print(">> fitting neural net...")
+                    # Training
+                    start = time.time()
+                    model, score = train(
+                        xyz[train_index],
+                        xanes[train_index],
+                        model_mode,
+                        hyperparams,
+                        epochs,
+                    )
+                    train_score.append(score)
+                    fit_time.append(time.time() - start)
+                    # Testing
+                    model.eval()
+                    xyz_test = torch.from_numpy(xyz[test_index]).float()
+                    pred_xanes = model(xyz_test)
+                    pred_score = kfold_loss_fn(
+                        torch.tensor(xanes[test_index]), pred_xanes
+                    ).item()
+                    test_score.append(pred_score)
+                    if pred_score < prev_score:
+                        best_model = model
+                    prev_score = pred_score
+                result = {
+                    "fit_time": fit_time,
+                    "train_score": train_score,
+                    "test_score": test_score,
+                }
+                print_cross_validation_scores(result, model_mode)
+            else:
+                print(">> fitting neural net...")
+                model, score = train(xyz, xanes, model_mode, hyperparams, epochs)
+                summary(model, (1, xyz.shape[1]))
 
-		elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
-			from ae_learn import train
+        elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
+            from ae_learn import train
 
-			if kfold_params:
-				# K-fold Cross Validation model evaluation
-				train_score = []
-				test_recon_score = []
-				test_pred_score = []
-				for fold, (train_index, test_index) in enumerate(kfold_spooler.split(xyz)):
-					print(">> fitting neural net...")
-					# Training
-					start = time.time()
-					model, score = train(xyz[train_index], xanes[train_index], model_mode, hyperparams, epochs)
-					train_score.append(score)
-					fit_time.append(time.time() - start)
-					# Testing
-					model.eval()
-					xyz_test = torch.from_numpy(xyz[test_index]).float()
-					xanes_test = torch.from_numpy(xanes[test_index]).float()
-					recon_xyz, pred_xanes = model(xyz_test)
-					recon_score = kfold_loss_fn(xyz_test, recon_xyz).item()
-					pred_score = kfold_loss_fn(xanes_test, pred_xanes).item()
-					test_recon_score.append(recon_score)
-					test_pred_score.append(pred_score)
-					mean_score = np.mean([recon_score, pred_score])
-					if mean_score < prev_score:
-						best_model = model
-					prev_score = mean_score
-				result = {"fit_time": fit_time, "train_score": train_score, "test_recon_score": test_recon_score, "test_pred_score" : test_pred_score}
-				print_cross_validation_scores(result, model_mode)
-			else:
-				print(">> fitting neural net...")
-				model, score = train(xyz, xanes, model_mode, hyperparams, epochs)
-				summary(model, (1, xyz.shape[1]))
+            if kfold_params:
+                # K-fold Cross Validation model evaluation
+                train_score = []
+                test_recon_score = []
+                test_pred_score = []
+                for fold, (train_index, test_index) in enumerate(
+                    kfold_spooler.split(xyz)
+                ):
+                    print(">> fitting neural net...")
+                    # Training
+                    start = time.time()
+                    model, score = train(
+                        xyz[train_index],
+                        xanes[train_index],
+                        model_mode,
+                        hyperparams,
+                        epochs,
+                    )
+                    train_score.append(score)
+                    fit_time.append(time.time() - start)
+                    # Testing
+                    model.eval()
+                    xyz_test = torch.from_numpy(xyz[test_index]).float()
+                    xanes_test = torch.from_numpy(xanes[test_index]).float()
+                    recon_xyz, pred_xanes = model(xyz_test)
+                    recon_score = kfold_loss_fn(xyz_test, recon_xyz).item()
+                    pred_score = kfold_loss_fn(xanes_test, pred_xanes).item()
+                    test_recon_score.append(recon_score)
+                    test_pred_score.append(pred_score)
+                    mean_score = np.mean([recon_score, pred_score])
+                    if mean_score < prev_score:
+                        best_model = model
+                    prev_score = mean_score
+                result = {
+                    "fit_time": fit_time,
+                    "train_score": train_score,
+                    "test_recon_score": test_recon_score,
+                    "test_pred_score": test_pred_score,
+                }
+                print_cross_validation_scores(result, model_mode)
+            else:
+                print(">> fitting neural net...")
+                model, score = train(xyz, xanes, model_mode, hyperparams, epochs)
+                summary(model, (1, xyz.shape[1]))
 
-	elif mode == "train_xanes":
-		print("training xanes spectrum")
+    elif mode == "train_xanes":
+        print("training xanes spectrum")
 
-		print(">> fitting neural net...")
+        print(">> fitting neural net...")
 
-		if model_mode == "mlp" or model_mode == "cnn":
-			from learn import train
+        if model_mode == "mlp" or model_mode == "cnn":
+            from learn import train
 
-			if kfold_params:
-				train_score = []
-				test_score = []
-				# K-fold Cross Validation model evaluation
-				for fold, (train_index, test_index) in enumerate(kfold_spooler.split(xyz)):
-					print(">> fitting neural net...")
-					# Training
-					start = time.time()
-					model, score = train(xanes[train_index], xyz[train_index], model_mode, hyperparams, epochs)
-					train_score.append(score)
-					fit_time.append(time.time() - start)
-					# Testing
-					model.eval()
-					xanes_test = torch.from_numpy(xanes[test_index]).float()
-					pred_xyz = model(xanes_test)
-					pred_score = kfold_loss_fn(torch.tensor(xyz[test_index]), pred_xyz).item()
-					test_score.append(pred_score)
-					if pred_score < prev_score:
-						best_model = model
-					prev_score = pred_score
-				result = {"fit_time": fit_time, "train_score": train_score, "test_score": test_score,}
-				print_cross_validation_scores(result, model_mode)
-			else:
-				print(">> fitting neural net...")
-				model, score = train(xanes, xyz, model_mode, hyperparams, epochs)
-				summary(model, (1, xanes.shape[1]))
+            if kfold_params:
+                train_score = []
+                test_score = []
+                # K-fold Cross Validation model evaluation
+                for fold, (train_index, test_index) in enumerate(
+                    kfold_spooler.split(xyz)
+                ):
+                    print(">> fitting neural net...")
+                    # Training
+                    start = time.time()
+                    model, score = train(
+                        xanes[train_index],
+                        xyz[train_index],
+                        model_mode,
+                        hyperparams,
+                        epochs,
+                    )
+                    train_score.append(score)
+                    fit_time.append(time.time() - start)
+                    # Testing
+                    model.eval()
+                    xanes_test = torch.from_numpy(xanes[test_index]).float()
+                    pred_xyz = model(xanes_test)
+                    pred_score = kfold_loss_fn(
+                        torch.tensor(xyz[test_index]), pred_xyz
+                    ).item()
+                    test_score.append(pred_score)
+                    if pred_score < prev_score:
+                        best_model = model
+                    prev_score = pred_score
+                result = {
+                    "fit_time": fit_time,
+                    "train_score": train_score,
+                    "test_score": test_score,
+                }
+                print_cross_validation_scores(result, model_mode)
+            else:
+                print(">> fitting neural net...")
+                model, score = train(xanes, xyz, model_mode, hyperparams, epochs)
+                summary(model, (1, xanes.shape[1]))
 
-		elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
-			from ae_learn import train
+        elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
+            from ae_learn import train
 
-			if kfold_params:
-				# K-fold Cross Validation model evaluation
-				train_score = []
-				test_recon_score = []
-				test_pred_score = []
-				for fold, (train_index, test_index) in enumerate(kfold_spooler.split(xyz)):
-					print(">> fitting neural net...")
-					# Training
-					start = time.time()
-					model, score = train(xanes[train_index], xyz[train_index], model_mode, hyperparams, epochs)
-					train_score.append(score)
-					fit_time.append(time.time() - start)
-					# Testing
-					model.eval()
-					xyz_test = torch.from_numpy(xyz[test_index]).float()
-					xanes_test = torch.from_numpy(xanes[test_index]).float()
-					recon_xanes, pred_xyz = model(xanes_test)
-					recon_score = kfold_loss_fn(xanes_test, recon_xanes).item()
-					pred_score = kfold_loss_fn(xyz_test, pred_xyz).item()
-					test_recon_score.append(recon_score)
-					test_pred_score.append(pred_score)
-					mean_score = np.mean([recon_score, pred_score])
-					if mean_score < prev_score:
-						best_model = model
-					prev_score = mean_score
-				result = {"fit_time": fit_time, "train_score": train_score, "test_recon_score": test_recon_score, "test_pred_score" : test_pred_score}
-				print_cross_validation_scores(result, model_mode)
-			else:
-				print(">> fitting neural net...")
-				model, score = train(xanes, xyz, model_mode, hyperparams, epochs)
-				summary(model, (1, xanes.shape[1]))
+            if kfold_params:
+                # K-fold Cross Validation model evaluation
+                train_score = []
+                test_recon_score = []
+                test_pred_score = []
+                for fold, (train_index, test_index) in enumerate(
+                    kfold_spooler.split(xyz)
+                ):
+                    print(">> fitting neural net...")
+                    # Training
+                    start = time.time()
+                    model, score = train(
+                        xanes[train_index],
+                        xyz[train_index],
+                        model_mode,
+                        hyperparams,
+                        epochs,
+                    )
+                    train_score.append(score)
+                    fit_time.append(time.time() - start)
+                    # Testing
+                    model.eval()
+                    xyz_test = torch.from_numpy(xyz[test_index]).float()
+                    xanes_test = torch.from_numpy(xanes[test_index]).float()
+                    recon_xanes, pred_xyz = model(xanes_test)
+                    recon_score = kfold_loss_fn(xanes_test, recon_xanes).item()
+                    pred_score = kfold_loss_fn(xyz_test, pred_xyz).item()
+                    test_recon_score.append(recon_score)
+                    test_pred_score.append(pred_score)
+                    mean_score = np.mean([recon_score, pred_score])
+                    if mean_score < prev_score:
+                        best_model = model
+                    prev_score = mean_score
+                result = {
+                    "fit_time": fit_time,
+                    "train_score": train_score,
+                    "test_recon_score": test_recon_score,
+                    "test_pred_score": test_pred_score,
+                }
+                print_cross_validation_scores(result, model_mode)
+            else:
+                print(">> fitting neural net...")
+                model, score = train(xanes, xyz, model_mode, hyperparams, epochs)
+                summary(model, (1, xanes.shape[1]))
 
-	elif mode == "train_aegan":
-		from aegan_learn import train_aegan
+    elif mode == "train_aegan":
+        from aegan_learn import train_aegan
 
-		if kfold_params:
-			# K-fold Cross Validation model evaluation
-			train_score = []
-			test_recon_xyz_score = []
-			test_recon_xanes_score = []
-			test_pred_xyz_score = []
-			test_pred_xanes_score = []
-			for fold, (train_index, test_index) in enumerate(kfold_spooler.split(xyz)):
-				print(">> fitting neural net...")
-				# Training
-				start = time.time()
-				model, score = train_aegan(xyz[train_index], xanes[train_index], hyperparams, epochs)
-				train_score.append(score['train_loss'][-1])
-				fit_time.append(time.time() - start)
-				# Testing
-				model.eval()
-				xyz_test = torch.from_numpy(xyz[test_index]).float()
-				xanes_test = torch.from_numpy(xanes[test_index]).float()
-				recon_xyz, recon_xanes, pred_xyz, pred_xanes = model.reconstruct_all_predict_all(xyz_test,xanes_test)
-				recon_xyz_score = kfold_loss_fn(xyz_test, recon_xyz).item()
-				recon_xanes_score = kfold_loss_fn(xanes_test, recon_xanes).item()
-				pred_xyz_score = kfold_loss_fn(xyz_test, pred_xyz).item()
-				pred_xanes_score = kfold_loss_fn(xanes_test, pred_xanes).item()
-				test_recon_xyz_score.append(recon_xyz_score)
-				test_recon_xanes_score.append(recon_xanes_score)
-				test_pred_xyz_score.append(pred_xyz_score)
-				test_pred_xanes_score.append(pred_xanes_score)
-				mean_score = np.mean([recon_xyz_score, recon_xanes_score, pred_xyz_score, pred_xanes_score])
-				if mean_score < prev_score:
-					best_model = model
-				prev_score = mean_score
+        if kfold_params:
+            # K-fold Cross Validation model evaluation
+            train_score = []
+            test_recon_xyz_score = []
+            test_recon_xanes_score = []
+            test_pred_xyz_score = []
+            test_pred_xanes_score = []
+            for fold, (train_index, test_index) in enumerate(kfold_spooler.split(xyz)):
+                print(">> fitting neural net...")
+                # Training
+                start = time.time()
+                model, score = train_aegan(
+                    xyz[train_index], xanes[train_index], hyperparams, epochs
+                )
+                train_score.append(score["train_loss"][-1])
+                fit_time.append(time.time() - start)
+                # Testing
+                model.eval()
+                xyz_test = torch.from_numpy(xyz[test_index]).float()
+                xanes_test = torch.from_numpy(xanes[test_index]).float()
+                (
+                    recon_xyz,
+                    recon_xanes,
+                    pred_xyz,
+                    pred_xanes,
+                ) = model.reconstruct_all_predict_all(xyz_test, xanes_test)
+                recon_xyz_score = kfold_loss_fn(xyz_test, recon_xyz).item()
+                recon_xanes_score = kfold_loss_fn(xanes_test, recon_xanes).item()
+                pred_xyz_score = kfold_loss_fn(xyz_test, pred_xyz).item()
+                pred_xanes_score = kfold_loss_fn(xanes_test, pred_xanes).item()
+                test_recon_xyz_score.append(recon_xyz_score)
+                test_recon_xanes_score.append(recon_xanes_score)
+                test_pred_xyz_score.append(pred_xyz_score)
+                test_pred_xanes_score.append(pred_xanes_score)
+                mean_score = np.mean(
+                    [
+                        recon_xyz_score,
+                        recon_xanes_score,
+                        pred_xyz_score,
+                        pred_xanes_score,
+                    ]
+                )
+                if mean_score < prev_score:
+                    best_model = model
+                prev_score = mean_score
 
+            result = {
+                "fit_time": fit_time,
+                "train_score": train_score,
+                "test_recon_xyz_score": test_recon_xyz_score,
+                "test_recon_xanes_score": test_recon_xanes_score,
+                "test_pred_xyz_score": test_pred_xyz_score,
+                "test_pred_xanes_score": test_pred_xanes_score,
+            }
+            print_cross_validation_scores(result, model_mode)
+        else:
+            print(">> fitting neural net...")
+            model, score = train_aegan(xyz, xanes, hyperparams, epochs)
+            summary(model)
 
-			result = {"fit_time": fit_time, "train_score": train_score, 
-						"test_recon_xyz_score": test_recon_xyz_score, 
-						"test_recon_xanes_score" : test_recon_xanes_score,
-						"test_pred_xyz_score" : test_pred_xyz_score,
-						"test_pred_xanes_score" : test_pred_xanes_score}
-			print_cross_validation_scores(result, model_mode)
-		else:
-			print(">> fitting neural net...")
-			model, score = train_aegan(xyz, xanes, hyperparams, epochs)
-			summary(model)
+        # from plot import plot_running_aegan
 
-		# from plot import plot_running_aegan
+        # plot_running_aegan(losses, model_dir)
 
-		# plot_running_aegan(losses, model_dir)
+    if save:
+        if kfold_params:
+            torch.save(best_model, model_dir / f"model.pt")
+            print("Saved best model to disk")
+        else:
+            torch.save(model, model_dir / f"model.pt")
+            print("Saved model to disk")
 
-	if save:
-		if kfold_params:
-			torch.save(best_model, model_dir / f"model.pt")
-			print("Saved best model to disk")
-		else:
-			torch.save(model, model_dir / f"model.pt")
-			print("Saved model to disk")
+    else:
+        print("none")
 
-	else:
-		print("none")
-
-	return
+    return

@@ -127,13 +127,11 @@ class AE_mlp(nn.Module):
         self.act_fn = act_fn
 
         self.encoder_hidden_1 = nn.Sequential(
-            nn.Linear(self.input_size, self.hidden_size),
-            self.act_fn,
+            nn.Linear(self.input_size, self.hidden_size), self.act_fn,
         )
 
         self.encoder_hidden_2 = nn.Sequential(
-            nn.Linear(self.hidden_size, self.hl_size),
-            self.act_fn,
+            nn.Linear(self.hidden_size, self.hl_size), self.act_fn,
         )
 
         self.fc1 = nn.Sequential(
@@ -142,13 +140,10 @@ class AE_mlp(nn.Module):
             nn.Dropout(self.dropout),
         )
 
-        self.fc2 = nn.Sequential(
-            nn.Linear(self.hl_size, self.out_dim),
-        )
+        self.fc2 = nn.Sequential(nn.Linear(self.hl_size, self.out_dim),)
 
         self.decoder_hidden_1 = nn.Sequential(
-            nn.Linear(self.hl_size, self.hidden_size),
-            self.act_fn,
+            nn.Linear(self.hl_size, self.hidden_size), self.act_fn,
         )
 
         self.decoder_hidden_2 = nn.Sequential(
@@ -361,12 +356,12 @@ class AEGANTrainer(nn.Module):
         self.activation = activation_switch.fn(params["activation"])
 
         # Select loss functions
-        loss_gen_fn = params['loss_gen']['loss_fn']
-        loss_dis_fn = params['loss_dis']['loss_fn']
+        loss_gen_fn = params["loss_gen"]["loss_fn"]
+        loss_dis_fn = params["loss_dis"]["loss_fn"]
 
-        loss_gen_args = params['loss_gen']['loss_args']
-        loss_dis_args = params['loss_dis']['loss_args']
-        
+        loss_gen_args = params["loss_gen"]["loss_args"]
+        loss_dis_args = params["loss_dis"]["loss_args"]
+
         self.loss_fn_gen = LossSwitch().fn(loss_gen_fn, loss_gen_args)
         self.loss_fn_dis = LossSwitch().fn(loss_dis_fn, loss_dis_args)
 
