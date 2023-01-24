@@ -250,16 +250,16 @@ def main(
     #         print("Saved model to disk")
 
     # else:
-
+    exp_name = f"{mode}_{model_mode}"
     if mode == "train_xyz":
         print("training xyz structure")
 
         print(">> fitting neural net...")
 
         if model_mode == "mlp" or model_mode == "cnn":
-            from learn import build_model
+            from learn import train
 
-            model, score = build_model(xyz, xanes, model_mode, hyperparams, epochs)
+            model, score = train(xyz, xanes, exp_name, model_mode, hyperparams, epochs)
 
         elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
             from ae_learn import train
@@ -274,10 +274,10 @@ def main(
         print(">> fitting neural net...")
 
         if model_mode == "mlp" or model_mode == "cnn":
-            from learn import build_model
+            from learn import train
 
             print(xanes.shape)
-            model, score = build_model(xanes, xyz, model_mode, hyperparams, epochs)
+            model, score = train(xanes, xyz, exp_name, model_mode, hyperparams, epochs)
 
         elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
             from ae_learn import train
