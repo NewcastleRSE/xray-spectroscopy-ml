@@ -27,6 +27,7 @@ from argparse import ArgumentParser
 
 from core_learn import main as learn
 from core_predict import main as predict
+from core_eval import main as eval_model
 from utils import print_nested_dict
 from model_utils import json_check
 
@@ -129,6 +130,50 @@ def parse_args(args: list):
         "inp_f", type=str, help="path to .json input file w/ variable definitions"
     )
 
+    eval_p_pred_xanes = sub_p.add_parser("eval_pred_xanes")
+    eval_p_pred_xanes.add_argument(
+        "--model_mode", type=str, help="the model", required=True
+    )
+    eval_p_pred_xanes.add_argument(
+        "mdl_dir", type=str, help="path to populated model directory"
+    )
+    eval_p_pred_xanes.add_argument(
+        "inp_f", type=str, help="path to .json input file w/ variable definitions"
+    )
+
+    eval_p_pred_xyz = sub_p.add_parser("eval_pred_xyz")
+    eval_p_pred_xyz.add_argument(
+        "--model_mode", type=str, help="the model", required=True
+    )
+    eval_p_pred_xyz.add_argument(
+        "mdl_dir", type=str, help="path to populated model directory"
+    )
+    eval_p_pred_xyz.add_argument(
+        "inp_f", type=str, help="path to .json input file w/ variable definitions"
+    )
+
+    eval_p_recon_xanes = sub_p.add_parser("eval_recon_xanes")
+    eval_p_recon_xanes.add_argument(
+        "--model_mode", type=str, help="the model", required=True
+    )
+    eval_p_recon_xanes.add_argument(
+        "mdl_dir", type=str, help="path to populated model directory"
+    )
+    eval_p_recon_xanes.add_argument(
+        "inp_f", type=str, help="path to .json input file w/ variable definitions"
+    )
+
+    eval_p_recon_xyz = sub_p.add_parser("eval_recon_xyz")
+    eval_p_recon_xyz.add_argument(
+        "--model_mode", type=str, help="the model", required=True
+    )
+    eval_p_recon_xyz.add_argument(
+        "mdl_dir", type=str, help="path to populated model directory"
+    )
+    eval_p_recon_xyz.add_argument(
+        "inp_f", type=str, help="path to .json input file w/ variable definitions"
+    )
+
     args = p.parse_args()
 
     return args
@@ -176,7 +221,20 @@ def main(args: list):
         predict(args.mode, args.model_mode, args.mdl_dir, inp["x_path"], None)
 
     elif args.mode == "predict_aegan_xyz":
+
+        print(f">> loading JSON input @ {args.inp_f}\n")
+        with open(args.inp_f) as f:
+            inp = json.load(f)
+        print_nested_dict(inp, nested_level=1)
         predict(args.mode, args.model_mode, args.mdl_dir, None, inp["y_path"])
+
+    if "eval" in args.mode:
+        print(f">> loading JSON input @ {args.inp_f}\n")
+        with open(args.inp_f) as f:
+            inp = json.load(f)
+        print_nested_dict(inp, nested_level=1)
+        print("")
+        eval_model(args.mode, args.mdl_dir, args.model_mode, **inp)
 
 
 ################################################################################

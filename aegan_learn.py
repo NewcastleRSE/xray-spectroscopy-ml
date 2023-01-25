@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 from model import AEGANTrainer
-from model_utils import weight_init
+import model_utils
 
 
 def train_aegan(x, y, hyperparams, n_epoch):
@@ -18,7 +18,7 @@ def train_aegan(x, y, hyperparams, n_epoch):
     n_y_features = y.shape[1]
 
     dataset = torch.utils.data.TensorDataset(x, y)
-    trainloader = torch.utils.data.DataLoader(dataset, batch_size=64)
+    trainloader = torch.utils.data.DataLoader(dataset, batch_size=hyperparams['batch_size'])
 
     hyperparams["input_size_a"] = n_x_features
     hyperparams["input_size_b"] = n_y_features
@@ -40,11 +40,26 @@ def train_aegan(x, y, hyperparams, n_epoch):
 
     model.to(device)
 
-    # Initialise weights
-    model.apply(weight_init)
+    # Model weight & bias initialisation
+    weight_seed = hyperparams["weight_init_seed"]
+    kernel_init = model_utils.WeightInitSwitch().fn(hyperparams["kernel_init"])
+    bias_init = model_utils.WeightInitSwitch().fn(hyperparams["bias_init"])
+    # set seed
+    torch.cuda.manual_seed(
+        weight_seed
+    ) if torch.cuda.is_available() else torch.manual_seed(weight_seed)
+    model.apply(
+        lambda m: model_utils.weight_bias_init(
+            m=m, kernel_init_fn=kernel_init, bias_init_fn=bias_init
+        )
+    )
 
     model.train()
-    loss_fn = nn.MSELoss()
+
+    # Select running loss function as generative loss function
+    loss_fn = hyperparams["loss_gen"]["loss_fn"]
+    loss_args = hyperparams["loss_gen"]["loss_args"]
+    criterion = model_utils.LossSwitch().fn(loss_fn, loss_args)
 
     train_total_loss = [None] * n_epoch
     train_loss_x_recon = [None] * n_epoch
@@ -71,10 +86,10 @@ def train_aegan(x, y, hyperparams, n_epoch):
             )
 
             # Track running losses
-            running_loss_recon_x += loss_fn(recon_x, inputs_x)
-            running_loss_recon_y += loss_fn(recon_y, inputs_y)
-            running_loss_pred_x += loss_fn(pred_x, inputs_x)
-            running_loss_pred_y += loss_fn(pred_y, inputs_y)
+            running_loss_recon_x += criterion(recon_x, inputs_x)
+            running_loss_recon_y += criterion(recon_y, inputs_y)
+            running_loss_pred_x += criterion(pred_x, inputs_x)
+            running_loss_pred_y += criterion(pred_y, inputs_y)
 
             loss_gen_total = (
                 running_loss_recon_x
@@ -124,4 +139,4 @@ def train_aegan(x, y, hyperparams, n_epoch):
             "loss_y_pred": train_loss_y_pred,
         }
 
-    return losses, model
+    return model, losses

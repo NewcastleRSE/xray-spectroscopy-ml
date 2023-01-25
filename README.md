@@ -60,7 +60,32 @@ To run tensorboard, run ```tensorboard --logdir=/tmp/tensorboard/ --host 0.0.0.0
 
 ### Evaluation 
 
-TODO.
+A trained model can be evaluated by performing tests. ```core_eval.py``` currently implements a few basic tests but it can be extended to include any test of a models predictive or reconstructive ability. To suggest more tests please [raise an issue](https://github.com/NewcastleRSE/xray-spectroscopy-ml/issues).
+
+#### Invariance Testing
+
+Model predictions should be closer to ground truth than to some artifically constructed target.  
+Four simple methods are implemented to create artificial target data and compare model prediction-target (or reconstruction-target) loss with prediction-modified (reconstruction-modified) target loss.
+
+- ```shuffle-output``` Shuffled test set as modified output
+- ```mean_train_output``` Mean of training data as modified output
+- ```random_train_output``` Random training data as modified output
+- ```guass_train_output``` Simulated from Normal distribution with mean and stdev of training data as modified output
+
+We similarly modify the input data and compare predictions based on this input with true target.
+
+- ```shuffle_input``` 
+- ```mean_train_input``` 
+- ```random_train_input``` 
+- ```guass_train_input``` 
+
+A T-Test is used to return ```True``` or ```False``` if the model has passed the test positively.
+
+
+#### Example of evaluation of original MLP model used to predict XANES:
+
+```python cli.py eval_pred_xanes --model_mode mlp model_001 in_eval.json```
+
 
 ## Available Models
 

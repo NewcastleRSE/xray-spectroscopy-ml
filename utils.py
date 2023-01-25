@@ -93,46 +93,170 @@ def print_nested_dict(dict_: dict, nested_level: int = 0):
     return 0
 
 
-def print_cross_validation_scores(scores: dict):
+def print_cross_validation_scores(scores: dict, model_mode: str):
     # prints a summary table of the scores from k-fold cross validation;
     # summarises the elapsed time and train/test metric scores for each k-fold
     # with overall k-fold cross validation statistics (mean and std. dev.)
     # using the `scores` dictionary returned from `cross_validate`
 
-    print(scores)
+    # print(scores)
     print("")
     print(">> summarising scores from k-fold cross validation...")
     print("")
 
-    print("*" * 48)
+    if model_mode == "mlp" or model_mode == "cnn":
+        #
+        print("*" * 16 * 3)
+        fmt = "{:<10s}{:>6s}{:>16s}{:>16s}"
+        print(fmt.format("k-fold", "time", "train", "test"))
+        print("*" * 16 * 3)
 
-    fmt = "{:<10s}{:>6s}{:>16s}{:>16s}"
-    print(fmt.format("k-fold", "time", "train", "test"))
+        fmt = "{:<10.0f}{:>5.1f}s{:>16.8f}{:>16.8f}"
+        for kf, (t, train, test) in enumerate(
+            zip(scores["fit_time"], scores["train_score"], scores["test_score"])
+        ):
+            print(fmt.format(kf, t, np.absolute(train), np.absolute(test)))
 
-    print("*" * 48)
+        print("*" * 16 * 3)
+        fmt = "{:<10s}{:>5.1f}s{:>16.8f}{:>16.8f}"
+        means_ = (
+            np.mean(np.absolute(scores[score]))
+            for score in ("fit_time", "train_score", "test_score")
+        )
+        print(fmt.format("mean", *means_))
+        stdevs_ = (
+            np.std(np.absolute(scores[score]))
+            for score in ("fit_time", "train_score", "test_score")
+        )
+        print(fmt.format("std. dev.", *stdevs_))
 
-    fmt = "{:<10.0f}{:>5.1f}s{:>16.8f}{:>16.8f}"
-    for kf, (t, train, test) in enumerate(
-        zip(scores["fit_time"], scores["train_score"], scores["test_score"])
-    ):
-        print(fmt.format(kf, t, np.absolute(train), np.absolute(test)))
+        print("*" * 16 * 3)
 
-    print("*" * 48)
+        print("")
 
-    fmt = "{:<10s}{:>5.1f}s{:>16.8f}{:>16.8f}"
-    means_ = (
-        np.mean(np.absolute(scores[score]))
-        for score in ("fit_time", "train_score", "test_score")
-    )
-    print(fmt.format("mean", *means_))
-    stdevs_ = (
-        np.std(np.absolute(scores[score]))
-        for score in ("fit_time", "train_score", "test_score")
-    )
-    print(fmt.format("std. dev.", *stdevs_))
+    if model_mode == "ae_mlp" or model_mode == "ae_cnn":
+        #
+        print("*" * 16 * 4)
+        fmt = "{:<10s}{:>6s}{:>16s}{:>16s}{:>16s}"
+        print(fmt.format("k-fold", "time", "train", "test recon", "test pred"))
+        print("*" * 16 * 4)
 
-    print("*" * 48)
+        fmt = "{:<10.0f}{:>5.1f}s{:>16.8f}{:>16.8f}{:>16.8f}"
+        for kf, (t, train, test_recon, test_pred) in enumerate(
+            zip(
+                scores["fit_time"],
+                scores["train_score"],
+                scores["test_recon_score"],
+                scores["test_pred_score"],
+            )
+        ):
+            print(
+                fmt.format(
+                    kf,
+                    t,
+                    np.absolute(train),
+                    np.absolute(test_recon),
+                    np.absolute(test_pred),
+                )
+            )
 
-    print("")
+        print("*" * 16 * 4)
+
+        fmt = "{:<10s}{:>5.1f}s{:>16.8f}{:>16.8f}{:>16.8f}"
+        means_ = (
+            np.mean(np.absolute(scores[score]))
+            for score in (
+                "fit_time",
+                "train_score",
+                "test_recon_score",
+                "test_pred_score",
+            )
+        )
+        print(fmt.format("mean", *means_))
+        stdevs_ = (
+            np.std(np.absolute(scores[score]))
+            for score in (
+                "fit_time",
+                "train_score",
+                "test_recon_score",
+                "test_pred_score",
+            )
+        )
+        print(fmt.format("std. dev.", *stdevs_))
+
+        print("*" * 16 * 4)
+
+        print("")
+
+    if model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
+        #
+        print("*" * (16 + 18 * 5))
+        fmt = "{:<10s}{:>6s}{:>18s}{:>18s}{:>18s}{:>18s}{:>18s}"
+        print(
+            fmt.format(
+                "k-fold",
+                "time",
+                "train",
+                "test recon xyz",
+                "test recon xanes",
+                "test pred xyz",
+                "test pred xanes",
+            )
+        )
+        print("*" * (16 + 18 * 5))
+
+        fmt = "{:<10.0f}{:>5.1f}s{:>18.8f}{:>18.8f}{:>18.8f}{:>18.8f}{:>18.8f}"
+        for kf, (t, train, recon_xyz, recon_xanes, pred_xyz, pred_xanes) in enumerate(
+            zip(
+                scores["fit_time"],
+                scores["train_score"],
+                scores["test_recon_xyz_score"],
+                scores["test_recon_xanes_score"],
+                scores["test_pred_xyz_score"],
+                scores["test_pred_xanes_score"],
+            )
+        ):
+            print(
+                fmt.format(
+                    kf,
+                    t,
+                    np.absolute(train),
+                    np.absolute(recon_xyz),
+                    np.absolute(recon_xanes),
+                    np.absolute(pred_xyz),
+                    np.absolute(pred_xanes),
+                )
+            )
+
+        print("*" * (16 + 18 * 5))
+
+        fmt = "{:<10s}{:>5.1f}s{:>18.8f}{:>18.8f}{:>18.8f}{:>18.8f}{:>18.8f}"
+        means_ = (
+            np.mean(np.absolute(scores[score]))
+            for score in (
+                "fit_time",
+                "train_score",
+                "test_recon_xyz_score",
+                "test_recon_xanes_score",
+                "test_pred_xyz_score",
+                "test_pred_xanes_score",
+            )
+        )
+        print(fmt.format("mean", *means_))
+        stdevs_ = (
+            np.std(np.absolute(scores[score]))
+            for score in (
+                "fit_time",
+                "train_score",
+                "test_recon_xyz_score",
+                "test_recon_xanes_score",
+                "test_pred_xyz_score",
+                "test_pred_xanes_score",
+            )
+        )
+        print(fmt.format("std. dev.", *stdevs_))
+        print("*" * (16 + 18 * 5))
+
+        print("")
 
     return 0

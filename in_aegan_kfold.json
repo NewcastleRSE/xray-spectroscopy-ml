@@ -25,7 +25,12 @@
         "kernel_init": "xavier_uniform",
         "bias_init": "zeros"
     },
+    "kfold_params": {
+        "n_splits": 2,
+        "n_repeats": 1,
+        "loss": {"loss_fn" : "mse", "loss_args" : null}
+    },
     "seed": 2021,
-    "epochs": 10,
+    "epochs": 3,
     "variance_threshold": 0.0
 }
