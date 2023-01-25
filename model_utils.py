@@ -208,9 +208,9 @@ def model_mode_error(model, mode, model_mode, xyz_shape, xanes_shape):
 
 def json_check(inp):
 
-    assert isinstance(
-        inp["hyperparams"]["loss"], str
-    ), "wrong type for loss param in json"
+    # assert isinstance(
+    #     inp["hyperparams"]["loss"], str
+    # ), "wrong type for loss param in json"
     assert isinstance(
         inp["hyperparams"]["activation"], str
     ), "wrong type for activation param in json"

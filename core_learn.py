@@ -73,62 +73,62 @@ def main(
     save: bool = True,
 ):
     """
-	LEARN. The .xyz (X) and XANES spectral (Y) data are loaded and transformed;
-	a neural network is set up and fit to these data to find an Y <- X mapping.
-	K-fold cross-validation is possible if {kfold_params} are provided.
+    LEARN. The .xyz (X) and XANES spectral (Y) data are loaded and transformed;
+    a neural network is set up and fit to these data to find an Y <- X mapping.
+    K-fold cross-validation is possible if {kfold_params} are provided.
 
-	Args:
-		x_path (str): The path to the .xyz (X) data; expects either a directory
-			containing .xyz files or a .npz archive file containing an 'x' key,
-			e.g. the `dataset.npz` file created when save == True. If a .npz
-			archive is provided, save is toggled to False, and the data are not
-			preprocessed, i.e. they are expected to be ready to be passed into
-			the neural net.
-		y_path (str): The path to the XANES spectral (Y) data; expects either a
-			directory containing .txt FDMNES output files or a .npz archive
-			file containing 'y' and 'e' keys, e.g. the `dataset.npz` file
-			created when save == True. If a .npz archive is provided, save is
-			toggled to False, and the data are not preprocessed, i.e. they are
-			expected to be ready to be passed into the neural net.
-		descriptor_type (str): The type of descriptor to use; the descriptor
-			transforms molecular systems into fingerprint feature vectors
-			that encodes the local environment around absorption sites. See
-			xanesnet.descriptors for additional information.
-		descriptor_params (dict, optional): A dictionary of keyword
-			arguments passed to the descriptor on initialisation.
-			Defaults to {}.
-		kfold_params (dict, optional): A dictionary of keyword arguments
-			passed to a scikit-learn K-fold splitter (KFold or RepeatedKFold).
-			If an empty dictionary is passed, no K-fold splitting is carried
-			out, and all available data are exposed to the neural network.
-			Defaults to {}.
-		hyperparams (dict, optional): A dictionary of hyperparameter
-			definitions used to configure a Sequential Keras neural network.
-			Defaults to {}.
-		max_samples (int, optional): The maximum number of samples to select
-			from the X/Y data; the samples are chosen according to a uniform
-			distribution from the full X/Y dataset.
-			Defaults to None.
-		variance_threshold (float, optional): The minimum variance threshold
-			tolerated for input features; input features with variances below
-			the variance threshold are eliminated.
-			Defaults to 0.0.
-		epochs (int, optional): The maximum number of epochs/cycles.
-			Defaults to 100.
-		callbacks (dict, optional): A dictionary of keyword arguments passed
-			to set up Keras neural network callbacks; each argument is
-			expected to be dictionary of arguments for the defined callback,
-			e.g. "earlystopping": {"patience": 10, "verbose": 1}
-			Defaults to {}.
-		seed (int, optional): A random seed used to initialise a Numpy
-			RandomState random number generator; set the seed explicitly for
-			reproducible results over repeated calls to the `learn` routine.
-			Defaults to None.
-		save (bool, optional): If True, a model directory (containing data,
-			serialised scaling/pipeline objects, and the serialised model)
-			is created; this is required to restore the model state later.
-			Defaults to True.
-	"""
+    Args:
+            x_path (str): The path to the .xyz (X) data; expects either a directory
+                    containing .xyz files or a .npz archive file containing an 'x' key,
+                    e.g. the `dataset.npz` file created when save == True. If a .npz
+                    archive is provided, save is toggled to False, and the data are not
+                    preprocessed, i.e. they are expected to be ready to be passed into
+                    the neural net.
+            y_path (str): The path to the XANES spectral (Y) data; expects either a
+                    directory containing .txt FDMNES output files or a .npz archive
+                    file containing 'y' and 'e' keys, e.g. the `dataset.npz` file
+                    created when save == True. If a .npz archive is provided, save is
+                    toggled to False, and the data are not preprocessed, i.e. they are
+                    expected to be ready to be passed into the neural net.
+            descriptor_type (str): The type of descriptor to use; the descriptor
+                    transforms molecular systems into fingerprint feature vectors
+                    that encodes the local environment around absorption sites. See
+                    xanesnet.descriptors for additional information.
+            descriptor_params (dict, optional): A dictionary of keyword
+                    arguments passed to the descriptor on initialisation.
+                    Defaults to {}.
+            kfold_params (dict, optional): A dictionary of keyword arguments
+                    passed to a scikit-learn K-fold splitter (KFold or RepeatedKFold).
+                    If an empty dictionary is passed, no K-fold splitting is carried
+                    out, and all available data are exposed to the neural network.
+                    Defaults to {}.
+            hyperparams (dict, optional): A dictionary of hyperparameter
+                    definitions used to configure a Sequential Keras neural network.
+                    Defaults to {}.
+            max_samples (int, optional): The maximum number of samples to select
+                    from the X/Y data; the samples are chosen according to a uniform
+                    distribution from the full X/Y dataset.
+                    Defaults to None.
+            variance_threshold (float, optional): The minimum variance threshold
+                    tolerated for input features; input features with variances below
+                    the variance threshold are eliminated.
+                    Defaults to 0.0.
+            epochs (int, optional): The maximum number of epochs/cycles.
+                    Defaults to 100.
+            callbacks (dict, optional): A dictionary of keyword arguments passed
+                    to set up Keras neural network callbacks; each argument is
+                    expected to be dictionary of arguments for the defined callback,
+                    e.g. "earlystopping": {"patience": 10, "verbose": 1}
+                    Defaults to {}.
+            seed (int, optional): A random seed used to initialise a Numpy
+                    RandomState random number generator; set the seed explicitly for
+                    reproducible results over repeated calls to the `learn` routine.
+                    Defaults to None.
+            save (bool, optional): If True, a model directory (containing data,
+                    serialised scaling/pipeline objects, and the serialised model)
+                    is created; this is required to restore the model state later.
+                    Defaults to True.
+    """
 
     rng = RandomState(seed=seed)
 
@@ -157,7 +157,7 @@ def main(
                 & set(list_filestems(xanes_path[n_element]))
             )
 
-        ids.sort()
+            ids.sort()
 
             descriptors = {"rdc": RDC, "wacsf": WACSF}
 
@@ -184,13 +184,9 @@ def main(
                 e, xanes_data[i, :] = xanes.spectrum
             print(">> ...loaded into array(s)!\n")
 
-        if save:
-            model_dir = unique_path(Path("."), "model")
-            model_dir.mkdir()
-            with open(model_dir / "descriptor.pickle", "wb") as f:
-                pickle.dump(descriptor, f)
-            with open(model_dir / "dataset.npz", "wb") as f:
-                np.savez_compressed(f, ids=ids, x=x, y=y, e=e)
+            xyz_list.append(xyz_data)
+            xanes_list.append(xanes_data)
+            e_list.append(e)
 
         elif x_path[n_element].is_file() and y_path[n_element].is_file():
             print(">> loading data from .npz archive(s)...\n")
@@ -212,7 +208,7 @@ def main(
                 print(">> overriding save flag (running in `--no-save` mode)\n")
                 save = False
 
-    else:
+        else:
 
             err_str = (
                 "paths to X/Y data are expected to be either a) both "
@@ -227,7 +223,7 @@ def main(
 
     # DATA AUGMENTATION
     if data_params:
-        if data_params['augment']:
+        if data_params["augment"]:
             data_aug_params = data_params["augment_params"]
             n_aug_samples = (
                 np.multiply(n_samples, data_params["augment_mult"]) - n_samples
@@ -300,6 +296,9 @@ def main(
         loss_args = kfold_params["loss"]["loss_args"]
         kfold_loss_fn = model_utils.LossSwitch().fn(loss_fn, loss_args)
 
+    # getting exp name for mlflow
+    exp_name = f"{mode}_{model_mode}"
+
     if mode == "train_xyz":
         print("training xyz structure")
 
@@ -319,6 +318,7 @@ def main(
                     model, score = train(
                         xyz[train_index],
                         xanes[train_index],
+                        exp_name,
                         model_mode,
                         hyperparams,
                         epochs,
@@ -344,7 +344,9 @@ def main(
                 print_cross_validation_scores(result, model_mode)
             else:
                 print(">> fitting neural net...")
-                model, score = train(xyz, xanes, model_mode, hyperparams, epochs)
+                model, score = train(
+                    xyz, xanes, exp_name, model_mode, hyperparams, epochs
+                )
                 summary(model, (1, xyz.shape[1]))
 
         elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
@@ -416,6 +418,7 @@ def main(
                     model, score = train(
                         xanes[train_index],
                         xyz[train_index],
+                        exp_name,
                         model_mode,
                         hyperparams,
                         epochs,
@@ -441,7 +444,9 @@ def main(
                 print_cross_validation_scores(result, model_mode)
             else:
                 print(">> fitting neural net...")
-                model, score = train(xanes, xyz, model_mode, hyperparams, epochs)
+                model, score = train(
+                    xanes, xyz, exp_name, model_mode, hyperparams, epochs
+                )
                 summary(model, (1, xanes.shape[1]))
 
         elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
