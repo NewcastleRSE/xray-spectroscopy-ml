@@ -1,0 +1,6 @@
+artifact_location: file:///Users/nnn28/Git/xray-spectroscopy-ml/src/mlruns/142360942952184370
+creation_time: 1674738145046
+experiment_id: '142360942952184370'
+last_update_time: 1674738145046
+lifecycle_stage: active
+name: train_xanes_mlp
