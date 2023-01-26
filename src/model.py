@@ -127,11 +127,13 @@ class AE_mlp(nn.Module):
         self.act_fn = act_fn
 
         self.encoder_hidden_1 = nn.Sequential(
-            nn.Linear(self.input_size, self.hidden_size), self.act_fn,
+            nn.Linear(self.input_size, self.hidden_size),
+            self.act_fn,
         )
 
         self.encoder_hidden_2 = nn.Sequential(
-            nn.Linear(self.hidden_size, self.hl_size), self.act_fn,
+            nn.Linear(self.hidden_size, self.hl_size),
+            self.act_fn,
         )
 
         self.fc1 = nn.Sequential(
@@ -140,10 +142,13 @@ class AE_mlp(nn.Module):
             nn.Dropout(self.dropout),
         )
 
-        self.fc2 = nn.Sequential(nn.Linear(self.hl_size, self.out_dim),)
+        self.fc2 = nn.Sequential(
+            nn.Linear(self.hl_size, self.out_dim),
+        )
 
         self.decoder_hidden_1 = nn.Sequential(
-            nn.Linear(self.hl_size, self.hidden_size), self.act_fn,
+            nn.Linear(self.hl_size, self.hidden_size),
+            self.act_fn,
         )
 
         self.decoder_hidden_2 = nn.Sequential(

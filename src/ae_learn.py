@@ -39,12 +39,16 @@ def train(x, y, model_mode, hyperparams, n_epoch):
 
     trainset = torch.utils.data.TensorDataset(X_train, y_train)
     trainloader = torch.utils.data.DataLoader(
-        trainset, batch_size=hyperparams["batch_size"], shuffle=True,
+        trainset,
+        batch_size=hyperparams["batch_size"],
+        shuffle=True,
     )
 
     validset = torch.utils.data.TensorDataset(X_test, y_test)
     validloader = torch.utils.data.DataLoader(
-        validset, batch_size=hyperparams["batch_size"], shuffle=False, 
+        validset,
+        batch_size=hyperparams["batch_size"],
+        shuffle=False,
     )
 
     if model_mode == "ae_mlp":
@@ -94,11 +98,11 @@ def train(x, y, model_mode, hyperparams, n_epoch):
     optimizer = optim.Adam(
         model.parameters(), lr=hyperparams["lr"], weight_decay=0.0000
     )
-    
+
     # Select loss function
-    loss_fn = hyperparams['loss']['loss_fn']
-    loss_args = hyperparams['loss']['loss_args']
-    criterion = model_utils.LossSwitch().fn(loss_fn,loss_args)
+    loss_fn = hyperparams["loss"]["loss_fn"]
+    loss_args = hyperparams["loss"]["loss_args"]
+    criterion = model_utils.LossSwitch().fn(loss_fn, loss_args)
 
     total_step = 0
     for epoch in range(n_epoch):

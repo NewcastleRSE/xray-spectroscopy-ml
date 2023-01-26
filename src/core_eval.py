@@ -134,8 +134,12 @@ def main(
 
     print("********** Running tests **********")
     print("\n")
-    print("[?] Output tests: Are true losses better than losses from artifical model output?")
-    print("[?] Input tests:  Are true losses better than losses from model predictions from artifical input?")
+    print(
+        "[?] Output tests: Are true losses better than losses from artifical model output?"
+    )
+    print(
+        "[?] Input tests:  Are true losses better than losses from model predictions from artifical input?"
+    )
     print("[+] True if model passes check")
     print("[-] False if model fails check")
     print("\n")

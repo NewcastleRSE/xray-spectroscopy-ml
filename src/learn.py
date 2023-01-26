@@ -17,7 +17,9 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # setup tensorboard stuff
 layout = {
-    "Multi": {"loss": ["Multiline", ["loss/train", "loss/validation"]],},
+    "Multi": {
+        "loss": ["Multiline", ["loss/train", "loss/validation"]],
+    },
 }
 writer = SummaryWriter(f"/tmp/tensorboard/{int(time.time())}")
 writer.add_custom_scalars(layout)
@@ -117,9 +119,9 @@ def train(x, y, exp_name, model_mode, hyperparams, n_epoch):
     optimizer = optim.Adam(model.parameters(), lr=hyperparams["lr"])
 
     # Select loss function
-    loss_fn = hyperparams['loss']['loss_fn']
-    loss_args = hyperparams['loss']['loss_args']
-    criterion = model_utils.LossSwitch().fn(loss_fn,loss_args)
+    loss_fn = hyperparams["loss"]["loss_fn"]
+    loss_args = hyperparams["loss"]["loss_args"]
+    criterion = model_utils.LossSwitch().fn(loss_fn, loss_args)
 
     with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=RUN_NAME):
 

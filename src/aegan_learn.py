@@ -18,7 +18,9 @@ def train_aegan(x, y, hyperparams, n_epoch):
     n_y_features = y.shape[1]
 
     dataset = torch.utils.data.TensorDataset(x, y)
-    trainloader = torch.utils.data.DataLoader(dataset, batch_size=hyperparams['batch_size'])
+    trainloader = torch.utils.data.DataLoader(
+        dataset, batch_size=hyperparams["batch_size"]
+    )
 
     hyperparams["input_size_a"] = n_x_features
     hyperparams["input_size_b"] = n_y_features
