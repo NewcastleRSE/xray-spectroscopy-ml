@@ -270,7 +270,7 @@ def main(
     print(element_label.shape)
 
     if save:
-        parent_model_dir = "output/model/"
+        parent_model_dir = "model/"
         Path(parent_model_dir).mkdir(parents=True, exist_ok=True)
 
         model_dir = unique_path(Path(parent_model_dir), "model")

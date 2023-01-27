@@ -34,7 +34,6 @@ from utils import linecount
 from structure.rdc import RDC
 from structure.wacsf import WACSF
 from spectrum.xanes import XANES
-from model_utils import model_mode_error
 
 import torch
 from sklearn.metrics import mean_squared_error
@@ -134,9 +133,16 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
 
     print("Loaded model from disk")
 
-    predict_dir = model_mode_error(
-        model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1]
-    )
+    if xyz_path is not None and xanes_path is not None:
+        from model_utils import model_mode_error
+
+        parent_model_dir, predict_dir = model_mode_error(
+            model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1]
+        )
+    else:
+        from model_utils import make_dir
+
+        parent_model_dir, predict_dir = make_dir()
 
     if model_mode == "mlp" or model_mode == "cnn":
 
@@ -152,11 +158,11 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
             y = xyz_data
             y_predict = pred_xyz
 
-            from model_utils import montecarlo_dropout
+            # from model_utils import montecarlo_dropout
 
-            prob_pred = montecarlo_dropout(
-                model, xanes, pred_xyz.detach().numpy().shape
-            )
+            # prob_pred = montecarlo_dropout(
+            #     model, xanes, pred_xyz.detach().numpy().shape
+            # )
 
         elif mode == "predict_xanes":
 
@@ -171,10 +177,7 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
             y_predict = pred_xanes
 
         print("MSE y to y pred : ", mean_squared_error(y, y_predict.detach().numpy()))
-        print(
-            "MSE of Monte Carlo dropout : ",
-            mean_squared_error(y, prob_pred),
-        )
+
         y_predict, e = y_predict_dim(y_predict, ids, model_dir)
 
         from plot import plot_predict
@@ -263,9 +266,10 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
         if xyz_path is not None:
             with open(model_dir / "dataset.npz", "rb") as f:
                 e = np.load(f)["e"]
+
             for id_, y_pred_ in tqdm.tqdm(zip(ids, y_pred)):
                 with open(predict_dir / f"spectrum_{id_}.txt", "w") as f:
-                    save_xanes(f, XANES(e, y_pred_))
+                    save_xanes(f, XANES(e.flatten(), y_pred_))
 
         # TODO: save structure in .xyz format?
         if xanes_path is not None:
@@ -277,7 +281,7 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
 
         print(">> Plotting reconstructions and predictions...")
 
-        plots_dir = unique_path(Path("."), "plots_predictions")
+        plots_dir = unique_path(Path(parent_model_dir), "plots_predictions")
         plots_dir.mkdir()
 
         if xyz_path is not None and xanes_path is not None:
@@ -299,7 +303,7 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
 
             print(">> Plotting and saving cosine-similarity...")
 
-            analysis_dir = unique_path(Path("."), "analysis")
+            analysis_dir = unique_path(Path(parent_model_dir), "analysis")
             analysis_dir.mkdir()
 
             from plot import plot_cosine_similarity

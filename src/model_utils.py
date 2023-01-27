@@ -176,13 +176,10 @@ class WCCLoss(nn.Module):
 
 def model_mode_error(model, mode, model_mode, xyz_shape, xanes_shape):
 
-    from utils import unique_path
-    from pathlib import Path
-
     for child in model.modules():
         if type(child).__name__ == "Linear":
             output_size = child.weight.shape[0]
-            print(output_size)
+            # print(output_size)
 
     if mode == "predict_xyz":
         input_data = xanes_shape
@@ -191,19 +188,31 @@ def model_mode_error(model, mode, model_mode, xyz_shape, xanes_shape):
         input_data = xyz_shape
         output_data = xanes_shape
 
-    if model_mode == "mlp" or model_mode == "cnn" or model_mode == "ae_cnn":
-        assert (
-            output_size == output_data
-        ), "the model was not train for this, please swap your predict mode"
-    if model_mode == "ae_mlp":
-        assert (
-            output_size == input_data
-        ), "the model was not train for this, please swap your predict mode"
+    if mode == "predict_xyz" or mode == "predict_xanes":
+        if model_mode == "mlp" or model_mode == "cnn" or model_mode == "ae_cnn":
+            assert (
+                output_size == output_data
+            ), "the model was not train for this, please swap your predict mode"
+        if model_mode == "ae_mlp":
+            assert (
+                output_size == input_data
+            ), "the model was not train for this, please swap your predict mode"
 
-    predict_dir = unique_path(Path("."), "predictions")
+    parent_model_dir, predict_dir = make_dir()
+    return parent_model_dir, predict_dir
+
+
+def make_dir():
+    from utils import unique_path
+    from pathlib import Path
+
+    parent_model_dir = "outputs/"
+    Path(parent_model_dir).mkdir(parents=True, exist_ok=True)
+
+    predict_dir = unique_path(Path(parent_model_dir), "predictions")
     predict_dir.mkdir()
 
-    return predict_dir
+    return parent_model_dir, predict_dir
 
 
 def json_check(inp):
