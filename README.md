@@ -32,11 +32,14 @@ The code has been designed to support python 3. The project has the following de
 ```
 pip install -r requirements.txt
 ```
+```
+pip install mlflow
+```
 
 ## Training, Inference & Evaluation
 
 To either train a model or perform inference the following command is used:  
-```python cli.py MODE --model_mode MODEL_MODE <in.json>```
+```python src/cli.py MODE --model_mode MODEL_MODE <inputs/in.json>```
 
 Select MODE from the following:  
 `train_xanes`, `train_xyz`, `train_aegan`, `predict_xyz`, `predict_xanes`, `predict_aegan`, `predict_aegan_xanes`, `predict_aegan_xyz` 
@@ -47,8 +50,8 @@ Select MODEL_MODE from the following:
 Input for training and prediction should be given in JSON format. The prediction input file gives the path to the input data. Example input files for training and hyper parameter options can be found in the [inputs](https://github.com/NewcastleRSE/xray-spectroscopy-ml/tree/main/inputs) folder.
 
 #### Example of training and inference. 
-```python cli.py train_xanes --model_mode mlp in.json```  
-```python cli.py predict_xanes --model_mode mlp model_dir in_predict.json```
+```python src/cli.py train_xanes --model_mode mlp inputs/in.json```  
+```python src/cli.py predict_xanes --model_mode mlp model/model_dir inputs/in_predict.json```
 
 
 ### Tensorboard
@@ -57,6 +60,12 @@ Input for training and prediction should be given in JSON format. The prediction
 - Training & validation loss
 
 To run tensorboard, run ```tensorboard --logdir=/tmp/tensorboard/ --host 0.0.0.0``` , click on the hyperlink and choose Custom Scalar.
+
+### MLFlow
+
+[MLFlow](https://mlflow.org) is used to track the hyperparameters and the loss for every run.
+
+To run the ui, run ```mlflow ui``` on the terminal (make sure the env is correct and the directory is where the local mlruns folder is), click on the hyperlink.
 
 ### Evaluation 
 
@@ -84,7 +93,7 @@ A T-Test is used to return ```True``` or ```False``` if the model has passed the
 
 #### Example of evaluation of original MLP model used to predict XANES:
 
-```python cli.py eval_pred_xanes --model_mode mlp model_001 in_eval.json```
+```python src/cli.py eval_pred_xanes --model_mode mlp model/model_001 inputs/in_eval.json```
 
 
 ## Available Models
@@ -101,14 +110,13 @@ To run the cnn version call ```model, score = train_cnn(... )``` in the ```core_
 
 <!---
 To run the basic AutoEncoder to train xanes :
-```python cli_ae.py train_xanes in_cnn.json```
-and run ```python cli_ae.py predict_xyz ./model_0xx in_predict.json``` to run the test.
+```python src/cli_ae.py train_xanes inputs/in_cnn.json```
+and run ```python src/cli_ae.py predict_xyz model/model_0xx inputs/in_predict.json``` to run the test.
 
 To run the basic AutoEncoder to train xyz :
-```python cli_ae.py train_xyz in_cnn.json```
-and run ```python cli_ae.py predict_xanes ./model_0xx in_predict.json``` to run the test.
+```python src/cli_ae.py train_xyz inputs/in_cnn.json```
+and run ```python src/cli_ae.py predict_xanes model/model_0xx inputs/in_predict.json``` to run the test.
 
-By default the code will run the CNN implementation. To run the mlp implementation, call ```model = AE_mlp(... )``` instead of ```model = AE_cnn(... )```
 --->
 
 ### Autoencoder Generative Adversarial Network
@@ -117,11 +125,11 @@ Trains model via a coupled Autoencoder Generative adverserial network. It consis
 The trained model can then be used for prediction and reconstruction of both structure and spectrum. 
 
 - Predict and reconstruct all  
-```python cli.py predict_aegan --model_mode mlp model_dir in_predict.json```  
+```python src/cli.py predict_aegan --model_mode aegan_mlp model_dir inputs/in_predict.json```  
 - Predict spectrum, reconstruct input structure  
-```python cli.py predict_aegan_xanes --model_mode mlp model_dir in_predict.json```  
+```python src/cli.py predict_aegan_xanes --model_mode aegan_mlp model_dir inputs/in_predict.json```  
 - Predict structure, reconstruct input spectrum  
-```python cli.py predict_aegan_xyz --model_mode mlp model_dir in_predict.json```  
+```python src/cli.py predict_aegan_xyz --model_mode aegan_mlp model_dir inputs/in_predict.json```  
 
 <!---
 A general layer in the model is MLP consisting of a linear layer, batch norm layer, activation. 
