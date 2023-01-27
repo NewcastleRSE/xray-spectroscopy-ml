@@ -270,8 +270,12 @@ def main(
     print(element_label.shape)
 
     if save:
-        model_dir = unique_path(Path("."), "model")
+        parent_model_dir = "output/model/"
+        Path(parent_model_dir).mkdir(parents=True, exist_ok=True)
+
+        model_dir = unique_path(Path(parent_model_dir), "model")
         model_dir.mkdir()
+
         with open(model_dir / "descriptor.pickle", "wb") as f:
             pickle.dump(descriptor, f)
         with open(model_dir / "dataset.npz", "wb") as f:
