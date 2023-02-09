@@ -16,25 +16,25 @@ class ActivationSwitch:
         )()
 
     def activation_function_relu(self):
-        return nn.ReLU()
+        return nn.ReLU
 
     def activation_function_prelu(self):
-        return nn.PReLU()
+        return nn.PReLU
 
     def activation_function_tanh(self):
-        return nn.Tanh()
+        return nn.Tanh
 
     def activation_function_sigmoid(self):
-        return nn.Sigmoid()
+        return nn.Sigmoid
 
     def activation_function_elu(self):
-        return nn.ELU()
+        return nn.ELU
 
     def activation_function_leakyrelu(self):
-        return nn.LeakyReLU()
+        return nn.LeakyReLU
 
     def activation_function_selu(self):
-        return nn.SELU()
+        return nn.SELU
 
 
 # Select loss function from hyperparams inputs
