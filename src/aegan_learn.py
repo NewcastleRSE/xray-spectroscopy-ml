@@ -1,15 +1,50 @@
+import os
+import pickle
+import tempfile
+import time
+from datetime import datetime
+
 import torch
 from torch import nn
+from torch.utils.tensorboard import SummaryWriter
+import mlflow
+import mlflow.pytorch
 
 from model import AEGANTrainer
 import model_utils
 
+# setup tensorboard stuff
+layout = {
+    "Multi": {
+        "total_loss": ["multiline", ["total_loss"]],
+        "recon_loss": ["Multiline", ["loss/x", "loss/y"]],
+        "pred_loss": ["Multiline", ["loss_p/x", "loss_p/y"]],
+    },
+}
+writer = SummaryWriter(f"/tmp/tensorboard/{int(time.time())}")
+writer.add_custom_scalars(layout)
 
-def train_aegan(x, y, hyperparams, n_epoch):
 
+def log_scalar(name, value, epoch):
+    """Log a scalar value to both MLflow and TensorBoard"""
+    writer.add_scalar(name, value, epoch)
+    mlflow.log_metric(name, value)
+
+
+def train_aegan(x, y, exp_name, hyperparams, n_epoch):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     torch.manual_seed(1)
+
+    EXPERIMENT_NAME = f"{exp_name}"
+    RUN_NAME = f"run_{datetime.today()}"
+
+    try:
+        EXPERIMENT_ID = mlflow.get_experiment_by_name(EXPERIMENT_NAME).experiment_id
+        print(EXPERIMENT_ID)
+    except:
+        EXPERIMENT_ID = mlflow.create_experiment(EXPERIMENT_NAME)
+        print(EXPERIMENT_ID)
 
     x = torch.from_numpy(x)
     y = torch.from_numpy(y)
@@ -69,76 +104,91 @@ def train_aegan(x, y, hyperparams, n_epoch):
     train_loss_x_pred = [None] * n_epoch
     train_loss_y_pred = [None] * n_epoch
 
-    for epoch in range(n_epoch):
-        running_loss_recon_x = 0
-        running_loss_recon_y = 0
-        running_loss_pred_x = 0
-        running_loss_pred_y = 0
-        running_gen_loss = 0
-        running_dis_loss = 0
-        for inputs_x, inputs_y in trainloader:
-            inputs_x, inputs_y = inputs_x.to(device), inputs_y.to(device)
-            inputs_x, inputs_y = inputs_x.float(), inputs_y.float()
+    with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=RUN_NAME):
+        mlflow.log_params(hyperparams)
+        mlflow.log_param("n_epoch", n_epoch)
 
-            model.gen_update(inputs_x, inputs_y)
-            model.dis_update(inputs_x, inputs_y)
+        # # Create a SummaryWriter to write TensorBoard events locally
+        output_dir = dirpath = tempfile.mkdtemp()
 
-            recon_x, recon_y, pred_x, pred_y = model.reconstruct_all_predict_all(
-                inputs_x, inputs_y
+        for epoch in range(n_epoch):
+            running_loss_recon_x = 0
+            running_loss_recon_y = 0
+            running_loss_pred_x = 0
+            running_loss_pred_y = 0
+            running_gen_loss = 0
+            running_dis_loss = 0
+
+            for inputs_x, inputs_y in trainloader:
+                inputs_x, inputs_y = inputs_x.to(device), inputs_y.to(device)
+                inputs_x, inputs_y = inputs_x.float(), inputs_y.float()
+
+                model.gen_update(inputs_x, inputs_y)
+                model.dis_update(inputs_x, inputs_y)
+
+                recon_x, recon_y, pred_x, pred_y = model.reconstruct_all_predict_all(
+                    inputs_x, inputs_y
+                )
+
+                # Track running losses
+                running_loss_recon_x += criterion(recon_x, inputs_x)
+                running_loss_recon_y += criterion(recon_y, inputs_y)
+                running_loss_pred_x += criterion(pred_x, inputs_x)
+                running_loss_pred_y += criterion(pred_y, inputs_y)
+
+                loss_gen_total = (
+                    running_loss_recon_x
+                    + running_loss_recon_y
+                    + running_loss_pred_x
+                    + running_loss_pred_y
+                )
+                loss_dis = model.loss_dis_total
+
+                running_gen_loss += loss_gen_total.item()
+                running_dis_loss += loss_dis.item()
+
+            running_gen_loss = running_gen_loss / len(trainloader)
+            running_dis_loss = running_dis_loss / len(trainloader)
+
+            running_loss_recon_x = running_loss_recon_x.item() / len(trainloader)
+            running_loss_recon_y = running_loss_recon_y.item() / len(trainloader)
+            running_loss_pred_x = running_loss_pred_x.item() / len(trainloader)
+            running_loss_pred_y = running_loss_pred_y.item() / len(trainloader)
+
+            log_scalar("gen_loss", running_gen_loss, epoch)
+            log_scalar("dis_loss", running_dis_loss, epoch)
+            log_scalar("recon_x_loss", running_loss_recon_x, epoch)
+            log_scalar("recon_y_loss", running_loss_recon_y, epoch)
+            log_scalar("pred_x_loss", running_loss_pred_x, epoch)
+            log_scalar("pred_y_loss", running_loss_pred_y, epoch)
+
+            train_loss_x_recon[epoch] = running_loss_recon_x
+            train_loss_y_recon[epoch] = running_loss_recon_y
+            train_loss_x_pred[epoch] = running_loss_pred_x
+            train_loss_y_pred[epoch] = running_loss_pred_y
+
+            train_total_loss[epoch] = running_gen_loss
+
+            print(f">>> Epoch {epoch}...")
+            print(
+                f">>> Running reconstruction loss (structure) = {running_loss_recon_x:.4f}"
+            )
+            print(
+                f">>> Running reconstruction loss (spectrum) =  {running_loss_recon_y:.4f}"
+            )
+            print(
+                f">>> Running prediction loss (structure) =     {running_loss_pred_x:.4f}"
+            )
+            print(
+                f">>> Running prediction loss (spectrum) =      {running_loss_pred_y:.4f}"
             )
 
-            # Track running losses
-            running_loss_recon_x += criterion(recon_x, inputs_x)
-            running_loss_recon_y += criterion(recon_y, inputs_y)
-            running_loss_pred_x += criterion(pred_x, inputs_x)
-            running_loss_pred_y += criterion(pred_y, inputs_y)
-
-            loss_gen_total = (
-                running_loss_recon_x
-                + running_loss_recon_y
-                + running_loss_pred_x
-                + running_loss_pred_y
-            )
-            loss_dis = model.loss_dis_total
-
-            running_gen_loss += loss_gen_total.item()
-            running_dis_loss += loss_dis.item()
-
-        running_gen_loss = running_gen_loss / len(trainloader)
-        running_dis_loss = running_dis_loss / len(trainloader)
-
-        running_loss_recon_x = running_loss_recon_x.item() / len(trainloader)
-        running_loss_recon_y = running_loss_recon_y.item() / len(trainloader)
-        running_loss_pred_x = running_loss_pred_x.item() / len(trainloader)
-        running_loss_pred_y = running_loss_pred_y.item() / len(trainloader)
-
-        train_loss_x_recon[epoch] = running_loss_recon_x
-        train_loss_y_recon[epoch] = running_loss_recon_y
-        train_loss_x_pred[epoch] = running_loss_pred_x
-        train_loss_y_pred[epoch] = running_loss_pred_y
-
-        train_total_loss[epoch] = running_gen_loss
-
-        print(f">>> Epoch {epoch}...")
-        print(
-            f">>> Running reconstruction loss (structure) = {running_loss_recon_x:.4f}"
-        )
-        print(
-            f">>> Running reconstruction loss (spectrum) =  {running_loss_recon_y:.4f}"
-        )
-        print(
-            f">>> Running prediction loss (structure) =     {running_loss_pred_x:.4f}"
-        )
-        print(
-            f">>> Running prediction loss (spectrum) =      {running_loss_pred_y:.4f}"
-        )
-
-        losses = {
-            "train_loss": train_total_loss,
-            "loss_x_recon": train_loss_x_recon,
-            "loss_y_recon": train_loss_y_recon,
-            "loss_x_pred": train_loss_x_pred,
-            "loss_y_pred": train_loss_y_pred,
-        }
+            losses = {
+                "train_loss": train_total_loss,
+                "loss_x_recon": train_loss_x_recon,
+                "loss_y_recon": train_loss_y_recon,
+                "loss_x_pred": train_loss_x_pred,
+                "loss_y_pred": train_loss_y_pred,
+            }
 
     return model, losses

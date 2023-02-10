@@ -1,4 +1,8 @@
 {
     "x_path": "data/datasets/fe/preconv/xyz_test",
-    "y_path": "data/datasets/fe/preconv/xanes_test"
+    "y_path": "data/datasets/fe/preconv/xanes_test",
+    "monte_carlo": {
+        "mc_fn": "True",
+        "mc_iter": 100
+    }
 }

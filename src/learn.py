@@ -1,17 +1,17 @@
+import os
+import tempfile
+import time
+from datetime import datetime
+import pickle
+from sklearn.model_selection import train_test_split
+
 import torch
 from torch import nn, optim
-import math
-import os
-import pickle
-import numpy as np
-from sklearn.model_selection import train_test_split
 from torch.utils.tensorboard import SummaryWriter
 import mlflow
 import mlflow.pytorch
-import time
-from datetime import datetime
+
 import model_utils
-import tempfile
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -34,7 +34,6 @@ def log_scalar(name, value, epoch):
 
 
 def train(x, y, exp_name, model_mode, hyperparams, n_epoch):
-
     EXPERIMENT_NAME = f"{exp_name}"
     RUN_NAME = f"run_{datetime.today()}"
 
@@ -105,6 +104,7 @@ def train(x, y, exp_name, model_mode, hyperparams, n_epoch):
     weight_seed = hyperparams["weight_init_seed"]
     kernel_init = model_utils.WeightInitSwitch().fn(hyperparams["kernel_init"])
     bias_init = model_utils.WeightInitSwitch().fn(hyperparams["bias_init"])
+
     # set seed
     torch.cuda.manual_seed(
         weight_seed
@@ -124,7 +124,6 @@ def train(x, y, exp_name, model_mode, hyperparams, n_epoch):
     criterion = model_utils.LossSwitch().fn(loss_fn, loss_args)
 
     with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=RUN_NAME):
-
         mlflow.log_params(hyperparams)
         mlflow.log_param("n_epoch", n_epoch)
 

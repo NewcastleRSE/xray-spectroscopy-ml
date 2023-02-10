@@ -141,7 +141,6 @@ class WCCLoss(nn.Module):
         self.gaussianHWHM = gaussianHWHM
 
     def forward(self, y_true, y_pred):
-
         n_features = y_true.shape[1]
         n_samples = y_true.shape[0]
 
@@ -175,7 +174,6 @@ class WCCLoss(nn.Module):
 
 
 def model_mode_error(model, mode, model_mode, xyz_shape, xanes_shape):
-
     for child in model.modules():
         if type(child).__name__ == "Linear":
             output_size = child.weight.shape[0]
@@ -216,7 +214,6 @@ def make_dir():
 
 
 def json_check(inp):
-
     # assert isinstance(
     #     inp["hyperparams"]["loss"], str
     # ), "wrong type for loss param in json"
@@ -234,17 +231,17 @@ def json_check(inp):
 #     ), "wrong type for activation param in json"
 
 
-def montecarlo_dropout(model, input_data, output_shape):
-
+def montecarlo_dropout(model, input_data, n_mc):
     model.train()
-    T = 10
+    T = n_mc
 
-    prob_output = np.zeros(output_shape)
-    print(prob_output.shape)
+    prob_output = []
+
     for t in range(T):
         output = model(input_data)
-        prob_output = prob_output + output.cpu().detach().numpy()
+        prob_output.append(output)
 
-    prob_pred = prob_output / T
+    prob_mean = torch.mean(torch.stack(prob_output), dim=0)
+    prob_var = torch.std(torch.stack(prob_output), dim=0)
 
-    return prob_pred
+    return prob_mean, prob_var

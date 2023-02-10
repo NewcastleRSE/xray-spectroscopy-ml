@@ -67,7 +67,14 @@ def y_predict_dim(y_predict, ids, model_dir):
 ###############################################################################
 
 
-def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
+def main(
+    mode: str,
+    model_mode: str,
+    model_dir: str,
+    x_path: str,
+    y_path: str,
+    monte_carlo: dict = {},
+):
     """
     PREDICT. The model state is restored from a model directory containing
     serialised scaling/pipeline objects and the serialised model, .xyz (X)
@@ -145,9 +152,7 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
         parent_model_dir, predict_dir = make_dir()
 
     if model_mode == "mlp" or model_mode == "cnn":
-
         if mode == "predict_xyz":
-
             print("predict xyz structure")
 
             xanes = torch.from_numpy(xanes_data)
@@ -155,17 +160,17 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
 
             pred_xyz = model(xanes)
 
+            x = xanes
             y = xyz_data
             y_predict = pred_xyz
 
-            # from model_utils import montecarlo_dropout
+            from model_utils import montecarlo_dropout
 
-            # prob_pred = montecarlo_dropout(
-            #     model, xanes, pred_xyz.detach().numpy().shape
-            # )
+            prob_mean, prob_var = montecarlo_dropout(
+                model, xanes, pred_xyz.detach().numpy().shape
+            )
 
         elif mode == "predict_xanes":
-
             print("predict xanes spectrum")
 
             xyz = torch.from_numpy(xyz_data)
@@ -173,22 +178,38 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
 
             pred_xanes = model(xyz)
 
+            x = xyz
             y = xanes_data
             y_predict = pred_xanes
 
         print("MSE y to y pred : ", mean_squared_error(y, y_predict.detach().numpy()))
-
         y_predict, e = y_predict_dim(y_predict, ids, model_dir)
 
-        from plot import plot_predict
+        if monte_carlo["mc_fn"]:
+            from model_utils import montecarlo_dropout
+            from plot import plot_mc_predict
 
-        plot_predict(ids, y, y_predict, e, predict_dir, mode)
-        # plot_predict(ids, y, prob_pred, e, predict_dir, mode)
+            prob_mean, prob_var = montecarlo_dropout(model, x, monte_carlo["mc_iter"])
+            print(
+                "MSE y to y prob : ", mean_squared_error(y, prob_mean.detach().numpy())
+            )
+            plot_mc_predict(
+                ids,
+                y,
+                y_predict,
+                prob_mean.detach().numpy(),
+                prob_var.detach().numpy(),
+                e,
+                predict_dir,
+                mode,
+            )
+        else:
+            from plot import plot_predict
+
+            plot_predict(ids, y, y_predict, e, predict_dir, mode)
 
     elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
-
         if mode == "predict_xyz":
-
             print("predict xyz structure")
 
             print(model)
@@ -204,7 +225,6 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
             y_predict = pred_xyz
 
         elif mode == "predict_xanes":
-
             print("predict xanes spectrum")
             print(model)
             print(xyz_data.shape)
@@ -228,7 +248,6 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
         plot_ae_predict(ids, y, y_predict, x, x_recon, e, predict_dir, mode)
 
     elif model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
-
         # Convert to float
         if xyz_path is not None:
             x = torch.tensor(xyz_data).float()
@@ -300,7 +319,6 @@ def main(mode: str, model_mode: str, model_dir: str, x_path: str, y_path: str):
             plot_aegan_structure(ids, y, y_recon, x_pred, plots_dir)
 
         if x_path is not None and y_path is not None:
-
             print(">> Plotting and saving cosine-similarity...")
 
             analysis_dir = unique_path(Path(parent_model_dir), "analysis")

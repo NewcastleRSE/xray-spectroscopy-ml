@@ -141,7 +141,6 @@ def main(
     element_label = []
 
     for n_element in range(0, len(xyz_path)):
-
         element_name = str(xyz_path[n_element]).split("/")[-3]
 
         for path in (xyz_path[n_element], xanes_path[n_element]):
@@ -209,7 +208,6 @@ def main(
                 save = False
 
         else:
-
             err_str = (
                 "paths to X/Y data are expected to be either a) both "
                 "files (.npz archives), or b) both directories"
@@ -250,7 +248,6 @@ def main(
                 element_label = np.append(element_label, element_label[rand])
 
             elif data_params["augment_type"].lower() == "random_combination":
-
                 rand1 = random.choices(range(n_samples), k=n_aug_samples)
                 rand2 = random.choices(range(n_samples), k=n_aug_samples)
 
@@ -370,6 +367,7 @@ def main(
                     model, score = train(
                         xyz[train_index],
                         xanes[train_index],
+                        exp_name,
                         model_mode,
                         hyperparams,
                         epochs,
@@ -470,6 +468,7 @@ def main(
                     model, score = train(
                         xanes[train_index],
                         xyz[train_index],
+                        exp_name,
                         model_mode,
                         hyperparams,
                         epochs,
@@ -498,7 +497,9 @@ def main(
                 print_cross_validation_scores(result, model_mode)
             else:
                 print(">> fitting neural net...")
-                model, score = train(xanes, xyz, model_mode, hyperparams, epochs)
+                model, score = train(
+                    xanes, xyz, exp_name, model_mode, hyperparams, epochs
+                )
                 summary(model, (1, xanes.shape[1]))
 
     elif mode == "train_aegan":
@@ -516,7 +517,7 @@ def main(
                 # Training
                 start = time.time()
                 model, score = train_aegan(
-                    xyz[train_index], xanes[train_index], hyperparams, epochs
+                    xyz[train_index], xanes[train_index], exp_name, hyperparams, epochs
                 )
                 train_score.append(score["train_loss"][-1])
                 fit_time.append(time.time() - start)
@@ -561,7 +562,7 @@ def main(
             print_cross_validation_scores(result, model_mode)
         else:
             print(">> fitting neural net...")
-            model, score = train_aegan(xyz, xanes, hyperparams, epochs)
+            model, score = train_aegan(xyz, xanes, exp_name, hyperparams, epochs)
             summary(model)
 
         # from plot import plot_running_aegan
