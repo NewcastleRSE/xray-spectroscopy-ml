@@ -193,6 +193,7 @@ def main(
             print(
                 "MSE y to y prob : ", mean_squared_error(y, prob_mean.detach().numpy())
             )
+            # confidence interval
             plot_mc_predict(
                 ids,
                 y,

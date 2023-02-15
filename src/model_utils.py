@@ -245,3 +245,19 @@ def montecarlo_dropout(model, input_data, n_mc):
     prob_var = torch.std(torch.stack(prob_output), dim=0)
 
     return prob_mean, prob_var
+
+
+def bootstrap_fn(xyz, xanes, n_size):
+    import random
+
+    # print(xyz.shape)
+    # print(xanes.shape)
+
+    new_xyz = []
+    new_xanes = []
+
+    for i in range(int(xyz.shape[0] * n_size)):
+        new_xyz.append(random.choice(xyz))
+        new_xanes.append(random.choice(xanes))
+
+    return new_xyz, new_xanes
