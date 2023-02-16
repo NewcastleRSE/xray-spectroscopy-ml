@@ -14,7 +14,7 @@
         "n_size": 1.0
     },
     "kfold_params": {
-        "fn": "False",
+        "fn": "True",
         "n_splits": 5,
         "n_repeats": 1,
         "loss": {

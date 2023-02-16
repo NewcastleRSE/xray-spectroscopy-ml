@@ -26,8 +26,10 @@ import importlib.resources
 from argparse import ArgumentParser
 
 from core_data import train_data
-from core_learn import main as learn
+
+# from core_learn import main as learn
 from core_predict import main as predict
+
 from core_eval import main as eval_model
 from utils import print_nested_dict
 from model_utils import json_check
@@ -202,10 +204,10 @@ def main(args: list):
 
     elif args.mode == "train_xanes":
         json_check(inp)
-        learn(args.mode, args.model_mode, **inp, save=args.save)
+        train_data(args.mode, args.model_mode, **inp, save=args.save)
 
     elif args.mode == "train_aegan":
-        learn(args.mode, args.model_mode, **inp, save=args.save)
+        train_data(args.mode, args.model_mode, **inp, save=args.save)
 
     elif args.mode == "predict_xanes":
         predict(args.mode, args.model_mode, args.mdl_dir, **inp)

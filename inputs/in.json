@@ -8,6 +8,20 @@
         "n_g2": 16,
         "n_g4": 32
     },
+    "bootstrap": {
+        "fn": "False",
+        "n_boot": 3,
+        "n_size": 1.0
+    },
+    "kfold_params": {
+        "fn": "True",
+        "n_splits": 5,
+        "n_repeats": 1,
+        "loss": {
+            "loss_fn": "mse",
+            "loss_args": null
+        }
+    },
     "hyperparams": {
         "batch_size": 64,
         "n_hl": 2,
