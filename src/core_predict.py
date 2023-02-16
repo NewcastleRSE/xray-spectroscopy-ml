@@ -325,48 +325,76 @@ def main(mode: str, model_mode: str, run_shap: bool, shap_nsamples: int, model_d
             elif mode == 'predict_xyz':
                 data = xanes_data
 
+            data = torch.from_numpy(data).float()
+
+            print('>> Performing SHAP analysis on predicted data...')
+            run_shap_analysis(model, predict_dir, data, ids, shap_nsamples)
+
 
         elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
 
             if mode == "predict_xanes":
                 # Redefine forward function
+                print('>> Performing SHAP analysis on predicted data...')
                 model.forward = model.predict
                 data = xyz_data
+                data = torch.from_numpy(data).float()
+                run_shap_analysis(model, predict_dir, data, ids, shap_nsamples, shap_mode = 'predict')
 
-            elif mode == 'predict_xyz':
-                model.forward = model.predict
-                data = xanes_data
-
-            elif mode == 'reconstruct_xanes':
-                model.foward = model.reconstruct
-                data = xanes_data
-
-            elif mode == 'reconstruct_xyz':
+                print('>> Performing SHAP analysis on reconstructed data...')
                 model.forward = model.reconstruct
                 data = xyz_data
+                data = torch.from_numpy(data).float()
+                run_shap_analysis(model, predict_dir, data, ids, shap_nsamples, shap_mode = 'reconstruct')
+
+
+            elif mode == 'predict_xyz':
+                print('>> Performing SHAP analysis on predicted data...')
+                model.forward = model.predict
+                data = xanes_data
+                data = torch.from_numpy(data).float()
+                run_shap_analysis(model, predict_dir, data, ids, shap_nsamples, shap_mode = 'predict')
+
+                print('>> Performing SHAP analysis on reconstructed data...')
+                model.foward = model.reconstruct
+                data = xanes_data
+                data = torch.from_numpy(data).float()
+                run_shap_analysis(model, predict_dir, data, ids, shap_nsamples, shap_mode = 'reconstruct')
 
 
         elif model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
 
             if mode == "predict_xanes":
+                print('>> Performing SHAP analysis on predicted data...')
                 model.forward = model.predict_spectrum
                 data = xyz_data
+                data = torch.from_numpy(data).float()
+                run_shap_analysis(model, predict_dir, data, ids, shap_nsamples, shap_mode = 'predict')
 
-            elif mode == 'predict_xyz':
-                model.forward = model.predict_structure
-                data = xanes_data
-
-            elif mode == 'reconstruct_xanes':
-                model.forward = model.reconstruct_spectrum
-                data = xanes_data
-
-            elif mode == 'reconstruct_xyz':
+                print('>> Performing SHAP analysis on reconstructed data...')
                 model.forward = model.reconstruct_structure
                 data = xyz_data
+                data = torch.from_numpy(data).float()
+                run_shap_analysis(model, predict_dir, data, ids, shap_nsamples, shap_mode = 'reconstruct')
 
-        data = torch.from_numpy(data).float()
+            elif mode == 'predict_xyz':
+                print('>> Performing SHAP analysis on predicted data...')
+                model.forward = model.predict_structure
+                data = xanes_data
+                data = torch.from_numpy(data).float()
+                run_shap_analysis(model, predict_dir, data, ids, shap_nsamples, shap_mode = 'predict')
 
-        run_shap_analysis(model, predict_dir, data, ids, shap_nsamples)
+                print('>> Performing SHAP analysis on reconstructed data...')
+                model.forward = model.reconstruct_spectrum
+                data = xanes_data
+                data = torch.from_numpy(data).float()
+                run_shap_analysis(model, predict_dir, data, ids, shap_nsamples, shap_mode = 'reconstruct')
+
+
+
+        
+
+        
 
 
 

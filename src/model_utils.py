@@ -265,17 +265,15 @@ def montecarlo_dropout(model, input_data, output_shape):
     return prob_pred
 
 
-def run_shap_analysis(model, predict_dir, data, ids, n_samples = 100):
+def run_shap_analysis(model, predict_dir, data, ids, n_samples = 100, shap_mode = 'predict'):
     """
     Get SHAP values for predictions using random sample of data
     as background samples
     """
-    shaps_dir = Path(f"{predict_dir}/shaps")
+    shaps_dir = Path(f"{predict_dir}/shaps-{shap_mode}")
     shaps_dir.mkdir(exist_ok=True)
 
     n_features = data.shape[1]
-
-    print('>> Performing SHAP analysis on predicted data...')
 
     background = data[random.sample(range(data.shape[0]),n_samples )]
 

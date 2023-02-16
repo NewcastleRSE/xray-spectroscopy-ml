@@ -80,9 +80,9 @@ def parse_args(args: list):
 
     predict_p = sub_p.add_parser("predict_xanes")
     predict_p.add_argument("--model_mode", type=str, help="the model", required=True)
+    # shap arguments
     predict_p.add_argument("--run_shap", type=bool, help="SHAP analysis", required=False, default = False)
-    predict_p.add_argument("--shap_nsamples", type=int, help="Number of background samples for SHAP analysis", required=False, default = 10)
-
+    predict_p.add_argument("--shap_nsamples", type=int, help="Number of background samples for SHAP analysis", required=False, default = 50)
     predict_p.add_argument(
         "mdl_dir", type=str, help="path to populated model directory"
     )
@@ -92,7 +92,9 @@ def parse_args(args: list):
 
     predict_p = sub_p.add_parser("predict_xyz")
     predict_p.add_argument("--model_mode", type=str, help="the model", required=True)
-    # predict_p.add_argument("--run_shap", type=bool, help="SHAP analysis", required=False, default = False, nargs = '?')
+    # shap arguments
+    predict_p.add_argument("--run_shap", type=bool, help="SHAP analysis", required=False, default = False)
+    predict_p.add_argument("--shap_nsamples", type=int, help="Number of background samples for SHAP analysis", required=False, default = 50)
     predict_p.add_argument(
         "mdl_dir", type=str, help="path to populated model directory"
     )
@@ -103,7 +105,9 @@ def parse_args(args: list):
     # Parser for structural and spectral inputs
     predict_p = sub_p.add_parser("predict_aegan")
     predict_p.add_argument("--model_mode", type=str, help="the model", required=True)
-    # predict_p.add_argument("--run_shap", type=bool, help="SHAP analysis", required=False, default = False, nargs = '?')
+        # shap arguments
+    predict_p.add_argument("--run_shap", type=bool, help="SHAP analysis", required=False, default = False)
+    predict_p.add_argument("--shap_nsamples", type=int, help="Number of background samples for SHAP analysis", required=False, default = 50)
     predict_p.add_argument(
         "mdl_dir", type=str, help="path to populated model directory"
     )
@@ -116,7 +120,9 @@ def parse_args(args: list):
     predict_p_xyz.add_argument(
         "--model_mode", type=str, help="the model", required=True
     )
-    # predict_p.add_argument("--run_shap", type=bool, help="SHAP analysis", required=False, default = False, nargs = '?')
+    # shap arguments
+    predict_p_xyz.add_argument("--run_shap", type=bool, help="SHAP analysis", required=False, default = False)
+    predict_p_xyz.add_argument("--shap_nsamples", type=int, help="Number of background samples for SHAP analysis", required=False, default = 50)
     predict_p_xyz.add_argument(
         "mdl_dir", type=str, help="path to populated model directory"
     )
@@ -128,7 +134,9 @@ def parse_args(args: list):
     predict_p_xanes.add_argument(
         "--model_mode", type=str, help="the model", required=True
     )
-    # predict_p.add_argument("--run_shap", type=bool, help="SHAP analysis", required=False, default = False, nargs = '?')
+    # shap arguments
+    predict_p_xanes.add_argument("--run_shap", type=bool, help="SHAP analysis", required=False, default = False)
+    predict_p_xanes.add_argument("--shap_nsamples", type=int, help="Number of background samples for SHAP analysis", required=False, default = 50)
     predict_p_xanes.add_argument(
         "mdl_dir", type=str, help="path to populated model directory"
     )
@@ -140,7 +148,6 @@ def parse_args(args: list):
     eval_p_pred_xanes.add_argument(
         "--model_mode", type=str, help="the model", required=True
     )
-    # predict_p.add_argument("--run_shap", type=bool, help="SHAP analysis", required=False, default = False, nargs = '?')
     eval_p_pred_xanes.add_argument(
         "mdl_dir", type=str, help="path to populated model directory"
     )
