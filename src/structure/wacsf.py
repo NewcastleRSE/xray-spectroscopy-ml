@@ -130,7 +130,6 @@ class WACSF(VectorDescriptor):
             )
 
     def transform(self, system: Atoms) -> np.ndarray:
-
         rij_in_range = system.get_distances(0, range(len(system))) < self.r_max
         system = system[rij_in_range]
 
@@ -179,7 +178,6 @@ class WACSF(VectorDescriptor):
         return wacsf
 
     def get_len(self) -> int:
-
         return 1 + self.n_g2 + self.n_g4 + self.use_charge + self.use_spin
 
 
@@ -269,7 +267,6 @@ class G2SymmetryFunctionTransformer(SymmetryFunctionTransformer):
         super().__init__(n, r_min=r_min, r_max=r_max, parameterisation=parameterisation)
 
     def transform(self, zj: np.ndarray, rij: np.ndarray) -> np.ndarray:
-
         g2 = np.full(self.n, np.nan)
 
         cutoff_ij = cosine_cutoff(rij, self.r_max)
@@ -344,7 +341,6 @@ class G4SymmetryFunctionTransformer(SymmetryFunctionTransformer):
         rjk: np.ndarray,
         ajik: np.ndarray,
     ) -> np.ndarray:
-
         g4 = np.full(self.n, np.nan)
 
         cutoff_ij = cosine_cutoff(rij, self.r_max)

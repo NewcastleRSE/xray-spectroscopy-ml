@@ -77,7 +77,6 @@ class CNN(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-
         x = x.unsqueeze(0)
         x = x.permute(1, 0, 2)
         x = self.conv1(x)
@@ -135,7 +134,6 @@ class ActivationSwitch:
 
 
 def train_cnn(x, y, hyperparams, n_epoch):
-
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     out_dim = y[0].size

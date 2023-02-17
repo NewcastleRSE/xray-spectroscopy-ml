@@ -49,7 +49,6 @@ def main(
     save_tensorboard: bool = True,
     seed: int = None,
 ):
-
     # ---------- load model ----------#
     model_dir = Path(model_dir)
 
@@ -184,12 +183,10 @@ class ModelTestInit:
         )
 
     def run(self, test_name):
-
         # Create artifical source/targets from test set
         alt_xyz, alt_xanes = self.get_test_data(test_name)
 
         if "input" in test_name:
-
             alt_label, alt_pred = self.predict(alt_xyz, alt_xanes)
 
         if "output" in test_name:
@@ -311,7 +308,6 @@ class ModelTestInit:
         return test_input, test_output
 
     def predict(self, xyz, xanes):
-
         if self.model_mode.lower() in ["mlp", "cnn"]:
             # ORGINAL MODEL
             if self.mode.lower() == "eval_pred_xanes":

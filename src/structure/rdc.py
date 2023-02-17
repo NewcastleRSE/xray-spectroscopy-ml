@@ -87,7 +87,6 @@ class RDC(VectorDescriptor):
         self.r_aux = np.linspace(self.r_min, self.r_max, nr_aux)
 
     def transform(self, system: Atoms) -> np.ndarray:
-
         if not isinstance(system, Atoms):
             raise TypeError(
                 f"systems passed as arguments to .transform ",
@@ -123,5 +122,4 @@ class RDC(VectorDescriptor):
         return rdc
 
     def get_len(self) -> int:
-
         return len(self.r_aux) + self.use_charge + self.use_spin

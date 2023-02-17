@@ -99,7 +99,6 @@ class Dropout_(Dropout):
         return output
 
     def get_config(self):
-
         config = super().get_config()
         config.update({"always_on": self.always_on})
 

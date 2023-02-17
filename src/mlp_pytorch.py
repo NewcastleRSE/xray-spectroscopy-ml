@@ -43,7 +43,6 @@ class MLP(nn.Module):
         self.fc3 = nn.Sequential(nn.Linear(self.hl_size, self.out_dim))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-
         x = self.fc1(x)
         x = self.fc2(x)
         out = self.fc3(x)
@@ -95,7 +94,6 @@ class ActivationSwitch:
 
 
 def train_mlp(x, y, hyperparams, n_epoch):
-
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     out_dim = y[0].size

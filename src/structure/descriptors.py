@@ -33,7 +33,6 @@ from abc import abstractproperty
 
 class Descriptor(ABC):
     def __init__():
-
         pass
 
 
