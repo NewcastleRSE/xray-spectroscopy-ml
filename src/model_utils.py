@@ -260,4 +260,4 @@ def bootstrap_fn(xyz, xanes, n_size):
         new_xyz.append(random.choice(xyz))
         new_xanes.append(random.choice(xanes))
 
-    return new_xyz, new_xanes
+    return np.asarray(new_xyz), np.asarray(new_xanes)

@@ -17,8 +17,6 @@ from structure.rdc import RDC
 from structure.wacsf import WACSF
 
 import torch
-
-import model_utils
 import random
 
 
@@ -173,20 +171,17 @@ def train_data(
 
             print(">> ...FINISHED AUGMENTING DATA...\n")
 
-    print(xyz_data.shape)
-    print(element_label.shape)
+    # if save:
+    #     parent_model_dir = "model/"
+    #     Path(parent_model_dir).mkdir(parents=True, exist_ok=True)
 
-    if save:
-        parent_model_dir = "model/"
-        Path(parent_model_dir).mkdir(parents=True, exist_ok=True)
+    #     model_dir = unique_path(Path(parent_model_dir), "model")
+    #     model_dir.mkdir()
 
-        model_dir = unique_path(Path(parent_model_dir), "model")
-        model_dir.mkdir()
-
-        with open(model_dir / "descriptor.pickle", "wb") as f:
-            pickle.dump(descriptor, f)
-        with open(model_dir / "dataset.npz", "wb") as f:
-            np.savez_compressed(f, ids=ids, x=xyz_data, y=xanes_data, e=e)
+    #     with open(model_dir / "descriptor.pickle", "wb") as f:
+    #         pickle.dump(descriptor, f)
+    #     with open(model_dir / "dataset.npz", "wb") as f:
+    #         np.savez_compressed(f, ids=ids, x=xyz_data, y=xanes_data, e=e)
 
     print(">> shuffling and selecting data...")
     xyz, xanes, element = shuffle(
@@ -203,11 +198,56 @@ def train_data(
         parent_bootstrap_dir = "bootstrap/"
         Path(parent_bootstrap_dir).mkdir(parents=True, exist_ok=True)
 
-        bootstrap_dir = unique_path(Path(parent_bootstrap_dir), "bootstrap_data")
+        bootstrap_dir = unique_path(Path(parent_bootstrap_dir), "bootstrap")
         bootstrap_dir.mkdir()
 
         for i in range(bootstrap["n_boot"]):
             n_xyz, n_xanes = bootstrap_fn(xyz, xanes, bootstrap["n_size"])
+            print(n_xyz.shape)
+            if mode == "train_xyz":
+                from core_learn import train_xyz
+
+                model = train_xyz(
+                    n_xyz,
+                    n_xanes,
+                    exp_name,
+                    model_mode,
+                    hyperparams,
+                    epochs,
+                    kfold_params,
+                    rng,
+                )
+            elif mode == "train_xanes":
+                from core_learn import train_xanes
+
+                model = train_xanes(
+                    xyz,
+                    xanes,
+                    exp_name,
+                    model_mode,
+                    hyperparams,
+                    epochs,
+                    kfold_params,
+                    rng,
+                )
+
+            elif mode == "train_aegan":
+                from core_learn import train_aegan
+
+                model = train_aegan(
+                    xyz,
+                    xanes,
+                    exp_name,
+                    model_mode,
+                    hyperparams,
+                    epochs,
+                    kfold_params,
+                    rng,
+                )
+            if save:
+                model_dir = unique_path(Path(bootstrap_dir), "model")
+                model_dir.mkdir()
+                torch.save(model, model_dir / f"model.pt")
 
     else:
         if mode == "train_xyz":
@@ -231,11 +271,22 @@ def train_data(
                 xyz, xanes, exp_name, model_mode, hyperparams, epochs, kfold_params, rng
             )
 
-    if save:
-        torch.save(model, model_dir / f"model.pt")
-        print("Saved model to disk")
+        if save:
+            parent_model_dir = "model/"
+            Path(parent_model_dir).mkdir(parents=True, exist_ok=True)
 
-    else:
-        print("none")
+            model_dir = unique_path(Path(parent_model_dir), "model")
+            model_dir.mkdir()
+
+            with open(model_dir / "descriptor.pickle", "wb") as f:
+                pickle.dump(descriptor, f)
+            with open(model_dir / "dataset.npz", "wb") as f:
+                np.savez_compressed(f, ids=ids, x=xyz_data, y=xanes_data, e=e)
+
+            torch.save(model, model_dir / f"model.pt")
+            print("Saved model to disk")
+
+        else:
+            print("none")
 
     return

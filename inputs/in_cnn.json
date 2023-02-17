@@ -9,12 +9,12 @@
         "n_g4": 32
     },
     "bootstrap": {
-        "fn": "False",
+        "fn": "True",
         "n_boot": 3,
         "n_size": 1.0
     },
     "kfold_params": {
-        "fn": "True",
+        "fn": "False",
         "n_splits": 5,
         "n_repeats": 1,
         "loss": {
