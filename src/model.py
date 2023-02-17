@@ -17,13 +17,13 @@ class MLP(nn.Module):
 
         self.fc1 = nn.Sequential(
             nn.Linear(self.input_size, self.hidden_size),
-            self.act_fn,
+            self.act_fn(),
             nn.Dropout(p=self.dropout),
         )
 
         self.fc2 = nn.Sequential(
             nn.Linear(self.hidden_size, self.hl_size),
-            self.act_fn,
+            self.act_fn(),
             nn.Dropout(p=self.dropout),
         )
 
@@ -75,7 +75,7 @@ class CNN(nn.Module):
                 stride=self.stride,
             ),
             nn.BatchNorm1d(num_features=self.out_channel),
-            self.act_fn,
+            self.act_fn(),
             nn.Dropout(p=self.dropout),
         )
 
@@ -87,7 +87,7 @@ class CNN(nn.Module):
                 stride=self.stride,
             ),
             nn.BatchNorm1d(num_features=self.out_channel * self.channel_mul),
-            self.act_fn,
+            self.act_fn(),
             nn.Dropout(p=self.dropout),
         )
 
@@ -96,7 +96,7 @@ class CNN(nn.Module):
                 self.conv2_shape * (self.out_channel * self.channel_mul),
                 self.hidden_layer,
             ),
-            self.act_fn,
+            self.act_fn(),
         )
 
         self.dense_layer2 = nn.Sequential(nn.Linear(self.hidden_layer, self.out_dim))
@@ -126,17 +126,17 @@ class AE_mlp(nn.Module):
 
         self.encoder_hidden_1 = nn.Sequential(
             nn.Linear(self.input_size, self.hidden_size),
-            self.act_fn,
+            self.act_fn(),
         )
 
         self.encoder_hidden_2 = nn.Sequential(
             nn.Linear(self.hidden_size, self.hl_size),
-            self.act_fn,
+            self.act_fn(),
         )
 
         self.fc1 = nn.Sequential(
             nn.Linear(self.hl_size, self.hl_size),
-            self.act_fn,
+            self.act_fn(),
             nn.Dropout(self.dropout),
         )
 
@@ -146,12 +146,12 @@ class AE_mlp(nn.Module):
 
         self.decoder_hidden_1 = nn.Sequential(
             nn.Linear(self.hl_size, self.hidden_size),
-            self.act_fn,
+            self.act_fn(),
         )
 
         self.decoder_hidden_2 = nn.Sequential(
             nn.Linear(self.hidden_size, self.input_size),
-            # self.act_fn,
+            # self.act_fn(),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -165,6 +165,26 @@ class AE_mlp(nn.Module):
         recon = self.decoder_hidden_2(out)
 
         return recon, pred_y
+
+    def predict(self, x: torch.Tensor) -> torch.Tensor:
+
+        x = self.encoder_hidden_1(x)
+        latent_space = self.encoder_hidden_2(x)
+
+        in_fc = self.fc1(latent_space)
+        pred_y = self.fc2(in_fc)
+
+        return pred_y
+
+    def reconstruct(self, x: torch.Tensor) -> torch.Tensor:
+
+        x = self.encoder_hidden_1(x)
+        latent_space = self.encoder_hidden_2(x)
+
+        out = self.decoder_hidden_1(latent_space)
+        recon = self.decoder_hidden_2(out)
+
+        return recon
 
 
 class AE_cnn(nn.Module):
@@ -251,7 +271,7 @@ class AE_cnn(nn.Module):
                 kernel_size=self.kernel_size,
                 stride=self.stride,
             ),
-            self.act_fn,
+            self.act_fn(),
         )
 
         self.encoder_layer2 = nn.Sequential(
@@ -261,7 +281,7 @@ class AE_cnn(nn.Module):
                 kernel_size=self.kernel_size,
                 stride=self.stride,
             ),
-            self.act_fn,
+            self.act_fn(),
         )
 
         self.encoder_output = nn.Sequential(
@@ -271,7 +291,7 @@ class AE_cnn(nn.Module):
                 kernel_size=self.kernel_size,
                 stride=self.stride,
             ),
-            self.act_fn,
+            self.act_fn(),
         )
 
         self.dense_layers = nn.Sequential(
@@ -279,7 +299,7 @@ class AE_cnn(nn.Module):
                 self.conv3_shape * int(self.out_channel * self.channel_mul * 2),
                 self.hidden_layer,
             ),
-            self.act_fn,
+            self.act_fn(),
             nn.Dropout(self.dropout),
             nn.Linear(self.hidden_layer, self.out_dim),
         )
@@ -293,7 +313,7 @@ class AE_cnn(nn.Module):
                 output_padding=self.op1,
                 padding=self.p1,
             ),
-            self.act_fn,
+            self.act_fn(),
         )
 
         self.decoder_layer2 = nn.Sequential(
@@ -305,7 +325,7 @@ class AE_cnn(nn.Module):
                 output_padding=self.op2,
                 padding=self.p2,
             ),
-            self.act_fn,
+            self.act_fn(),
         )
 
         self.decoder_output = nn.Sequential(
@@ -317,7 +337,7 @@ class AE_cnn(nn.Module):
                 output_padding=self.op3,
                 padding=self.p3,
             ),
-            self.act_fn,
+            self.act_fn(),
         )
 
     def forward(self, x):
@@ -337,6 +357,37 @@ class AE_cnn(nn.Module):
         recon = recon.squeeze(dim=1)
 
         return recon, pred
+
+
+    def predict(self, x):
+
+        x = x.unsqueeze(0)
+        x = x.permute(1, 0, 2)
+
+        out = self.encoder_layer1(x)
+        out = self.encoder_layer2(out)
+        out = self.encoder_output(out)
+
+        pred = out.view(out.size(0), -1)
+        pred = self.dense_layers(pred)
+
+        return pred
+
+    def reconstruct(self, x):
+
+        x = x.unsqueeze(0)
+        x = x.permute(1, 0, 2)
+
+        out = self.encoder_layer1(x)
+        out = self.encoder_layer2(out)
+        out = self.encoder_output(out)
+
+        recon = self.decoder_layer1(out)
+        recon = self.decoder_layer2(recon)
+        recon = self.decoder_output(recon)
+        recon = recon.squeeze(dim=1)
+
+        return recon
 
 
 class AEGANTrainer(nn.Module):
@@ -589,7 +640,7 @@ class SharedLayer(nn.Module):
         for layer in range(num_hidden_layer):
             linear_layers.append(nn.Linear(self.hidden_size, self.hidden_size))
             linear_layers.append(nn.BatchNorm1d(self.hidden_size))
-            linear_layers.append(self.activation)
+            linear_layers.append(self.activation())
         self.linear_layers = nn.Sequential(*linear_layers)
         self.out_layer = nn.Sequential(
             nn.Linear(self.hidden_size, self.hidden_size),
@@ -617,26 +668,26 @@ class AEGen(nn.Module):
         for layer in range(num_hidden_layer - 1):
             enc_layer.append(nn.Linear(self.hidden_size, self.hidden_size))
             enc_layer.append(nn.BatchNorm1d(self.hidden_size))
-            enc_layer.append(self.activation)
+            enc_layer.append(self.activation())
         self.enc_layer = nn.Sequential(*enc_layer)
 
         dec_layer = []
         for layer in range(num_hidden_layer):
             dec_layer.append(nn.Linear(self.hidden_size, self.hidden_size))
             dec_layer.append(nn.BatchNorm1d(self.hidden_size))
-            dec_layer.append(self.activation)
+            dec_layer.append(self.activation())
         self.dec_layer = nn.Sequential(*dec_layer)
         self.enc_input = nn.Sequential(
             nn.Linear(self.input_size, self.hidden_size),
             nn.BatchNorm1d(self.hidden_size),
-            self.activation,
+            self.activation(),
         )
         self.enc_output = nn.Sequential(
             nn.Linear(self.hidden_size, self.hidden_size),
             nn.BatchNorm1d(self.hidden_size),
         )
         self.dec_output = nn.Sequential(
-            nn.Linear(self.hidden_size, self.output_size), self.activation
+            nn.Linear(self.hidden_size, self.output_size), self.activation()
         )
 
     def encode(self, x):
@@ -667,12 +718,12 @@ class Dis(nn.Module):
         for layer in range(num_hidden_layer - 1):
             linear_layers.append(nn.Linear(self.hidden_size, self.hidden_size))
             linear_layers.append(nn.BatchNorm1d(self.hidden_size))
-            linear_layers.append(self.activation)
+            linear_layers.append(self.activation())
         self.linear_layers = nn.Sequential(*linear_layers)
         self.input_layer = nn.Sequential(
             nn.Linear(self.input_size, self.hidden_size),
             nn.BatchNorm1d(self.hidden_size),
-            self.activation,
+            self.activation(),
         )
         self.output_layer = nn.Sequential(nn.Linear(self.hidden_size, 1), nn.Sigmoid())
 

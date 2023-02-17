@@ -2,6 +2,9 @@ import torch
 from torch import nn
 import numpy as np
 import warnings
+from pathlib import Path
+import random
+import shap
 
 # Suppress non-significant warning for WCCLoss function
 warnings.filterwarnings("ignore")
@@ -16,25 +19,25 @@ class ActivationSwitch:
         )()
 
     def activation_function_relu(self):
-        return nn.ReLU()
+        return nn.ReLU
 
     def activation_function_prelu(self):
-        return nn.PReLU()
+        return nn.PReLU
 
     def activation_function_tanh(self):
-        return nn.Tanh()
+        return nn.Tanh
 
     def activation_function_sigmoid(self):
-        return nn.Sigmoid()
+        return nn.Sigmoid
 
     def activation_function_elu(self):
-        return nn.ELU()
+        return nn.ELU
 
     def activation_function_leakyrelu(self):
-        return nn.LeakyReLU()
+        return nn.LeakyReLU
 
     def activation_function_selu(self):
-        return nn.SELU()
+        return nn.SELU
 
 
 # Select loss function from hyperparams inputs
@@ -47,13 +50,13 @@ class LossSwitch:
         return nn.MSELoss(*args)
 
     def loss_function_bce(self, *args):
-        return nn.BCEWithLogitsLoss(*args)
+        return nn.BCEWithLogitsLoss()
 
     def loss_function_emd(self, *args):
-        return EMDLoss(*args)
+        return EMDLoss()
 
     def loss_function_cosine(self, *args):
-        return nn.CosineEmbeddingLoss(*args)
+        return CosineSimilarityLoss()
 
     def loss_function_l1(self, *args):
         return nn.L1Loss(*args)
@@ -121,6 +124,32 @@ class EMDLoss(nn.Module):
             torch.square(torch.cumsum(y_true, dim=-1) - torch.cumsum(y_pred, dim=-1)),
             dim=-1,
         ).sum()
+        return loss
+
+
+class CosineSimilarityLoss(nn.Module):
+    """
+    Implements Cosine Similarity as loss function
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, y_true, y_pred):
+        loss = torch.mean(nn.CosineSimilarity()(y_pred, y_true))
+        return loss
+
+
+class CosineSimilarityLoss(nn.Module):
+    """
+    Implements Cosine Similarity as loss function
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, y_true, y_pred):
+        loss = torch.mean(nn.CosineSimilarity()(y_pred, y_true))
         return loss
 
 
@@ -239,25 +268,59 @@ def montecarlo_dropout(model, input_data, n_mc):
 
     for t in range(T):
         output = model(input_data)
-        prob_output.append(output)
+        prob_output = prob_output + output.cpu().detach().numpy()
 
-    prob_mean = torch.mean(torch.stack(prob_output), dim=0)
-    prob_var = torch.std(torch.stack(prob_output), dim=0)
+    prob_pred = prob_output / T
 
-    return prob_mean, prob_var
+    return prob_pred
 
 
-def bootstrap_fn(xyz, xanes, n_size):
-    import random
+def run_shap_analysis(
+    model, predict_dir, data, ids, n_samples=100, shap_mode="predict"
+):
+    """
+    Get SHAP values for predictions using random sample of data
+    as background samples
+    """
+    shaps_dir = Path(f"{predict_dir}/shaps-{shap_mode}")
+    shaps_dir.mkdir(exist_ok=True)
 
-    # print(xyz.shape)
-    # print(xanes.shape)
+    n_features = data.shape[1]
 
-    new_xyz = []
-    new_xanes = []
+    background = data[random.sample(range(data.shape[0]), n_samples)]
 
-    for i in range(int(xyz.shape[0] * n_size)):
-        new_xyz.append(random.choice(xyz))
-        new_xanes.append(random.choice(xanes))
+    # SHAP analysis
+    explainer = shap.DeepExplainer(model, background)
+    shap_values = explainer.shap_values(data)
+    shap_values = np.reshape(shap_values, (len(shap_values), data.shape[0], n_features))
 
-    return np.asarray(new_xyz), np.asarray(new_xanes)
+    # Print SHAP as a function of features and molecules
+    importances = np.mean(np.abs(shap_values), axis=0)
+    importances_nonabs = np.mean(shap_values, axis=0)
+
+    overall_imp = np.mean(importances, axis=0)
+    energy_imp = np.mean(shap_values, axis=1)
+
+    # SHAP as a function of features and molecules
+    for i, id_ in enumerate(ids):
+        with open(shaps_dir / f"{id_}.shap", "w") as f:
+            f.writelines(
+                map(
+                    "{} {} {}\n".format,
+                    np.arange(n_features),
+                    importances[i, :],
+                    importances_nonabs[i, :],
+                )
+            )
+
+    # SHAP as a function of features, averaged over all molecules
+    with open(shaps_dir / f"overall.shap", "w") as f:
+        f.writelines(map("{} {}\n".format, np.arange(n_features), overall_imp))
+
+    # SHAP as a function of features and energy grid points
+    energ_dir = shaps_dir / "energy"
+    energ_dir.mkdir(exist_ok=True)
+
+    for i in range(shap_values.shape[0]):
+        with open(energ_dir / f"energy{i}.shap", "w") as f:
+            f.writelines(map("{} {}\n".format, np.arange(n_features), energy_imp[i, :]))
