@@ -137,6 +137,11 @@ A general layer in the model is MLP consisting of a linear layer, batch norm lay
 Example model parameters can be found in `in_aegan.json`. The user can specify hidden size of linear layers (*hidden_size*), dropout (*dropout*), the number of hidden layers in the encoder-decoder (*n_hl_gen*), shared (*n_hl_shared*) and discriminator (*n_nl_dis*) networks, activation function (*activation*), loss function for the generative (*loss_gen*) and discriminator (*loss_dis*) networks, learning rates (*lr_gen* and *lr_dis*).
 --->
 
+### Uncertainties
+
+The flag ```"True" or "False"``` for bootstrap is in ```inputs/in.json```, ```inputs/in_cnn.json```, and ```inputs/in_aegan.json```. By default, the flag is set to "False".
+
+The flag ```"True" or "False"``` for monte-carlo dropout is in ```inputs/in_predict.json```. By default, the flag is set to "False".
 
 
 
