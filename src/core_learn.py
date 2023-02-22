@@ -189,7 +189,17 @@ def kfold_aegan_train(
     return result, best_model
 
 
-def train_xyz(xyz, xanes, exp_name, model_mode, hyperparams, epochs, kfold_params, rng):
+def train_xyz(
+    xyz,
+    xanes,
+    exp_name,
+    model_mode,
+    hyperparams,
+    epochs,
+    kfold_params,
+    rng,
+    weight_seed,
+):
     print("training xyz structure")
 
     if model_mode == "mlp" or model_mode == "cnn":
@@ -197,25 +207,55 @@ def train_xyz(xyz, xanes, exp_name, model_mode, hyperparams, epochs, kfold_param
             x = xyz
             y = xanes
             result, model = kfold_train(
-                x, y, kfold_params, rng, exp_name, model_mode, hyperparams, epochs
+                x,
+                y,
+                kfold_params,
+                rng,
+                exp_name,
+                model_mode,
+                hyperparams,
+                epochs,
+                weight_seed,
             )
             print_cross_validation_scores(result, model_mode)
         else:
             print(">> fitting neural net...")
-            model, score = train(xyz, xanes, exp_name, model_mode, hyperparams, epochs)
+            model, score = train(
+                xyz,
+                xanes,
+                exp_name,
+                model_mode,
+                hyperparams,
+                epochs,
+                weight_seed,
+            )
 
     elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
         if kfold_params["fn"] == "True":
             x = xyz
             y = xanes
             result, model = kfold_ae_train(
-                x, y, kfold_params, rng, exp_name, model_mode, hyperparams, epochs
+                x,
+                y,
+                kfold_params,
+                rng,
+                exp_name,
+                model_mode,
+                hyperparams,
+                epochs,
+                weight_seed,
             )
             print_cross_validation_scores(result, model_mode)
         else:
             print(">> fitting neural net...")
             model, score = ae_train(
-                xyz, xanes, exp_name, model_mode, hyperparams, epochs
+                xyz,
+                xanes,
+                exp_name,
+                model_mode,
+                hyperparams,
+                epochs,
+                weight_seed,
             )
 
     summary(model, (1, xyz.shape[1]))
@@ -223,7 +263,15 @@ def train_xyz(xyz, xanes, exp_name, model_mode, hyperparams, epochs, kfold_param
 
 
 def train_xanes(
-    xyz, xanes, exp_name, model_mode, hyperparams, epochs, kfold_params, rng
+    xyz,
+    xanes,
+    exp_name,
+    model_mode,
+    hyperparams,
+    epochs,
+    kfold_params,
+    rng,
+    weight_seed,
 ):
     print("training xanes spectrum")
 
@@ -232,25 +280,57 @@ def train_xanes(
             x = xanes
             y = xyz
             result, model = kfold_train(
-                x, y, kfold_params, rng, exp_name, model_mode, hyperparams, epochs
+                x,
+                y,
+                kfold_params,
+                rng,
+                exp_name,
+                model_mode,
+                hyperparams,
+                epochs,
+                weight_seed,
             )
             print_cross_validation_scores(result, model_mode)
         else:
             print(">> fitting neural net...")
-            model, score = train(xanes, xyz, exp_name, model_mode, hyperparams, epochs)
+            model, score = ae_train(
+                xanes,
+                xyz,
+                exp_name,
+                model_mode,
+                hyperparams,
+                epochs,
+                weight_seed,
+            )
 
     elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
         if kfold_params["fn"] == "True":
             x = xanes
             y = xyz
             result, model = kfold_ae_train(
-                x, y, kfold_params, rng, exp_name, model_mode, hyperparams, epochs
+                x,
+                y,
+                kfold_params,
+                rng,
+                exp_name,
+                model_mode,
+                hyperparams,
+                epochs,
+                weight_seed,
             )
             print_cross_validation_scores(result, model_mode)
 
         else:
             print(">> fitting neural net...")
-            model, score = train(xanes, xyz, exp_name, model_mode, hyperparams, epochs)
+            model, score = ae_train(
+                xanes,
+                xyz,
+                exp_name,
+                model_mode,
+                hyperparams,
+                epochs,
+                weight_seed,
+            )
 
     summary(model, (1, xanes.shape[1]))
     return model

@@ -262,24 +262,49 @@ def json_check(inp):
 
 def montecarlo_dropout(model, input_data, n_mc):
     model.train()
-    T = n_mc
 
     prob_output = []
 
-    for t in range(T):
+    input_data = torch.from_numpy(input_data)
+    input_data = input_data.float()
+
+    for t in range(n_mc):
         output = model(input_data)
-        prob_output = prob_output + output.cpu().detach().numpy()
+        prob_output.append(output)
 
-    prob_pred = prob_output / T
+    prob_mean = torch.mean(torch.stack(prob_output), dim=0)
+    prob_var = torch.std(torch.stack(prob_output), dim=0)
 
-    return prob_pred
+    return prob_mean, prob_var
 
 
-def bootstrap_fn(xyz, xanes, n_size):
+def montecarlo_dropout_ae(model, input_data, n_mc):
+    model.train()
+
+    prob_output = []
+    prob_recon = []
+
+    input_data = torch.from_numpy(input_data)
+    input_data = input_data.float()
+
+    for t in range(n_mc):
+        recon, output = model(input_data)
+        prob_output.append(output)
+        prob_recon.append(recon)
+
+    mean_output = torch.mean(torch.stack(prob_output), dim=0)
+    var_output = torch.std(torch.stack(prob_output), dim=0)
+
+    mean_recon = torch.mean(torch.stack(prob_recon), dim=0)
+    var_recon = torch.std(torch.stack(prob_recon), dim=0)
+
+    return mean_output, var_output, mean_recon, var_recon
+
+
+def bootstrap_fn(xyz, xanes, n_size, seed):
     import random
 
-    # print(xyz.shape)
-    # print(xanes.shape)
+    random.seed(seed)
 
     new_xyz = []
     new_xanes = []

@@ -33,7 +33,7 @@ def log_scalar(name, value, epoch):
     mlflow.log_metric(name, value)
 
 
-def train(x, y, exp_name, model_mode, hyperparams, n_epoch):
+def train(x, y, exp_name, model_mode, hyperparams, n_epoch, weight_seed):
     EXPERIMENT_NAME = f"{exp_name}"
     RUN_NAME = f"run_{datetime.today()}"
 
@@ -103,7 +103,6 @@ def train(x, y, exp_name, model_mode, hyperparams, n_epoch):
     model.to(device)
 
     # Model weight & bias initialisation
-    weight_seed = hyperparams["weight_init_seed"]
     kernel_init = model_utils.WeightInitSwitch().fn(hyperparams["kernel_init"])
     bias_init = model_utils.WeightInitSwitch().fn(hyperparams["bias_init"])
 

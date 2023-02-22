@@ -202,7 +202,9 @@ def train_data(
         bootstrap_dir.mkdir()
 
         for i in range(bootstrap["n_boot"]):
-            n_xyz, n_xanes = bootstrap_fn(xyz, xanes, bootstrap["n_size"])
+            n_xyz, n_xanes = bootstrap_fn(
+                xyz, xanes, bootstrap["n_size"], bootstrap["seed_boot"][i]
+            )
             print(n_xyz.shape)
             if mode == "train_xyz":
                 from core_learn import train_xyz
@@ -216,6 +218,7 @@ def train_data(
                     epochs,
                     kfold_params,
                     rng,
+                    hyperparams["weight_init_seed"],
                 )
             elif mode == "train_xanes":
                 from core_learn import train_xanes
@@ -229,6 +232,7 @@ def train_data(
                     epochs,
                     kfold_params,
                     rng,
+                    hyperparams["weight_init_seed"],
                 )
 
             elif mode == "train_aegan":
@@ -245,6 +249,11 @@ def train_data(
                     rng,
                 )
             if save:
+                with open(bootstrap_dir / "descriptor.pickle", "wb") as f:
+                    pickle.dump(descriptor, f)
+                with open(bootstrap_dir / "dataset.npz", "wb") as f:
+                    np.savez_compressed(f, ids=ids, x=xyz_data, y=xanes_data, e=e)
+
                 model_dir = unique_path(Path(bootstrap_dir), "model")
                 model_dir.mkdir()
                 torch.save(model, model_dir / f"model.pt")
@@ -254,14 +263,30 @@ def train_data(
             from core_learn import train_xyz
 
             model = train_xyz(
-                xyz, xanes, exp_name, model_mode, hyperparams, epochs, kfold_params, rng
+                xyz,
+                xanes,
+                exp_name,
+                model_mode,
+                hyperparams,
+                epochs,
+                kfold_params,
+                rng,
+                hyperparams["weight_init_seed"],
             )
 
         elif mode == "train_xanes":
             from core_learn import train_xanes
 
             model = train_xanes(
-                xyz, xanes, exp_name, model_mode, hyperparams, epochs, kfold_params, rng
+                xyz,
+                xanes,
+                exp_name,
+                model_mode,
+                hyperparams,
+                epochs,
+                kfold_params,
+                rng,
+                hyperparams["weight_init_seed"],
             )
 
         elif mode == "train_aegan":

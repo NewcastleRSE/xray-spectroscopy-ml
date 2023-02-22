@@ -2,7 +2,10 @@
     "x_path": "data/datasets/fe/preconv/xyz_test",
     "y_path": "data/datasets/fe/preconv/xanes_test",
     "monte_carlo": {
-        "mc_fn": "True",
+        "mc_fn": "False",
         "mc_iter": 100
+    },
+    "bootstrap": {
+        "fn": "False"
     }
 }
