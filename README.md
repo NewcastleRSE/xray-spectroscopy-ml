@@ -141,6 +141,8 @@ Example model parameters can be found in `in_aegan.json`. The user can specify h
 
 The flag ```"True" or "False"``` for bootstrap is in ```inputs/in.json```, ```inputs/in_cnn.json```, and ```inputs/in_aegan.json```. By default, the flag is set to "False".
 
+To run the bootstrap for prediction, run ```python src/cli.py predict_xyz --model xxx bootstrap/bootstrap_0xx inputs/in_predict.json```.
+
 The flag ```"True" or "False"``` for monte-carlo dropout is in ```inputs/in_predict.json```. By default, the flag is set to "False".
 
 
