@@ -7,5 +7,9 @@
     },
     "bootstrap": {
         "fn": "False"
+    },
+    "ensemble": {
+        "fn": "True",
+        "combine": "weight"
     }
 }

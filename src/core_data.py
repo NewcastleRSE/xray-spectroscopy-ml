@@ -171,18 +171,6 @@ def train_data(
 
             print(">> ...FINISHED AUGMENTING DATA...\n")
 
-    # if save:
-    #     parent_model_dir = "model/"
-    #     Path(parent_model_dir).mkdir(parents=True, exist_ok=True)
-
-    #     model_dir = unique_path(Path(parent_model_dir), "model")
-    #     model_dir.mkdir()
-
-    #     with open(model_dir / "descriptor.pickle", "wb") as f:
-    #         pickle.dump(descriptor, f)
-    #     with open(model_dir / "dataset.npz", "wb") as f:
-    #         np.savez_compressed(f, ids=ids, x=xyz_data, y=xanes_data, e=e)
-
     print(">> shuffling and selecting data...")
     xyz, xanes, element = shuffle(
         xyz_data, xanes_data, element_label, random_state=rng, n_samples=max_samples
