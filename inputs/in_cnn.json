@@ -10,7 +10,7 @@
     },
     "bootstrap": {
         "fn": "True",
-        "n_boot": 3,
+        "n_boot": 1,
         "n_size": 1.0,
         "seed_boot": [
             97,

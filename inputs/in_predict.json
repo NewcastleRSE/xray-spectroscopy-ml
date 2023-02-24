@@ -6,10 +6,10 @@
         "mc_iter": 100
     },
     "bootstrap": {
-        "fn": "False"
+        "fn": "True"
     },
     "ensemble": {
-        "fn": "True",
+        "fn": "False",
         "combine": "weight"
     }
 }

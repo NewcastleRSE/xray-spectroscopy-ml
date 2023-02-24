@@ -97,7 +97,8 @@ def plot_ae_predict(ids, y, y_predict, x, x_recon, e, predict_dir, mode):
         total_y.append(y_)
         total_y_pred.append(y_predict_.detach().numpy())
 
-        total_x.append(x_.detach().numpy())
+        # total_x.append(x_.detach().numpy())
+        total_x.append(x_)
         total_x_recon.append(x_recon_.detach().numpy())
         if mode == "predict_xanes":
             with open(predict_dir / f"{id_}.txt", "w") as f:

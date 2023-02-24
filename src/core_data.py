@@ -176,75 +176,101 @@ def train_data(
         xyz_data, xanes_data, element_label, random_state=rng, n_samples=max_samples
     )
     print(">> ...shuffled and selected!\n")
+    data_compress = {"ids": ids, "x": xyz_data, "y": xanes_data, "e": e}
 
     # getting exp name for mlflow
     exp_name = f"{mode}_{model_mode}"
 
     if bootstrap["fn"] == "True":
-        from model_utils import bootstrap_fn
+        from bootstrap_fn import bootstrap_train
 
-        parent_bootstrap_dir = "bootstrap/"
-        Path(parent_bootstrap_dir).mkdir(parents=True, exist_ok=True)
+        bootstrap_train(
+            bootstrap,
+            xyz,
+            xanes,
+            mode,
+            model_mode,
+            hyperparams,
+            epochs,
+            save,
+            kfold_params,
+            rng,
+            descriptor,
+            data_compress,
+        )
 
-        bootstrap_dir = unique_path(Path(parent_bootstrap_dir), "bootstrap")
-        bootstrap_dir.mkdir()
+        # from model_utils import bootstrap_fn
 
-        for i in range(bootstrap["n_boot"]):
-            n_xyz, n_xanes = bootstrap_fn(
-                xyz, xanes, bootstrap["n_size"], bootstrap["seed_boot"][i]
-            )
-            print(n_xyz.shape)
-            if mode == "train_xyz":
-                from core_learn import train_xyz
+        # parent_bootstrap_dir = "bootstrap/"
+        # Path(parent_bootstrap_dir).mkdir(parents=True, exist_ok=True)
 
-                model = train_xyz(
-                    n_xyz,
-                    n_xanes,
-                    exp_name,
-                    model_mode,
-                    hyperparams,
-                    epochs,
-                    kfold_params,
-                    rng,
-                    hyperparams["weight_init_seed"],
-                )
-            elif mode == "train_xanes":
-                from core_learn import train_xanes
+        # bootstrap_dir = unique_path(Path(parent_bootstrap_dir), "bootstrap")
+        # bootstrap_dir.mkdir()
 
-                model = train_xanes(
-                    xyz,
-                    xanes,
-                    exp_name,
-                    model_mode,
-                    hyperparams,
-                    epochs,
-                    kfold_params,
-                    rng,
-                    hyperparams["weight_init_seed"],
-                )
+        # for i in range(bootstrap["n_boot"]):
+        #     n_xyz, n_xanes = bootstrap_fn(
+        #         xyz, xanes, bootstrap["n_size"], bootstrap["seed_boot"][i]
+        #     )
+        #     print(n_xyz.shape)
+        #     if mode == "train_xyz":
+        #         from core_learn import train_xyz
 
-            elif mode == "train_aegan":
-                from core_learn import train_aegan
+        #         model = train_xyz(
+        #             n_xyz,
+        #             n_xanes,
+        #             exp_name,
+        #             model_mode,
+        #             hyperparams,
+        #             epochs,
+        #             kfold_params,
+        #             rng,
+        #             hyperparams["weight_init_seed"],
+        #         )
+        #     elif mode == "train_xanes":
+        #         from core_learn import train_xanes
 
-                model = train_aegan(
-                    xyz,
-                    xanes,
-                    exp_name,
-                    model_mode,
-                    hyperparams,
-                    epochs,
-                    kfold_params,
-                    rng,
-                )
-            if save:
-                with open(bootstrap_dir / "descriptor.pickle", "wb") as f:
-                    pickle.dump(descriptor, f)
-                with open(bootstrap_dir / "dataset.npz", "wb") as f:
-                    np.savez_compressed(f, ids=ids, x=xyz_data, y=xanes_data, e=e)
+        #         model = train_xanes(
+        #             xyz,
+        #             xanes,
+        #             exp_name,
+        #             model_mode,
+        #             hyperparams,
+        #             epochs,
+        #             kfold_params,
+        #             rng,
+        #             hyperparams["weight_init_seed"],
+        #         )
 
-                model_dir = unique_path(Path(bootstrap_dir), "model")
-                model_dir.mkdir()
-                torch.save(model, model_dir / f"model.pt")
+        #     elif mode == "train_aegan":
+        #         from core_learn import train_aegan
+
+        #         model = train_aegan(
+        #             xyz,
+        #             xanes,
+        #             exp_name,
+        #             model_mode,
+        #             hyperparams,
+        #             epochs,
+        #             kfold_params,
+        #             rng,
+        #         )
+        #     data_compress = {"ids": ids, "x": xyz_data, "y": xanes_data, "e": e}
+        #     if save:
+        #         with open(bootstrap_dir / "descriptor.pickle", "wb") as f:
+        #             pickle.dump(descriptor, f)
+        #         with open(bootstrap_dir / "dataset.npz", "wb") as f:
+        #             np.savez_compressed(
+        #                 f,
+        #                 ids=data_compress["ids"],
+        #                 x=data_compress["x"],
+        #                 y=data_compress["y"],
+        #                 e=data_compress["e"],
+        #             )
+        #             # np.savez(f, data_compress)
+
+        #         model_dir = unique_path(Path(bootstrap_dir), "model")
+        #         model_dir.mkdir()
+        #         torch.save(model, model_dir / f"model.pt")
 
     else:
         if mode == "train_xyz":
