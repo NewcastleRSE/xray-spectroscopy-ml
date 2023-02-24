@@ -301,21 +301,6 @@ def montecarlo_dropout_ae(model, input_data, n_mc):
     return mean_output, var_output, mean_recon, var_recon
 
 
-def bootstrap_fn(xyz, xanes, n_size, seed):
-    import random
-
-    random.seed(seed)
-
-    new_xyz = []
-    new_xanes = []
-
-    for i in range(int(xyz.shape[0] * n_size)):
-        new_xyz.append(random.choice(xyz))
-        new_xanes.append(random.choice(xanes))
-
-    return np.asarray(new_xyz), np.asarray(new_xanes)
-
-
 def run_shap_analysis(
     model, predict_dir, data, ids, n_samples=100, shap_mode="predict"
 ):

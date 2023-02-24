@@ -32,16 +32,10 @@ from inout import save_xanes
 from utils import unique_path
 from utils import list_filestems
 from utils import linecount
-from structure.rdc import RDC
-from structure.wacsf import WACSF
 from spectrum.xanes import XANES
 
 import torch
 from sklearn.metrics import mean_squared_error
-
-from model_utils import run_shap_analysis
-import model_utils
-import plot
 
 from predict import average
 from predict import y_predict_dim
@@ -173,27 +167,13 @@ def main(
             y_predict, e = y_predict_dim(y_predict, ids, model_dir)
 
             if monte_carlo["mc_fn"] == "True":
-                from model_utils import montecarlo_dropout
-                from plot import plot_mc_predict
+                from montecarlo_fn import montecarlo_dropout
 
-                prob_mean, prob_var = montecarlo_dropout(
-                    model, x, monte_carlo["mc_iter"]
+                data_compress = {"ids": ids, "y": y, "y_predict": y_predict, "e": e}
+                montecarlo_dropout(
+                    model, x, monte_carlo["mc_iter"], data_compress, predict_dir, mode
                 )
-                print(
-                    "MSE y to y prob : ",
-                    mean_squared_error(y, prob_mean.detach().numpy()),
-                )
-                # confidence interval
-                plot_mc_predict(
-                    ids,
-                    y,
-                    y_predict,
-                    prob_mean.detach().numpy(),
-                    prob_var.detach().numpy(),
-                    e,
-                    predict_dir,
-                    mode,
-                )
+
             else:
                 from plot import plot_predict
 
@@ -226,36 +206,20 @@ def main(
             )
 
             if monte_carlo["mc_fn"] == "True":
-                from model_utils import montecarlo_dropout_ae
-                from plot import plot_mc_ae_predict
+                from montecarlo_fn import montecarlo_dropout_ae
 
-                mean_output, var_output, mean_recon, var_recon = montecarlo_dropout_ae(
-                    model, x, monte_carlo["mc_iter"]
+                data_compress = {
+                    "ids": ids,
+                    "y": y,
+                    "y_predict": y_predict,
+                    "e": e,
+                    "x": x,
+                    "x_recon": x_recon,
+                }
+                montecarlo_dropout_ae(
+                    model, x, monte_carlo["mc_iter"], data_compress, predict_dir, mode
                 )
-                print(
-                    "MSE x to x prob : ",
-                    mean_squared_error(x, mean_recon.detach().numpy()),
-                )
-                print(
-                    "MSE y to y prob : ",
-                    mean_squared_error(y, mean_output.detach().numpy()),
-                )
-                # confidence interval
 
-                plot_mc_ae_predict(
-                    ids,
-                    y,
-                    y_predict,
-                    x,
-                    x_recon,
-                    mean_output.detach().numpy(),
-                    var_output.detach().numpy(),
-                    mean_recon.detach().numpy(),
-                    var_recon.detach().numpy(),
-                    e,
-                    predict_dir,
-                    mode,
-                )
             else:
                 y_predict, e = y_predict_dim(y_predict, ids, model_dir)
                 from plot import plot_ae_predict
@@ -350,125 +314,15 @@ def main(
                 print("...saved!\n")
 
         if run_shap:
-            if model_mode == "mlp" or model_mode == "cnn":
-                if mode == "predict_xanes":
-                    data = xyz_data
+            from shap_analysis import shap
 
-                elif mode == "predict_xyz":
-                    data = xanes_data
-
-                data = torch.from_numpy(data).float()
-
-                print(">> Performing SHAP analysis on predicted data...")
-                run_shap_analysis(model, predict_dir, data, ids, shap_nsamples)
-
-            elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
-                if mode == "predict_xanes":
-                    # Redefine forward function
-                    print(">> Performing SHAP analysis on predicted data...")
-                    model.forward = model.predict
-                    data = xyz_data
-                    data = torch.from_numpy(data).float()
-                    run_shap_analysis(
-                        model,
-                        predict_dir,
-                        data,
-                        ids,
-                        shap_nsamples,
-                        shap_mode="predict",
-                    )
-
-                    print(">> Performing SHAP analysis on reconstructed data...")
-                    model.forward = model.reconstruct
-                    data = xyz_data
-                    data = torch.from_numpy(data).float()
-                    run_shap_analysis(
-                        model,
-                        predict_dir,
-                        data,
-                        ids,
-                        shap_nsamples,
-                        shap_mode="reconstruct",
-                    )
-
-                elif mode == "predict_xyz":
-                    print(">> Performing SHAP analysis on predicted data...")
-                    model.forward = model.predict
-                    data = xanes_data
-                    data = torch.from_numpy(data).float()
-                    run_shap_analysis(
-                        model,
-                        predict_dir,
-                        data,
-                        ids,
-                        shap_nsamples,
-                        shap_mode="predict",
-                    )
-
-                    print(">> Performing SHAP analysis on reconstructed data...")
-                    model.foward = model.reconstruct
-                    data = xanes_data
-                    data = torch.from_numpy(data).float()
-                    run_shap_analysis(
-                        model,
-                        predict_dir,
-                        data,
-                        ids,
-                        shap_nsamples,
-                        shap_mode="reconstruct",
-                    )
-
-            elif model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
-                if mode == "predict_xanes":
-                    print(">> Performing SHAP analysis on predicted data...")
-                    model.forward = model.predict_spectrum
-                    data = xyz_data
-                    data = torch.from_numpy(data).float()
-                    run_shap_analysis(
-                        model,
-                        predict_dir,
-                        data,
-                        ids,
-                        shap_nsamples,
-                        shap_mode="predict",
-                    )
-
-                    print(">> Performing SHAP analysis on reconstructed data...")
-                    model.forward = model.reconstruct_structure
-                    data = xyz_data
-                    data = torch.from_numpy(data).float()
-                    run_shap_analysis(
-                        model,
-                        predict_dir,
-                        data,
-                        ids,
-                        shap_nsamples,
-                        shap_mode="reconstruct",
-                    )
-
-                elif mode == "predict_xyz":
-                    print(">> Performing SHAP analysis on predicted data...")
-                    model.forward = model.predict_structure
-                    data = xanes_data
-                    data = torch.from_numpy(data).float()
-                    run_shap_analysis(
-                        model,
-                        predict_dir,
-                        data,
-                        ids,
-                        shap_nsamples,
-                        shap_mode="predict",
-                    )
-
-                    print(">> Performing SHAP analysis on reconstructed data...")
-                    model.forward = model.reconstruct_spectrum
-                    data = xanes_data
-                    data = torch.from_numpy(data).float()
-                    run_shap_analysis(
-                        model,
-                        predict_dir,
-                        data,
-                        ids,
-                        shap_nsamples,
-                        shap_mode="reconstruct",
-                    )
+            shap(
+                model_mode,
+                mode,
+                xyz_data,
+                xanes_data,
+                model,
+                predict_dir,
+                ids,
+                shap_nsamples,
+            )
