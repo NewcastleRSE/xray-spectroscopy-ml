@@ -43,49 +43,10 @@ from model_utils import run_shap_analysis
 import model_utils
 import plot
 
-
-def average(lst):
-    for lstNum in range(len(lst)):
-        print(lstNum)
-        for sublistItem in range(len(lst[lstNum])):
-            lst[lstNum] / lst[sublistItem]  # <-- ??
-    print(type(lst))
-    return lst
-
-
-def y_predict_dim(y_predict, ids, model_dir):
-    if y_predict.ndim == 1:
-        if len(ids) == 1:
-            y_predict = y_predict.reshape(-1, y_predict.size)
-        else:
-            y_predict = y_predict.reshape(y_predict.size, -1)
-    print(">> ...predicted Y data!\n")
-
-    with open(model_dir / "dataset.npz", "rb") as f:
-        e = np.load(f)["e"]
-
-    return y_predict, e.flatten()
-
-
-def predict_xyz(xanes_data, model):
-    print("predict xyz structure")
-    xanes = torch.from_numpy(xanes_data)
-    xanes = xanes.float()
-
-    pred_xyz = model(xanes)
-
-    return pred_xyz
-
-
-def predict_xanes(xyz_data, model):
-    print("predict xanes spectrum")
-    xyz = torch.from_numpy(xyz_data)
-    xyz = xyz.float()
-
-    pred_xanes = model(xyz)
-
-    return pred_xanes
-
+from predict import average
+from predict import y_predict_dim
+from predict import predict_xanes
+from predict import predict_xyz
 
 ###############################################################################
 ################################ MAIN FUNCTION ################################
@@ -165,119 +126,14 @@ def main(
     print(">> ...loaded!\n")
 
     if bootstrap["fn"] == "True":
-        from bootstrap_fn import bootstrap_test
+        from bootstrap_fn import bootstrap_predict
 
-        bootstrap_test(model_dir, mode, model_mode, xyz_data, xanes_data, ids)
+        bootstrap_predict(model_dir, mode, model_mode, xyz_data, xanes_data, ids)
 
     elif ensemble["fn"] == "True":
-        if ensemble["combine"] == "prediction":
-            n_model = len(next(os.walk(model_dir))[1])
+        from ensemble_fn import ensemble_predict
 
-            ensemble_preds = []
-            ensemble_recons = []
-            for i in range(n_model):
-                n_dir = f"{model_dir}/model_00{i+1}/model.pt"
-
-                model = torch.load(n_dir, map_location=torch.device("cpu"))
-                model.eval()
-                print("Loaded model from disk")
-
-                parent_model_dir, predict_dir = model_utils.model_mode_error(
-                    model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1]
-                )
-
-                if model_mode == "mlp" or model_mode == "cnn":
-                    if mode == "predict_xyz":
-                        xyz_predict = predict_xyz(xanes_data, model)
-                        ensemble_preds.append(xyz_predict)
-                        y = xyz_data
-
-                    elif mode == "predict_xanes":
-                        xanes_predict = predict_xanes(xyz_data, model)
-                        ensemble_preds.append(xanes_predict)
-                        y = xanes_data
-
-                elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
-                    if mode == "predict_xyz":
-                        xanes_recon, xyz_predict = predict_xyz(xanes_data, model)
-                        ensemble_preds.append(xyz_predict)
-                        ensemble_recons.append(xanes_recon)
-
-                        x = xanes_data
-                        y = xyz_data
-
-                    elif mode == "predict_xanes":
-                        xyz_recon, xanes_predict = predict_xanes(xyz_data, model)
-                        ensemble_preds.append(xanes_predict)
-                        ensemble_recons.append(xyz_recon)
-
-                        x = xyz_data
-                        y = xanes_data
-
-            ensemble_pred = sum(ensemble_preds) / len(ensemble_preds)
-            print(
-                "MSE y to y pred : ",
-                mean_squared_error(y, ensemble_pred.detach().numpy()),
-            )
-            if model_mode == "ae_mlp" or model_mode == "ae_cnn":
-                ensemble_recon = sum(ensemble_recons) / len(ensemble_recons)
-                print(
-                    "MSE x to x recon : ",
-                    mean_squared_error(x, ensemble_recon.detach().numpy()),
-                )
-        elif ensemble["combine"] == "weight":
-            print("ensemble by combining weight")
-
-            n_model = len(next(os.walk(model_dir))[1])
-            ensemble_model = []
-
-            for i in range(n_model):
-                n_dir = f"{model_dir}/model_00{i+1}/model.pt"
-
-                model = torch.load(n_dir, map_location=torch.device("cpu"))
-                ensemble_model.append(model)
-            from model_utils import make_dir
-
-            parent_model_dir, predict_dir = make_dir()
-
-            if model_mode == "mlp" or model_mode == "cnn":
-                from model import EnsembleModel
-
-                model = EnsembleModel(ensemble_model)
-                print("Loaded model from disk")
-                if mode == "predict_xyz":
-                    y_predict = predict_xyz(xanes_data, model)
-                    y = xyz_data
-
-                elif mode == "predict_xanes":
-                    y_predict = predict_xyz(xyz_data, model)
-                    y = xanes_data
-
-            elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
-                from model import AutoencoderEnsemble
-
-                model = AutoencoderEnsemble(ensemble_model)
-                print("Loaded model from disk")
-                if mode == "predict_xyz":
-                    x_recon, y_predict = predict_xyz(xanes_data, model)
-
-                    x = xanes_data
-                    y = xyz_data
-
-                elif mode == "predict_xanes":
-                    x_recon, y_predict = predict_xanes(xyz_data, model)
-
-                    x = xyz_data
-                    y = xanes_data
-            print(
-                "MSE y to y pred : ",
-                mean_squared_error(y, y_predict.detach().numpy()),
-            )
-            if model_mode == "ae_mlp" or model_mode == "ae_cnn":
-                print(
-                    "MSE x to x recon : ",
-                    mean_squared_error(x, x_recon.detach().numpy()),
-                )
+        ensemble_predict(ensemble, model_dir, mode, model_mode, xyz_data, xanes_data)
 
     else:
         model = torch.load(model_dir / "model.pt", map_location=torch.device("cpu"))
