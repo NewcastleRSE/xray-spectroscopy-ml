@@ -9,7 +9,7 @@
         "n_g4": 32
     },
     "bootstrap": {
-        "fn": "True",
+        "fn": "False",
         "n_boot": 1,
         "n_size": 1.0,
         "seed_boot": [

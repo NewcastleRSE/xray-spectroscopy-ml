@@ -6,7 +6,7 @@
         "mc_iter": 100
     },
     "bootstrap": {
-        "fn": "True"
+        "fn": "False"
     },
     "ensemble": {
         "fn": "False",
