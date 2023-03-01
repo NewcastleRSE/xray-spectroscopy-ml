@@ -7,7 +7,6 @@ import pickle as pickle
 from sklearn.metrics import mean_squared_error
 
 from utils import unique_path
-from model_utils import bootstrap_fn
 from model_utils import model_mode_error
 import plot
 
@@ -53,7 +52,7 @@ def bootstrap_train(
     exp_name = f"{mode}_{model_mode}"
 
     for i in range(bootstrap["n_boot"]):
-        n_xyz, n_xanes = bootstrap_fn(
+        n_xyz, n_xanes = bootstrap_data(
             xyz, xanes, bootstrap["n_size"], bootstrap["seed_boot"][i]
         )
         print(n_xyz.shape)
