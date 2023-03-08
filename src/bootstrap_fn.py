@@ -115,7 +115,9 @@ def bootstrap_train(
             torch.save(model, model_dir / f"model.pt")
 
 
-def bootstrap_predict(model_dir, mode, model_mode, xyz_data, xanes_data, ids):
+def bootstrap_predict(
+    model_dir, mode, model_mode, xyz_data, xanes_data, ids, plot_save
+):
     n_boot = len(next(os.walk(model_dir))[1])
 
     bootstrap_score = []
@@ -150,7 +152,8 @@ def bootstrap_predict(model_dir, mode, model_mode, xyz_data, xanes_data, ids):
                 mean_squared_error(y, y_predict.detach().numpy()),
             )
             y_predict, e = y_predict_dim(y_predict, ids, model_dir)
-            plot.plot_predict(ids, y, y_predict, e, predict_dir, mode)
+            if plot_save == "True":
+                plot.plot_predict(ids, y, y_predict, e, predict_dir, mode)
 
         elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
             if mode == "predict_xyz":
@@ -178,7 +181,10 @@ def bootstrap_predict(model_dir, mode, model_mode, xyz_data, xanes_data, ids):
                 mean_squared_error(y, y_predict.detach().numpy()),
             )
             y_predict, e = y_predict_dim(y_predict, ids, model_dir)
-            plot.plot_ae_predict(ids, y, y_predict, x, x_recon, e, predict_dir, mode)
+            if plot_save == "True":
+                plot.plot_ae_predict(
+                    ids, y, y_predict, x, x_recon, e, predict_dir, mode
+                )
 
         bootstrap_score.append(mean_squared_error(y, y_predict.detach().numpy()))
     mean_score = torch.mean(torch.tensor(bootstrap_score))

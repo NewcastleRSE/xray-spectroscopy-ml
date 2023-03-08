@@ -7,7 +7,9 @@ from predict import predict_xanes
 from predict import predict_xyz
 
 
-def ensemble_predict(ensemble, model_dir, mode, model_mode, xyz_data, xanes_data):
+def ensemble_predict(
+    ensemble, model_dir, mode, model_mode, xyz_data, xanes_data, plot_save
+):
     if ensemble["combine"] == "prediction":
         n_model = len(next(os.walk(model_dir))[1])
 

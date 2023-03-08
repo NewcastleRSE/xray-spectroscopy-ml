@@ -55,6 +55,7 @@ def main(
     model_dir: str,
     x_path: str,
     y_path: str,
+    plot_save: str,
     monte_carlo: dict = {},
     bootstrap: dict = {},
     ensemble: dict = {},
@@ -87,6 +88,7 @@ def main(
 
     ids.sort()
 
+    print(model_dir)
     with open(model_dir / "descriptor.pickle", "rb") as f:
         descriptor = pickle.load(f)
 
@@ -122,12 +124,16 @@ def main(
     if bootstrap["fn"] == "True":
         from bootstrap_fn import bootstrap_predict
 
-        bootstrap_predict(model_dir, mode, model_mode, xyz_data, xanes_data, ids)
+        bootstrap_predict(
+            model_dir, mode, model_mode, xyz_data, xanes_data, ids, plot_save
+        )
 
     elif ensemble["fn"] == "True":
         from ensemble_fn import ensemble_predict
 
-        ensemble_predict(ensemble, model_dir, mode, model_mode, xyz_data, xanes_data)
+        ensemble_predict(
+            ensemble, model_dir, mode, model_mode, xyz_data, xanes_data, plot_save
+        )
 
     else:
         model = torch.load(model_dir / "model.pt", map_location=torch.device("cpu"))
@@ -175,9 +181,10 @@ def main(
                 )
 
             else:
-                from plot import plot_predict
+                if plot_save == "True":
+                    from plot import plot_predict
 
-                plot_predict(ids, y, y_predict, e, predict_dir, mode)
+                    plot_predict(ids, y, y_predict, e, predict_dir, mode)
 
         elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
             if mode == "predict_xyz":
@@ -222,9 +229,10 @@ def main(
 
             else:
                 y_predict, e = y_predict_dim(y_predict, ids, model_dir)
-                from plot import plot_ae_predict
+                if plot_save == "True":
+                    from plot import plot_ae_predict
 
-                plot_ae_predict(ids, y, y_predict, x, x_recon, e, predict_dir, mode)
+                    plot_ae_predict(ids, y, y_predict, x, x_recon, e, predict_dir, mode)
 
         elif model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
             # Convert to float
@@ -279,39 +287,40 @@ def main(
 
             print(">> Plotting reconstructions and predictions...")
 
-            plots_dir = unique_path(Path(parent_model_dir), "plots_predictions")
-            plots_dir.mkdir()
+            if plot_save == "True":
+                plots_dir = unique_path(Path(parent_model_dir), "plots_predictions")
+                plots_dir.mkdir()
 
-            if xyz_path is not None and xanes_path is not None:
-                from plot import plot_aegan_predict
+                if xyz_path is not None and xanes_path is not None:
+                    from plot import plot_aegan_predict
 
-                plot_aegan_predict(
-                    ids, x, y, x_recon, y_recon, x_pred, y_pred, plots_dir
-                )
+                    plot_aegan_predict(
+                        ids, x, y, x_recon, y_recon, x_pred, y_pred, plots_dir
+                    )
 
-            elif x_path is not None:
-                from plot import plot_aegan_spectrum
+                elif x_path is not None:
+                    from plot import plot_aegan_spectrum
 
-                plot_aegan_spectrum(ids, x, x_recon, y_pred, plots_dir)
+                    plot_aegan_spectrum(ids, x, x_recon, y_pred, plots_dir)
 
-            elif y_path is not None:
-                from plot import plot_aegan_structure
+                elif y_path is not None:
+                    from plot import plot_aegan_structure
 
-                plot_aegan_structure(ids, y, y_recon, x_pred, plots_dir)
+                    plot_aegan_structure(ids, y, y_recon, x_pred, plots_dir)
 
-            if x_path is not None and y_path is not None:
-                print(">> Plotting and saving cosine-similarity...")
+                if x_path is not None and y_path is not None:
+                    print(">> Plotting and saving cosine-similarity...")
 
-                analysis_dir = unique_path(Path(parent_model_dir), "analysis")
-                analysis_dir.mkdir()
+                    analysis_dir = unique_path(Path(parent_model_dir), "analysis")
+                    analysis_dir.mkdir()
 
-                from plot import plot_cosine_similarity
+                    from plot import plot_cosine_similarity
 
-                plot_cosine_similarity(
-                    x, y, x_recon, y_recon, x_pred, y_pred, analysis_dir
-                )
+                    plot_cosine_similarity(
+                        x, y, x_recon, y_recon, x_pred, y_pred, analysis_dir
+                    )
 
-                print("...saved!\n")
+                    print("...saved!\n")
 
         if run_shap:
             from shap_analysis import shap

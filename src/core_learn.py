@@ -30,9 +30,9 @@ from learn import train
 from ae_learn import train as ae_train
 from aegan_learn import train_aegan as aegan_train
 
-from kflod_fn import kfold_train
-from kflod_fn import kfold_ae_train
-from kflod_fn import kfold_aegan_train
+from kfold_fn import kfold_train
+from kfold_fn import kfold_ae_train
+from kfold_fn import kfold_aegan_train
 
 
 def train_xyz(

@@ -11,5 +11,6 @@
     "ensemble": {
         "fn": "False",
         "combine": "weight"
-    }
+    },
+    "plot_save": "True"
 }

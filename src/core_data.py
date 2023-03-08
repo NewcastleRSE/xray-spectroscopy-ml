@@ -1,6 +1,7 @@
 import numpy as np
 import pickle as pickle
 import tqdm as tqdm
+import json
 
 from pathlib import Path
 from glob import glob
@@ -215,6 +216,9 @@ def train_data(
 
             torch.save(model, model_dir / f"model.pt")
             print("Saved model to disk")
+            json.dump(
+                descriptor_params, open(f"{model_dir}/{descriptor_type}.txt", "w")
+            )
 
         else:
             print("none")
