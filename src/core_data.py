@@ -30,6 +30,7 @@ def train_data(
     descriptor_params: dict = {},
     data_params: dict = {},
     kfold_params: dict = {},
+    lr_scheduler: dict = {},
     hyperparams: dict = {},
     max_samples: int = None,
     variance_threshold: float = 0.0,
