@@ -135,6 +135,8 @@ def train(x, y, exp_name, model_mode, hyperparams, n_epoch, weight_seed):
 
         total_step = 0
         for epoch in range(n_epoch):
+            print(f'>>> epoch = {epoch}')
+            model.train()
             running_loss = 0
             loss_r = 0
             loss_p = 0
