@@ -130,6 +130,8 @@ def train(x, y, exp_name, model_mode, hyperparams, n_epoch, weight_seed):
         output_dir = dirpath = tempfile.mkdtemp()
 
         for epoch in range(n_epoch):
+            print(f'>>> epoch = {epoch}')
+            model.train()
             running_loss = 0
             for inputs, labels in trainloader:
                 inputs, labels = inputs.to(device), labels.to(device)

@@ -55,6 +55,9 @@ def parse_args(args: list):
         action="store_false",
         help="toggles model directory creation and population to <off>",
     )
+    learn_p.add_argument('--fourier_transform',
+        action='store_true',
+        help="Train using Fourier transformed xanes spectra")
 
     learn_p = sub_p.add_parser("train_xanes")
     learn_p.add_argument("--model_mode", type=str, help="the model", required=True)
@@ -67,6 +70,9 @@ def parse_args(args: list):
         action="store_false",
         help="toggles model directory creation and population to <off>",
     )
+    learn_p.add_argument('--fourier_transform',
+        action='store_true',
+        help="Train using Fourier transformed xanes spectra")
 
     learn_p = sub_p.add_parser("train_aegan")
     learn_p.add_argument("--model_mode", type=str, help="the model", required=True)
@@ -79,6 +85,9 @@ def parse_args(args: list):
         action="store_false",
         help="toggles model directory creation and population to <off>",
     )
+    learn_p.add_argument('--fourier_transform',
+        action='store_true',
+        help="Train using Fourier transformed xanes spectra")
 
     predict_p = sub_p.add_parser("predict_xanes")
     predict_p.add_argument("--model_mode", type=str, help="the model", required=True)
@@ -91,6 +100,9 @@ def parse_args(args: list):
     predict_p.add_argument(
         "inp_f", type=str, help="path to .json input file w/ variable definitions"
     )
+    predict_p.add_argument('--fourier_transform',
+        action='store_true',
+        help="Predict using model trained on Fourier transformed xanes spectra")
 
     predict_p = sub_p.add_parser("predict_xyz")
     predict_p.add_argument("--model_mode", type=str, help="the model", required=True)
@@ -103,6 +115,10 @@ def parse_args(args: list):
     predict_p.add_argument(
         "inp_f", type=str, help="path to .json input file w/ variable definitions"
     )
+    predict_p.add_argument('--fourier_transform',
+        action='store_true',
+        help="Predict using model trained on Fourier transformed xanes spectra")
+
 
     # Parser for structural and spectral inputs
     predict_p = sub_p.add_parser("predict_aegan")
@@ -116,6 +132,9 @@ def parse_args(args: list):
     predict_p.add_argument(
         "inp_f", type=str, help="path to .json input file w/ variable definitions"
     )
+    predict_p.add_argument('--fourier_transform',
+        action='store_true',
+        help="Predict using model trained on Fourier transformed xanes spectra")
 
     # Parser for structual inputs only
     predict_p_xyz = sub_p.add_parser("predict_aegan_xanes")
@@ -131,6 +150,9 @@ def parse_args(args: list):
     predict_p_xyz.add_argument(
         "inp_f", type=str, help="path to .json input file w/ variable definitions"
     )
+    predict_p_xyz.add_argument('--fourier_transform',
+        action='store_true',
+        help="Predict using model trained on Fourier transformed xanes spectra")
 
     predict_p_xanes = sub_p.add_parser("predict_aegan_xyz")
     predict_p_xanes.add_argument(
@@ -145,6 +167,9 @@ def parse_args(args: list):
     predict_p_xanes.add_argument(
         "inp_f", type=str, help="path to .json input file w/ variable definitions"
     )
+    predict_p_xanes.add_argument('--fourier_transform',
+        action='store_true',
+        help="Predict using model trained on Fourier transformed xanes spectra")
 
     eval_p_pred_xanes = sub_p.add_parser("eval_pred_xanes")
     eval_p_pred_xanes.add_argument(
@@ -214,33 +239,17 @@ def main(args: list):
 
     if args.mode == "train_xyz":
         json_check(inp)
-        train_data(args.mode, args.model_mode, **inp, save=args.save)
+        train_data(args.mode, args.model_mode, **inp, save=args.save, fourier_transform = args.fourier_transform)
 
     elif args.mode == "train_xanes":
         json_check(inp)
-        train_data(args.mode, args.model_mode, **inp, save=args.save)
+        train_data(args.mode, args.model_mode, **inp, save=args.save, fourier_transform = args.fourier_transform)
 
     elif args.mode == "train_aegan":
-        train_data(args.mode, args.model_mode, **inp, save=args.save)
+        train_data(args.mode, args.model_mode, **inp, save=args.save, fourier_transform = args.fourier_transform)
 
-    elif args.mode == "predict_xanes":
-        predict(args.mode, args.model_mode, args.run_shap, args.shap_nsamples, args.mdl_dir, **inp)
-
-    elif args.mode == "predict_xyz":
-        predict(args.mode, args.model_mode, args.run_shap, args.shap_nsamples, args.mdl_dir, **inp)
-
-    elif args.mode == "predict_aegan":
-        predict(args.mode, args.model_mode, args.run_shap, args.shap_nsamples, args.mdl_dir, inp["x_path"], inp["y_path"])
-
-    elif args.mode == "predict_aegan_xanes":
-        predict(args.mode, args.model_mode, args.run_shap, args.shap_nsamples, args.mdl_dir, inp["x_path"], None)
-
-    elif args.mode == "predict_aegan_xyz":
-        print(f">> loading JSON input @ {args.inp_f}\n")
-        with open(args.inp_f) as f:
-            inp = json.load(f)
-        print_nested_dict(inp, nested_level=1)
-        predict(args.mode, args.model_mode, args.run_shap, args.shap_nsamples, args.mdl_dir, None, inp["y_path"])
+    elif 'predict' in args.mode:
+        predict(args.mode, args.model_mode, args.run_shap, args.shap_nsamples, args.mdl_dir, **inp, fourier_transform = args.fourier_transform)
 
     if "eval" in args.mode:
         print(f">> loading JSON input @ {args.inp_f}\n")

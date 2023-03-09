@@ -42,6 +42,9 @@ from predict import y_predict_dim
 from predict import predict_xanes
 from predict import predict_xyz
 
+import data_transform
+
+
 ###############################################################################
 ################################ MAIN FUNCTION ################################
 ###############################################################################
@@ -58,6 +61,7 @@ def main(
     monte_carlo: dict = {},
     bootstrap: dict = {},
     ensemble: dict = {},
+    fourier_transform: bool = False,
 ):
     """
     PREDICT. The model state is restored from a model directory containing
@@ -119,6 +123,12 @@ def main(
 
     print(">> ...loaded!\n")
 
+    # # Transform data
+    # if fourier_transform:
+    #     import data_transform
+    #     print('>>> Transforming training data using Fourier transform...')
+    #     xanes_data = data_transform.fourier_transform_data(xanes_data)
+
     if bootstrap["fn"] == "True":
         from bootstrap_fn import bootstrap_predict
 
@@ -137,9 +147,14 @@ def main(
         if xyz_path is not None and xanes_path is not None:
             from model_utils import model_mode_error
 
-            parent_model_dir, predict_dir = model_mode_error(
-                model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1]
-            )
+            if fourier_transform:
+                parent_model_dir, predict_dir = model_mode_error(
+                    model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1]*2
+                )
+            else:
+                parent_model_dir, predict_dir = model_mode_error(
+                    model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1]
+                )
         else:
             from model_utils import make_dir
 
@@ -147,6 +162,10 @@ def main(
 
         if model_mode == "mlp" or model_mode == "cnn":
             if mode == "predict_xyz":
+
+                if fourier_transform:
+                    xanes_data = data_transform.fourier_transform_data(xanes_data)
+
                 xyz_predict = predict_xyz(xanes_data, model)
 
                 x = xanes_data
@@ -159,6 +178,10 @@ def main(
                 x = xyz_data
                 y = xanes_data
                 y_predict = xanes_predict
+
+                if fourier_transform:
+                    y_predict = data_transform.inverse_fourier_transform_data(y_predict)
+
 
             print(
                 "MSE y to y pred : ",
@@ -181,12 +204,20 @@ def main(
 
         elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
             if mode == "predict_xyz":
-                recon_xanes, pred_xyz = predict_xyz(xanes_data, model)
 
                 x = xanes_data
+
+                if fourier_transform:
+                    xanes_data = data_transform.fourier_transform_data(xanes_data)
+
+                recon_xanes, pred_xyz = predict_xyz(xanes_data, model)
+                
                 x_recon = recon_xanes
                 y = xyz_data
                 y_predict = pred_xyz
+
+                if fourier_transform:
+                    x_recon = data_transform.inverse_fourier_transform_data(x_recon)
 
             elif mode == "predict_xanes":
                 recon_xyz, pred_xanes = predict_xanes(xyz_data, model)
@@ -195,6 +226,9 @@ def main(
                 x_recon = recon_xyz
                 y = xanes_data
                 y_predict = pred_xanes
+
+                if fourier_transform:
+                    y_predict = data_transform.inverse_fourier_transform_data(y_predict)
 
             print(
                 "MSE x to x recon : ",
@@ -237,14 +271,27 @@ def main(
 
             if xyz_path is not None:
                 x_recon = model.reconstruct_structure(x).detach().numpy()
-                y_pred = model.predict_spectrum(x).detach().numpy()
+                y_pred = model.predict_spectrum(x)
                 print(
                     f">> Reconstruction error (structure) = {mean_squared_error(x,x_recon):.4f}"
                 )
+                if fourier_transform:
+                    y_pred = data_transform.inverse_fourier_transform_data(y_pred)
+
+                y_pred = y_pred.detach().numpy()
 
             if xanes_path is not None:
-                y_recon = model.reconstruct_spectrum(y).detach().numpy()
-                x_pred = model.predict_structure(y).detach().numpy()
+
+                if fourier_transform:
+                    z = data_transform.fourier_transform_data(xanes_data)
+                    z = torch.tensor(z).float()
+                    y_recon = model.reconstruct_spectrum(z)
+                    y_recon = data_transform.inverse_fourier_transform_data(y_recon).detach().numpy()
+                    x_pred = model.predict_structure(z).detach().numpy()
+                else:
+                    y_recon = model.reconstruct_spectrum(y).detach().numpy()
+                    x_pred = model.predict_structure(y).detach().numpy()
+    
                 print(
                     f">> Reconstruction error (spectrum) =  {mean_squared_error(y,y_recon):.4f}"
                 )
