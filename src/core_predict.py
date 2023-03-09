@@ -132,12 +132,12 @@ def main(
     if bootstrap["fn"] == "True":
         from bootstrap_fn import bootstrap_predict
 
-        bootstrap_predict(model_dir, mode, model_mode, xyz_data, xanes_data, ids)
+        bootstrap_predict(model_dir, mode, model_mode, xyz_data, xanes_data, ids, fourier_transform)
 
     elif ensemble["fn"] == "True":
         from ensemble_fn import ensemble_predict
 
-        ensemble_predict(ensemble, model_dir, mode, model_mode, xyz_data, xanes_data)
+        ensemble_predict(ensemble, model_dir, mode, model_mode, xyz_data, xanes_data, fourier_transform)
 
     else:
         model = torch.load(model_dir / "model.pt", map_location=torch.device("cpu"))
@@ -206,6 +206,7 @@ def main(
             if mode == "predict_xyz":
 
                 x = xanes_data
+                y = xyz_data
 
                 if fourier_transform:
                     xanes_data = data_transform.fourier_transform_data(xanes_data)
@@ -213,7 +214,6 @@ def main(
                 recon_xanes, pred_xyz = predict_xyz(xanes_data, model)
                 
                 x_recon = recon_xanes
-                y = xyz_data
                 y_predict = pred_xyz
 
                 if fourier_transform:
