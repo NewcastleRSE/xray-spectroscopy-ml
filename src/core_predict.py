@@ -123,12 +123,6 @@ def main(
 
     print(">> ...loaded!\n")
 
-    # # Transform data
-    # if fourier_transform:
-    #     import data_transform
-    #     print('>>> Transforming training data using Fourier transform...')
-    #     xanes_data = data_transform.fourier_transform_data(xanes_data)
-
     if bootstrap["fn"] == "True":
         from bootstrap_fn import bootstrap_predict
 

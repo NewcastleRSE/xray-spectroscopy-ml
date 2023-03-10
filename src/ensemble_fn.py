@@ -78,7 +78,6 @@ def ensemble_predict(ensemble, model_dir, mode, model_mode, xyz_data, xanes_data
                     ensemble_preds.append(xanes_predict)
                     ensemble_recons.append(xyz_recon)
 
-
         ensemble_pred = sum(ensemble_preds) / len(ensemble_preds)
         print(
             "MSE y to y pred : ",
