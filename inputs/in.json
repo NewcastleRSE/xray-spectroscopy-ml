@@ -13,6 +13,15 @@
         "n_boot": 3,
         "n_size": 1.0
     },
+    "ensemble": {
+        "fn": "True",
+        "n_ens": 3,
+        "weight_init_seed": [
+            97,
+            39,
+            22
+        ]
+    },
     "kfold_params": {
         "fn": "False",
         "n_splits": 5,

@@ -9,8 +9,7 @@
         "fn": "False"
     },
     "ensemble": {
-        "fn": "False",
+        "fn": "True",
         "combine": "weight"
-    },
-    "plot_save": "True"
+    }
 }

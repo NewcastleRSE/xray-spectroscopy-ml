@@ -143,7 +143,8 @@ The flag ```"True" or "False"``` for bootstrap is in ```inputs/in.json```, ```in
 
 To run the bootstrap for prediction, run ```python src/cli.py predict_xyz --model xxx bootstrap/bootstrap_0xx inputs/in_predict.json```.
 
-To run ensemble during prediction, change the flag for ensemble in ```inputs/in_predict.json``` to "True". Choose how to combine the model by either combining the prediction ```"combine": "prediction"``` or combining the weight ```"combine": "weight"```
+To run ensemble during prediction, change the flag for ensemble in ```inputs/in_predict.json``` to "True". Choose how to combine the model by either combining the prediction ```"combine": "prediction"``` or combining the weight ```"combine": "weight"```.
+Run ```python src/cli.py predict_xyz --model xxx ensemble/ensemble_0xx inputs/in_predict.json```.
 
 The flag ```"True" or "False"``` for monte-carlo dropout is in ```inputs/in_predict.json```. By default, the flag is set to "False".
 

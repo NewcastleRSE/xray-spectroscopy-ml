@@ -10,9 +10,18 @@
     },
     "bootstrap": {
         "fn": "False",
-        "n_boot": 1,
+        "n_boot": 3,
         "n_size": 1.0,
         "seed_boot": [
+            97,
+            39,
+            22
+        ]
+    },
+    "ensemble": {
+        "fn": "True",
+        "n_ens": 3,
+        "weight_init_seed": [
             97,
             39,
             22
@@ -46,6 +55,6 @@
         "stride": 1
     },
     "seed": 2021,
-    "epochs": 300,
+    "epochs": 1,
     "variance_threshold": 0.0
 }

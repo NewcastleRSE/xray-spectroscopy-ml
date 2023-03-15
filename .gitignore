@@ -7,3 +7,6 @@ plots_predictions*/
 analysis*/
 *.pdf
 mlruns/
+ensemble/
+bootstrap/
+

@@ -1,18 +1,17 @@
 import os
-import numpy as np
-import torch
+import pickle as pickle
 import random
 from pathlib import Path
-import pickle as pickle
+
+import numpy as np
+import torch
 from sklearn.metrics import mean_squared_error
 
-from utils import unique_path
-from model_utils import model_mode_error
 import plot
-
-from predict import y_predict_dim
-from predict import predict_xanes
-from predict import predict_xyz
+from model_utils import model_mode_error
+from predict import predict_xanes, predict_xyz, y_predict_dim
+from utils import unique_path
+import data_transform
 
 
 def bootstrap_data(xyz, xanes, n_size, seed):
@@ -74,8 +73,8 @@ def bootstrap_train(
             from core_learn import train_xanes
 
             model = train_xanes(
-                xyz,
-                xanes,
+                n_xyz,
+                n_xanes,
                 exp_name,
                 model_mode,
                 hyperparams,
@@ -89,8 +88,8 @@ def bootstrap_train(
             from core_learn import train_aegan
 
             model = train_aegan(
-                xyz,
-                xanes,
+                n_xyz,
+                n_xanes,
                 exp_name,
                 model_mode,
                 hyperparams,
@@ -115,8 +114,9 @@ def bootstrap_train(
             torch.save(model, model_dir / f"model.pt")
 
 
-
-def bootstrap_predict(model_dir, mode, model_mode, xyz_data, xanes_data, ids, fourier_transform):
+def bootstrap_predict(
+    model_dir, mode, model_mode, xyz_data, xanes_data, ids, plot_save, fourier_transform
+):
     n_boot = len(next(os.walk(model_dir))[1])
 
     bootstrap_score = []
@@ -135,7 +135,8 @@ def bootstrap_predict(model_dir, mode, model_mode, xyz_data, xanes_data, ids, fo
             if mode == "predict_xyz":
 
                 if fourier_transform:
-                    xanes_data = data_transform.fourier_transform_data(xanes_data)
+                    xanes_data = data_transform.fourier_transform_data(
+                        xanes_data)
 
                 xyz_predict = predict_xyz(xanes_data, model)
 
@@ -151,14 +152,15 @@ def bootstrap_predict(model_dir, mode, model_mode, xyz_data, xanes_data, ids, fo
                 y_predict = xanes_predict
 
                 if fourier_transform:
-                    y_predict = data_transform.inverse_fourier_transform_data(y_predict)
+                    y_predict = data_transform.inverse_fourier_transform_data(
+                        y_predict)
 
             print(
                 "MSE y to y pred : ",
                 mean_squared_error(y, y_predict.detach().numpy()),
             )
             y_predict, e = y_predict_dim(y_predict, ids, model_dir)
-            if plot_save == "True":
+            if plot_save:
                 plot.plot_predict(ids, y, y_predict, e, predict_dir, mode)
 
         elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
@@ -166,16 +168,18 @@ def bootstrap_predict(model_dir, mode, model_mode, xyz_data, xanes_data, ids, fo
                 x = xanes_data
 
                 if fourier_transform:
-                    xanes_data = data_transform.fourier_transform_data(xanes_data)
+                    xanes_data = data_transform.fourier_transform_data(
+                        xanes_data)
 
                 recon_xanes, pred_xyz = predict_xyz(xanes_data, model)
-                
+
                 x_recon = recon_xanes
                 y = xyz_data
                 y_predict = pred_xyz
 
                 if fourier_transform:
-                    x_recon = data_transform.inverse_fourier_transform_data(x_recon)
+                    x_recon = data_transform.inverse_fourier_transform_data(
+                        x_recon)
 
             elif mode == "predict_xanes":
                 recon_xyz, pred_xanes = predict_xanes(xyz_data, model)
@@ -186,7 +190,8 @@ def bootstrap_predict(model_dir, mode, model_mode, xyz_data, xanes_data, ids, fo
                 y_predict = pred_xanes
 
                 if fourier_transform:
-                    y_predict = data_transform.inverse_fourier_transform_data(y_predict)
+                    y_predict = data_transform.inverse_fourier_transform_data(
+                        y_predict)
 
             print(
                 "MSE x to x recon : ",
@@ -197,12 +202,13 @@ def bootstrap_predict(model_dir, mode, model_mode, xyz_data, xanes_data, ids, fo
                 mean_squared_error(y, y_predict.detach().numpy()),
             )
             y_predict, e = y_predict_dim(y_predict, ids, model_dir)
-            if plot_save == "True":
+            if plot_save:
                 plot.plot_ae_predict(
                     ids, y, y_predict, x, x_recon, e, predict_dir, mode
                 )
 
-        bootstrap_score.append(mean_squared_error(y, y_predict.detach().numpy()))
+        bootstrap_score.append(mean_squared_error(
+            y, y_predict.detach().numpy()))
     mean_score = torch.mean(torch.tensor(bootstrap_score))
     std_score = torch.std(torch.tensor(bootstrap_score))
     print(f"Mean score: {mean_score:.4f}, Std score: {std_score:.4f}")
