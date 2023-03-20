@@ -40,7 +40,8 @@ def train_aegan(x, y, exp_name, hyperparams, n_epoch):
     RUN_NAME = f"run_{datetime.today()}"
 
     try:
-        EXPERIMENT_ID = mlflow.get_experiment_by_name(EXPERIMENT_NAME).experiment_id
+        EXPERIMENT_ID = mlflow.get_experiment_by_name(
+            EXPERIMENT_NAME).experiment_id
         print(EXPERIMENT_ID)
     except:
         EXPERIMENT_ID = mlflow.create_experiment(EXPERIMENT_NAME)

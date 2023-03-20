@@ -115,8 +115,6 @@ def train(x, y, exp_name, model_mode, hyperparams, n_epoch, weight_seed):
             m=m, kernel_init_fn=kernel_init, bias_init_fn=bias_init
         )
     )
-
-    model.train()
     optimizer = optim.Adam(model.parameters(), lr=hyperparams["lr"])
 
     # scheduler = lr_scheduler.LinearLR(
