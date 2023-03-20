@@ -22,24 +22,24 @@ import random
 
 
 def train_data(
-        mode: str,
-        model_mode: str,
-        x_path: str,
-        y_path: str,
-        descriptor_type: str,
-        descriptor_params: dict = {},
-        data_params: dict = {},
-        kfold_params: dict = {},
-        hyperparams: dict = {},
-        max_samples: int = None,
-        variance_threshold: float = 0.0,
-        epochs: int = 100,
-        callbacks: dict = {},
-        seed: int = None,
-        save: bool = True,
-        bootstrap: dict = {},
-        ensemble: dict = {},
-        fourier_transform: bool = False,
+    mode: str,
+    model_mode: str,
+    x_path: str,
+    y_path: str,
+    descriptor_type: str,
+    descriptor_params: dict = {},
+    data_params: dict = {},
+    kfold_params: dict = {},
+    hyperparams: dict = {},
+    max_samples: int = None,
+    variance_threshold: float = 0.0,
+    epochs: int = 100,
+    callbacks: dict = {},
+    seed: int = None,
+    save: bool = True,
+    bootstrap: dict = {},
+    ensemble: dict = {},
+    fourier_transform: bool = False,
 ):
     rng = RandomState(seed=seed)
 
@@ -75,14 +75,12 @@ def train_data(
 
             n_samples = len(ids)
             n_x_features = descriptor.get_len()
-            n_y_features = linecount(
-                xanes_path[n_element] / f"{ids[0]}.txt") - 2
+            n_y_features = linecount(xanes_path[n_element] / f"{ids[0]}.txt") - 2
 
             xyz_data = np.full((n_samples, n_x_features), np.nan)
             print(">> preallocated {}x{} array for X data...".format(*xyz_data.shape))
             xanes_data = np.full((n_samples, n_y_features), np.nan)
-            print(">> preallocated {}x{} array for Y data...".format(
-                *xanes_data.shape))
+            print(">> preallocated {}x{} array for Y data...".format(*xanes_data.shape))
             print(">> ...everything preallocated!\n")
 
             print(">> loading data into array(s)...")
@@ -135,7 +133,8 @@ def train_data(
     # Transform data
     if fourier_transform:
         from data_transform import fourier_transform_data
-        print('>> Transforming training data using Fourier transform...')
+
+        print(">> Transforming training data using Fourier transform...")
         xanes_data = fourier_transform_data(xanes_data)
 
     # DATA AUGMENTATION
@@ -173,7 +172,6 @@ def train_data(
         )
 
     elif ensemble["fn"] == "True":
-
         from ensemble_fn import ensemble_train
 
         data_compress = {"ids": ids, "x": xyz_data, "y": xanes_data, "e": e}
@@ -248,8 +246,7 @@ def train_data(
             torch.save(model, model_dir / f"model.pt")
             print("Saved model to disk")
             json.dump(
-                descriptor_params, open(
-                    f"{model_dir}/{descriptor_type}.txt", "w")
+                descriptor_params, open(f"{model_dir}/{descriptor_type}.txt", "w")
             )
 
         else:

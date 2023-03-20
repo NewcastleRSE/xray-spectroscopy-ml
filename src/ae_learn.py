@@ -39,8 +39,7 @@ def train(x, y, exp_name, model_mode, hyperparams, n_epoch, weight_seed):
     RUN_NAME = f"run_{datetime.today()}"
 
     try:
-        EXPERIMENT_ID = mlflow.get_experiment_by_name(
-            EXPERIMENT_NAME).experiment_id
+        EXPERIMENT_ID = mlflow.get_experiment_by_name(EXPERIMENT_NAME).experiment_id
         print(EXPERIMENT_ID)
     except:
         EXPERIMENT_ID = mlflow.create_experiment(EXPERIMENT_NAME)
@@ -148,7 +147,7 @@ def train(x, y, exp_name, model_mode, hyperparams, n_epoch, weight_seed):
 
         total_step = 0
         for epoch in range(n_epoch):
-            print(f'>>> epoch = {epoch}')
+            print(f">>> epoch = {epoch}")
             model.train()
             running_loss = 0
             loss_r = 0
@@ -218,26 +217,21 @@ def train(x, y, exp_name, model_mode, hyperparams, n_epoch, weight_seed):
             before_lr = optimizer.param_groups[0]["lr"]
             scheduler.step()
             after_lr = optimizer.param_groups[0]["lr"]
-            print("Epoch %d: Adam lr %.5f -> %.5f" %
-                  (epoch, before_lr, after_lr))
+            print("Epoch %d: Adam lr %.5f -> %.5f" % (epoch, before_lr, after_lr))
 
             print("Training loss:", running_loss / len(trainloader))
             print("Validation loss:", valid_loss / len(validloader))
 
-            log_scalar("total_loss/train",
-                       (running_loss / len(trainloader)), epoch)
-            log_scalar("total_loss/validation",
-                       (valid_loss / len(validloader)), epoch)
+            log_scalar("total_loss/train", (running_loss / len(trainloader)), epoch)
+            log_scalar("total_loss/validation", (valid_loss / len(validloader)), epoch)
 
             log_scalar("recon_loss/train", (loss_r / len(trainloader)), epoch)
             log_scalar(
-                "recon_loss/validation", (valid_loss_r /
-                                          len(validloader)), epoch
+                "recon_loss/validation", (valid_loss_r / len(validloader)), epoch
             )
 
             log_scalar("pred_loss/train", (loss_p / len(trainloader)), epoch)
-            log_scalar("pred_loss/validation",
-                       (valid_loss_p / len(validloader)), epoch)
+            log_scalar("pred_loss/validation", (valid_loss_p / len(validloader)), epoch)
 
         # Upload the TensorBoard event logs as a run artifact
         print("Uploading TensorBoard events as a run artifact...")

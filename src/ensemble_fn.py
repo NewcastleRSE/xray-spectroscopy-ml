@@ -37,7 +37,6 @@ def ensemble_train(
     # getting exp name for mlflow
     exp_name = f"{mode}_{model_mode}"
     for i in range(ensemble["n_ens"]):
-
         if mode == "train_xyz":
             from core_learn import train_xyz
 
@@ -97,10 +96,17 @@ def ensemble_train(
             torch.save(model, model_dir / f"model.pt")
 
 
-def ensemble_predict(ensemble, model_dir, mode, model_mode, xyz_data, xanes_data, plot_save, fourier_transform):
-
+def ensemble_predict(
+    ensemble,
+    model_dir,
+    mode,
+    model_mode,
+    xyz_data,
+    xanes_data,
+    plot_save,
+    fourier_transform,
+):
     if ensemble["combine"] == "prediction":
-
         n_model = len(next(os.walk(model_dir))[1])
 
         ensemble_preds = []
@@ -114,7 +120,7 @@ def ensemble_predict(ensemble, model_dir, mode, model_mode, xyz_data, xanes_data
 
             if fourier_transform:
                 parent_model_dir, predict_dir = model_utils.model_mode_error(
-                    model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1]*2
+                    model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1] * 2
                 )
             else:
                 parent_model_dir, predict_dir = model_utils.model_mode_error(
@@ -123,10 +129,8 @@ def ensemble_predict(ensemble, model_dir, mode, model_mode, xyz_data, xanes_data
 
             if model_mode == "mlp" or model_mode == "cnn":
                 if mode == "predict_xyz":
-
                     if fourier_transform:
-                        xanes_data = data_transform.fourier_transform_data(
-                            xanes_data)
+                        xanes_data = data_transform.fourier_transform_data(xanes_data)
 
                     xyz_predict = predict_xyz(xanes_data, model)
                     ensemble_preds.append(xyz_predict)
@@ -137,32 +141,31 @@ def ensemble_predict(ensemble, model_dir, mode, model_mode, xyz_data, xanes_data
 
                     if fourier_transform:
                         xanes_predict = data_transform.inverse_fourier_transform_data(
-                            xanes_predict)
+                            xanes_predict
+                        )
 
                     ensemble_preds.append(xanes_predict)
                     y = xanes_data
 
             elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
                 if mode == "predict_xyz":
-
                     x = xanes_data
                     y = xyz_data
 
                     if fourier_transform:
-                        xanes_data = data_transform.fourier_transform_data(
-                            xanes_data)
+                        xanes_data = data_transform.fourier_transform_data(xanes_data)
 
                     xanes_recon, xyz_predict = predict_xyz(xanes_data, model)
 
                     if fourier_transform:
                         xanes_recon = data_transform.inverse_fourier_transform_data(
-                            xanes_recon)
+                            xanes_recon
+                        )
 
                     ensemble_preds.append(xyz_predict)
                     ensemble_recons.append(xanes_recon)
 
                 elif mode == "predict_xanes":
-
                     x = xyz_data
                     y = xanes_data
 
@@ -170,7 +173,8 @@ def ensemble_predict(ensemble, model_dir, mode, model_mode, xyz_data, xanes_data
 
                     if fourier_transform:
                         xanes_predict = data_transform.inverse_fourier_transform_data(
-                            xanes_predict)
+                            xanes_predict
+                        )
 
                     ensemble_preds.append(xanes_predict)
                     ensemble_recons.append(xyz_recon)
@@ -207,21 +211,19 @@ def ensemble_predict(ensemble, model_dir, mode, model_mode, xyz_data, xanes_data
             model = EnsembleModel(ensemble_model)
             print("Loaded model from disk")
             if mode == "predict_xyz":
-
                 if fourier_transform:
-                    xanes_data = data_transform.fourier_transform_data(
-                        xanes_data)
+                    xanes_data = data_transform.fourier_transform_data(xanes_data)
 
                 y_predict = predict_xyz(xanes_data, model)
                 y = xyz_data
 
             elif mode == "predict_xanes":
-
                 xanes_predict = predict_xanes(xyz_data, model)
 
                 if fourier_transform:
                     xanes_predict = data_transform.inverse_fourier_transform_data(
-                        xanes_predict)
+                        xanes_predict
+                    )
 
                 y_predict = predict_xyz(xyz_data, model)
                 y = xanes_data
@@ -236,14 +238,12 @@ def ensemble_predict(ensemble, model_dir, mode, model_mode, xyz_data, xanes_data
                 y = xyz_data
 
                 if fourier_transform:
-                    xanes_data = data_transform.fourier_transform_data(
-                        xanes_data)
+                    xanes_data = data_transform.fourier_transform_data(xanes_data)
 
                 x_recon, y_predict = predict_xyz(xanes_data, model)
 
                 if fourier_transform:
-                    x_recon = data_transform.inverse_fourier_transform_data(
-                        x_recon)
+                    x_recon = data_transform.inverse_fourier_transform_data(x_recon)
 
             elif mode == "predict_xanes":
                 x = xyz_data
@@ -252,8 +252,7 @@ def ensemble_predict(ensemble, model_dir, mode, model_mode, xyz_data, xanes_data
                 x_recon, y_predict = predict_xanes(xyz_data, model)
 
                 if fourier_transform:
-                    y_predict = data_transform.inverse_fourier_transform_data(
-                        y_predict)
+                    y_predict = data_transform.inverse_fourier_transform_data(y_predict)
 
         print(
             "MSE y to y pred : ",
