@@ -40,6 +40,12 @@ kfold_params:
     loss_fn: mse 
     loss_args: null
 
+lr_scheduler: True
+scheduler_param:
+  type: StepLR
+  step_size: 50
+  gamma: 0.1
+
 hyperparams: 
   model: cnn
   batch_size: 16

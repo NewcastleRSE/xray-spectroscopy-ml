@@ -46,6 +46,8 @@ def train_xyz(
     kfold_params,
     rng,
     weight_seed,
+    lr_scheduler,
+    scheduler_param,
 ):
     print("training xyz structure")
 
@@ -63,6 +65,8 @@ def train_xyz(
                 hyperparams,
                 epochs,
                 weight_seed,
+                lr_scheduler,
+                scheduler_param,
             )
             print_cross_validation_scores(result, model_mode)
         else:
@@ -75,6 +79,8 @@ def train_xyz(
                 hyperparams,
                 epochs,
                 weight_seed,
+                lr_scheduler,
+                scheduler_param,
             )
 
     elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
@@ -91,6 +97,8 @@ def train_xyz(
                 hyperparams,
                 epochs,
                 weight_seed,
+                lr_scheduler,
+                scheduler_param,
             )
             print_cross_validation_scores(result, model_mode)
         else:
@@ -103,6 +111,8 @@ def train_xyz(
                 hyperparams,
                 epochs,
                 weight_seed,
+                lr_scheduler,
+                scheduler_param,
             )
 
     summary(model, (1, xyz.shape[1]))
@@ -120,6 +130,8 @@ def train_xanes(
     kfold_params,
     rng,
     weight_seed,
+    lr_scheduler,
+    scheduler_param,
 ):
     print("training xanes spectrum")
 
@@ -137,6 +149,8 @@ def train_xanes(
                 hyperparams,
                 epochs,
                 weight_seed,
+                lr_scheduler,
+                scheduler_param,
             )
             print_cross_validation_scores(result, model_mode)
         else:
@@ -149,6 +163,8 @@ def train_xanes(
                 hyperparams,
                 epochs,
                 weight_seed,
+                lr_scheduler,
+                scheduler_param,
             )
 
     elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
@@ -165,6 +181,7 @@ def train_xanes(
                 hyperparams,
                 epochs,
                 weight_seed,
+                lr_scheduler,
             )
             print_cross_validation_scores(result, model_mode)
 
@@ -178,6 +195,7 @@ def train_xanes(
                 hyperparams,
                 epochs,
                 weight_seed,
+                lr_scheduler,
             )
 
     summary(model, (1, xanes.shape[1]))

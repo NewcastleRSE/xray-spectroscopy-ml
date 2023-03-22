@@ -15,7 +15,7 @@ bootstrap_params:
   n_size: 1.0
   seed_boot: [97, 39, 22]
 
-ensemble: True
+ensemble: False
 ensemble_params:
   n_ens: 3
   weight_init_seed: [97, 39, 22]
@@ -40,6 +40,20 @@ kfold_params:
     loss_fn: mse 
     loss_args: null
 
+lr_scheduler: True
+scheduler_param:
+  # type: StepLR
+  # step_size: 50
+  # gamma: 0.1
+  # type: LinearLR
+  # start_factor: 1.0
+  # end_factor: 0.1
+  # iter_mul: 0.75
+  type: CosineAnnealingWarmRestarts
+  T_mult: 2
+  eta_min: 0.005
+  last_epoch: -1
+          
 hyperparams: 
   model: mlp
   batch_size: 64
@@ -57,5 +71,5 @@ hyperparams:
   bias_init: zeros
 
 seed: 2021
-epochs: 1
+epochs: 100
 variance_threshold: 0.0

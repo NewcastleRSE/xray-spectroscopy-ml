@@ -27,6 +27,8 @@ def ensemble_train(
     rng,
     descriptor,
     data_compress,
+    lr_scheduler,
+    scheduler_param,
 ):
     parent_ensemble_dir = "ensemble/"
     Path(parent_ensemble_dir).mkdir(parents=True, exist_ok=True)
@@ -52,6 +54,8 @@ def ensemble_train(
                 kfold_params,
                 rng,
                 ensemble["weight_init_seed"][i],
+                lr_scheduler,
+                scheduler_param,
             )
         elif mode == "train_xanes":
             from core_learn import train_xanes
@@ -67,6 +71,8 @@ def ensemble_train(
                 kfold_params,
                 rng,
                 ensemble["weight_init_seed"][i],
+                lr_scheduler,
+                scheduler_param,
             )
 
         elif mode == "train_aegan":
