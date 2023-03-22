@@ -45,12 +45,7 @@ def main(
     run_shap: bool,
     shap_nsamples: int,
     model_dir: str,
-    x_path: str,
-    y_path: str,
-    monte_carlo: dict = {},
-    bootstrap: dict = {},
-    ensemble: dict = {},
-    plot_save: bool = False,
+    config,
     fourier_transform: bool = False,
 ):
     """
@@ -69,8 +64,8 @@ def main(
 
     model_dir = Path(model_dir)
 
-    xyz_path = Path(x_path) if x_path is not None else None
-    xanes_path = Path(y_path) if y_path is not None else None
+    xyz_path = Path(config["x_path"]) if config["x_path"] is not None else None
+    xanes_path = Path(config["y_path"]) if config["y_path"] is not None else None
 
     if xyz_path is not None and xanes_path is not None:
         ids = list(set(list_filestems(xyz_path)) & set(list_filestems(xanes_path)))
@@ -114,7 +109,7 @@ def main(
 
     print(">> ...loaded!\n")
 
-    if bootstrap["fn"] == "True":
+    if config["bootstrap"]:
         from bootstrap_fn import bootstrap_predict
 
         bootstrap_predict(
@@ -124,21 +119,21 @@ def main(
             xyz_data,
             xanes_data,
             ids,
-            plot_save,
+            config["plot_save"],
             fourier_transform,
         )
 
-    elif ensemble["fn"] == "True":
+    elif config["ensemble"]:
         from ensemble_fn import ensemble_predict
 
         ensemble_predict(
-            ensemble,
+            config["ensemble_combine"],
             model_dir,
             mode,
             model_mode,
             xyz_data,
             xanes_data,
-            plot_save,
+            config["plot_save"],
             fourier_transform,
         )
 
@@ -190,16 +185,22 @@ def main(
             )
             y_predict, e = y_predict_dim(y_predict, ids, model_dir)
 
-            if monte_carlo["mc_fn"] == "True":
+            if config["monte_carlo"]:
                 from montecarlo_fn import montecarlo_dropout
 
                 data_compress = {"ids": ids, "y": y, "y_predict": y_predict, "e": e}
                 montecarlo_dropout(
-                    model, x, monte_carlo["mc_iter"], data_compress, predict_dir, mode
+                    model,
+                    x,
+                    config["mc_iter"],
+                    data_compress,
+                    predict_dir,
+                    mode,
+                    config["plot_save"],
                 )
 
             else:
-                if plot_save:
+                if config["plot_save"]:
                     from plot import plot_predict
 
                     plot_predict(ids, y, y_predict, e, predict_dir, mode)
@@ -240,7 +241,7 @@ def main(
                 mean_squared_error(y, y_predict.detach().numpy()),
             )
 
-            if monte_carlo["mc_fn"] == "True":
+            if config["monte_carlo"]:
                 from montecarlo_fn import montecarlo_dropout_ae
 
                 data_compress = {
@@ -252,12 +253,18 @@ def main(
                     "x_recon": x_recon,
                 }
                 montecarlo_dropout_ae(
-                    model, x, monte_carlo["mc_iter"], data_compress, predict_dir, mode
+                    model,
+                    x,
+                    config["mc_iter"],
+                    data_compress,
+                    predict_dir,
+                    mode,
+                    config["plot_save"],
                 )
 
             else:
                 y_predict, e = y_predict_dim(y_predict, ids, model_dir)
-                if plot_save == "True":
+                if config["plot_save"]:
                     from plot import plot_ae_predict
 
                     plot_ae_predict(ids, y, y_predict, x, x_recon, e, predict_dir, mode)
@@ -331,7 +338,7 @@ def main(
 
             print(">> Plotting reconstructions and predictions...")
 
-            if plot_save:
+            if config["plot_save"]:
                 plots_dir = unique_path(Path(parent_model_dir), "plots_predictions")
                 plots_dir.mkdir()
 
@@ -342,17 +349,17 @@ def main(
                         ids, x, y, x_recon, y_recon, x_pred, y_pred, plots_dir
                     )
 
-                elif x_path is not None:
+                elif config["x_path"] is not None:
                     from plot import plot_aegan_spectrum
 
                     plot_aegan_spectrum(ids, x, x_recon, y_pred, plots_dir)
 
-                elif y_path is not None:
+                elif config["y_path"] is not None:
                     from plot import plot_aegan_structure
 
                     plot_aegan_structure(ids, y, y_recon, x_pred, plots_dir)
 
-                if x_path is not None and y_path is not None:
+                if config["x_path"] is not None and config["y_path"] is not None:
                     print(">> Plotting and saving cosine-similarity...")
 
                     analysis_dir = unique_path(Path(parent_model_dir), "analysis")

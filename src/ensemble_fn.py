@@ -110,7 +110,7 @@ def ensemble_predict(
     plot_save,
     fourier_transform,
 ):
-    if ensemble["combine"] == "prediction":
+    if ensemble == "prediction":
         n_model = len(next(os.walk(model_dir))[1])
 
         ensemble_preds = []
@@ -196,7 +196,7 @@ def ensemble_predict(
                 "MSE x to x recon : ",
                 mean_squared_error(x, ensemble_recon.detach().numpy()),
             )
-    elif ensemble["combine"] == "weight":
+    elif ensemble == "weight":
         print("ensemble by combining weight")
 
         n_model = len(next(os.walk(model_dir))[1])

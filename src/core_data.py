@@ -27,9 +27,8 @@ def train_data(
     config,
     save: bool = True,
     fourier_transform: bool = False,
-    max_samples: int = None,
+    # max_samples: int = None,
 ):
-
     rng = RandomState(seed=config["seed"])
 
     xyz_path = [Path(p) for p in glob(config["x_path"])]
@@ -61,18 +60,17 @@ def train_data(
             descriptors = {"rdc": RDC, "wacsf": WACSF}
 
             descriptor = descriptors.get(config["descriptor"]["type"])(
-                **config["descriptor"]["params"])
+                **config["descriptor"]["params"]
+            )
 
             n_samples = len(ids)
             n_x_features = descriptor.get_len()
-            n_y_features = linecount(
-                xanes_path[n_element] / f"{ids[0]}.txt") - 2
+            n_y_features = linecount(xanes_path[n_element] / f"{ids[0]}.txt") - 2
 
             xyz_data = np.full((n_samples, n_x_features), np.nan)
             print(">> preallocated {}x{} array for X data...".format(*xyz_data.shape))
             xanes_data = np.full((n_samples, n_y_features), np.nan)
-            print(">> preallocated {}x{} array for Y data...".format(
-                *xanes_data.shape))
+            print(">> preallocated {}x{} array for Y data...".format(*xanes_data.shape))
             print(">> ...everything preallocated!\n")
 
             print(">> loading data into array(s)...")
@@ -225,8 +223,15 @@ def train_data(
             from core_learn import train_aegan
 
             model = train_aegan(
-                xyz, xanes, exp_name, model_mode, config["hyperparams"], config[
-                    "epochs"], config["kfold"], config["kfold_params"], rng
+                xyz,
+                xanes,
+                exp_name,
+                model_mode,
+                config["hyperparams"],
+                config["epochs"],
+                config["kfold"],
+                config["kfold_params"],
+                rng,
             )
 
         if save:
@@ -245,8 +250,8 @@ def train_data(
             print("Saved model to disk")
             descriptor_type = config["descriptor"]["type"]
             json.dump(
-                config["descriptor"]["params"], open(
-                    f"{model_dir}/{descriptor_type}.txt", "w")
+                config["descriptor"]["params"],
+                open(f"{model_dir}/{descriptor_type}.txt", "w"),
             )
         else:
             print("none")

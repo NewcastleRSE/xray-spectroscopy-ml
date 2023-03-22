@@ -133,7 +133,7 @@ def main(args: list):
             args.run_shap,
             args.shap_nsamples,
             args.mdl_dir,
-            **inp,
+            inp,
             fourier_transform=args.fourier_transform,
         )
 

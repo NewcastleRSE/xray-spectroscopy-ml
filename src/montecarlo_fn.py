@@ -2,7 +2,9 @@ import torch
 from sklearn.metrics import mean_squared_error
 
 
-def montecarlo_dropout(model, input_data, n_mc, data_compress, predict_dir, mode):
+def montecarlo_dropout(
+    model, input_data, n_mc, data_compress, predict_dir, mode, plot_save
+):
     from plot import plot_mc_predict
 
     model.train()
@@ -24,20 +26,23 @@ def montecarlo_dropout(model, input_data, n_mc, data_compress, predict_dir, mode
         "MSE y to y prob : ",
         mean_squared_error(data_compress["y"], prob_mean.detach().numpy()),
     )
-    # confidence interval
-    plot_mc_predict(
-        data_compress["ids"],
-        data_compress["y"],
-        data_compress["y_predict"],
-        prob_mean.detach().numpy(),
-        prob_var.detach().numpy(),
-        data_compress["e"],
-        predict_dir,
-        mode,
-    )
+
+    if plot_save:
+        plot_mc_predict(
+            data_compress["ids"],
+            data_compress["y"],
+            data_compress["y_predict"],
+            prob_mean.detach().numpy(),
+            prob_var.detach().numpy(),
+            data_compress["e"],
+            predict_dir,
+            mode,
+        )
 
 
-def montecarlo_dropout_ae(model, input_data, n_mc, data_compress, predict_dir, mode):
+def montecarlo_dropout_ae(
+    model, input_data, n_mc, data_compress, predict_dir, mode, plot_save
+):
     from plot import plot_mc_ae_predict
 
     model.train()
@@ -69,18 +74,18 @@ def montecarlo_dropout_ae(model, input_data, n_mc, data_compress, predict_dir, m
         mean_squared_error(data_compress["y"], mean_output.detach().numpy()),
     )
     # confidence interval
-
-    plot_mc_ae_predict(
-        data_compress["ids"],
-        data_compress["y"],
-        data_compress["y_predict"],
-        data_compress["x"],
-        data_compress["x_recon"],
-        mean_output.detach().numpy(),
-        var_output.detach().numpy(),
-        mean_recon.detach().numpy(),
-        var_recon.detach().numpy(),
-        data_compress["e"],
-        predict_dir,
-        mode,
-    )
+    if plot_save:
+        plot_mc_ae_predict(
+            data_compress["ids"],
+            data_compress["y"],
+            data_compress["y_predict"],
+            data_compress["x"],
+            data_compress["x_recon"],
+            mean_output.detach().numpy(),
+            var_output.detach().numpy(),
+            mean_recon.detach().numpy(),
+            var_recon.detach().numpy(),
+            data_compress["e"],
+            predict_dir,
+            mode,
+        )

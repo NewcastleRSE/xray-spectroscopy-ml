@@ -4,10 +4,11 @@ import numpy as np
 
 
 # DATA AUGMENTATION
-def data_augment(data_params, xyz_data, xanes_data, n_samples, n_x_features, n_y_features):
+def data_augment(
+    data_params, xyz_data, xanes_data, n_samples, n_x_features, n_y_features
+):
     data_aug_params = data_params["augment_params"]
-    n_aug_samples = np.multiply(
-        n_samples, data_params["augment_mult"]) - n_samples
+    n_aug_samples = np.multiply(n_samples, data_params["augment_mult"]) - n_samples
     print(">> ...AUGMENTING DATA...\n")
     if data_params["augment_type"].lower() == "random_noise":
         # augment data as random data point + noise

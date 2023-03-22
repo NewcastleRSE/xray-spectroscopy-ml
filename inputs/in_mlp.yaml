@@ -15,7 +15,7 @@ bootstrap_params:
   n_size: 1.0
   seed_boot: [97, 39, 22]
 
-ensemble: False
+ensemble: True
 ensemble_params:
   n_ens: 3
   weight_init_seed: [97, 39, 22]
