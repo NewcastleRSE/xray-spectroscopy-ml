@@ -19,20 +19,17 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 ############################### LIBRARY IMPORTS ###############################
 ###############################################################################
 
-import sys
 import json
-import importlib.resources
-
+import sys
 from argparse import ArgumentParser
 
+import yaml
+
 from core_data import train_data
-
-# from core_learn import main as learn
-from core_predict import main as predict
-
 from core_eval import main as eval_model
-from utils import print_nested_dict
+from core_predict import main as predict
 from model_utils import json_check
+from utils import print_nested_dict
 
 ###############################################################################
 ############################## ARGUMENT PARSING ###############################
@@ -59,7 +56,9 @@ def parse_args(args: list):
         required=True,
     )
     parser.add_argument(
-        "--mdl_dir", type=str, help="path to populated model directory during prediction"
+        "--mdl_dir",
+        type=str,
+        help="path to populated model directory during prediction",
     )
     parser.add_argument(
         "--inp_f",
@@ -81,7 +80,10 @@ def parse_args(args: list):
 
     parser.add_argument(
         "--run_shap",
-        type=bool, help="SHAP analysis for prediction", required=False, default=False,
+        type=bool,
+        help="SHAP analysis for prediction",
+        required=False,
+        default=False,
     )
     parser.add_argument(
         "--shap_nsamples",
@@ -92,244 +94,6 @@ def parse_args(args: list):
     )
 
     args = parser.parse_args()
-
-    # p=ArgumentParser()
-
-    # sub_p=p.add_subparsers(dest = "mode")
-
-    # learn_p=sub_p.add_parser("train_xyz")
-    # learn_p.add_argument(
-    #     "inp_f", type = str, help = "path to .json input file w/ variable definitions"
-    # )
-    # learn_p.add_argument("--model_mode", type = str,
-    #                      help = "the model", required = True)
-    # learn_p.add_argument(
-    #     "--no-save",
-    #     dest="save",
-    #     action="store_false",
-    #     help="toggles model directory creation and population to <off>",
-    # )
-    # learn_p.add_argument(
-    #     "--fourier_transform",
-    #     action="store_true",
-    #     help="Train using Fourier transformed xanes spectra",
-    # )
-
-    # learn_p = sub_p.add_parser("train_xanes")
-    # learn_p.add_argument("--model_mode", type=str,
-    #                      help="the model", required=True)
-    # learn_p.add_argument(
-    #     "inp_f", type=str, help="path to .json input file w/ variable definitions"
-    # )
-    # learn_p.add_argument(
-    #     "--no-save",
-    #     dest="save",
-    #     action="store_false",
-    #     help="toggles model directory creation and population to <off>",
-    # )
-    # learn_p.add_argument(
-    #     "--fourier_transform",
-    #     action="store_true",
-    #     help="Train using Fourier transformed xanes spectra",
-    # )
-
-    # learn_p = sub_p.add_parser("train_aegan")
-    # learn_p.add_argument("--model_mode", type=str,
-    #                      help="the model", required=True)
-    # learn_p.add_argument(
-    #     "inp_f", type=str, help="path to .json input file w/ variable definitions"
-    # )
-    # learn_p.add_argument(
-    #     "--no-save",
-    #     dest="save",
-    #     action="store_false",
-    #     help="toggles model directory creation and population to <off>",
-    # )
-    # learn_p.add_argument(
-    #     "--fourier_transform",
-    #     action="store_true",
-    #     help="Train using Fourier transformed xanes spectra",
-    # )
-
-    # predict_p = sub_p.add_parser("predict_xanes")
-    # predict_p.add_argument("--model_mode", type=str,
-    #                        help="the model", required=True)
-    # # shap arguments
-    # predict_p.add_argument(
-    #     "--run_shap", type=bool, help="SHAP analysis", required=False, default=False
-    # )
-    # predict_p.add_argument(
-    #     "--shap_nsamples",
-    #     type=int,
-    #     help="Number of background samples for SHAP analysis",
-    #     required=False,
-    #     default=50,
-    # )
-    # predict_p.add_argument(
-    #     "mdl_dir", type=str, help="path to populated model directory"
-    # )
-    # predict_p.add_argument(
-    #     "inp_f", type=str, help="path to .json input file w/ variable definitions"
-    # )
-    # predict_p.add_argument(
-    #     "--fourier_transform",
-    #     action="store_true",
-    #     help="Predict using model trained on Fourier transformed xanes spectra",
-    # )
-
-    # predict_p = sub_p.add_parser("predict_xyz")
-    # predict_p.add_argument("--model_mode", type=str,
-    #                        help="the model", required=True)
-    # # shap arguments
-    # predict_p.add_argument(
-    #     "--run_shap", type=bool, help="SHAP analysis", required=False, default=False
-    # )
-    # predict_p.add_argument(
-    #     "--shap_nsamples",
-    #     type=int,
-    #     help="Number of background samples for SHAP analysis",
-    #     required=False,
-    #     default=50,
-    # )
-    # predict_p.add_argument(
-    #     "mdl_dir", type=str, help="path to populated model directory"
-    # )
-    # predict_p.add_argument(
-    #     "inp_f", type=str, help="path to .json input file w/ variable definitions"
-    # )
-    # predict_p.add_argument(
-    #     "--fourier_transform",
-    #     action="store_true",
-    #     help="Predict using model trained on Fourier transformed xanes spectra",
-    # )
-
-    # # Parser for structural and spectral inputs
-    # predict_p = sub_p.add_parser("predict_aegan")
-    # predict_p.add_argument("--model_mode", type=str,
-    #                        help="the model", required=True)
-    # # shap arguments
-    # predict_p.add_argument(
-    #     "--run_shap", type=bool, help="SHAP analysis", required=False, default=False
-    # )
-    # predict_p.add_argument(
-    #     "--shap_nsamples",
-    #     type=int,
-    #     help="Number of background samples for SHAP analysis",
-    #     required=False,
-    #     default=50,
-    # )
-    # predict_p.add_argument(
-    #     "mdl_dir", type=str, help="path to populated model directory"
-    # )
-    # predict_p.add_argument(
-    #     "inp_f", type=str, help="path to .json input file w/ variable definitions"
-    # )
-    # predict_p.add_argument(
-    #     "--fourier_transform",
-    #     action="store_true",
-    #     help="Predict using model trained on Fourier transformed xanes spectra",
-    # )
-
-    # # Parser for structual inputs only
-    # predict_p_xyz = sub_p.add_parser("predict_aegan_xanes")
-    # predict_p_xyz.add_argument(
-    #     "--model_mode", type=str, help="the model", required=True
-    # )
-    # # shap arguments
-    # predict_p_xyz.add_argument(
-    #     "--run_shap", type=bool, help="SHAP analysis", required=False, default=False
-    # )
-    # predict_p_xyz.add_argument(
-    #     "--shap_nsamples",
-    #     type=int,
-    #     help="Number of background samples for SHAP analysis",
-    #     required=False,
-    #     default=50,
-    # )
-    # predict_p_xyz.add_argument(
-    #     "mdl_dir", type=str, help="path to populated model directory"
-    # )
-    # predict_p_xyz.add_argument(
-    #     "inp_f", type=str, help="path to .json input file w/ variable definitions"
-    # )
-    # predict_p_xyz.add_argument(
-    #     "--fourier_transform",
-    #     action="store_true",
-    #     help="Predict using model trained on Fourier transformed xanes spectra",
-    # )
-
-    # predict_p_xanes = sub_p.add_parser("predict_aegan_xyz")
-    # predict_p_xanes.add_argument(
-    #     "--model_mode", type=str, help="the model", required=True
-    # )
-    # # shap arguments
-    # predict_p_xanes.add_argument(
-    #     "--run_shap", type=bool, help="SHAP analysis", required=False, default=False
-    # )
-    # predict_p_xanes.add_argument(
-    #     "--shap_nsamples",
-    #     type=int,
-    #     help="Number of background samples for SHAP analysis",
-    #     required=False,
-    #     default=50,
-    # )
-    # predict_p_xanes.add_argument(
-    #     "mdl_dir", type=str, help="path to populated model directory"
-    # )
-    # predict_p_xanes.add_argument(
-    #     "inp_f", type=str, help="path to .json input file w/ variable definitions"
-    # )
-    # predict_p_xanes.add_argument(
-    #     "--fourier_transform",
-    #     action="store_true",
-    #     help="Predict using model trained on Fourier transformed xanes spectra",
-    # )
-
-    # eval_p_pred_xanes = sub_p.add_parser("eval_pred_xanes")
-    # eval_p_pred_xanes.add_argument(
-    #     "--model_mode", type=str, help="the model", required=True
-    # )
-    # eval_p_pred_xanes.add_argument(
-    #     "mdl_dir", type=str, help="path to populated model directory"
-    # )
-    # eval_p_pred_xanes.add_argument(
-    #     "inp_f", type=str, help="path to .json input file w/ variable definitions"
-    # )
-
-    # eval_p_pred_xyz = sub_p.add_parser("eval_pred_xyz")
-    # eval_p_pred_xyz.add_argument(
-    #     "--model_mode", type=str, help="the model", required=True
-    # )
-    # eval_p_pred_xyz.add_argument(
-    #     "mdl_dir", type=str, help="path to populated model directory"
-    # )
-    # eval_p_pred_xyz.add_argument(
-    #     "inp_f", type=str, help="path to .json input file w/ variable definitions"
-    # )
-
-    # eval_p_recon_xanes = sub_p.add_parser("eval_recon_xanes")
-    # eval_p_recon_xanes.add_argument(
-    #     "--model_mode", type=str, help="the model", required=True
-    # )
-    # eval_p_recon_xanes.add_argument(
-    #     "mdl_dir", type=str, help="path to populated model directory"
-    # )
-    # eval_p_recon_xanes.add_argument(
-    #     "inp_f", type=str, help="path to .json input file w/ variable definitions"
-    # )
-
-    # eval_p_recon_xyz = sub_p.add_parser("eval_recon_xyz")
-    # eval_p_recon_xyz.add_argument(
-    #     "--model_mode", type=str, help="the model", required=True
-    # )
-    # eval_p_recon_xyz.add_argument(
-    #     "mdl_dir", type=str, help="path to populated model directory"
-    # )
-    # eval_p_recon_xyz.add_argument(
-    #     "inp_f", type=str, help="path to .json input file w/ variable definitions"
-    # )
-
-    # args = p.parse_args()
 
     return args
 
@@ -346,38 +110,21 @@ def main(args: list):
         args = parse_args(args)
 
     print(f">> loading JSON input @ {args.inp_f}\n")
-    with open(args.inp_f) as f:
-        inp = json.load(f)
-    print_nested_dict(inp, nested_level=1)
-    print("")
+    # with open(args.inp_f) as f:
+    #     inp = json.load(f)
+    with open(args.inp_f, "r") as f:
+        inp = yaml.safe_load(f)
+    # print_nested_dict(inp, nested_level=1)
+    # print("")
 
     if "train" in args.mode:
         train_data(
             args.mode,
             args.model_mode,
-            **inp,
+            inp,
             save=args.save,
             fourier_transform=args.fourier_transform,
         )
-
-    # elif args.mode == "train_xanes":
-    #     json_check(inp)
-    #     train_data(
-    #         args.mode,
-    #         args.model_mode,
-    #         **inp,
-    #         save=args.save,
-    #         fourier_transform=args.fourier_transform,
-    #     )
-
-    # elif args.mode == "train_aegan":
-    #     train_data(
-    #         args.mode,
-    #         args.model_mode,
-    #         **inp,
-    #         save=args.save,
-    #         fourier_transform=args.fourier_transform,
-    #     )
 
     elif "predict" in args.mode:
         predict(

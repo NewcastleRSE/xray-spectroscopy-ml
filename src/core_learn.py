@@ -42,6 +42,7 @@ def train_xyz(
     model_mode,
     hyperparams,
     epochs,
+    kfold,
     kfold_params,
     rng,
     weight_seed,
@@ -49,7 +50,7 @@ def train_xyz(
     print("training xyz structure")
 
     if model_mode == "mlp" or model_mode == "cnn":
-        if kfold_params["fn"] == "True":
+        if kfold:
             x = xyz
             y = xanes
             result, model = kfold_train(
@@ -77,7 +78,7 @@ def train_xyz(
             )
 
     elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
-        if kfold_params["fn"] == "True":
+        if kfold:
             x = xyz
             y = xanes
             result, model = kfold_ae_train(
@@ -115,6 +116,7 @@ def train_xanes(
     model_mode,
     hyperparams,
     epochs,
+    kfold,
     kfold_params,
     rng,
     weight_seed,
@@ -122,7 +124,7 @@ def train_xanes(
     print("training xanes spectrum")
 
     if model_mode == "mlp" or model_mode == "cnn":
-        if kfold_params["fn"] == "True":
+        if kfold:
             x = xanes
             y = xyz
             result, model = kfold_train(
@@ -150,7 +152,7 @@ def train_xanes(
             )
 
     elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
-        if kfold_params["fn"] == "True":
+        if kfold:
             x = xanes
             y = xyz
             result, model = kfold_ae_train(
@@ -183,9 +185,9 @@ def train_xanes(
 
 
 def train_aegan(
-    xyz, xanes, exp_name, model_mode, hyperparams, epochs, kfold_params, rng
+    xyz, xanes, exp_name, model_mode, hyperparams, epochs, kfold, kfold_params, rng
 ):
-    if kfold_params["fn"] == "True":
+    if kfold:
         result, model = kfold_aegan_train(
             xyz, xanes, kfold_params, rng, exp_name, model_mode, hyperparams, epochs
         )
