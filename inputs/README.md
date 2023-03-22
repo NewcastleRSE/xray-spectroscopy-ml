@@ -5,12 +5,13 @@ User Input
 ## Data Params
 
 ```
-    "data_params":{
-        "augment" : true,
-        "augment_type" : "random_noise",
-        "augment_mult" : 5,
-        "augment_params" : {"normal_mean" : 0, "normal_sd" : 0.1}
-    }
+data_params: True
+augment:
+    augment_type: random_noise
+    augment_mult: 5
+    augment_params: 
+    normal_mean: 0
+    normal_sd: 0.1
 ```
 
 There are currently two options for data `augment_type`: `random_noise` and `random_combination`.
@@ -24,19 +25,21 @@ The amount by which to increase the dataset via augmentation is given as an inte
 ## Hyperparams
 
 ```
-    "hyperparams": {
-        "batch_size": 64,
-        "n_hl": 2,
-        "hl_ini_dim": 512,
-        "hl_shrink": 0.5,
-        "activation": "prelu",
-        "loss": {"loss_fn" : "wcc", "loss_args" : 10},
-        "lr": 0.00001,
-        "dropout": 0.2,
-        "weight_init_seed":2023,
-        "kernel_init": "xavier_uniform",
-        "bias_init": "zeros"
-    },
+hyperparams: 
+  model: mlp
+  batch_size: 64
+  n_hl: 2
+  hl_ini_dim: 512
+  hl_shrink: 0.5
+  activation: prelu
+  loss:
+    loss_fn: mse
+    loss_args: null
+  lr: 0.00001
+  dropout: 0.2
+  weight_init_seed: 2023
+  kernel_init: xavier_uniform
+  bias_init: zeros
 ```
 
 ### Activation Functions

@@ -141,10 +141,8 @@ def main(args: list):
         eval_model(
             args.mode,
             args.mdl_dir,
-            args.run_shap,
-            args.shap_nsamples,
             args.model_mode,
-            **inp,
+            inp,
         )
 
 

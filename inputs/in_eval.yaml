@@ -1,0 +1,17 @@
+x_train_path: data/datasets/fe/preconv/xyz_train
+y_train_path: data/datasets/fe/preconv/xanes_train
+x_test_path: data/datasets/fe/preconv/xyz_train
+y_test_path: data/datasets/fe/preconv/xanes_train
+
+test_params:
+  shuffle_output: true
+  mean_train_output: true
+  random_train_output: true
+  gauss_train_output: true
+  shuffle_input: true
+  mean_train_input: true
+  random_train_input: true
+  gauss_train_input: true        
+
+save_tensorboard: false
+seed : 2021

@@ -1,0 +1,66 @@
+x_path: data/datasets/fe/preconv/xyz_train
+y_path: data/datasets/fe/preconv/xanes_train
+
+descriptor:
+    type: wacsf
+    params:
+      r_min: 1.0
+      r_max: 6.0
+      n_g2: 16
+      n_g4: 32
+
+bootstrap: False
+bootstrap_params: 
+  n_boot: 3
+  n_size: 1.0
+  seed_boot: [97, 39, 22]
+
+ensemble: False
+ensemble_params:
+  n_ens: 3
+  weight_init_seed: [97, 39, 22]
+
+data_params: False
+augment:
+  augment_type: random_noise
+  # augment_type: random_combination
+  augment_mult: 5
+  # for random noise
+  augment_params: 
+    normal_mean: 0
+    normal_sd: 0.1
+  # for random combination
+  # augment_params : {}
+
+kfold: False
+kfold_params:
+  n_splits: 5
+  n_repeats: 1
+  loss: 
+    loss_fn: mse 
+    loss_args: null
+
+hyperparams: 
+  model: aegan
+  batch_size: 64
+  n_hl_gen: 2
+  n_hl_shared: 2
+  n_hl_dis: 2
+  hidden_size: 256
+  activation: prelu
+  loss_gen:
+    loss_fn: wcc
+    loss_args: 10
+  loss_dis:
+    loss_fn: bce
+    loss_args: null
+  lr_gen: 0.01
+  lr_dis: 0.0001
+  dropout: 0.0
+  weight_init_seed: 2023
+  kernel_init: xavier_uniform
+  bias_init: zeros
+
+seed: 2021
+epochs: 1
+variance_threshold: 0.0
