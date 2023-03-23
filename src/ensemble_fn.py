@@ -88,6 +88,9 @@ def ensemble_train(
                 kfold,
                 kfold_params,
                 rng,
+                ensemble["weight_init_seed"][i],
+                lr_scheduler,
+                scheduler_param,
             )
         if save:
             with open(ensemble_dir / "descriptor.pickle", "wb") as f:

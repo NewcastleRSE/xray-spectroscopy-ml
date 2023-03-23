@@ -8,7 +8,7 @@ import torch
 from sklearn.metrics import mean_squared_error
 
 import plot
-from model_utils import model_mode_error
+from model_utils import model_mode_error, make_dir
 from predict import predict_xanes, predict_xyz, y_predict_dim
 from utils import unique_path
 import data_transform
@@ -106,6 +106,9 @@ def bootstrap_train(
                 kfold,
                 kfold_params,
                 rng,
+                hyperparams["weight_init_seed"],
+                lr_scheduler,
+                scheduler_param,
             )
         if save:
             with open(bootstrap_dir / "descriptor.pickle", "wb") as f:
@@ -125,11 +128,23 @@ def bootstrap_train(
 
 
 def bootstrap_predict(
-    model_dir, mode, model_mode, xyz_data, xanes_data, ids, plot_save, fourier_transform
+    model_dir,
+    mode,
+    model_mode,
+    xyz_data,
+    xanes_data,
+    ids,
+    plot_save,
+    fourier_transform,
+    config,
 ):
     n_boot = len(next(os.walk(model_dir))[1])
 
-    bootstrap_score = []
+    x_recon_score = []
+    y_predict_score = []
+    y_recon_score = []
+    x_predict_score = []
+
     for i in range(n_boot):
         n_dir = f"{model_dir}/model_00{i+1}/model.pt"
 
@@ -137,14 +152,18 @@ def bootstrap_predict(
         model.eval()
         print("Loaded model from disk")
 
-        parent_model_dir, predict_dir = model_mode_error(
-            model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1]
-        )
+        if model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
+            parent_model_dir, predict_dir = make_dir()
+        else:
+            parent_model_dir, predict_dir = model_mode_error(
+                model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1]
+            )
 
         if model_mode == "mlp" or model_mode == "cnn":
             if mode == "predict_xyz":
                 if fourier_transform:
-                    xanes_data = data_transform.fourier_transform_data(xanes_data)
+                    xanes_data = data_transform.fourier_transform_data(
+                        xanes_data)
 
                 xyz_predict = predict_xyz(xanes_data, model)
 
@@ -160,7 +179,8 @@ def bootstrap_predict(
                 y_predict = xanes_predict
 
                 if fourier_transform:
-                    y_predict = data_transform.inverse_fourier_transform_data(y_predict)
+                    y_predict = data_transform.inverse_fourier_transform_data(
+                        y_predict)
 
             print(
                 "MSE y to y pred : ",
@@ -170,12 +190,16 @@ def bootstrap_predict(
             if plot_save:
                 plot.plot_predict(ids, y, y_predict, e, predict_dir, mode)
 
+            y_predict_score.append(mean_squared_error(
+                y, y_predict))
+
         elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
             if mode == "predict_xyz":
                 x = xanes_data
 
                 if fourier_transform:
-                    xanes_data = data_transform.fourier_transform_data(xanes_data)
+                    xanes_data = data_transform.fourier_transform_data(
+                        xanes_data)
 
                 recon_xanes, pred_xyz = predict_xyz(xanes_data, model)
 
@@ -184,7 +208,8 @@ def bootstrap_predict(
                 y_predict = pred_xyz
 
                 if fourier_transform:
-                    x_recon = data_transform.inverse_fourier_transform_data(x_recon)
+                    x_recon = data_transform.inverse_fourier_transform_data(
+                        x_recon)
 
             elif mode == "predict_xanes":
                 recon_xyz, pred_xanes = predict_xanes(xyz_data, model)
@@ -195,7 +220,13 @@ def bootstrap_predict(
                 y_predict = pred_xanes
 
                 if fourier_transform:
-                    y_predict = data_transform.inverse_fourier_transform_data(y_predict)
+                    y_predict = data_transform.inverse_fourier_transform_data(
+                        y_predict)
+
+            y_predict_score.append(mean_squared_error(
+                y, y_predict))
+            x_recon_score.append(mean_squared_error(
+                x, x_recon))
 
             print(
                 "MSE x to x recon : ",
@@ -211,7 +242,78 @@ def bootstrap_predict(
                     ids, y, y_predict, x, x_recon, e, predict_dir, mode
                 )
 
-        bootstrap_score.append(mean_squared_error(y, y_predict.detach().numpy()))
-    mean_score = torch.mean(torch.tensor(bootstrap_score))
-    std_score = torch.std(torch.tensor(bootstrap_score))
-    print(f"Mean score: {mean_score:.4f}, Std score: {std_score:.4f}")
+        elif model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
+            # Convert to float
+            if config["x_path"] is not None and config["y_path"] is not None:
+                x = torch.tensor(xyz_data).float()
+                y = torch.tensor(xanes_data).float()
+            elif config["x_path"] is not None and config["y_path"] is None:
+                x = torch.tensor(xyz_data).float()
+                y = None
+            elif config["y_path"] is not None and config["x_path"] is None:
+                y = torch.tensor(xanes_data).float()
+                x = None
+
+            import aegan_predict
+
+            x_recon, y_predict, y_recon, x_predict = aegan_predict.main(
+                config,
+                x,
+                y,
+                model,
+                fourier_transform,
+                model_dir,
+                predict_dir,
+                ids,
+                parent_model_dir,
+            )
+
+            if config["x_path"] is not None:
+                x_recon_score.append(mean_squared_error(
+                    x, x_recon))
+
+            if config["y_path"] is not None:
+                y_recon_score.append(mean_squared_error(
+                    y, y_recon))
+
+            if config["x_path"] is not None and config["y_path"] is not None:
+                y_predict_score.append(mean_squared_error(
+                    y, y_predict))
+                x_predict_score.append(mean_squared_error(
+                    x, x_predict))
+
+    if model_mode == "mlp" or model_mode == "cnn":
+        mean_score = torch.mean(torch.tensor(y_predict_score))
+        std_score = torch.std(torch.tensor(y_predict_score))
+        print(f"Mean score: {mean_score:.4f}, Std score: {std_score:.4f}")
+    elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
+        mean_score = torch.mean(torch.tensor(y_predict_score))
+        std_score = torch.std(torch.tensor(y_predict_score))
+        print(
+            f"Mean score predict: {mean_score:.4f}, Std score: {std_score:.4f}")
+        mean_score = torch.mean(torch.tensor(x_recon_score))
+        std_score = torch.std(torch.tensor(x_recon_score))
+        print(
+            f"Mean score reconstruction: {mean_score:.4f}, Std score: {std_score:.4f}")
+    elif model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
+        if config["x_path"] is not None:
+            mean_score = torch.mean(torch.tensor(x_recon_score))
+            std_score = torch.std(torch.tensor(x_recon_score))
+            print(
+                f"Mean score x reconstruction: {mean_score:.4f}, Std score: {std_score:.4f}")
+
+            if config["y_path"] is not None:
+                mean_score = torch.mean(torch.tensor(y_recon_score))
+                std_score = torch.std(torch.tensor(y_recon_score))
+                print(
+                    f"Mean score y reconstruction: {mean_score:.4f}, Std score: {std_score:.4f}")
+
+            if config["x_path"] is not None and config["y_path"] is not None:
+                mean_score = torch.mean(torch.tensor(y_predict_score))
+                std_score = torch.std(torch.tensor(y_predict_score))
+                print(
+                    f"Mean y prediction score: {mean_score:.4f}, Std score: {std_score:.4f}")
+                mean_score = torch.mean(torch.tensor(x_predict_score))
+                std_score = torch.std(torch.tensor(x_predict_score))
+                print(
+                    f"Mean x prediction score: {mean_score:.4f}, Std score: {std_score:.4f}")

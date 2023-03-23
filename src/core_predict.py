@@ -19,7 +19,6 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 ############################### LIBRARY IMPORTS ###############################
 ###############################################################################
 
-import os
 import pickle as pickle
 from pathlib import Path
 
@@ -29,10 +28,9 @@ import tqdm as tqdm
 from sklearn.metrics import mean_squared_error
 
 import data_transform
-from inout import load_xanes, load_xyz, save_xanes
-from predict import average, predict_xanes, predict_xyz, y_predict_dim
-from spectrum.xanes import XANES
-from utils import linecount, list_filestems, unique_path
+from inout import load_xanes, load_xyz
+from predict import predict_xanes, predict_xyz, y_predict_dim
+from utils import linecount, list_filestems
 
 ###############################################################################
 ################################ MAIN FUNCTION ################################
@@ -65,10 +63,12 @@ def main(
     model_dir = Path(model_dir)
 
     xyz_path = Path(config["x_path"]) if config["x_path"] is not None else None
-    xanes_path = Path(config["y_path"]) if config["y_path"] is not None else None
+    xanes_path = Path(
+        config["y_path"]) if config["y_path"] is not None else None
 
     if xyz_path is not None and xanes_path is not None:
-        ids = list(set(list_filestems(xyz_path)) & set(list_filestems(xanes_path)))
+        ids = list(set(list_filestems(xyz_path)) &
+                   set(list_filestems(xanes_path)))
     elif xyz_path is None:
         ids = list(set(list_filestems(xanes_path)))
     elif xanes_path is None:
@@ -107,6 +107,11 @@ def main(
                 xanes = load_xanes(f)
                 e, xanes_data[i, :] = xanes.spectrum
 
+    if xyz_path is None:
+        xyz_data = None
+    if xanes_path is None:
+        xanes_data = None
+
     print(">> ...loaded!\n")
 
     if config["bootstrap"]:
@@ -121,6 +126,7 @@ def main(
             ids,
             config["plot_save"],
             fourier_transform,
+            config,
         )
 
     elif config["ensemble"]:
@@ -138,7 +144,8 @@ def main(
         )
 
     else:
-        model = torch.load(model_dir / "model.pt", map_location=torch.device("cpu"))
+        model = torch.load(model_dir / "model.pt",
+                           map_location=torch.device("cpu"))
         model.eval()
         print("Loaded model from disk")
 
@@ -161,7 +168,8 @@ def main(
         if model_mode == "mlp" or model_mode == "cnn":
             if mode == "predict_xyz":
                 if fourier_transform:
-                    xanes_data = data_transform.fourier_transform_data(xanes_data)
+                    xanes_data = data_transform.fourier_transform_data(
+                        xanes_data)
 
                 xyz_predict = predict_xyz(xanes_data, model)
 
@@ -177,7 +185,8 @@ def main(
                 y_predict = xanes_predict
 
                 if fourier_transform:
-                    y_predict = data_transform.inverse_fourier_transform_data(y_predict)
+                    y_predict = data_transform.inverse_fourier_transform_data(
+                        y_predict)
 
             print(
                 "MSE y to y pred : ",
@@ -188,7 +197,8 @@ def main(
             if config["monte_carlo"]:
                 from montecarlo_fn import montecarlo_dropout
 
-                data_compress = {"ids": ids, "y": y, "y_predict": y_predict, "e": e}
+                data_compress = {"ids": ids, "y": y,
+                                 "y_predict": y_predict, "e": e}
                 montecarlo_dropout(
                     model,
                     x,
@@ -211,7 +221,8 @@ def main(
                 y = xyz_data
 
                 if fourier_transform:
-                    xanes_data = data_transform.fourier_transform_data(xanes_data)
+                    xanes_data = data_transform.fourier_transform_data(
+                        xanes_data)
 
                 recon_xanes, pred_xyz = predict_xyz(xanes_data, model)
 
@@ -219,7 +230,8 @@ def main(
                 y_predict = pred_xyz
 
                 if fourier_transform:
-                    x_recon = data_transform.inverse_fourier_transform_data(x_recon)
+                    x_recon = data_transform.inverse_fourier_transform_data(
+                        x_recon)
 
             elif mode == "predict_xanes":
                 recon_xyz, pred_xanes = predict_xanes(xyz_data, model)
@@ -230,7 +242,8 @@ def main(
                 y_predict = pred_xanes
 
                 if fourier_transform:
-                    y_predict = data_transform.inverse_fourier_transform_data(y_predict)
+                    y_predict = data_transform.inverse_fourier_transform_data(
+                        y_predict)
 
             print(
                 "MSE x to x recon : ",
@@ -267,111 +280,34 @@ def main(
                 if config["plot_save"]:
                     from plot import plot_ae_predict
 
-                    plot_ae_predict(ids, y, y_predict, x, x_recon, e, predict_dir, mode)
+                    plot_ae_predict(ids, y, y_predict, x,
+                                    x_recon, e, predict_dir, mode)
 
         elif model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
             # Convert to float
-            if xyz_path is not None:
+            if config["x_path"] is not None and config["y_path"] is not None:
                 x = torch.tensor(xyz_data).float()
-            if xanes_path is not None:
                 y = torch.tensor(xanes_data).float()
+            elif config["x_path"] is not None and config["y_path"] is None:
+                x = torch.tensor(xyz_data).float()
+                y = None
+            elif config["y_path"] is not None and config["x_path"] is None:
+                y = torch.tensor(xanes_data).float()
+                x = None
 
-            print(">> Reconstructing and predicting data with neural net...")
+            import aegan_predict
 
-            if xyz_path is not None:
-                x_recon = model.reconstruct_structure(x).detach().numpy()
-                y_pred = model.predict_spectrum(x)
-                print(
-                    f">> Reconstruction error (structure) = {mean_squared_error(x,x_recon):.4f}"
-                )
-                if fourier_transform:
-                    y_pred = data_transform.inverse_fourier_transform_data(y_pred)
-
-                y_pred = y_pred.detach().numpy()
-
-            if xanes_path is not None:
-                if fourier_transform:
-                    z = data_transform.fourier_transform_data(xanes_data)
-                    z = torch.tensor(z).float()
-                    y_recon = model.reconstruct_spectrum(z)
-                    y_recon = (
-                        data_transform.inverse_fourier_transform_data(y_recon)
-                        .detach()
-                        .numpy()
-                    )
-                    x_pred = model.predict_structure(z).detach().numpy()
-                else:
-                    y_recon = model.reconstruct_spectrum(y).detach().numpy()
-                    x_pred = model.predict_structure(y).detach().numpy()
-
-                print(
-                    f">> Reconstruction error (spectrum) =  {mean_squared_error(y,y_recon):.4f}"
-                )
-
-            if xyz_path is not None and xanes_path is not None:  # Get prediction errors
-                print(
-                    f">> Prediction error (structure) =     {mean_squared_error(x,x_pred):.4f}"
-                )
-                print(
-                    f">> Prediction error (spectrum) =      {mean_squared_error(y,y_pred):.4f}"
-                )
-
-            print(">> ...done!\n")
-
-            print(">> Saving predictions and reconstructions...")
-
-            if xyz_path is not None:
-                with open(model_dir / "dataset.npz", "rb") as f:
-                    e = np.load(f)["e"]
-
-                for id_, y_pred_ in tqdm.tqdm(zip(ids, y_pred)):
-                    with open(predict_dir / f"spectrum_{id_}.txt", "w") as f:
-                        save_xanes(f, XANES(e.flatten(), y_pred_))
-
-            # TODO: save structure in .xyz format?
-            if xanes_path is not None:
-                for id_, x_pred_ in tqdm.tqdm(zip(ids, x_pred)):
-                    with open(predict_dir / f"structure_{id_}.txt", "w") as f:
-                        np.savetxt(f, x_pred_)
-
-            print(">> ...done!\n")
-
-            print(">> Plotting reconstructions and predictions...")
-
-            if config["plot_save"]:
-                plots_dir = unique_path(Path(parent_model_dir), "plots_predictions")
-                plots_dir.mkdir()
-
-                if xyz_path is not None and xanes_path is not None:
-                    from plot import plot_aegan_predict
-
-                    plot_aegan_predict(
-                        ids, x, y, x_recon, y_recon, x_pred, y_pred, plots_dir
-                    )
-
-                elif config["x_path"] is not None:
-                    from plot import plot_aegan_spectrum
-
-                    plot_aegan_spectrum(ids, x, x_recon, y_pred, plots_dir)
-
-                elif config["y_path"] is not None:
-                    from plot import plot_aegan_structure
-
-                    plot_aegan_structure(ids, y, y_recon, x_pred, plots_dir)
-
-                if config["x_path"] is not None and config["y_path"] is not None:
-                    print(">> Plotting and saving cosine-similarity...")
-
-                    analysis_dir = unique_path(Path(parent_model_dir), "analysis")
-                    analysis_dir.mkdir()
-
-                    from plot import plot_cosine_similarity
-
-                    plot_cosine_similarity(
-                        x, y, x_recon, y_recon, x_pred, y_pred, analysis_dir
-                    )
-
-                    print("...saved!\n")
+            aegan_predict.main(
+                config,
+                x,
+                y,
+                model,
+                fourier_transform,
+                model_dir,
+                predict_dir,
+                ids,
+                parent_model_dir,
+            )
 
         if run_shap:
             from shap_analysis import shap

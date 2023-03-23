@@ -212,20 +212,38 @@ def train_aegan(
     kfold,
     kfold_params,
     rng,
+    weight_seed,
     lr_scheduler,
     scheduler_param,
 ):
     if kfold:
         result, model = kfold_aegan_train(
-            xyz, xanes, kfold_params, rng, exp_name, model_mode, hyperparams, epochs, lr_scheduler,
+            xyz,
+            xanes,
+            kfold_params,
+            rng,
+            exp_name,
+            model_mode,
+            hyperparams,
+            epochs,
+            lr_scheduler,
             scheduler_param,
+            weight_seed,
         )
         print_cross_validation_scores(result, model_mode)
 
     else:
         print(">> fitting neural net...")
-        model, score = aegan_train(xyz, xanes, exp_name, hyperparams, epochs, lr_scheduler,
-                                   scheduler_param,)
+        model, score = aegan_train(
+            xyz,
+            xanes,
+            exp_name,
+            hyperparams,
+            epochs,
+            lr_scheduler,
+            scheduler_param,
+            weight_seed,
+        )
     summary(model)
     # from plot import plot_running_aegan
 

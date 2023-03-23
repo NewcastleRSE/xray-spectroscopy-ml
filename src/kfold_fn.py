@@ -36,8 +36,7 @@ def kfold_train(
     lr_scheduler,
     scheduler_param,
 ):
-    kfold_spooler, fit_time, kfold_loss_fn, prev_score = kfold_init(
-        kfold_params, rng)
+    kfold_spooler, fit_time, kfold_loss_fn, prev_score = kfold_init(kfold_params, rng)
     # K-fold Cross Validation model evaluation
     train_score = []
     test_score = []
@@ -62,8 +61,7 @@ def kfold_train(
         model.eval()
         x_test = torch.from_numpy(x[test_index]).float()
         pred_xanes = model(x_test)
-        pred_score = kfold_loss_fn(torch.tensor(
-            y[test_index]), pred_xanes).item()
+        pred_score = kfold_loss_fn(torch.tensor(y[test_index]), pred_xanes).item()
         test_score.append(pred_score)
         if pred_score < prev_score:
             best_model = model
@@ -88,8 +86,7 @@ def kfold_ae_train(
     weight_seed,
     lr_scheduler,
 ):
-    kfold_spooler, fit_time, kfold_loss_fn, prev_score = kfold_init(
-        kfold_params, rng)
+    kfold_spooler, fit_time, kfold_loss_fn, prev_score = kfold_init(kfold_params, rng)
     train_score = []
     test_recon_score = []
     test_pred_score = []
@@ -132,11 +129,19 @@ def kfold_ae_train(
 
 
 def kfold_aegan_train(
-    xyz, xanes, kfold_params, rng, exp_name, model_mode, hyperparams, epochs, lr_scheduler,
+    xyz,
+    xanes,
+    kfold_params,
+    rng,
+    exp_name,
+    model_mode,
+    hyperparams,
+    epochs,
+    lr_scheduler,
     scheduler_param,
+    weight_seed,
 ):
-    kfold_spooler, fit_time, kfold_loss_fn, prev_score = kfold_init(
-        kfold_params, rng)
+    kfold_spooler, fit_time, kfold_loss_fn, prev_score = kfold_init(kfold_params, rng)
     # K-fold Cross Validation model evaluation
     train_score = []
     test_recon_xyz_score = []
@@ -148,8 +153,14 @@ def kfold_aegan_train(
         # Training
         start = time.time()
         model, score = aegan_train(
-            xyz[train_index], xanes[train_index], exp_name, hyperparams, epochs, lr_scheduler,
+            xyz[train_index],
+            xanes[train_index],
+            exp_name,
+            hyperparams,
+            epochs,
+            lr_scheduler,
             scheduler_param,
+            weight_seed,
         )
         train_score.append(score["train_loss"][-1])
         fit_time.append(time.time() - start)

@@ -31,8 +31,9 @@ def log_scalar(name, value, epoch):
     mlflow.log_metric(name, value)
 
 
-def train_aegan(x, y, exp_name, hyperparams, n_epoch, scheduler_lr,
-                scheduler_param,):
+def train_aegan(
+    x, y, exp_name, hyperparams, n_epoch, scheduler_lr, scheduler_param, weight_seed
+):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     torch.manual_seed(1)
@@ -41,8 +42,7 @@ def train_aegan(x, y, exp_name, hyperparams, n_epoch, scheduler_lr,
     RUN_NAME = f"run_{datetime.today()}"
 
     try:
-        EXPERIMENT_ID = mlflow.get_experiment_by_name(
-            EXPERIMENT_NAME).experiment_id
+        EXPERIMENT_ID = mlflow.get_experiment_by_name(EXPERIMENT_NAME).experiment_id
         print(EXPERIMENT_ID)
     except:
         EXPERIMENT_ID = mlflow.create_experiment(EXPERIMENT_NAME)
@@ -80,7 +80,6 @@ def train_aegan(x, y, exp_name, hyperparams, n_epoch, scheduler_lr,
     model.to(device)
 
     # Model weight & bias initialisation
-    weight_seed = hyperparams["weight_init_seed"]
     kernel_init = model_utils.WeightInitSwitch().fn(hyperparams["kernel_init"])
     bias_init = model_utils.WeightInitSwitch().fn(hyperparams["bias_init"])
     # set seed
@@ -97,6 +96,7 @@ def train_aegan(x, y, exp_name, hyperparams, n_epoch, scheduler_lr,
 
     if scheduler_lr:
         import torch.optim.lr_scheduler as lr_scheduler
+
         if scheduler_param["type"] == "StepLR":
             scheduler_gen = lr_scheduler.StepLR(
                 gen_opt,
@@ -211,14 +211,18 @@ def train_aegan(x, y, exp_name, hyperparams, n_epoch, scheduler_lr,
                 before_lr_gen = gen_opt.param_groups[0]["lr"]
                 scheduler_gen.step()
                 after_lr_gen = gen_opt.param_groups[0]["lr"]
-                print("Epoch %d: Adam lr %.5f -> %.5f" %
-                      (epoch, before_lr_gen, after_lr_gen))
+                print(
+                    "Epoch %d: Adam lr %.5f -> %.5f"
+                    % (epoch, before_lr_gen, after_lr_gen)
+                )
 
                 before_lr_dis = dis_opt.param_groups[0]["lr"]
                 scheduler_dis.step()
                 after_lr_dis = dis_opt.param_groups[0]["lr"]
-                print("Epoch %d: Adam lr %.5f -> %.5f" %
-                      (epoch, before_lr_dis, after_lr_dis))
+                print(
+                    "Epoch %d: Adam lr %.5f -> %.5f"
+                    % (epoch, before_lr_dis, after_lr_dis)
+                )
 
             running_gen_loss = running_gen_loss / len(trainloader)
             running_dis_loss = running_dis_loss / len(trainloader)

@@ -240,6 +240,7 @@ def train_data(
                 config["kfold"],
                 config["kfold_params"],
                 rng,
+                config["hyperparams"]["weight_init_seed"],
                 config["lr_scheduler"],
                 config["scheduler_param"],
             )
