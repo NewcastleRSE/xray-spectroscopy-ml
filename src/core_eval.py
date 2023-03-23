@@ -50,8 +50,7 @@ def main(
         descriptor = pickle.load(f)
 
     print(">> Loading model from disk...")
-    model = torch.load(model_dir / "model.pt",
-                       map_location=torch.device("cpu"))
+    model = torch.load(model_dir / "model.pt", map_location=torch.device("cpu"))
     model.eval()
     print(">> ...loaded!\n")
 
@@ -87,8 +86,7 @@ def main(
     x_test_path = Path(config["x_test_path"])
     y_test_path = Path(config["y_test_path"])
 
-    test_ids = list(set(list_filestems(x_test_path)) &
-                    set(list_filestems(y_test_path)))
+    test_ids = list(set(list_filestems(x_test_path)) & set(list_filestems(y_test_path)))
     test_ids.sort()
 
     n_test_samples = len(test_ids)
@@ -170,8 +168,7 @@ class ModelTestInit:
         self.n_y_features = y_test.size(1)
 
         # Init true model losses
-        self.true_label, self.true_pred = self.predict(
-            self.x_test, self.y_test)
+        self.true_label, self.true_pred = self.predict(self.x_test, self.y_test)
         self.loss_fn = torch.nn.MSELoss(reduction="none")
         self.true_loss = (
             torch.sum(self.loss_fn(self.true_label, self.true_pred), dim=1)
@@ -194,8 +191,7 @@ class ModelTestInit:
                 alt_label = self.true_label
                 alt_pred = alt_xanes
 
-        fake_loss = torch.sum(self.loss_fn(
-            alt_label, alt_pred), dim=1).detach().numpy()
+        fake_loss = torch.sum(self.loss_fn(alt_label, alt_pred), dim=1).detach().numpy()
 
         check = perform_ttest(self.true_loss, fake_loss)
 
@@ -223,8 +219,7 @@ class ModelTestInit:
     def test_function_mean_train_input(self):
         # input
         mu_x = np.mean(self.x_train.detach().numpy(), axis=0)
-        test_input = torch.from_numpy(
-            np.repeat([mu_x], self.n_test_samples, 0)).float()
+        test_input = torch.from_numpy(np.repeat([mu_x], self.n_test_samples, 0)).float()
         # output
         test_output = self.y_test
         return test_input, test_output
@@ -277,8 +272,7 @@ class ModelTestInit:
         )
         for i in range(self.n_test_samples):
             for j in range(self.n_x_features):
-                test_input[i, j] = np.float64(
-                    mu_x[j] + np.random.normal(0, sd_x[j], 1))
+                test_input[i, j] = np.float64(mu_x[j] + np.random.normal(0, sd_x[j], 1))
 
         test_input = torch.from_numpy(test_input.astype(np.float64)).float()
         # output

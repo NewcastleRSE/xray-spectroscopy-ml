@@ -34,13 +34,22 @@ def log_scalar(name, value, epoch):
     mlflow.log_metric(name, value)
 
 
-def train(x, y, exp_name, model_mode, hyperparams, n_epoch, weight_seed, scheduler_lr, scheduler_param):
+def train(
+    x,
+    y,
+    exp_name,
+    model_mode,
+    hyperparams,
+    n_epoch,
+    weight_seed,
+    scheduler_lr,
+    scheduler_param,
+):
     EXPERIMENT_NAME = f"{exp_name}"
     RUN_NAME = f"run_{datetime.today()}"
 
     try:
-        EXPERIMENT_ID = mlflow.get_experiment_by_name(
-            EXPERIMENT_NAME).experiment_id
+        EXPERIMENT_ID = mlflow.get_experiment_by_name(EXPERIMENT_NAME).experiment_id
     except:
         EXPERIMENT_ID = mlflow.create_experiment(EXPERIMENT_NAME)
 
@@ -119,11 +128,16 @@ def train(x, y, exp_name, model_mode, hyperparams, n_epoch, weight_seed, schedul
     if scheduler_lr:
         if scheduler_param["type"] == "StepLR":
             scheduler = lr_scheduler.StepLR(
-                optimizer, step_size=scheduler_param["step_size"], gamma=scheduler_param["gamma"])
+                optimizer,
+                step_size=scheduler_param["step_size"],
+                gamma=scheduler_param["gamma"],
+            )
         elif scheduler_param["type"] == "LinearLR":
             scheduler = lr_scheduler.LinearLR(
-                optimizer, start_factor=scheduler_param["start_factor"], end_factor=scheduler_param[
-                    "end_factor"], total_iters=n_epoch*scheduler_param["iter_mul"]
+                optimizer,
+                start_factor=scheduler_param["start_factor"],
+                end_factor=scheduler_param["end_factor"],
+                total_iters=n_epoch * scheduler_param["iter_mul"],
             )
         elif scheduler_param["type"] == "CosineAnnealingWarmRestarts":
             scheduler = lr_scheduler.CosineAnnealingWarmRestarts(
@@ -179,16 +193,13 @@ def train(x, y, exp_name, model_mode, hyperparams, n_epoch, weight_seed, schedul
                 before_lr = optimizer.param_groups[0]["lr"]
                 scheduler.step()
                 after_lr = optimizer.param_groups[0]["lr"]
-                print("Epoch %d: Adam lr %.5f -> %.5f" %
-                      (epoch, before_lr, after_lr))
+                print("Epoch %d: Adam lr %.5f -> %.5f" % (epoch, before_lr, after_lr))
 
             print("Training loss:", running_loss / len(trainloader))
             print("Validation loss:", valid_loss / len(validloader))
 
             log_scalar("loss/train", (running_loss / len(trainloader)), epoch)
-            log_scalar("loss/validation",
-                       (valid_loss / len(validloader)), epoch)
-        # print("total step =", total_step)
+            log_scalar("loss/validation", (valid_loss / len(validloader)), epoch)
 
         # Upload the TensorBoard event logs as a run artifact
         print("Uploading TensorBoard events as a run artifact...")

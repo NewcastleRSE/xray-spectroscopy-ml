@@ -62,7 +62,8 @@ class CNN(nn.Module):
         self.stride = stride
         self.act_fn = act_fn
 
-        self.conv1_shape = int(((self.input_size - self.kernel_size) / self.stride) + 1)
+        self.conv1_shape = int(
+            ((self.input_size - self.kernel_size) / self.stride) + 1)
         self.conv2_shape = int(
             ((self.conv1_shape - self.kernel_size) / self.stride) + 1
         )
@@ -99,7 +100,8 @@ class CNN(nn.Module):
             self.act_fn(),
         )
 
-        self.dense_layer2 = nn.Sequential(nn.Linear(self.hidden_layer, self.out_dim))
+        self.dense_layer2 = nn.Sequential(
+            nn.Linear(self.hidden_layer, self.out_dim))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = x.unsqueeze(0)
@@ -211,7 +213,8 @@ class AE_cnn(nn.Module):
         self.act_fn = act_fn
 
         # checking the sign for encoder for input_channel for linear
-        self.conv1_shape = int(((self.input_size - self.kernel_size) / self.stride) + 1)
+        self.conv1_shape = int(
+            ((self.input_size - self.kernel_size) / self.stride) + 1)
         self.conv2_shape = int(
             ((self.conv1_shape - self.kernel_size) / self.stride) + 1
         )
@@ -294,7 +297,8 @@ class AE_cnn(nn.Module):
 
         self.dense_layers = nn.Sequential(
             nn.Linear(
-                self.conv3_shape * int(self.out_channel * self.channel_mul * 2),
+                self.conv3_shape *
+                int(self.out_channel * self.channel_mul * 2),
                 self.hidden_layer,
             ),
             self.act_fn(),
@@ -467,11 +471,17 @@ class AEGANTrainer(nn.Module):
         params_gen = [
             param for name, param in self.named_parameters() if "dis" not in name
         ]
-        params_dis = [param for name, param in self.named_parameters() if "dis" in name]
+        params_dis = [param for name,
+                      param in self.named_parameters() if "dis" in name]
 
         # Optim for generators and discriminators
-        self.gen_opt = torch.optim.Adam(params_gen, lr=self.lr_gen, weight_decay=1e-5)
-        self.dis_opt = torch.optim.Adam(params_dis, lr=self.lr_dis, weight_decay=1e-5)
+        self.gen_opt = torch.optim.Adam(
+            params_gen, lr=self.lr_gen, weight_decay=1e-5)
+        self.dis_opt = torch.optim.Adam(
+            params_dis, lr=self.lr_dis, weight_decay=1e-5)
+
+    def get_optimizer(self):
+        return self.gen_opt, self.dis_opt
 
     # Reconstruct structure from structure
     def reconstruct_structure(self, x):
@@ -720,7 +730,8 @@ class Dis(nn.Module):
             nn.BatchNorm1d(self.hidden_size),
             self.activation(),
         )
-        self.output_layer = nn.Sequential(nn.Linear(self.hidden_size, 1), nn.Sigmoid())
+        self.output_layer = nn.Sequential(
+            nn.Linear(self.hidden_size, 1), nn.Sigmoid())
 
     def forward(self, x):
         x = self.input_layer(x)

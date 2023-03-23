@@ -31,7 +31,8 @@ def log_scalar(name, value, epoch):
     mlflow.log_metric(name, value)
 
 
-def train_aegan(x, y, exp_name, hyperparams, n_epoch):
+def train_aegan(x, y, exp_name, hyperparams, n_epoch, scheduler_lr,
+                scheduler_param,):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     torch.manual_seed(1)
@@ -40,7 +41,8 @@ def train_aegan(x, y, exp_name, hyperparams, n_epoch):
     RUN_NAME = f"run_{datetime.today()}"
 
     try:
-        EXPERIMENT_ID = mlflow.get_experiment_by_name(EXPERIMENT_NAME).experiment_id
+        EXPERIMENT_ID = mlflow.get_experiment_by_name(
+            EXPERIMENT_NAME).experiment_id
         print(EXPERIMENT_ID)
     except:
         EXPERIMENT_ID = mlflow.create_experiment(EXPERIMENT_NAME)
@@ -90,6 +92,64 @@ def train_aegan(x, y, exp_name, hyperparams, n_epoch):
             m=m, kernel_init_fn=kernel_init, bias_init_fn=bias_init
         )
     )
+
+    gen_opt, dis_opt = model.get_optimizer()
+
+    if scheduler_lr:
+        import torch.optim.lr_scheduler as lr_scheduler
+        if scheduler_param["type"] == "StepLR":
+            scheduler_gen = lr_scheduler.StepLR(
+                gen_opt,
+                step_size=scheduler_param["step_size"],
+                gamma=scheduler_param["gamma"],
+            )
+            scheduler_dis = lr_scheduler.StepLR(
+                dis_opt,
+                step_size=scheduler_param["step_size"],
+                gamma=scheduler_param["gamma"],
+            )
+        elif scheduler_param["type"] == "ExponentialLR":
+            scheduler_gen = lr_scheduler.ExponentialLR(
+                gen_opt,
+                gamma=scheduler_param["gamma"],
+                last_epoch=scheduler_param["last_epoch"],
+            )
+            scheduler_dis = lr_scheduler.ExponentialLR(
+                dis_opt,
+                gamma=scheduler_param["gamma"],
+                last_epoch=scheduler_param["last_epoch"],
+            )
+        elif scheduler_param["type"] == "LinearLR":
+            scheduler_gen = lr_scheduler.LinearLR(
+                gen_opt,
+                start_factor=scheduler_param["start_factor"],
+                end_factor=scheduler_param["end_factor"],
+                total_iters=n_epoch * scheduler_param["iter_mul"],
+            )
+            scheduler_dis = lr_scheduler.LinearLR(
+                dis_opt,
+                start_factor=scheduler_param["start_factor"],
+                end_factor=scheduler_param["end_factor"],
+                total_iters=n_epoch * scheduler_param["iter_mul"],
+            )
+
+        elif scheduler_param["type"] == "CosineAnnealingWarmRestarts":
+            scheduler_gen = lr_scheduler.CosineAnnealingWarmRestarts(
+                gen_opt,
+                T_0=n_epoch,
+                T_mult=scheduler_param["T_mult"],
+                eta_min=scheduler_param["eta_min"],
+                last_epoch=scheduler_param["last_epoch"],
+                verbose=False,
+            )
+            scheduler_dis = lr_scheduler.CosineAnnealingWarmRestarts(
+                dis_opt,
+                T_0=n_epoch,
+                T_mult=scheduler_param["T_mult"],
+                eta_min=scheduler_param["eta_min"],
+                last_epoch=scheduler_param["last_epoch"],
+                verbose=False,
+            )
 
     model.train()
 
@@ -146,6 +206,19 @@ def train_aegan(x, y, exp_name, hyperparams, n_epoch):
 
                 running_gen_loss += loss_gen_total.item()
                 running_dis_loss += loss_dis.item()
+
+            if scheduler_lr:
+                before_lr_gen = gen_opt.param_groups[0]["lr"]
+                scheduler_gen.step()
+                after_lr_gen = gen_opt.param_groups[0]["lr"]
+                print("Epoch %d: Adam lr %.5f -> %.5f" %
+                      (epoch, before_lr_gen, after_lr_gen))
+
+                before_lr_dis = dis_opt.param_groups[0]["lr"]
+                scheduler_dis.step()
+                after_lr_dis = dis_opt.param_groups[0]["lr"]
+                print("Epoch %d: Adam lr %.5f -> %.5f" %
+                      (epoch, before_lr_dis, after_lr_dis))
 
             running_gen_loss = running_gen_loss / len(trainloader)
             running_dis_loss = running_dis_loss / len(trainloader)

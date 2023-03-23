@@ -144,8 +144,7 @@ def bootstrap_predict(
         if model_mode == "mlp" or model_mode == "cnn":
             if mode == "predict_xyz":
                 if fourier_transform:
-                    xanes_data = data_transform.fourier_transform_data(
-                        xanes_data)
+                    xanes_data = data_transform.fourier_transform_data(xanes_data)
 
                 xyz_predict = predict_xyz(xanes_data, model)
 
@@ -161,8 +160,7 @@ def bootstrap_predict(
                 y_predict = xanes_predict
 
                 if fourier_transform:
-                    y_predict = data_transform.inverse_fourier_transform_data(
-                        y_predict)
+                    y_predict = data_transform.inverse_fourier_transform_data(y_predict)
 
             print(
                 "MSE y to y pred : ",
@@ -177,8 +175,7 @@ def bootstrap_predict(
                 x = xanes_data
 
                 if fourier_transform:
-                    xanes_data = data_transform.fourier_transform_data(
-                        xanes_data)
+                    xanes_data = data_transform.fourier_transform_data(xanes_data)
 
                 recon_xanes, pred_xyz = predict_xyz(xanes_data, model)
 
@@ -187,8 +184,7 @@ def bootstrap_predict(
                 y_predict = pred_xyz
 
                 if fourier_transform:
-                    x_recon = data_transform.inverse_fourier_transform_data(
-                        x_recon)
+                    x_recon = data_transform.inverse_fourier_transform_data(x_recon)
 
             elif mode == "predict_xanes":
                 recon_xyz, pred_xanes = predict_xanes(xyz_data, model)
@@ -199,8 +195,7 @@ def bootstrap_predict(
                 y_predict = pred_xanes
 
                 if fourier_transform:
-                    y_predict = data_transform.inverse_fourier_transform_data(
-                        y_predict)
+                    y_predict = data_transform.inverse_fourier_transform_data(y_predict)
 
             print(
                 "MSE x to x recon : ",
@@ -216,8 +211,7 @@ def bootstrap_predict(
                     ids, y, y_predict, x, x_recon, e, predict_dir, mode
                 )
 
-        bootstrap_score.append(mean_squared_error(
-            y, y_predict.detach().numpy()))
+        bootstrap_score.append(mean_squared_error(y, y_predict.detach().numpy()))
     mean_score = torch.mean(torch.tensor(bootstrap_score))
     std_score = torch.std(torch.tensor(bootstrap_score))
     print(f"Mean score: {mean_score:.4f}, Std score: {std_score:.4f}")
