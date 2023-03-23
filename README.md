@@ -38,8 +38,10 @@ pip install mlflow
 
 ## Training, Inference & Evaluation
 
-To either train a model or perform inference the following command is used:  
-```python src/cli.py MODE --model_mode MODEL_MODE <inputs/in.json>```
+To train a model, the following command is used:  
+```python src/cli.py --mode MODE --model_mode MODEL_MODE --inp_f <inputs/in.json>```
+To perform inference, the following command is used:
+```python src/cli.py --mode MODE --model_mode MODEL_MODE --mdl <model/model_001> --inp_f <inputs/in.json>```
 
 Select MODE from the following:  
 `train_xanes`, `train_xyz`, `train_aegan`, `predict_xyz`, `predict_xanes`, `predict_aegan`, `predict_aegan_xanes`, `predict_aegan_xyz` 
@@ -50,8 +52,8 @@ Select MODEL_MODE from the following:
 Input for training and prediction should be given in JSON format. The prediction input file gives the path to the input data. Example input files for training and hyper parameter options can be found in the [inputs](https://github.com/NewcastleRSE/xray-spectroscopy-ml/tree/main/inputs) folder.
 
 #### Example of training and inference. 
-```python src/cli.py train_xanes --model_mode mlp inputs/in.json```  
-```python src/cli.py predict_xanes --model_mode mlp model/model_dir inputs/in_predict.json```
+```python src/cli.py --mode train_xanes --model_mode mlp --inp_f inputs/in.json```  
+```python src/cli.py --mode predict_xyz --model_mode mlp --mdl model/model_dir --inp_f inputs/in_predict.json```
 
 
 ### Tensorboard
@@ -125,11 +127,11 @@ Trains model via a coupled Autoencoder Generative adverserial network. It consis
 The trained model can then be used for prediction and reconstruction of both structure and spectrum. 
 
 - Predict and reconstruct all  
-```python src/cli.py predict_aegan --model_mode aegan_mlp model_dir inputs/in_predict.json```  
+```python src/cli.py --mode predict_aegan --model_mode aegan_mlp --mdl_dir model_dir --inp_f inputs/in_predict.json```  
 - Predict spectrum, reconstruct input structure  
-```python src/cli.py predict_aegan_xanes --model_mode aegan_mlp model_dir inputs/in_predict.json```  
+```python src/cli.py --mode predict_aegan_xanes --model_mode aegan_mlp --mdl_dir model_dir --inp_f inputs/in_predict.json```  
 - Predict structure, reconstruct input spectrum  
-```python src/cli.py predict_aegan_xyz --model_mode aegan_mlp model_dir inputs/in_predict.json```  
+```python src/cli.py --mode predict_aegan_xyz --model_mode aegan_mlp --mdl_dir model_dir --inp_f inputs/in_predict.json```  
 
 <!---
 A general layer in the model is MLP consisting of a linear layer, batch norm layer, activation. 
@@ -141,10 +143,10 @@ Example model parameters can be found in `in_aegan.json`. The user can specify h
 
 The flag ```"True" or "False"``` for bootstrap is in ```inputs/in.json```, ```inputs/in_cnn.json```, and ```inputs/in_aegan.json```. By default, the flag is set to "False".
 
-To run the bootstrap for prediction, run ```python src/cli.py predict_xyz --model xxx bootstrap/bootstrap_0xx inputs/in_predict.json```.
+To run the bootstrap for prediction, run ```python src/cli.py --mode predict_xyz --model_mode xxx --mdl_dir bootstrap/bootstrap_0xx --inp_f inputs/in_predict.json```.
 
 To run ensemble during prediction, change the flag for ensemble in ```inputs/in_predict.json``` to "True". Choose how to combine the model by either combining the prediction ```"combine": "prediction"``` or combining the weight ```"combine": "weight"```.
-Run ```python src/cli.py predict_xyz --model xxx ensemble/ensemble_0xx inputs/in_predict.json```.
+Run ```python src/cli.py predict_xyz --model_mode xxx --mdl_dir ensemble/ensemble_0xx --inp_finputs/in_predict.json```.
 
 The flag ```"True" or "False"``` for monte-carlo dropout is in ```inputs/in_predict.json```. By default, the flag is set to "False".
 
