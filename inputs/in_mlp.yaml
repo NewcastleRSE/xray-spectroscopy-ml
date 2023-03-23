@@ -9,7 +9,7 @@ descriptor:
       n_g2: 16
       n_g4: 32
 
-bootstrap: False
+bootstrap: True
 bootstrap_params: 
   n_boot: 3
   n_size: 1.0
@@ -71,5 +71,5 @@ hyperparams:
   bias_init: zeros
 
 seed: 2021
-epochs: 100
+epochs: 1
 variance_threshold: 0.0

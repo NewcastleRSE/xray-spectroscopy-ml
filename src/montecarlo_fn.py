@@ -112,8 +112,7 @@ def montecarlo_dropout_aegan(model, x, y, n_mc):
             prob_x_recon.append(model.reconstruct_structure(x))
             prob_y_recon.append(model.reconstruct_spectrum(y))
         elif x is not None and y is None:
-            prob_x_recon.append(
-                model.reconstruct_structure(x))
+            prob_x_recon.append(model.reconstruct_structure(x))
         elif y is not None and x is None:
             prob_y_recon.append(model.reconstruct_spectrum(y))
 

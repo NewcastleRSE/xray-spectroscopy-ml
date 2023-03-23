@@ -188,7 +188,7 @@ def bootstrap_predict(
             if plot_save:
                 plot.plot_predict(ids, y, y_predict, e, predict_dir, mode)
 
-            y_predict_score.append(mean_squared_error(y, y_predict))
+            y_predict_score.append(mean_squared_error(y, y_predict.detach().numpy()))
 
         elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
             if mode == "predict_xyz":
@@ -217,8 +217,8 @@ def bootstrap_predict(
                 if fourier_transform:
                     y_predict = data_transform.inverse_fourier_transform_data(y_predict)
 
-            y_predict_score.append(mean_squared_error(y, y_predict))
-            x_recon_score.append(mean_squared_error(x, x_recon))
+            y_predict_score.append(mean_squared_error(y, y_predict.detach().numpy()))
+            x_recon_score.append(mean_squared_error(x, x_recon.detach().numpy()))
 
             print(
                 "MSE x to x recon : ",
