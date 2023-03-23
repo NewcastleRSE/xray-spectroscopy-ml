@@ -14,7 +14,7 @@
         "n_size": 1.0
     },
     "ensemble": {
-        "fn": "True",
+        "fn": "False",
         "n_ens": 3,
         "weight_init_seed": [
             97,

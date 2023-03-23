@@ -22,29 +22,17 @@ import random
 
 
 def train_data(
-        mode: str,
-        model_mode: str,
-        x_path: str,
-        y_path: str,
-        descriptor_type: str,
-        descriptor_params: dict = {},
-        data_params: dict = {},
-        kfold_params: dict = {},
-        hyperparams: dict = {},
-        max_samples: int = None,
-        variance_threshold: float = 0.0,
-        epochs: int = 100,
-        callbacks: dict = {},
-        seed: int = None,
-        save: bool = True,
-        bootstrap: dict = {},
-        ensemble: dict = {},
-        fourier_transform: bool = False,
+    mode: str,
+    model_mode: str,
+    config,
+    save: bool = True,
+    fourier_transform: bool = False,
+    # max_samples: int = None,
 ):
-    rng = RandomState(seed=seed)
+    rng = RandomState(seed=config["seed"])
 
-    xyz_path = [Path(p) for p in glob(x_path)]
-    xanes_path = [Path(p) for p in glob(y_path)]
+    xyz_path = [Path(p) for p in glob(config["x_path"])]
+    xanes_path = [Path(p) for p in glob(config["y_path"])]
 
     xyz_list = []
     xanes_list = []
@@ -71,7 +59,9 @@ def train_data(
 
             descriptors = {"rdc": RDC, "wacsf": WACSF}
 
-            descriptor = descriptors.get(descriptor_type)(**descriptor_params)
+            descriptor = descriptors.get(config["descriptor"]["type"])(
+                **config["descriptor"]["params"]
+            )
 
             n_samples = len(ids)
             n_x_features = descriptor.get_len()
@@ -100,13 +90,13 @@ def train_data(
             xanes_list.append(xanes_data)
             e_list.append(e)
 
-        elif x_path[n_element].is_file() and y_path[n_element].is_file():
+        elif xyz_path[n_element].is_file() and xanes_path[n_element].is_file():
             print(">> loading data from .npz archive(s)...\n")
 
-            with open(x_path[n_element], "rb") as f:
+            with open(xyz_path[n_element], "rb") as f:
                 xyz_data = np.load(f)["x"]
             print(">> ...loaded {}x{} array of X data".format(*xyz_data.shape))
-            with open(y_path[n_element], "rb") as f:
+            with open(xanes_path[n_element], "rb") as f:
                 xanes_data = np.load(f)["y"]
                 e = np.load(f)["e"]
             print(">> ...loaded {}x{} array of Y data".format(*xanes_data.shape))
@@ -127,70 +117,77 @@ def train_data(
             )
             raise TypeError(err_str)
 
-    xyz_data = np.vstack(xyz_list)
-    xanes_data = np.vstack(xanes_list)
+    xyz = np.vstack(xyz_list)
+    xanes = np.vstack(xanes_list)
     e = np.vstack(e_list)
     element_label = np.asarray(element_label)
 
     # Transform data
     if fourier_transform:
         from data_transform import fourier_transform_data
-        print('>> Transforming training data using Fourier transform...')
-        xanes_data = fourier_transform_data(xanes_data)
+
+        print(">> Transforming training data using Fourier transform...")
+        xanes = fourier_transform_data(xanes)
 
     # DATA AUGMENTATION
-    if data_params:
+    if config["data_params"]:
         from data_augmentation import data_augment
 
-        xyz_data, xanes_data = data_augment(
-            data_params, n_samples, n_x_features, n_y_features
+        xyz, xanes = data_augment(
+            config["augment"], xyz, xanes, n_samples, n_x_features, n_y_features
         )
 
-    print(">> shuffling and selecting data...")
-    xyz, xanes, element = shuffle(
-        xyz_data, xanes_data, element_label, random_state=rng, n_samples=max_samples
-    )
-    print(">> ...shuffled and selected!\n")
+    # might not need this?
+    # print(">> shuffling and selecting data...")
+    # xyz, xanes, element = shuffle(
+    #     xyz_data, xanes_data, element_label, random_state=rng, n_samples=max_samples
+    # )
+    # print(">> ...shuffled and selected!\n")
 
-    if bootstrap["fn"] == "True":
+    if config["bootstrap"]:
         from bootstrap_fn import bootstrap_train
 
         data_compress = {"ids": ids, "x": xyz_data, "y": xanes_data, "e": e}
 
         bootstrap_train(
-            bootstrap,
+            config["bootstrap_params"],
             xyz,
             xanes,
             mode,
             model_mode,
-            hyperparams,
-            epochs,
+            config["hyperparams"],
+            config["epochs"],
             save,
-            kfold_params,
+            config["kfold"],
+            config["kfold_params"],
             rng,
             descriptor,
             data_compress,
+            config["lr_scheduler"],
+            config["scheduler_param"],
         )
 
-    elif ensemble["fn"] == "True":
-
+    elif config["ensemble"]:
         from ensemble_fn import ensemble_train
 
         data_compress = {"ids": ids, "x": xyz_data, "y": xanes_data, "e": e}
 
         ensemble_train(
-            ensemble,
+            config["ensemble_params"],
             xyz,
             xanes,
             mode,
             model_mode,
-            hyperparams,
-            epochs,
+            config["hyperparams"],
+            config["epochs"],
             save,
-            kfold_params,
+            config["kfold"],
+            config["kfold_params"],
             rng,
             descriptor,
             data_compress,
+            config["lr_scheduler"],
+            config["scheduler_param"],
         )
 
     else:
@@ -204,11 +201,14 @@ def train_data(
                 xanes,
                 exp_name,
                 model_mode,
-                hyperparams,
-                epochs,
-                kfold_params,
+                config["hyperparams"],
+                config["epochs"],
+                config["kfold"],
+                config["kfold_params"],
                 rng,
-                hyperparams["weight_init_seed"],
+                config["hyperparams"]["weight_init_seed"],
+                config["lr_scheduler"],
+                config["scheduler_param"],
             )
 
         elif mode == "train_xanes":
@@ -219,18 +219,29 @@ def train_data(
                 xanes,
                 exp_name,
                 model_mode,
-                hyperparams,
-                epochs,
-                kfold_params,
+                config["hyperparams"],
+                config["epochs"],
+                config["kfold"],
+                config["kfold_params"],
                 rng,
-                hyperparams["weight_init_seed"],
+                config["hyperparams"]["weight_init_seed"],
+                config["lr_scheduler"],
+                config["scheduler_param"],
             )
 
         elif mode == "train_aegan":
             from core_learn import train_aegan
 
             model = train_aegan(
-                xyz, xanes, exp_name, model_mode, hyperparams, epochs, kfold_params, rng
+                xyz,
+                xanes,
+                exp_name,
+                model_mode,
+                config["hyperparams"],
+                config["epochs"],
+                config["kfold"],
+                config["kfold_params"],
+                rng,
             )
 
         if save:
@@ -247,11 +258,11 @@ def train_data(
 
             torch.save(model, model_dir / f"model.pt")
             print("Saved model to disk")
+            descriptor_type = config["descriptor"]["type"]
             json.dump(
-                descriptor_params, open(
-                    f"{model_dir}/{descriptor_type}.txt", "w")
+                config["descriptor"]["params"],
+                open(f"{model_dir}/{descriptor_type}.txt", "w"),
             )
-
         else:
             print("none")
 

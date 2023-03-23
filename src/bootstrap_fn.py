@@ -36,10 +36,13 @@ def bootstrap_train(
     hyperparams,
     epochs,
     save,
+    kfold,
     kfold_params,
     rng,
     descriptor,
     data_compress,
+    lr_scheduler,
+    scheduler_param,
 ):
     parent_bootstrap_dir = "bootstrap/"
     Path(parent_bootstrap_dir).mkdir(parents=True, exist_ok=True)
@@ -65,9 +68,12 @@ def bootstrap_train(
                 model_mode,
                 hyperparams,
                 epochs,
+                kfold,
                 kfold_params,
                 rng,
                 hyperparams["weight_init_seed"],
+                lr_scheduler,
+                scheduler_param,
             )
         elif mode == "train_xanes":
             from core_learn import train_xanes
@@ -79,9 +85,12 @@ def bootstrap_train(
                 model_mode,
                 hyperparams,
                 epochs,
+                kfold,
                 kfold_params,
                 rng,
                 hyperparams["weight_init_seed"],
+                lr_scheduler,
+                scheduler_param,
             )
 
         elif mode == "train_aegan":
@@ -94,6 +103,7 @@ def bootstrap_train(
                 model_mode,
                 hyperparams,
                 epochs,
+                kfold,
                 kfold_params,
                 rng,
             )
@@ -133,7 +143,6 @@ def bootstrap_predict(
 
         if model_mode == "mlp" or model_mode == "cnn":
             if mode == "predict_xyz":
-
                 if fourier_transform:
                     xanes_data = data_transform.fourier_transform_data(
                         xanes_data)

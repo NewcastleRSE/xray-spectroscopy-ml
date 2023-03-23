@@ -45,12 +45,7 @@ def main(
     run_shap: bool,
     shap_nsamples: int,
     model_dir: str,
-    x_path: str,
-    y_path: str,
-    monte_carlo: dict = {},
-    bootstrap: dict = {},
-    ensemble: dict = {},
-    plot_save: bool = False,
+    config,
     fourier_transform: bool = False,
 ):
     """
@@ -69,12 +64,11 @@ def main(
 
     model_dir = Path(model_dir)
 
-    xyz_path = Path(x_path) if x_path is not None else None
-    xanes_path = Path(y_path) if y_path is not None else None
+    xyz_path = Path(config["x_path"]) if config["x_path"] is not None else None
+    xanes_path = Path(config["y_path"]) if config["y_path"] is not None else None
 
     if xyz_path is not None and xanes_path is not None:
-        ids = list(set(list_filestems(xyz_path)) &
-                   set(list_filestems(xanes_path)))
+        ids = list(set(list_filestems(xyz_path)) & set(list_filestems(xanes_path)))
     elif xyz_path is None:
         ids = list(set(list_filestems(xanes_path)))
     elif xanes_path is None:
@@ -115,21 +109,36 @@ def main(
 
     print(">> ...loaded!\n")
 
-    if bootstrap["fn"] == "True":
+    if config["bootstrap"]:
         from bootstrap_fn import bootstrap_predict
 
-        bootstrap_predict(model_dir, mode, model_mode, xyz_data,
-                          xanes_data, ids, plot_save, fourier_transform)
+        bootstrap_predict(
+            model_dir,
+            mode,
+            model_mode,
+            xyz_data,
+            xanes_data,
+            ids,
+            config["plot_save"],
+            fourier_transform,
+        )
 
-    elif ensemble["fn"] == "True":
+    elif config["ensemble"]:
         from ensemble_fn import ensemble_predict
 
-        ensemble_predict(ensemble, model_dir, mode, model_mode,
-                         xyz_data, xanes_data, plot_save, fourier_transform)
+        ensemble_predict(
+            config["ensemble_combine"],
+            model_dir,
+            mode,
+            model_mode,
+            xyz_data,
+            xanes_data,
+            config["plot_save"],
+            fourier_transform,
+        )
 
     else:
-        model = torch.load(model_dir / "model.pt",
-                           map_location=torch.device("cpu"))
+        model = torch.load(model_dir / "model.pt", map_location=torch.device("cpu"))
         model.eval()
         print("Loaded model from disk")
 
@@ -138,7 +147,7 @@ def main(
 
             if fourier_transform:
                 parent_model_dir, predict_dir = model_mode_error(
-                    model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1]*2
+                    model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1] * 2
                 )
             else:
                 parent_model_dir, predict_dir = model_mode_error(
@@ -151,10 +160,8 @@ def main(
 
         if model_mode == "mlp" or model_mode == "cnn":
             if mode == "predict_xyz":
-
                 if fourier_transform:
-                    xanes_data = data_transform.fourier_transform_data(
-                        xanes_data)
+                    xanes_data = data_transform.fourier_transform_data(xanes_data)
 
                 xyz_predict = predict_xyz(xanes_data, model)
 
@@ -170,8 +177,7 @@ def main(
                 y_predict = xanes_predict
 
                 if fourier_transform:
-                    y_predict = data_transform.inverse_fourier_transform_data(
-                        y_predict)
+                    y_predict = data_transform.inverse_fourier_transform_data(y_predict)
 
             print(
                 "MSE y to y pred : ",
@@ -179,30 +185,33 @@ def main(
             )
             y_predict, e = y_predict_dim(y_predict, ids, model_dir)
 
-            if monte_carlo["mc_fn"] == "True":
+            if config["monte_carlo"]:
                 from montecarlo_fn import montecarlo_dropout
 
-                data_compress = {"ids": ids, "y": y,
-                                 "y_predict": y_predict, "e": e}
+                data_compress = {"ids": ids, "y": y, "y_predict": y_predict, "e": e}
                 montecarlo_dropout(
-                    model, x, monte_carlo["mc_iter"], data_compress, predict_dir, mode
+                    model,
+                    x,
+                    config["mc_iter"],
+                    data_compress,
+                    predict_dir,
+                    mode,
+                    config["plot_save"],
                 )
 
             else:
-                if plot_save:
+                if config["plot_save"]:
                     from plot import plot_predict
 
                     plot_predict(ids, y, y_predict, e, predict_dir, mode)
 
         elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
             if mode == "predict_xyz":
-
                 x = xanes_data
                 y = xyz_data
 
                 if fourier_transform:
-                    xanes_data = data_transform.fourier_transform_data(
-                        xanes_data)
+                    xanes_data = data_transform.fourier_transform_data(xanes_data)
 
                 recon_xanes, pred_xyz = predict_xyz(xanes_data, model)
 
@@ -210,8 +219,7 @@ def main(
                 y_predict = pred_xyz
 
                 if fourier_transform:
-                    x_recon = data_transform.inverse_fourier_transform_data(
-                        x_recon)
+                    x_recon = data_transform.inverse_fourier_transform_data(x_recon)
 
             elif mode == "predict_xanes":
                 recon_xyz, pred_xanes = predict_xanes(xyz_data, model)
@@ -222,8 +230,7 @@ def main(
                 y_predict = pred_xanes
 
                 if fourier_transform:
-                    y_predict = data_transform.inverse_fourier_transform_data(
-                        y_predict)
+                    y_predict = data_transform.inverse_fourier_transform_data(y_predict)
 
             print(
                 "MSE x to x recon : ",
@@ -234,7 +241,7 @@ def main(
                 mean_squared_error(y, y_predict.detach().numpy()),
             )
 
-            if monte_carlo["mc_fn"] == "True":
+            if config["monte_carlo"]:
                 from montecarlo_fn import montecarlo_dropout_ae
 
                 data_compress = {
@@ -246,16 +253,21 @@ def main(
                     "x_recon": x_recon,
                 }
                 montecarlo_dropout_ae(
-                    model, x, monte_carlo["mc_iter"], data_compress, predict_dir, mode
+                    model,
+                    x,
+                    config["mc_iter"],
+                    data_compress,
+                    predict_dir,
+                    mode,
+                    config["plot_save"],
                 )
 
             else:
                 y_predict, e = y_predict_dim(y_predict, ids, model_dir)
-                if plot_save == "True":
+                if config["plot_save"]:
                     from plot import plot_ae_predict
 
-                    plot_ae_predict(ids, y, y_predict, x,
-                                    x_recon, e, predict_dir, mode)
+                    plot_ae_predict(ids, y, y_predict, x, x_recon, e, predict_dir, mode)
 
         elif model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
             # Convert to float
@@ -273,19 +285,20 @@ def main(
                     f">> Reconstruction error (structure) = {mean_squared_error(x,x_recon):.4f}"
                 )
                 if fourier_transform:
-                    y_pred = data_transform.inverse_fourier_transform_data(
-                        y_pred)
+                    y_pred = data_transform.inverse_fourier_transform_data(y_pred)
 
                 y_pred = y_pred.detach().numpy()
 
             if xanes_path is not None:
-
                 if fourier_transform:
                     z = data_transform.fourier_transform_data(xanes_data)
                     z = torch.tensor(z).float()
                     y_recon = model.reconstruct_spectrum(z)
-                    y_recon = data_transform.inverse_fourier_transform_data(
-                        y_recon).detach().numpy()
+                    y_recon = (
+                        data_transform.inverse_fourier_transform_data(y_recon)
+                        .detach()
+                        .numpy()
+                    )
                     x_pred = model.predict_structure(z).detach().numpy()
                 else:
                     y_recon = model.reconstruct_spectrum(y).detach().numpy()
@@ -325,9 +338,8 @@ def main(
 
             print(">> Plotting reconstructions and predictions...")
 
-            if plot_save:
-                plots_dir = unique_path(
-                    Path(parent_model_dir), "plots_predictions")
+            if config["plot_save"]:
+                plots_dir = unique_path(Path(parent_model_dir), "plots_predictions")
                 plots_dir.mkdir()
 
                 if xyz_path is not None and xanes_path is not None:
@@ -337,21 +349,20 @@ def main(
                         ids, x, y, x_recon, y_recon, x_pred, y_pred, plots_dir
                     )
 
-                elif x_path is not None:
+                elif config["x_path"] is not None:
                     from plot import plot_aegan_spectrum
 
                     plot_aegan_spectrum(ids, x, x_recon, y_pred, plots_dir)
 
-                elif y_path is not None:
+                elif config["y_path"] is not None:
                     from plot import plot_aegan_structure
 
                     plot_aegan_structure(ids, y, y_recon, x_pred, plots_dir)
 
-                if x_path is not None and y_path is not None:
+                if config["x_path"] is not None and config["y_path"] is not None:
                     print(">> Plotting and saving cosine-similarity...")
 
-                    analysis_dir = unique_path(
-                        Path(parent_model_dir), "analysis")
+                    analysis_dir = unique_path(Path(parent_model_dir), "analysis")
                     analysis_dir.mkdir()
 
                     from plot import plot_cosine_similarity
