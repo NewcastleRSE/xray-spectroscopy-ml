@@ -209,6 +209,7 @@ def train_data(
                 config["hyperparams"]["weight_init_seed"],
                 config["lr_scheduler"],
                 config["scheduler_param"],
+                config["model_eval"],
             )
 
         elif mode == "train_xanes":
@@ -227,6 +228,7 @@ def train_data(
                 config["hyperparams"]["weight_init_seed"],
                 config["lr_scheduler"],
                 config["scheduler_param"],
+                config["model_eval"],
             )
 
         elif mode == "train_aegan":
