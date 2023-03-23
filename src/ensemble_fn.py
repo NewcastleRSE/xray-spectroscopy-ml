@@ -118,12 +118,20 @@ def ensemble_predict(
     xanes_data,
     plot_save,
     fourier_transform,
+    config,
+    ids,
 ):
     if ensemble == "prediction":
         n_model = len(next(os.walk(model_dir))[1])
 
-        ensemble_preds = []
-        ensemble_recons = []
+        if model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
+            ensemble_x_recon = []
+            ensemble_y_predict = []
+            ensemble_y_recon = []
+            ensemble_x_predict = []
+        else:
+            ensemble_preds = []
+            ensemble_recons = []
         for i in range(n_model):
             n_dir = f"{model_dir}/model_00{i+1}/model.pt"
 
@@ -136,9 +144,12 @@ def ensemble_predict(
                     model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1] * 2
                 )
             else:
-                parent_model_dir, predict_dir = model_utils.model_mode_error(
-                    model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1]
-                )
+                if model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
+                    parent_model_dir, predict_dir = model_utils.make_dir()
+                else:
+                    parent_model_dir, predict_dir = model_utils.model_mode_error(
+                        model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1]
+                    )
 
             if model_mode == "mlp" or model_mode == "cnn":
                 if mode == "predict_xyz":
@@ -192,17 +203,79 @@ def ensemble_predict(
                     ensemble_preds.append(xanes_predict)
                     ensemble_recons.append(xyz_recon)
 
-        ensemble_pred = sum(ensemble_preds) / len(ensemble_preds)
-        print(
-            "MSE y to y pred : ",
-            mean_squared_error(y, ensemble_pred.detach().numpy()),
-        )
-        if model_mode == "ae_mlp" or model_mode == "ae_cnn":
-            ensemble_recon = sum(ensemble_recons) / len(ensemble_recons)
+            elif model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
+                # Convert to float
+                if config["x_path"] is not None and config["y_path"] is not None:
+                    x = torch.tensor(xyz_data).float()
+                    y = torch.tensor(xanes_data).float()
+                elif config["x_path"] is not None and config["y_path"] is None:
+                    x = torch.tensor(xyz_data).float()
+                    y = None
+                elif config["y_path"] is not None and config["x_path"] is None:
+                    y = torch.tensor(xanes_data).float()
+                    x = None
+
+                import aegan_predict
+
+                x_recon, y_predict, y_recon, x_predict = aegan_predict.main(
+                    config,
+                    x,
+                    y,
+                    model,
+                    fourier_transform,
+                    model_dir,
+                    predict_dir,
+                    ids,
+                    parent_model_dir,
+                )
+                print(x_recon.shape)
+                if config["x_path"] is not None:
+                    print(x_recon.shape)
+                    ensemble_x_recon.append(x_recon)
+
+                if config["y_path"] is not None:
+                    ensemble_y_recon.append(y_recon)
+
+                if config["x_path"] is not None and config["y_path"] is not None:
+                    ensemble_y_predict.append(y_predict)
+                    ensemble_x_predict.append(x_predict)
+
+        if model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
+            if config["x_path"] is not None:
+                ensemble_x_recon = sum(ensemble_x_recon) / len(ensemble_x_recon)
+                print(
+                    "MSE x to x recon : ",
+                    mean_squared_error(x, ensemble_x_recon),
+                )
+            if config["y_path"] is not None:
+                ensemble_y_recon = sum(ensemble_y_recon) / len(ensemble_y_recon)
+                print(
+                    "MSE y to y recon : ",
+                    mean_squared_error(y, ensemble_y_recon),
+                )
+            if config["x_path"] is not None and config["y_path"] is not None:
+                ensemble_y_predict = sum(ensemble_y_predict) / len(ensemble_y_predict)
+                ensemble_x_predict = sum(ensemble_x_predict) / len(ensemble_x_predict)
+                print(
+                    "MSE y to y predict : ",
+                    mean_squared_error(y, ensemble_y_predict),
+                )
+                print(
+                    "MSE x to x predict : ",
+                    mean_squared_error(x, ensemble_x_predict),
+                )
+        else:
+            ensemble_pred = sum(ensemble_preds) / len(ensemble_preds)
             print(
-                "MSE x to x recon : ",
-                mean_squared_error(x, ensemble_recon.detach().numpy()),
+                "MSE y to y pred : ",
+                mean_squared_error(y, ensemble_pred.detach().numpy()),
             )
+            if model_mode == "ae_mlp" or model_mode == "ae_cnn":
+                ensemble_recon = sum(ensemble_recons) / len(ensemble_recons)
+                print(
+                    "MSE x to x recon : ",
+                    mean_squared_error(x, ensemble_recon.detach().numpy()),
+                )
     elif ensemble == "weight":
         print("ensemble by combining weight")
 
@@ -267,12 +340,51 @@ def ensemble_predict(
                 if fourier_transform:
                     y_predict = data_transform.inverse_fourier_transform_data(y_predict)
 
-        print(
-            "MSE y to y pred : ",
-            mean_squared_error(y, y_predict.detach().numpy()),
-        )
-        if model_mode == "ae_mlp" or model_mode == "ae_cnn":
+        elif model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
+            from model import AEGANEnsemble
+
+            model = AEGANEnsemble(ensemble_model)
+            print("Loaded model from disk")
+            # Convert to float
+            if config["x_path"] is not None and config["y_path"] is not None:
+                x = torch.tensor(xyz_data).float()
+                y = torch.tensor(xanes_data).float()
+            elif config["x_path"] is not None and config["y_path"] is None:
+                x = torch.tensor(xyz_data).float()
+                y = None
+            elif config["y_path"] is not None and config["x_path"] is None:
+                y = torch.tensor(xanes_data).float()
+                x = None
+
+            x_recon, y_recon, x_pred, y_pred = model(x, y)
+
+        if model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
+            if config["x_path"] is not None:
+                print(
+                    "MSE x to x recon : ",
+                    mean_squared_error(x, x_recon.detach().numpy()),
+                )
+            if config["y_path"] is not None:
+                print(
+                    "MSE y to y recon : ",
+                    mean_squared_error(y, y_recon.detach().numpy()),
+                )
+            if config["x_path"] is not None and config["y_path"] is not None:
+                print(
+                    "MSE y to y predict : ",
+                    mean_squared_error(y, y_pred.detach().numpy()),
+                )
+                print(
+                    "MSE x to x predict : ",
+                    mean_squared_error(x, x_pred.detach().numpy()),
+                )
+        else:
             print(
-                "MSE x to x recon : ",
-                mean_squared_error(x, x_recon.detach().numpy()),
+                "MSE y to y pred : ",
+                mean_squared_error(y, y_predict.detach().numpy()),
             )
+            if model_mode == "ae_mlp" or model_mode == "ae_cnn":
+                print(
+                    "MSE x to x recon : ",
+                    mean_squared_error(x, x_recon.detach().numpy()),
+                )

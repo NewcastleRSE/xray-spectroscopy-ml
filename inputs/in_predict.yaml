@@ -1,5 +1,5 @@
-x_path: data/datasets/fe/preconv/xyz_test
-# y_path: null
+# x_path: data/datasets/fe/preconv/xyz_test
+x_path: null
 y_path: data/datasets/fe/preconv/xanes_test
 
 plot_save: False
@@ -7,7 +7,7 @@ plot_save: False
 monte_carlo: False
 mc_iter: 100
 
-bootstrap: True
+bootstrap: False
 
-ensemble: False
-ensemble_combine: prediction
+ensemble: True
+ensemble_combine: weight
