@@ -10,7 +10,6 @@ from inout import save_xanes
 from spectrum.xanes import XANES
 from utils import unique_path
 
-
 def predict_aegan(xyz_path, xanes_path, x, y, model, fourier_transform):
     if xyz_path is not None:
         x_recon = model.reconstruct_structure(x).detach().numpy()

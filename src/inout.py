@@ -25,12 +25,8 @@ import pickle as pickle
 from ase import Atoms
 from pathlib import Path
 
-# from sklearn.pipeline import Pipeline
 from typing import TextIO
 from typing import BinaryIO
-
-# from tensorflow.keras.models import load_model
-# from tensorflow.keras.models import save_model
 
 from spectrum.xanes import XANES
 from utils import str_to_numeric
@@ -128,38 +124,3 @@ def save_xanes(xanes_f: TextIO, xanes: XANES):
 
     return 0
 
-
-# def load_pipeline(keras_f: Path, pipeline_f: Path) -> Pipeline:
-#     # loads an sklearn pipeline with a Keras Sequential model; the pipeline
-#     # is reconstructed to add the Keras elements that were removed when the
-#     # mixed sklearn/Keras pipeline was pickled
-
-#     # load pipeline from pipeline_f
-#     with open(pipeline_f, 'rb') as f:
-#         pipeline = pickle.load(f)
-
-#     # load Keras model from keras_f and add the Keras elements to the pipeline
-#     # (pipeline.named_steps['net'].model)
-#     pipeline.named_steps['net'].model = load_model(keras_f)
-
-#     return pipeline
-
-# def save_pipeline(keras_f: Path, pipeline_f: Path, pipeline: Pipeline):
-#     # saves an sklearn pipeline with a Keras Sequential model; the pipeline
-#     # has to be deconstructed first to remove the Keras elements since mixed
-#     # sklearn/Keras pipelines cannot be pickled in the usual way
-
-#     # save Keras model (pipeline.named_steps['net'].model) to keras_f
-#     save_model(pipeline.named_steps['net'].model, keras_f)
-
-#     # set Keras model (pipeline.named_steps['net'].model) and callbacks
-#     # (pipeline.named_steps['net'].sk_params['callbacks']) to None so the
-#     # pipeline can be pickled
-#     pipeline.named_steps['net'].model = None
-#     pipeline.named_steps['net'].sk_params['callbacks'] = None
-
-#     # save pipeline to pipeline_f
-#     with open(pipeline_f, 'wb') as f:
-#         pickle.dump(pipeline, f)
-
-#     return 0
