@@ -23,12 +23,10 @@ def plot_predict(ids, y, y_predict, e, predict_dir, mode):
 
         if mode == "predict_xanes":
             with open(predict_dir / f"{id_}.txt", "w") as f:
-                save_xanes(f, XANES(e, y_predict_.detach().numpy()))
                 plt.savefig(predict_dir / f"{id_}.pdf")
 
         elif mode == "predict_xyz":
             with open(predict_dir / f"{id_}.txt", "w") as f:
-                f.write("\n".join(map(str, y_predict_.detach().numpy())))
                 plt.savefig(predict_dir / f"{id_}.pdf")
 
         plt.close()

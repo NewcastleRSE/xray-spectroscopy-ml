@@ -4,10 +4,10 @@ y_path: data/datasets/fe/preconv/xanes_test
 
 plot_save: False
 
-monte_carlo: True
+monte_carlo: False
 mc_iter: 100
 
-bootstrap: True
+bootstrap: False
 
 ensemble: False
 ensemble_combine: weight

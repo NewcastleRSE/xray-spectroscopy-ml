@@ -182,6 +182,7 @@ def train_xanes(
                 epochs,
                 weight_seed,
                 lr_scheduler,
+                scheduler_param,
             )
             print_cross_validation_scores(result, model_mode)
 
@@ -196,6 +197,7 @@ def train_xanes(
                 epochs,
                 weight_seed,
                 lr_scheduler,
+                scheduler_param,
             )
 
     summary(model, (1, xanes.shape[1]))

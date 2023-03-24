@@ -137,7 +137,7 @@ def main(args: list):
             fourier_transform=args.fourier_transform,
         )
 
-    if "eval" in args.mode:
+    elif "eval" in args.mode:
         eval_model(
             args.mode,
             args.mdl_dir,
@@ -145,10 +145,13 @@ def main(args: list):
             inp,
         )
 
+    else:
+        print("wrong mode")
 
 ################################################################################
 ############################## PROGRAM STARTS HERE #############################
 ################################################################################
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
