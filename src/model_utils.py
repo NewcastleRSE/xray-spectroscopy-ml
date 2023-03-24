@@ -137,8 +137,8 @@ class LRScheduler:
             self.scheduler = lr_scheduler.ExponentialLR(optimizer, **params)
         elif scheduler_type == 'linear':
             self.scheduler = lr_scheduler.LinearLR(optimizer, **params)
-        elif scheduler_type == 'cosinennealingwarmrestarts':
-            self.scheduler = lr_scheduler.CosineAnnealingWarmRestarts(
+        elif scheduler_type == 'constant':
+            self.scheduler = lr_scheduler.ConstantLR(
                 optimizer, **params)
         else:
             raise ValueError(f"Invalid scheduler type: {scheduler_type}")
