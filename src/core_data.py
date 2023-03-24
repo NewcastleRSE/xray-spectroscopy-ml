@@ -65,14 +65,12 @@ def train_data(
 
             n_samples = len(ids)
             n_x_features = descriptor.get_len()
-            n_y_features = linecount(
-                xanes_path[n_element] / f"{ids[0]}.txt") - 2
+            n_y_features = linecount(xanes_path[n_element] / f"{ids[0]}.txt") - 2
 
             xyz_data = np.full((n_samples, n_x_features), np.nan)
             print(">> preallocated {}x{} array for X data...".format(*xyz_data.shape))
             xanes_data = np.full((n_samples, n_y_features), np.nan)
-            print(">> preallocated {}x{} array for Y data...".format(
-                *xanes_data.shape))
+            print(">> preallocated {}x{} array for Y data...".format(*xanes_data.shape))
             print(">> ...everything preallocated!\n")
 
             print(">> loading data into array(s)...")

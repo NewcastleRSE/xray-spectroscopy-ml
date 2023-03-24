@@ -39,9 +39,9 @@ pip install mlflow
 ## Training, Inference & Evaluation
 
 To train a model, the following command is used:  
-```python src/cli.py --mode MODE --model_mode MODEL_MODE --inp_f <inputs/in.json>```
+```python src/cli.py --mode MODE --model_mode MODEL_MODE --inp_f <inputs/in.yaml>```
 To perform inference, the following command is used:
-```python src/cli.py --mode MODE --model_mode MODEL_MODE --mdl <model/model_001> --inp_f <inputs/in.json>```
+```python src/cli.py --mode MODE --model_mode MODEL_MODE --mdl <model/model_001> --inp_f <inputs/in.yaml>```
 
 Select MODE from the following:  
 `train_xanes`, `train_xyz`, `train_aegan`, `predict_xyz`, `predict_xanes`, `predict_aegan`, `predict_aegan_xanes`, `predict_aegan_xyz` 
@@ -49,11 +49,11 @@ Select MODE from the following:
 Select MODEL_MODE from the following:  
 `mlp`, `cnn`, `ae_mlp`, `ae_cnn`, `aegan_mlp`, `aegan_cnn`
 
-Input for training and prediction should be given in JSON format. The prediction input file gives the path to the input data. Example input files for training and hyper parameter options can be found in the [inputs](https://github.com/NewcastleRSE/xray-spectroscopy-ml/tree/main/inputs) folder.
+Input for training and prediction should be given in yaml format. The prediction input file gives the path to the input data. Example input files for training and hyper parameter options can be found in the [inputs](https://github.com/NewcastleRSE/xray-spectroscopy-ml/tree/main/inputs) folder.
 
 #### Example of training and inference. 
-```python src/cli.py --mode train_xanes --model_mode mlp --inp_f inputs/in.json```  
-```python src/cli.py --mode predict_xyz --model_mode mlp --mdl model/model_dir --inp_f inputs/in_predict.json```
+```python src/cli.py --mode train_xanes --model_mode mlp --inp_f inputs/in.yaml```  
+```python src/cli.py --mode predict_xyz --model_mode mlp --mdl model/model_dir --inp_f inputs/in_predict.yaml```
 
 
 ### Tensorboard
@@ -95,7 +95,7 @@ A T-Test is used to return ```True``` or ```False``` if the model has passed the
 
 #### Example of evaluation of original MLP model used to predict XANES:
 
-```python src/cli.py eval_pred_xanes --model_mode mlp model/model_001 inputs/in_eval.json```
+```python src/cli.py eval_pred_xanes --model_mode mlp model/model_001 inputs/in_eval.yaml```
 
 
 ## Available Models
@@ -103,21 +103,21 @@ A T-Test is used to return ```True``` or ```False``` if the model has passed the
 ### Original XANES PyTorch Implementation
 
 <!---
-To run the mlp version call ```model, score = train_mlp(... )``` in the ```core_learn.py``` and run ```python cli.py learn in.json```.
+To run the mlp version call ```model, score = train_mlp(... )``` in the ```core_learn.py``` and run ```python cli.py learn in.yaml```.
 
-To run the cnn version call ```model, score = train_cnn(... )``` in the ```core_learn.py``` and run ```python cli.py learn in_cnn.json```.
+To run the cnn version call ```model, score = train_cnn(... )``` in the ```core_learn.py``` and run ```python cli.py learn in_cnn.yaml```.
 --->
 
 ### AutoEncoder
 
 <!---
 To run the basic AutoEncoder to train xanes :
-```python src/cli_ae.py train_xanes inputs/in_cnn.json```
-and run ```python src/cli_ae.py predict_xyz model/model_0xx inputs/in_predict.json``` to run the test.
+```python src/cli_ae.py train_xanes inputs/in_cnn.yaml```
+and run ```python src/cli_ae.py predict_xyz model/model_0xx inputs/in_predict.yaml``` to run the test.
 
 To run the basic AutoEncoder to train xyz :
-```python src/cli_ae.py train_xyz inputs/in_cnn.json```
-and run ```python src/cli_ae.py predict_xanes model/model_0xx inputs/in_predict.json``` to run the test.
+```python src/cli_ae.py train_xyz inputs/in_cnn.yaml```
+and run ```python src/cli_ae.py predict_xanes model/model_0xx inputs/in_predict.yaml``` to run the test.
 
 --->
 
@@ -127,28 +127,28 @@ Trains model via a coupled Autoencoder Generative adverserial network. It consis
 The trained model can then be used for prediction and reconstruction of both structure and spectrum. 
 
 - Predict and reconstruct all  
-```python src/cli.py --mode predict_aegan --model_mode aegan_mlp --mdl_dir model_dir --inp_f inputs/in_predict.json```  
+```python src/cli.py --mode predict_aegan --model_mode aegan_mlp --mdl_dir model_dir --inp_f inputs/in_predict.yaml```  
 - Predict spectrum, reconstruct input structure  
-```python src/cli.py --mode predict_aegan_xanes --model_mode aegan_mlp --mdl_dir model_dir --inp_f inputs/in_predict.json```  
+```python src/cli.py --mode predict_aegan_xanes --model_mode aegan_mlp --mdl_dir model_dir --inp_f inputs/in_predict.yaml```  
 - Predict structure, reconstruct input spectrum  
-```python src/cli.py --mode predict_aegan_xyz --model_mode aegan_mlp --mdl_dir model_dir --inp_f inputs/in_predict.json```  
+```python src/cli.py --mode predict_aegan_xyz --model_mode aegan_mlp --mdl_dir model_dir --inp_f inputs/in_predict.yaml```  
 
 <!---
 A general layer in the model is MLP consisting of a linear layer, batch norm layer, activation. 
 
-Example model parameters can be found in `in_aegan.json`. The user can specify hidden size of linear layers (*hidden_size*), dropout (*dropout*), the number of hidden layers in the encoder-decoder (*n_hl_gen*), shared (*n_hl_shared*) and discriminator (*n_nl_dis*) networks, activation function (*activation*), loss function for the generative (*loss_gen*) and discriminator (*loss_dis*) networks, learning rates (*lr_gen* and *lr_dis*).
+Example model parameters can be found in `in_aegan.yaml`. The user can specify hidden size of linear layers (*hidden_size*), dropout (*dropout*), the number of hidden layers in the encoder-decoder (*n_hl_gen*), shared (*n_hl_shared*) and discriminator (*n_nl_dis*) networks, activation function (*activation*), loss function for the generative (*loss_gen*) and discriminator (*loss_dis*) networks, learning rates (*lr_gen* and *lr_dis*).
 --->
 
 ### Uncertainties
 
-The flag ```"True" or "False"``` for bootstrap is in ```inputs/in.json```, ```inputs/in_cnn.json```, and ```inputs/in_aegan.json```. By default, the flag is set to "False".
+The flag ```"True" or "False"``` for bootstrap is in ```inputs/in.yaml```, ```inputs/in_cnn.yaml```, and ```inputs/in_aegan.yaml```. By default, the flag is set to "False".
 
-To run the bootstrap for prediction, run ```python src/cli.py --mode predict_xyz --model_mode xxx --mdl_dir bootstrap/bootstrap_0xx --inp_f inputs/in_predict.json```.
+To run the bootstrap for prediction, run ```python src/cli.py --mode predict_xyz --model_mode xxx --mdl_dir bootstrap/bootstrap_0xx --inp_f inputs/in_predict.yaml```.
 
-To run ensemble during prediction, change the flag for ensemble in ```inputs/in_predict.json``` to "True". Choose how to combine the model by either combining the prediction ```"combine": "prediction"``` or combining the weight ```"combine": "weight"```.
-Run ```python src/cli.py predict_xyz --model_mode xxx --mdl_dir ensemble/ensemble_0xx --inp_finputs/in_predict.json```.
+To run ensemble during prediction, change the flag for ensemble in ```inputs/in_predict.yaml``` to "True". Choose how to combine the model by either combining the prediction ```"combine": "prediction"``` or combining the weight ```"combine": "weight"```.
+Run ```python src/cli.py predict_xyz --model_mode xxx --mdl_dir ensemble/ensemble_0xx --inp_finputs/in_predict.yaml```.
 
-The flag ```"True" or "False"``` for monte-carlo dropout is in ```inputs/in_predict.json```. By default, the flag is set to "False".
+The flag ```"True" or "False"``` for monte-carlo dropout is in ```inputs/in_predict.yaml```. By default, the flag is set to "False".
 
 
 

@@ -114,10 +114,11 @@ def weight_bias_init(m, kernel_init_fn, bias_init_fn):
 
 
 class LRScheduler(nn.Module):
-
     def fn(self, scheduler_type, *args):
         default = nn.MSELoss()
-        return getattr(self, f"scheduler_type_{scheduler_type.lower()}", lambda: default)(*args)
+        return getattr(
+            self, f"scheduler_type_{scheduler_type.lower()}", lambda: default
+        )(*args)
 
 
 class LRScheduler:
@@ -129,17 +130,16 @@ class LRScheduler:
         self.optimizer = optimizer
         scheduler_type = scheduler_type.lower()
 
-        if scheduler_type == 'step':
+        if scheduler_type == "step":
             self.scheduler = lr_scheduler.StepLR(optimizer, **params)
-        elif scheduler_type == 'multistep':
+        elif scheduler_type == "multistep":
             self.scheduler = lr_scheduler.MultiStepLR(optimizer, **params)
-        elif scheduler_type == 'exponential':
+        elif scheduler_type == "exponential":
             self.scheduler = lr_scheduler.ExponentialLR(optimizer, **params)
-        elif scheduler_type == 'linear':
+        elif scheduler_type == "linear":
             self.scheduler = lr_scheduler.LinearLR(optimizer, **params)
-        elif scheduler_type == 'constant':
-            self.scheduler = lr_scheduler.ConstantLR(
-                optimizer, **params)
+        elif scheduler_type == "constant":
+            self.scheduler = lr_scheduler.ConstantLR(optimizer, **params)
         else:
             raise ValueError(f"Invalid scheduler type: {scheduler_type}")
 
@@ -157,8 +157,7 @@ class EMDLoss(nn.Module):
 
     def forward(self, y_true, y_pred):
         loss = torch.mean(
-            torch.square(torch.cumsum(y_true, dim=-1) -
-                         torch.cumsum(y_pred, dim=-1)),
+            torch.square(torch.cumsum(y_true, dim=-1) - torch.cumsum(y_pred, dim=-1)),
             dim=-1,
         ).sum()
         return loss
@@ -227,8 +226,7 @@ class WCCLoss(nn.Module):
         corr2 = corr2.squeeze(0)
 
         dx = torch.ones(n_samples)
-        de = ((n_features / 2 - torch.arange(0, n_features))
-              [:, None] * dx[None, :]).T
+        de = ((n_features / 2 - torch.arange(0, n_features))[:, None] * dx[None, :]).T
         weight = np.exp(-de * de / (2 * width2))
 
         norm = torch.sum(corr * weight, 1)
@@ -356,8 +354,7 @@ def run_shap_analysis(
     # SHAP analysis
     explainer = shap.DeepExplainer(model, background)
     shap_values = explainer.shap_values(data)
-    shap_values = np.reshape(
-        shap_values, (len(shap_values), data.shape[0], n_features))
+    shap_values = np.reshape(shap_values, (len(shap_values), data.shape[0], n_features))
 
     # Print SHAP as a function of features and molecules
     importances = np.mean(np.abs(shap_values), axis=0)
@@ -388,5 +385,4 @@ def run_shap_analysis(
 
     for i in range(shap_values.shape[0]):
         with open(energ_dir / f"energy{i}.shap", "w") as f:
-            f.writelines(map("{} {}\n".format, np.arange(
-                n_features), energy_imp[i, :]))
+            f.writelines(map("{} {}\n".format, np.arange(n_features), energy_imp[i, :]))

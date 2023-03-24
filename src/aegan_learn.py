@@ -31,17 +31,14 @@ def log_scalar(name, value, epoch):
     mlflow.log_metric(name, value)
 
 
-def train_aegan(
-    x, y, exp_name, hyperparams, n_epoch, scheduler_lr, weight_seed
-):
+def train_aegan(x, y, exp_name, hyperparams, n_epoch, scheduler_lr, weight_seed):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     EXPERIMENT_NAME = f"{exp_name}"
     RUN_NAME = f"run_{datetime.today()}"
 
     try:
-        EXPERIMENT_ID = mlflow.get_experiment_by_name(
-            EXPERIMENT_NAME).experiment_id
+        EXPERIMENT_ID = mlflow.get_experiment_by_name(EXPERIMENT_NAME).experiment_id
         print(EXPERIMENT_ID)
     except:
         EXPERIMENT_ID = mlflow.create_experiment(EXPERIMENT_NAME)
@@ -94,9 +91,15 @@ def train_aegan(
     gen_opt, dis_opt = model.get_optimizer()
     if scheduler_lr["scheduler"]:
         scheduler_gen = model_utils.LRScheduler(
-            gen_opt, scheduler_type=scheduler_lr["scheduler_type"], params=scheduler_lr["scheduler_param"])
+            gen_opt,
+            scheduler_type=scheduler_lr["scheduler_type"],
+            params=scheduler_lr["scheduler_param"],
+        )
         scheduler_dis = model_utils.LRScheduler(
-            gen_opt, scheduler_type=scheduler_lr["scheduler_type"], params=scheduler_lr["scheduler_param"])
+            gen_opt,
+            scheduler_type=scheduler_lr["scheduler_type"],
+            params=scheduler_lr["scheduler_param"],
+        )
 
     model.train()
 
