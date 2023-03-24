@@ -28,7 +28,6 @@ def ensemble_train(
     descriptor,
     data_compress,
     lr_scheduler,
-    scheduler_param,
 ):
     parent_ensemble_dir = "ensemble/"
     Path(parent_ensemble_dir).mkdir(parents=True, exist_ok=True)
@@ -55,7 +54,6 @@ def ensemble_train(
                 rng,
                 ensemble["weight_init_seed"][i],
                 lr_scheduler,
-                scheduler_param,
             )
         elif mode == "train_xanes":
             from core_learn import train_xanes
@@ -72,7 +70,6 @@ def ensemble_train(
                 rng,
                 ensemble["weight_init_seed"][i],
                 lr_scheduler,
-                scheduler_param,
             )
 
         elif mode == "train_aegan":
@@ -90,7 +87,6 @@ def ensemble_train(
                 rng,
                 ensemble["weight_init_seed"][i],
                 lr_scheduler,
-                scheduler_param,
             )
         if save:
             with open(ensemble_dir / "descriptor.pickle", "wb") as f:
@@ -154,7 +150,8 @@ def ensemble_predict(
             if model_mode == "mlp" or model_mode == "cnn":
                 if mode == "predict_xyz":
                     if fourier_transform:
-                        xanes_data = data_transform.fourier_transform_data(xanes_data)
+                        xanes_data = data_transform.fourier_transform_data(
+                            xanes_data)
 
                     xyz_predict = predict_xyz(xanes_data, model)
                     ensemble_preds.append(xyz_predict)
@@ -177,7 +174,8 @@ def ensemble_predict(
                     y = xyz_data
 
                     if fourier_transform:
-                        xanes_data = data_transform.fourier_transform_data(xanes_data)
+                        xanes_data = data_transform.fourier_transform_data(
+                            xanes_data)
 
                     xanes_recon, xyz_predict = predict_xyz(xanes_data, model)
 
@@ -242,20 +240,24 @@ def ensemble_predict(
 
         if model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
             if config["x_path"] is not None:
-                ensemble_x_recon = sum(ensemble_x_recon) / len(ensemble_x_recon)
+                ensemble_x_recon = sum(ensemble_x_recon) / \
+                    len(ensemble_x_recon)
                 print(
                     "MSE x to x recon : ",
                     mean_squared_error(x, ensemble_x_recon),
                 )
             if config["y_path"] is not None:
-                ensemble_y_recon = sum(ensemble_y_recon) / len(ensemble_y_recon)
+                ensemble_y_recon = sum(ensemble_y_recon) / \
+                    len(ensemble_y_recon)
                 print(
                     "MSE y to y recon : ",
                     mean_squared_error(y, ensemble_y_recon),
                 )
             if config["x_path"] is not None and config["y_path"] is not None:
-                ensemble_y_predict = sum(ensemble_y_predict) / len(ensemble_y_predict)
-                ensemble_x_predict = sum(ensemble_x_predict) / len(ensemble_x_predict)
+                ensemble_y_predict = sum(
+                    ensemble_y_predict) / len(ensemble_y_predict)
+                ensemble_x_predict = sum(
+                    ensemble_x_predict) / len(ensemble_x_predict)
                 print(
                     "MSE y to y predict : ",
                     mean_squared_error(y, ensemble_y_predict),
@@ -298,7 +300,8 @@ def ensemble_predict(
             print("Loaded model from disk")
             if mode == "predict_xyz":
                 if fourier_transform:
-                    xanes_data = data_transform.fourier_transform_data(xanes_data)
+                    xanes_data = data_transform.fourier_transform_data(
+                        xanes_data)
 
                 y_predict = predict_xyz(xanes_data, model)
                 y = xyz_data
@@ -324,12 +327,14 @@ def ensemble_predict(
                 y = xyz_data
 
                 if fourier_transform:
-                    xanes_data = data_transform.fourier_transform_data(xanes_data)
+                    xanes_data = data_transform.fourier_transform_data(
+                        xanes_data)
 
                 x_recon, y_predict = predict_xyz(xanes_data, model)
 
                 if fourier_transform:
-                    x_recon = data_transform.inverse_fourier_transform_data(x_recon)
+                    x_recon = data_transform.inverse_fourier_transform_data(
+                        x_recon)
 
             elif mode == "predict_xanes":
                 x = xyz_data
@@ -338,7 +343,8 @@ def ensemble_predict(
                 x_recon, y_predict = predict_xanes(xyz_data, model)
 
                 if fourier_transform:
-                    y_predict = data_transform.inverse_fourier_transform_data(y_predict)
+                    y_predict = data_transform.inverse_fourier_transform_data(
+                        y_predict)
 
         elif model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
             from model import AEGANEnsemble

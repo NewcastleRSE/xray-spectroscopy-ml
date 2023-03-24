@@ -42,7 +42,6 @@ def bootstrap_train(
     descriptor,
     data_compress,
     lr_scheduler,
-    scheduler_param,
 ):
     parent_bootstrap_dir = "bootstrap/"
     Path(parent_bootstrap_dir).mkdir(parents=True, exist_ok=True)
@@ -73,7 +72,6 @@ def bootstrap_train(
                 rng,
                 hyperparams["weight_init_seed"],
                 lr_scheduler,
-                scheduler_param,
             )
         elif mode == "train_xanes":
             from core_learn import train_xanes
@@ -90,7 +88,6 @@ def bootstrap_train(
                 rng,
                 hyperparams["weight_init_seed"],
                 lr_scheduler,
-                scheduler_param,
             )
 
         elif mode == "train_aegan":
@@ -108,7 +105,6 @@ def bootstrap_train(
                 rng,
                 hyperparams["weight_init_seed"],
                 lr_scheduler,
-                scheduler_param,
             )
         if save:
             with open(bootstrap_dir / "descriptor.pickle", "wb") as f:
@@ -145,8 +141,8 @@ def bootstrap_predict(
     y_recon_score = []
     x_predict_score = []
 
-    for i in range(n_boot):
-        n_dir = f"{model_dir}/model_00{i+1}/model.pt"
+    for i in range(1, n_boot + 1):
+        n_dir = f"{model_dir}/model_{i:03d}/model.pt"
 
         model = torch.load(n_dir, map_location=torch.device("cpu"))
         model.eval()

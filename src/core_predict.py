@@ -63,7 +63,6 @@ def main(
     """
 
     model_dir = Path(model_dir)
-    print(model_dir)
 
     xyz_path = Path(config["x_path"]) if config["x_path"] is not None else None
     xanes_path = Path(

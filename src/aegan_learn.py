@@ -32,17 +32,16 @@ def log_scalar(name, value, epoch):
 
 
 def train_aegan(
-    x, y, exp_name, hyperparams, n_epoch, scheduler_lr, scheduler_param, weight_seed
+    x, y, exp_name, hyperparams, n_epoch, scheduler_lr, weight_seed
 ):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-    torch.manual_seed(1)
 
     EXPERIMENT_NAME = f"{exp_name}"
     RUN_NAME = f"run_{datetime.today()}"
 
     try:
-        EXPERIMENT_ID = mlflow.get_experiment_by_name(EXPERIMENT_NAME).experiment_id
+        EXPERIMENT_ID = mlflow.get_experiment_by_name(
+            EXPERIMENT_NAME).experiment_id
         print(EXPERIMENT_ID)
     except:
         EXPERIMENT_ID = mlflow.create_experiment(EXPERIMENT_NAME)
@@ -93,63 +92,11 @@ def train_aegan(
     )
 
     gen_opt, dis_opt = model.get_optimizer()
-
-    if scheduler_lr:
-        import torch.optim.lr_scheduler as lr_scheduler
-
-        if scheduler_param["type"] == "StepLR":
-            scheduler_gen = lr_scheduler.StepLR(
-                gen_opt,
-                step_size=scheduler_param["step_size"],
-                gamma=scheduler_param["gamma"],
-            )
-            scheduler_dis = lr_scheduler.StepLR(
-                dis_opt,
-                step_size=scheduler_param["step_size"],
-                gamma=scheduler_param["gamma"],
-            )
-        elif scheduler_param["type"] == "ExponentialLR":
-            scheduler_gen = lr_scheduler.ExponentialLR(
-                gen_opt,
-                gamma=scheduler_param["gamma"],
-                last_epoch=scheduler_param["last_epoch"],
-            )
-            scheduler_dis = lr_scheduler.ExponentialLR(
-                dis_opt,
-                gamma=scheduler_param["gamma"],
-                last_epoch=scheduler_param["last_epoch"],
-            )
-        elif scheduler_param["type"] == "LinearLR":
-            scheduler_gen = lr_scheduler.LinearLR(
-                gen_opt,
-                start_factor=scheduler_param["start_factor"],
-                end_factor=scheduler_param["end_factor"],
-                total_iters=n_epoch * scheduler_param["iter_mul"],
-            )
-            scheduler_dis = lr_scheduler.LinearLR(
-                dis_opt,
-                start_factor=scheduler_param["start_factor"],
-                end_factor=scheduler_param["end_factor"],
-                total_iters=n_epoch * scheduler_param["iter_mul"],
-            )
-
-        elif scheduler_param["type"] == "CosineAnnealingWarmRestarts":
-            scheduler_gen = lr_scheduler.CosineAnnealingWarmRestarts(
-                gen_opt,
-                T_0=n_epoch,
-                T_mult=scheduler_param["T_mult"],
-                eta_min=scheduler_param["eta_min"],
-                last_epoch=scheduler_param["last_epoch"],
-                verbose=False,
-            )
-            scheduler_dis = lr_scheduler.CosineAnnealingWarmRestarts(
-                dis_opt,
-                T_0=n_epoch,
-                T_mult=scheduler_param["T_mult"],
-                eta_min=scheduler_param["eta_min"],
-                last_epoch=scheduler_param["last_epoch"],
-                verbose=False,
-            )
+    if scheduler_lr["scheduler"]:
+        scheduler_gen = model_utils.LRScheduler(
+            gen_opt, scheduler_type=scheduler_lr["scheduler_type"], params=scheduler_lr["scheduler_param"])
+        scheduler_dis = model_utils.LRScheduler(
+            gen_opt, scheduler_type=scheduler_lr["scheduler_type"], params=scheduler_lr["scheduler_param"])
 
     model.train()
 

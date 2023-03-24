@@ -40,11 +40,11 @@ kfold_params:
     loss_fn: mse 
     loss_args: null
 
-lr_scheduler: False
-scheduler_param:
-  type: ExponentialLR
-  gamma: 0.001
-  last_epoch: -1
+lr_scheduler: 
+  scheduler: True
+  scheduler_type: Exponential
+  scheduler_param:
+    gamma: 0.001
 
 hyperparams: 
   model: aegan

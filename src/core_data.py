@@ -65,12 +65,14 @@ def train_data(
 
             n_samples = len(ids)
             n_x_features = descriptor.get_len()
-            n_y_features = linecount(xanes_path[n_element] / f"{ids[0]}.txt") - 2
+            n_y_features = linecount(
+                xanes_path[n_element] / f"{ids[0]}.txt") - 2
 
             xyz_data = np.full((n_samples, n_x_features), np.nan)
             print(">> preallocated {}x{} array for X data...".format(*xyz_data.shape))
             xanes_data = np.full((n_samples, n_y_features), np.nan)
-            print(">> preallocated {}x{} array for Y data...".format(*xanes_data.shape))
+            print(">> preallocated {}x{} array for Y data...".format(
+                *xanes_data.shape))
             print(">> ...everything preallocated!\n")
 
             print(">> loading data into array(s)...")
@@ -135,13 +137,6 @@ def train_data(
             config["augment"], xyz, xanes, n_samples, n_x_features, n_y_features
         )
 
-    # might not need this?
-    # print(">> shuffling and selecting data...")
-    # xyz, xanes, element = shuffle(
-    #     xyz_data, xanes_data, element_label, random_state=rng, n_samples=max_samples
-    # )
-    # print(">> ...shuffled and selected!\n")
-
     if config["bootstrap"]:
         from bootstrap_fn import bootstrap_train
 
@@ -162,7 +157,6 @@ def train_data(
             descriptor,
             data_compress,
             config["lr_scheduler"],
-            config["scheduler_param"],
         )
 
     elif config["ensemble"]:
@@ -185,7 +179,6 @@ def train_data(
             descriptor,
             data_compress,
             config["lr_scheduler"],
-            config["scheduler_param"],
         )
 
     else:
@@ -206,7 +199,6 @@ def train_data(
                 rng,
                 config["hyperparams"]["weight_init_seed"],
                 config["lr_scheduler"],
-                config["scheduler_param"],
             )
 
         elif mode == "train_xanes":
@@ -224,7 +216,6 @@ def train_data(
                 rng,
                 config["hyperparams"]["weight_init_seed"],
                 config["lr_scheduler"],
-                config["scheduler_param"],
             )
 
         elif mode == "train_aegan":
@@ -242,7 +233,6 @@ def train_data(
                 rng,
                 config["hyperparams"]["weight_init_seed"],
                 config["lr_scheduler"],
-                config["scheduler_param"],
             )
 
         if save:

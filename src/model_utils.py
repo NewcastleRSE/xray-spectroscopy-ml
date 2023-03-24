@@ -1,10 +1,12 @@
-import torch
-from torch import nn
-import numpy as np
+import random
 import warnings
 from pathlib import Path
-import random
+
+import numpy as np
 import shap
+import torch
+import torch.optim.lr_scheduler as lr_scheduler
+from torch import nn
 
 # Suppress non-significant warning for WCCLoss function
 warnings.filterwarnings("ignore")
@@ -111,6 +113,40 @@ def weight_bias_init(m, kernel_init_fn, bias_init_fn):
         bias_init_fn(m.bias)
 
 
+class LRScheduler(nn.Module):
+
+    def fn(self, scheduler_type, *args):
+        default = nn.MSELoss()
+        return getattr(self, f"scheduler_type_{scheduler_type.lower()}", lambda: default)(*args)
+
+
+class LRScheduler:
+    """
+    Initialise the learning rate scheduler
+    """
+
+    def __init__(self, optimizer, scheduler_type, params=None):
+        self.optimizer = optimizer
+        scheduler_type = scheduler_type.lower()
+
+        if scheduler_type == 'step':
+            self.scheduler = lr_scheduler.StepLR(optimizer, **params)
+        elif scheduler_type == 'multistep':
+            self.scheduler = lr_scheduler.MultiStepLR(optimizer, **params)
+        elif scheduler_type == 'exponential':
+            self.scheduler = lr_scheduler.ExponentialLR(optimizer, **params)
+        elif scheduler_type == 'linear':
+            self.scheduler = lr_scheduler.LinearLR(optimizer, **params)
+        elif scheduler_type == 'cosinennealingwarmrestarts':
+            self.scheduler = lr_scheduler.CosineAnnealingWarmRestarts(
+                optimizer, **params)
+        else:
+            raise ValueError(f"Invalid scheduler type: {scheduler_type}")
+
+    def step(self):
+        self.scheduler.step()
+
+
 class EMDLoss(nn.Module):
     """
     Computes the Earth Mover or Wasserstein distance
@@ -121,7 +157,8 @@ class EMDLoss(nn.Module):
 
     def forward(self, y_true, y_pred):
         loss = torch.mean(
-            torch.square(torch.cumsum(y_true, dim=-1) - torch.cumsum(y_pred, dim=-1)),
+            torch.square(torch.cumsum(y_true, dim=-1) -
+                         torch.cumsum(y_pred, dim=-1)),
             dim=-1,
         ).sum()
         return loss
@@ -190,7 +227,8 @@ class WCCLoss(nn.Module):
         corr2 = corr2.squeeze(0)
 
         dx = torch.ones(n_samples)
-        de = ((n_features / 2 - torch.arange(0, n_features))[:, None] * dx[None, :]).T
+        de = ((n_features / 2 - torch.arange(0, n_features))
+              [:, None] * dx[None, :]).T
         weight = np.exp(-de * de / (2 * width2))
 
         norm = torch.sum(corr * weight, 1)
@@ -229,8 +267,9 @@ def model_mode_error(model, mode, model_mode, xyz_shape, xanes_shape):
 
 
 def make_dir():
-    from utils import unique_path
     from pathlib import Path
+
+    from utils import unique_path
 
     parent_model_dir = "outputs/"
     Path(parent_model_dir).mkdir(parents=True, exist_ok=True)
@@ -317,7 +356,8 @@ def run_shap_analysis(
     # SHAP analysis
     explainer = shap.DeepExplainer(model, background)
     shap_values = explainer.shap_values(data)
-    shap_values = np.reshape(shap_values, (len(shap_values), data.shape[0], n_features))
+    shap_values = np.reshape(
+        shap_values, (len(shap_values), data.shape[0], n_features))
 
     # Print SHAP as a function of features and molecules
     importances = np.mean(np.abs(shap_values), axis=0)
@@ -348,4 +388,5 @@ def run_shap_analysis(
 
     for i in range(shap_values.shape[0]):
         with open(energ_dir / f"energy{i}.shap", "w") as f:
-            f.writelines(map("{} {}\n".format, np.arange(n_features), energy_imp[i, :]))
+            f.writelines(map("{} {}\n".format, np.arange(
+                n_features), energy_imp[i, :]))

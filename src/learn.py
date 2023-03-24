@@ -43,13 +43,13 @@ def train(
     n_epoch,
     weight_seed,
     scheduler_lr,
-    scheduler_param,
 ):
     EXPERIMENT_NAME = f"{exp_name}"
     RUN_NAME = f"run_{datetime.today()}"
 
     try:
-        EXPERIMENT_ID = mlflow.get_experiment_by_name(EXPERIMENT_NAME).experiment_id
+        EXPERIMENT_ID = mlflow.get_experiment_by_name(
+            EXPERIMENT_NAME).experiment_id
     except:
         EXPERIMENT_ID = mlflow.create_experiment(EXPERIMENT_NAME)
 
@@ -125,29 +125,9 @@ def train(
     )
     optimizer = optim.Adam(model.parameters(), lr=hyperparams["lr"])
 
-    if scheduler_lr:
-        if scheduler_param["type"] == "StepLR":
-            scheduler = lr_scheduler.StepLR(
-                optimizer,
-                step_size=scheduler_param["step_size"],
-                gamma=scheduler_param["gamma"],
-            )
-        elif scheduler_param["type"] == "LinearLR":
-            scheduler = lr_scheduler.LinearLR(
-                optimizer,
-                start_factor=scheduler_param["start_factor"],
-                end_factor=scheduler_param["end_factor"],
-                total_iters=n_epoch * scheduler_param["iter_mul"],
-            )
-        elif scheduler_param["type"] == "CosineAnnealingWarmRestarts":
-            scheduler = lr_scheduler.CosineAnnealingWarmRestarts(
-                optimizer,
-                T_0=n_epoch,
-                T_mult=scheduler_param["T_mult"],
-                eta_min=scheduler_param["eta_min"],
-                last_epoch=scheduler_param["last_epoch"],
-                verbose=False,
-            )
+    if scheduler_lr["scheduler"]:
+        scheduler = model_utils.LRScheduler(
+            optimizer, scheduler_type=scheduler_lr["scheduler_type"], params=scheduler_lr["scheduler_param"])
 
     # Select loss function
     loss_fn = hyperparams["loss"]["loss_fn"]
@@ -189,17 +169,19 @@ def train(
                 loss = criterion(target, labels)
                 valid_loss += loss.item()
 
-            if scheduler_lr:
+            if scheduler_lr["scheduler"]:
                 before_lr = optimizer.param_groups[0]["lr"]
                 scheduler.step()
                 after_lr = optimizer.param_groups[0]["lr"]
-                print("Epoch %d: Adam lr %.5f -> %.5f" % (epoch, before_lr, after_lr))
+                print("Epoch %d: Adam lr %.5f -> %.5f" %
+                      (epoch, before_lr, after_lr))
 
             print("Training loss:", running_loss / len(trainloader))
             print("Validation loss:", valid_loss / len(validloader))
 
             log_scalar("loss/train", (running_loss / len(trainloader)), epoch)
-            log_scalar("loss/validation", (valid_loss / len(validloader)), epoch)
+            log_scalar("loss/validation",
+                       (valid_loss / len(validloader)), epoch)
 
         # Upload the TensorBoard event logs as a run artifact
         print("Uploading TensorBoard events as a run artifact...")
