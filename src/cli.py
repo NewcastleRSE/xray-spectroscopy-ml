@@ -47,13 +47,13 @@ def parse_args(args: list):
         "--mode",
         type=str,
         help="the mode of the run",
-        required=True,
+        # required=True,
     )
     parser.add_argument(
         "--model_mode",
         type=str,
         help="the model to use to train or to predict",
-        required=True,
+        # required=True,
     )
     parser.add_argument(
         "--mdl_dir",
@@ -110,12 +110,8 @@ def main(args: list):
         args = parse_args(args)
 
     print(f">> loading JSON input @ {args.inp_f}\n")
-    # with open(args.inp_f) as f:
-    #     inp = json.load(f)
     with open(args.inp_f, "r") as f:
         inp = yaml.safe_load(f)
-    # print_nested_dict(inp, nested_level=1)
-    # print("")
 
     if "train" in args.mode:
         train_data(
@@ -127,13 +123,24 @@ def main(args: list):
         )
 
     elif "predict" in args.mode:
+        with open(f"{args.mdl_dir}/metadata.yaml", "r") as f:
+            metadata = yaml.safe_load(f)
+        if metadata["mode"] == "train_xyz":
+            mode = "predict_xanes"
+        elif metadata["mode"] == "train_xanes":
+            mode = "predict_xyz"
+        elif metadata["mode"] == "train_aegan":
+            mode = "predict_aegan"
+
+        model_mode = metadata["model_mode"]
         predict(
-            args.mode,
-            args.model_mode,
+            mode,
+            model_mode,
             args.run_shap,
             args.shap_nsamples,
             args.mdl_dir,
             inp,
+            metadata,
             fourier_transform=args.fourier_transform,
         )
 

@@ -111,4 +111,4 @@ lr_scheduler:
   scheduler_type: step
   scheduler_param:
     step_size: 50
-    gamma: 0.1```
+    gamma: 0.1

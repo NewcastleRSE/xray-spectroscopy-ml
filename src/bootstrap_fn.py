@@ -5,13 +5,14 @@ from pathlib import Path
 
 import numpy as np
 import torch
+import yaml
 from sklearn.metrics import mean_squared_error
 
+import data_transform
 import plot
-from model_utils import model_mode_error, make_dir
+from model_utils import make_dir, model_mode_error
 from predict import predict_xanes, predict_xyz, y_predict_dim
 from utils import unique_path
-import data_transform
 
 
 def bootstrap_data(xyz, xanes, n_size, seed):
@@ -42,6 +43,7 @@ def bootstrap_train(
     descriptor,
     data_compress,
     lr_scheduler,
+    descriptor_param,
 ):
     parent_bootstrap_dir = "bootstrap/"
     Path(parent_bootstrap_dir).mkdir(parents=True, exist_ok=True)
@@ -107,20 +109,33 @@ def bootstrap_train(
                 lr_scheduler,
             )
         if save:
-            with open(bootstrap_dir / "descriptor.pickle", "wb") as f:
-                pickle.dump(descriptor, f)
-            with open(bootstrap_dir / "dataset.npz", "wb") as f:
-                np.savez_compressed(
-                    f,
-                    ids=data_compress["ids"],
-                    x=data_compress["x"],
-                    y=data_compress["y"],
-                    e=data_compress["e"],
-                )
-
             model_dir = unique_path(Path(bootstrap_dir), "model")
             model_dir.mkdir()
             torch.save(model, model_dir / f"model.pt")
+    if save:
+        with open(bootstrap_dir / "descriptor.pickle", "wb") as f:
+            pickle.dump(descriptor, f)
+        with open(bootstrap_dir / "dataset.npz", "wb") as f:
+            np.savez_compressed(
+                f,
+                ids=data_compress["ids"],
+                x=data_compress["x"],
+                y=data_compress["y"],
+                e=data_compress["e"],
+            )
+
+        metadata = {
+            "mode": mode,
+            "model_mode": model_mode,
+            "mdl_dir": str(model_dir),
+            "descriptor": descriptor_param,
+            "epoch": epochs,
+            "hyperparams": hyperparams,
+            "lr_scheduler": lr_scheduler,
+        }
+
+        with open(bootstrap_dir / "metadata.yaml", "w") as f:
+            yaml.dump_all([metadata], f)
 
 
 def bootstrap_predict(

@@ -1,7 +1,7 @@
 import numpy as np
 import pickle as pickle
 import tqdm as tqdm
-import json
+import yaml
 
 from pathlib import Path
 from glob import glob
@@ -135,6 +135,11 @@ def train_data(
             config["augment"], xyz, xanes, n_samples, n_x_features, n_y_features
         )
 
+    descriptor_param = {
+        "descriptor_type": config["descriptor"]["type"],
+        "descriptor_params": config["descriptor"]["params"],
+    }
+
     if config["bootstrap"]:
         from bootstrap_fn import bootstrap_train
 
@@ -155,6 +160,7 @@ def train_data(
             descriptor,
             data_compress,
             config["lr_scheduler"],
+            descriptor_param,
         )
 
     elif config["ensemble"]:
@@ -177,6 +183,7 @@ def train_data(
             descriptor,
             data_compress,
             config["lr_scheduler"],
+            descriptor_param,
         )
 
     else:
@@ -247,11 +254,20 @@ def train_data(
 
             torch.save(model, model_dir / f"model.pt")
             print("Saved model to disk")
-            descriptor_type = config["descriptor"]["type"]
-            json.dump(
-                config["descriptor"]["params"],
-                open(f"{model_dir}/{descriptor_type}.txt", "w"),
-            )
+
+            metadata = {
+                "mode": mode,
+                "model_mode": model_mode,
+                "mdl_dir": str(model_dir),
+                "descriptor": descriptor_param,
+                "epoch": config["epochs"],
+                "hyperparams": config["hyperparams"],
+                "lr_scheduler": config["lr_scheduler"],
+            }
+
+            with open(model_dir / "metadata.yaml", "w") as f:
+                yaml.dump_all([metadata], f)
+
         else:
             print("none")
 

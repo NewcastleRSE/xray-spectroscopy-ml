@@ -45,6 +45,7 @@ def main(
     shap_nsamples: int,
     model_dir: str,
     config,
+    metadata,
     fourier_transform: bool = False,
     save: bool = True,
 ):
@@ -115,6 +116,11 @@ def main(
     print(">> ...loaded!\n")
 
     if config["bootstrap"]:
+        if not metadata["mdl_dir"].startswith("bootstrap"):
+            raise ValueError(
+                "Invalid bootstrap directory, please use a bootstrap directory or turn of the bootstrap option in yaml file"
+            )
+
         from bootstrap_fn import bootstrap_predict
 
         bootstrap_predict(
@@ -130,6 +136,10 @@ def main(
         )
 
     elif config["ensemble"]:
+        if not metadata["mdl_dir"].startswith("ensemble"):
+            raise ValueError(
+                "Invalid bootstrap directory, please use a bootstrap directory or turn of the bootstrap option in yaml file"
+            )
         from ensemble_fn import ensemble_predict
 
         ensemble_predict(

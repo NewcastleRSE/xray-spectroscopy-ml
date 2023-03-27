@@ -1,10 +1,11 @@
 import os
 import pickle as pickle
-import numpy as np
 import random
 from pathlib import Path
 
+import numpy as np
 import torch
+import yaml
 from sklearn.metrics import mean_squared_error
 
 import data_transform
@@ -28,6 +29,7 @@ def ensemble_train(
     descriptor,
     data_compress,
     lr_scheduler,
+    descriptor_param,
 ):
     parent_ensemble_dir = "ensemble/"
     Path(parent_ensemble_dir).mkdir(parents=True, exist_ok=True)
@@ -89,20 +91,33 @@ def ensemble_train(
                 lr_scheduler,
             )
         if save:
-            with open(ensemble_dir / "descriptor.pickle", "wb") as f:
-                pickle.dump(descriptor, f)
-            with open(ensemble_dir / "dataset.npz", "wb") as f:
-                np.savez_compressed(
-                    f,
-                    ids=data_compress["ids"],
-                    x=data_compress["x"],
-                    y=data_compress["y"],
-                    e=data_compress["e"],
-                )
-
             model_dir = unique_path(Path(ensemble_dir), "model")
             model_dir.mkdir()
             torch.save(model, model_dir / f"model.pt")
+    if save:
+        with open(bootstrap_dir / "descriptor.pickle", "wb") as f:
+            pickle.dump(descriptor, f)
+        with open(bootstrap_dir / "dataset.npz", "wb") as f:
+            np.savez_compressed(
+                f,
+                ids=data_compress["ids"],
+                x=data_compress["x"],
+                y=data_compress["y"],
+                e=data_compress["e"],
+            )
+
+        metadata = {
+            "mode": mode,
+            "model_mode": model_mode,
+            "mdl_dir": str(model_dir),
+            "descriptor": descriptor_param,
+            "epoch": epochs,
+            "hyperparams": hyperparams,
+            "lr_scheduler": lr_scheduler,
+        }
+
+        with open(ensemble_dir / "metadata.yaml", "w") as f:
+            yaml.dump_all([metadata], f)
 
 
 def ensemble_predict(
