@@ -1,5 +1,5 @@
-x_path: ./.github/workflows/data/datasets/fe/preconv/xyz_train
-y_path: ./.github/workflows/data/datasets/fe/preconv/xanes_train
+x_path: .github/workflows/data/datasets/fe/preconv/xyz_train
+y_path: .github/workflows/data/datasets/fe/preconv/xanes_train
 
 descriptor:
     type: wacsf
@@ -9,13 +9,13 @@ descriptor:
       n_g2: 16
       n_g4: 32
 
-bootstrap: True
+bootstrap: False
 bootstrap_params: 
   n_boot: 3
   n_size: 1.0
   seed_boot: [97, 39, 22]
 
-ensemble: True
+ensemble: False
 ensemble_params:
   n_ens: 3
   weight_init_seed: [97, 39, 22]
@@ -32,7 +32,7 @@ augment:
   # for random combination
   # augment_params : {}
 
-kfold: True
+kfold: False
 kfold_params:
   n_splits: 5
   n_repeats: 1
