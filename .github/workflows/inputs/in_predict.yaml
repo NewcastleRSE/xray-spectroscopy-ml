@@ -1,0 +1,12 @@
+x_path: .github/workflows/data/datasets/fe/preconv/xyz_test
+y_path: .github/workflows/data/datasets/fe/preconv/xanes_test
+
+plot_save: False
+
+monte_carlo: False
+mc_iter: 100
+
+bootstrap: False
+
+ensemble: False
+ensemble_combine: prediction
