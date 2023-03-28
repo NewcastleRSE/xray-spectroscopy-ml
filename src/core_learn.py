@@ -115,6 +115,7 @@ def train_xyz(
                 weight_seed,
                 lr_scheduler,
                 scheduler_param,
+                model_eval,
             )
 
     summary(model, (1, xyz.shape[1]))
@@ -168,6 +169,7 @@ def train_xanes(
                 weight_seed,
                 lr_scheduler,
                 scheduler_param,
+                model_eval,
             )
 
     elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
@@ -199,6 +201,8 @@ def train_xanes(
                 epochs,
                 weight_seed,
                 lr_scheduler,
+                scheduler_param,
+                model_eval,
             )
 
     summary(model, (1, xanes.shape[1]))

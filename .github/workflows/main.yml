@@ -42,9 +42,54 @@ jobs:
           ls $TEST_PATH_XANES | head -10 | xargs -I {} cp $TEST_PATH_XANES/{} ./.github/workflows/$TEST_PATH_XANES/
 
 
-      - name: Train MLP
+      - name: MLP XYZ --> Xanes
         run: |
           rm -rf model/model_001
           python3 src/cli.py --mode train_xyz --model_mode mlp --inp_f ./.github/workflows/inputs/in_mlp.yaml
           python3 src/cli.py --mode predict_xanes --model_mode mlp --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
+
+
+      - name: MLP Xanes --> XYZ
+        run: |
+          rm -rf model/model_001
+          python3 src/cli.py --mode train_xanes --model_mode mlp --inp_f ./.github/workflows/inputs/in_mlp.yaml
+          python3 src/cli.py --mode predict_xyz --model_mode mlp --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
           
+      - name: CNN XYZ --> Xanes
+        run: |
+          rm -rf model/model_001
+          python3 src/cli.py --mode train_xyz --model_mode cnn --inp_f ./.github/workflows/inputs/in_cnn.yaml
+          python3 src/cli.py --mode predict_xanes --model_mode cnn --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
+
+      - name: CNN Xanes --> XYZ
+        run: |
+          rm -rf model/model_001
+          python3 src/cli.py --mode train_xanes --model_mode cnn --inp_f ./.github/workflows/inputs/in_cnn.yaml
+          python3 src/cli.py --mode predict_xyz --model_mode cnn --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
+
+      - name: AE_MLP XYZ -> Xanes
+        run: |
+          rm -rf model/model_001
+          python3 src/cli.py --mode train_xyz --model_mode ae_mlp --inp_f ./.github/workflows/inputs/in_mlp.yaml
+          python3 src/cli.py --mode predict_xanes --model_mode ae_mlp --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
+
+      - name: AE_MLP Xanes --> XYZ
+        run: |
+          rm -rf model/model_001
+          python3 src/cli.py --mode train_xanes --model_mode ae_mlp --inp_f ./.github/workflows/inputs/in_mlp.yaml
+          python3 src/cli.py --mode predict_xyz --model_mode ae_mlp --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
+
+      - name: AE_CNN XYZ --> Xanes
+        run: |
+          rm -rf model/model_001
+          python3 src/cli.py --mode train_xyz --model_mode ae_cnn --inp_f ./.github/workflows/inputs/in_cnn.yaml
+          python3 src/cli.py --mode predict_xanes --model_mode ae_cnn --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
+
+      - name: AE_CNN Xanes --> XYZ
+        run: |
+          rm -rf model/model_001
+          python3 src/cli.py --mode train_xanes --model_mode ae_cnn --inp_f ./.github/workflows/inputs/in_cnn.yaml
+          python3 src/cli.py --mode predict_xyz --model_mode ae_cnn --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
+
+
+
