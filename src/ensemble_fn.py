@@ -95,9 +95,9 @@ def ensemble_train(
             model_dir.mkdir()
             torch.save(model, model_dir / f"model.pt")
     if save:
-        with open(bootstrap_dir / "descriptor.pickle", "wb") as f:
+        with open(ensemble_dir / "descriptor.pickle", "wb") as f:
             pickle.dump(descriptor, f)
-        with open(bootstrap_dir / "dataset.npz", "wb") as f:
+        with open(ensemble_dir / "dataset.npz", "wb") as f:
             np.savez_compressed(
                 f,
                 ids=data_compress["ids"],
