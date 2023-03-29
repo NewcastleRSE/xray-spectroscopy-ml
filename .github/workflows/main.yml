@@ -91,5 +91,11 @@ jobs:
           python3 src/cli.py --mode train_xanes --model_mode ae_cnn --inp_f ./.github/workflows/inputs/in_cnn.yaml
           python3 src/cli.py --mode predict_xyz --model_mode ae_cnn --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
 
+      - name: AEGAN
+        run: |
+          rm -rf model/model_001
+          python3 src/cli.py --mode train_aegan --model_mode aegan_mlp --inp_f ./.github/workflows/inputs/in_aegan.yaml
+          python3 src/cli.py --mode predict_aegan --model_mode aegan_mlp --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
+
 
 
