@@ -5,13 +5,16 @@ from pathlib import Path
 
 import numpy as np
 import torch
+import tqdm as tqdm
 from sklearn.metrics import mean_squared_error
 
-import plot
-from model_utils import model_mode_error, make_dir
-from predict import predict_xanes, predict_xyz, y_predict_dim
-from utils import unique_path
 import data_transform
+import plot
+from inout import save_xanes
+from model_utils import make_dir, model_mode_error
+from predict import predict_xanes, predict_xyz, y_predict_dim
+from spectrum.xanes import XANES
+from utils import unique_path
 
 
 def bootstrap_data(xyz, xanes, n_size, seed):
@@ -130,6 +133,7 @@ def bootstrap_predict(
     xyz_data,
     xanes_data,
     ids,
+    e,
     plot_save,
     fourier_transform,
     config,
@@ -158,7 +162,8 @@ def bootstrap_predict(
         if model_mode == "mlp" or model_mode == "cnn":
             if mode == "predict_xyz":
                 if fourier_transform:
-                    xanes_data = data_transform.fourier_transform_data(xanes_data)
+                    xanes_data = data_transform.fourier_transform_data(
+                        xanes_data)
 
                 xyz_predict = predict_xyz(xanes_data, model)
 
@@ -166,32 +171,50 @@ def bootstrap_predict(
                 y = xyz_data
                 y_predict = xyz_predict
 
+                for id_, y_predict_ in tqdm.tqdm(zip(ids, y_predict)):
+                    with open(predict_dir / f"{id_}.txt", "w") as f:
+                        f.write(
+                            "\n".join(
+                                map(str, y_predict_.detach().numpy()))
+                        )
+
             elif mode == "predict_xanes":
                 xanes_predict = predict_xanes(xyz_data, model)
 
                 x = xyz_data
                 y = xanes_data
                 y_predict = xanes_predict
+                print(y_predict.shape)
+                print
 
                 if fourier_transform:
-                    y_predict = data_transform.inverse_fourier_transform_data(y_predict)
+                    y_predict = data_transform.inverse_fourier_transform_data(
+                        y_predict)
+
+                for id_, y_predict_ in tqdm.tqdm(zip(ids, y_predict)):
+                    with open(predict_dir / f"{id_}.txt", "w") as f:
+                        save_xanes(
+                            f, XANES(e, y_predict_.detach().numpy()))
 
             print(
                 "MSE y to y pred : ",
                 mean_squared_error(y, y_predict.detach().numpy()),
             )
             y_predict, e = y_predict_dim(y_predict, ids, model_dir)
+
             if plot_save:
                 plot.plot_predict(ids, y, y_predict, e, predict_dir, mode)
 
-            y_predict_score.append(mean_squared_error(y, y_predict.detach().numpy()))
+            y_predict_score.append(mean_squared_error(
+                y, y_predict.detach().numpy()))
 
         elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
             if mode == "predict_xyz":
                 x = xanes_data
 
                 if fourier_transform:
-                    xanes_data = data_transform.fourier_transform_data(xanes_data)
+                    xanes_data = data_transform.fourier_transform_data(
+                        xanes_data)
 
                 recon_xanes, pred_xyz = predict_xyz(xanes_data, model)
 
@@ -200,7 +223,8 @@ def bootstrap_predict(
                 y_predict = pred_xyz
 
                 if fourier_transform:
-                    x_recon = data_transform.inverse_fourier_transform_data(x_recon)
+                    x_recon = data_transform.inverse_fourier_transform_data(
+                        x_recon)
 
             elif mode == "predict_xanes":
                 recon_xyz, pred_xanes = predict_xanes(xyz_data, model)
@@ -211,10 +235,13 @@ def bootstrap_predict(
                 y_predict = pred_xanes
 
                 if fourier_transform:
-                    y_predict = data_transform.inverse_fourier_transform_data(y_predict)
+                    y_predict = data_transform.inverse_fourier_transform_data(
+                        y_predict)
 
-            y_predict_score.append(mean_squared_error(y, y_predict.detach().numpy()))
-            x_recon_score.append(mean_squared_error(x, x_recon.detach().numpy()))
+            y_predict_score.append(mean_squared_error(
+                y, y_predict.detach().numpy()))
+            x_recon_score.append(mean_squared_error(
+                x, x_recon.detach().numpy()))
 
             print(
                 "MSE x to x recon : ",
@@ -273,7 +300,8 @@ def bootstrap_predict(
     elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
         mean_score = torch.mean(torch.tensor(y_predict_score))
         std_score = torch.std(torch.tensor(y_predict_score))
-        print(f"Mean score predict: {mean_score:.4f}, Std score: {std_score:.4f}")
+        print(
+            f"Mean score predict: {mean_score:.4f}, Std score: {std_score:.4f}")
         mean_score = torch.mean(torch.tensor(x_recon_score))
         std_score = torch.std(torch.tensor(x_recon_score))
         print(

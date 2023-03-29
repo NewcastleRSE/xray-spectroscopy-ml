@@ -65,10 +65,12 @@ def main(
     model_dir = Path(model_dir)
 
     xyz_path = Path(config["x_path"]) if config["x_path"] is not None else None
-    xanes_path = Path(config["y_path"]) if config["y_path"] is not None else None
+    xanes_path = Path(
+        config["y_path"]) if config["y_path"] is not None else None
 
     if xyz_path is not None and xanes_path is not None:
-        ids = list(set(list_filestems(xyz_path)) & set(list_filestems(xanes_path)))
+        ids = list(set(list_filestems(xyz_path)) &
+                   set(list_filestems(xanes_path)))
     elif xyz_path is None:
         ids = list(set(list_filestems(xanes_path)))
     elif xanes_path is None:
@@ -76,7 +78,6 @@ def main(
 
     ids.sort()
 
-    print(model_dir)
     with open(model_dir / "descriptor.pickle", "rb") as f:
         descriptor = pickle.load(f)
 
@@ -115,6 +116,10 @@ def main(
     print(">> ...loaded!\n")
 
     if config["bootstrap"]:
+        if not str(model_dir).startswith("bootstrap"):
+            raise ValueError(
+                "Invalid bootstrap directory, please use a bootstrap directory or turn of the bootstrap option in yaml file"
+            )
         from bootstrap_fn import bootstrap_predict
 
         bootstrap_predict(
@@ -123,6 +128,7 @@ def main(
             model_mode,
             xyz_data,
             xanes_data,
+            e,
             ids,
             config["plot_save"],
             fourier_transform,
@@ -130,6 +136,10 @@ def main(
         )
 
     elif config["ensemble"]:
+        if not model_dir.startswith("ensemble"):
+            raise ValueError(
+                "Invalid bootstrap directory, please use a bootstrap directory or turn of the bootstrap option in yaml file"
+            )
         from ensemble_fn import ensemble_predict
 
         ensemble_predict(
@@ -139,6 +149,7 @@ def main(
             model_mode,
             xyz_data,
             xanes_data,
+            e,
             config["plot_save"],
             fourier_transform,
             config,
@@ -146,7 +157,8 @@ def main(
         )
 
     else:
-        model = torch.load(model_dir / "model.pt", map_location=torch.device("cpu"))
+        model = torch.load(model_dir / "model.pt",
+                           map_location=torch.device("cpu"))
         model.eval()
         print("Loaded model from disk")
 
@@ -169,7 +181,8 @@ def main(
         if model_mode == "mlp" or model_mode == "cnn":
             if mode == "predict_xyz":
                 if fourier_transform:
-                    xanes_data = data_transform.fourier_transform_data(xanes_data)
+                    xanes_data = data_transform.fourier_transform_data(
+                        xanes_data)
 
                 xyz_predict = predict_xyz(xanes_data, model)
 
@@ -185,7 +198,8 @@ def main(
                 y_predict = xanes_predict
 
                 if fourier_transform:
-                    y_predict = data_transform.inverse_fourier_transform_data(y_predict)
+                    y_predict = data_transform.inverse_fourier_transform_data(
+                        y_predict)
 
             print(
                 "MSE y to y pred : ",
@@ -196,7 +210,8 @@ def main(
             if config["monte_carlo"]:
                 from montecarlo_fn import montecarlo_dropout
 
-                data_compress = {"ids": ids, "y": y, "y_predict": y_predict, "e": e}
+                data_compress = {"ids": ids, "y": y,
+                                 "y_predict": y_predict, "e": e}
                 montecarlo_dropout(
                     model,
                     x,
@@ -212,13 +227,15 @@ def main(
                     if mode == "predict_xanes":
                         for id_, y_predict_ in tqdm.tqdm(zip(ids, y_predict)):
                             with open(predict_dir / f"{id_}.txt", "w") as f:
-                                save_xanes(f, XANES(e, y_predict_.detach().numpy()))
+                                save_xanes(
+                                    f, XANES(e, y_predict_.detach().numpy()))
 
                     elif mode == "predict_xyz":
                         for id_, y_predict_ in tqdm.tqdm(zip(ids, y_predict)):
                             with open(predict_dir / f"{id_}.txt", "w") as f:
                                 f.write(
-                                    "\n".join(map(str, y_predict_.detach().numpy()))
+                                    "\n".join(
+                                        map(str, y_predict_.detach().numpy()))
                                 )
 
                 if config["plot_save"]:
@@ -232,7 +249,8 @@ def main(
                 y = xyz_data
 
                 if fourier_transform:
-                    xanes_data = data_transform.fourier_transform_data(xanes_data)
+                    xanes_data = data_transform.fourier_transform_data(
+                        xanes_data)
 
                 recon_xanes, pred_xyz = predict_xyz(xanes_data, model)
 
@@ -240,7 +258,8 @@ def main(
                 y_predict = pred_xyz
 
                 if fourier_transform:
-                    x_recon = data_transform.inverse_fourier_transform_data(x_recon)
+                    x_recon = data_transform.inverse_fourier_transform_data(
+                        x_recon)
 
             elif mode == "predict_xanes":
                 recon_xyz, pred_xanes = predict_xanes(xyz_data, model)
@@ -251,7 +270,8 @@ def main(
                 y_predict = pred_xanes
 
                 if fourier_transform:
-                    y_predict = data_transform.inverse_fourier_transform_data(y_predict)
+                    y_predict = data_transform.inverse_fourier_transform_data(
+                        y_predict)
 
             print(
                 "MSE x to x recon : ",
@@ -289,19 +309,22 @@ def main(
                     if mode == "predict_xanes":
                         for id_, y_predict_ in tqdm.tqdm(zip(ids, y_predict)):
                             with open(predict_dir / f"{id_}.txt", "w") as f:
-                                save_xanes(f, XANES(e, y_predict_.detach().numpy()))
+                                save_xanes(
+                                    f, XANES(e, y_predict_.detach().numpy()))
 
                     elif mode == "predict_xyz":
                         for id_, y_predict_ in tqdm.tqdm(zip(ids, y_predict)):
                             with open(predict_dir / f"{id_}.txt", "w") as f:
                                 f.write(
-                                    "\n".join(map(str, y_predict_.detach().numpy()))
+                                    "\n".join(
+                                        map(str, y_predict_.detach().numpy()))
                                 )
 
                 if config["plot_save"]:
                     from plot import plot_ae_predict
 
-                    plot_ae_predict(ids, y, y_predict, x, x_recon, e, predict_dir, mode)
+                    plot_ae_predict(ids, y, y_predict, x,
+                                    x_recon, e, predict_dir, mode)
 
         elif model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
             # Convert to float
