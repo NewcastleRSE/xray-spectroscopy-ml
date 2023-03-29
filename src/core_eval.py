@@ -109,7 +109,7 @@ class ModelEvalTestSuite:
 			for k, v in test_results.items():
 				print(f">>> {k:25}: {v}")
 
-		else:
+		elif self.model_mode == 'ae_mlp' or self.model_mode == 'ae_cnn':
 
 			rl0, pl0 = self.get_true_loss()
 
@@ -165,6 +165,109 @@ class ModelEvalTestSuite:
 
 			test_results = recon_test_results, pred_test_results
 
+		elif self.model_mode == 'aegan_mlp':
+
+			rxl0, ryl0, pxl0, pyl0 = self.get_true_loss()
+
+			rxli1, ryli1, pxli1, pyli1 = self.get_loss_input_shuffle()
+			rxlo1, rylo1, pxlo1, pylo1 = self.get_loss_output_shuffle()
+
+			rxli2, ryli2, pxli2, pyli2 = self.get_loss_input_mean_train()
+			rxlo2, rylo2, pxlo2, pylo2 = self.get_loss_output_mean_train()
+
+			rxli3, ryli3, pxli3, pyli3 = self.get_loss_input_mean_sd_train()
+			rxlo3, rylo3, pxlo3, pylo3 = self.get_loss_output_mean_sd_train()
+
+			rxli4, ryli4, pxli4, pyli4 = self.get_loss_input_random_valid()
+			rxlo4, rylo4, pxlo4, pylo4 = self.get_loss_output_random_valid()
+
+			pred_x_test_results = {}
+			pred_y_test_results = {}
+			recon_x_test_results = {}
+			recon_y_test_results = {}
+
+			# Prediction XYZ
+			pred_x_test_results['Shuffle Input'] = loss_ttest(pxl0,pxli1)
+			pred_x_test_results['Shuffle Output'] = loss_ttest(pxl0,pxlo1)
+
+			pred_x_test_results['Mean Train Input'] = loss_ttest(pxl0,pxli2)
+			pred_x_test_results['Mean Train Output'] = loss_ttest(pxl0,pxlo2)
+
+			pred_x_test_results['Mean + Std. Train Input'] = loss_ttest(pxl0,pxli3)
+			pred_x_test_results['Mean + Std. Train Output'] = loss_ttest(pxl0,pxlo3)
+
+			pred_x_test_results['Random Valid Input'] = loss_ttest(pxl0,pxli4)
+			pred_x_test_results['Random Valid Output'] = loss_ttest(pxl0,pxlo4)
+
+			# Prediction Xanes
+			pred_y_test_results['Shuffle Input'] = loss_ttest(pyl0,pyli1)
+			pred_y_test_results['Shuffle Output'] = loss_ttest(pyl0,pylo1)
+
+			pred_y_test_results['Mean Train Input'] = loss_ttest(pyl0,pyli2)
+			pred_y_test_results['Mean Train Output'] = loss_ttest(pyl0,pylo2)
+
+			pred_y_test_results['Mean + Std. Train Input'] = loss_ttest(pyl0,pyli3)
+			pred_y_test_results['Mean + Std. Train Output'] = loss_ttest(pyl0,pylo3)
+
+			pred_y_test_results['Random Valid Input'] = loss_ttest(pyl0,pyli4)
+			pred_y_test_results['Random Valid Output'] = loss_ttest(pyl0,pylo4)
+
+			# Reconstruction XYZ
+			recon_x_test_results['Shuffle Input'] = loss_ttest(rxl0,rxli1)
+			recon_x_test_results['Shuffle Output'] = loss_ttest(rxl0,rxlo1)
+
+			recon_x_test_results['Mean Train Input'] = loss_ttest(rxl0,rxli2)
+			recon_x_test_results['Mean Train Output'] = loss_ttest(rxl0,rxlo2)
+
+			recon_x_test_results['Mean + Std. Train Input'] = loss_ttest(rxl0,rxli3)
+			recon_x_test_results['Mean + Std. Train Output'] = loss_ttest(rxl0,rxlo3)
+
+			recon_x_test_results['Random Valid Input'] = loss_ttest(rxl0,rxli4)
+			recon_x_test_results['Random Valid Output'] = loss_ttest(rxl0,rxlo4)
+
+			# Reconstruction Xanes
+			recon_y_test_results['Shuffle Input'] = loss_ttest(ryl0,ryli1)
+			recon_y_test_results['Shuffle Output'] = loss_ttest(ryl0,rylo1)
+
+			recon_y_test_results['Mean Train Input'] = loss_ttest(ryl0,ryli2)
+			recon_y_test_results['Mean Train Output'] = loss_ttest(ryl0,rylo2)
+
+			recon_y_test_results['Mean + Std. Train Input'] = loss_ttest(ryl0,ryli3)
+			recon_y_test_results['Mean + Std. Train Output'] = loss_ttest(ryl0,rylo3)
+
+			recon_y_test_results['Random Valid Input'] = loss_ttest(ryl0,ryli4)
+			recon_y_test_results['Random Valid Output'] = loss_ttest(ryl0,rylo4)
+
+
+
+			print("    Prediction XYZ:")
+			for k, v in pred_x_test_results.items():
+				print(f">>> {k:25}: {v}")
+			print('\n')
+
+			print("    Prediction Xanes:")
+			for k, v in pred_y_test_results.items():
+				print(f">>> {k:25}: {v}")
+			print('\n')
+
+			print("    Reconstruction XYZ:")
+			for k, v in recon_x_test_results.items():
+				print(f">>> {k:25}: {v}")
+			print('\n')
+
+			print("    Reconstruction Xanes:")
+			for k, v in recon_y_test_results.items():
+				print(f">>> {k:25}: {v}")
+			print('\n')
+
+			test_results = recon_x_test_results, recon_y_test_results, pred_x_test_results, pred_y_test_results
+
+
+		else:
+
+			test_results = None
+
+
 		print(f"{'='*19} MLFlow: Evaluation Results Logged {'='*18}")
 		return test_results
 
@@ -203,10 +306,35 @@ class ModelEvalTestSuite:
 
 			return true_recon_loss, true_pred_loss
 
+		elif self.model_mode == 'aegan_mlp':
+
+			true_recon_x_loss = []
+			true_recon_y_loss = []
+			true_pred_x_loss = []
+			true_pred_y_loss = []
+
+			for inputs, labels in self.evalloader:
+				inputs, labels = inputs.to(self.device), labels.to(self.device)
+				inputs, labels = inputs.float(), labels.float()
+
+				recon_x, recon_y, pred_x, pred_y = self.model.reconstruct_all_predict_all(
+                    inputs, labels
+                )
+
+				recon_x_loss = functional_mse(recon_x, inputs)
+				recon_y_loss = functional_mse(recon_y, labels)
+				pred_x_loss = functional_mse(pred_x, inputs)
+				pred_y_loss = functional_mse(pred_y, labels)
+
+				true_recon_x_loss.extend(recon_x_loss)
+				true_recon_y_loss.extend(recon_y_loss)
+				true_pred_x_loss.extend(pred_x_loss)
+				true_pred_y_loss.extend(pred_y_loss)
+
+			return true_recon_x_loss, true_recon_y_loss, true_pred_x_loss, true_pred_y_loss
 
 		else:
 
-			print('Not implemented yet...')
 			return None
 
 	def get_loss_input_shuffle(self):
@@ -251,9 +379,41 @@ class ModelEvalTestSuite:
 
 			return other_recon_loss, other_pred_loss
 
+		elif self.model_mode == 'aegan_mlp':
+
+			other_recon_x_loss = []
+			other_recon_y_loss = []
+			other_pred_x_loss = []
+			other_pred_y_loss = []
+
+			for inputs, labels in self.evalloader:
+				inputs, labels = inputs.to(self.device), labels.to(self.device)
+				inputs, labels = inputs.float(), labels.float()
+
+				idx = torch.randperm(inputs.shape[0])
+				inputs_shuffle = inputs[idx]
+
+				jdx = torch.randperm(labels.shape[0])
+				labels_shuffle = labels[jdx]
+
+				recon_x, recon_y, pred_x, pred_y = self.model.reconstruct_all_predict_all(
+                    inputs_shuffle, labels_shuffle
+                )
+
+				recon_x_loss = functional_mse(recon_x, inputs)
+				recon_y_loss = functional_mse(recon_y, labels)
+				pred_x_loss = functional_mse(pred_x, inputs)
+				pred_y_loss = functional_mse(pred_y, labels)
+
+				other_recon_x_loss.extend(recon_x_loss)
+				other_recon_y_loss.extend(recon_y_loss)
+				other_pred_x_loss.extend(pred_x_loss)
+				other_pred_y_loss.extend(pred_y_loss)
+
+			return other_recon_x_loss, other_recon_y_loss, other_pred_x_loss, other_pred_y_loss
+
 		else:
 
-			print('Not implemented yet...')
 			return None
 
 	def get_loss_output_shuffle(self):
@@ -299,11 +459,43 @@ class ModelEvalTestSuite:
 				other_recon_loss.extend(recon_loss)
 				other_pred_loss.extend(pred_loss)
 
-			return other_recon_loss, other_pred_loss		
+			return other_recon_loss, other_pred_loss
+
+		elif self.model_mode == 'aegan_mlp':
+
+			other_recon_x_loss = []
+			other_recon_y_loss = []
+			other_pred_x_loss = []
+			other_pred_y_loss = []
+
+			for inputs, labels in self.evalloader:
+				inputs, labels = inputs.to(self.device), labels.to(self.device)
+				inputs, labels = inputs.float(), labels.float()
+
+				idx = torch.randperm(inputs.shape[0])
+				inputs_shuffle = inputs[idx]
+
+				jdx = torch.randperm(labels.shape[0])
+				labels_shuffle = labels[jdx]
+
+				recon_x, recon_y, pred_x, pred_y = self.model.reconstruct_all_predict_all(
+                    inputs, labels
+                )
+
+				recon_x_loss = functional_mse(recon_x, inputs_shuffle)
+				recon_y_loss = functional_mse(recon_y, labels_shuffle)
+				pred_x_loss = functional_mse(pred_x, inputs_shuffle)
+				pred_y_loss = functional_mse(pred_y, labels_shuffle)
+
+				other_recon_x_loss.extend(recon_x_loss)
+				other_recon_y_loss.extend(recon_y_loss)
+				other_pred_x_loss.extend(pred_x_loss)
+				other_pred_y_loss.extend(pred_y_loss)
+
+			return other_recon_x_loss, other_recon_y_loss, other_pred_x_loss, other_pred_y_loss		
 
 		else:
 
-			print('Not implemented yet...')
 			return None
 
 	def get_loss_input_mean_train(self):
@@ -345,9 +537,39 @@ class ModelEvalTestSuite:
 
 			return other_recon_loss, other_pred_loss
 
+		elif self.model_mode == 'aegan_mlp':
+
+			other_recon_x_loss = []
+			other_recon_y_loss = []
+			other_pred_x_loss = []
+			other_pred_y_loss = []
+
+			recon_x_val, recon_y_val, pred_x_val, pred_y_val = self.model.reconstruct_all_predict_all(
+				self.mean_input, self.mean_output)
+
+			for inputs, labels in self.evalloader:
+				inputs, labels = inputs.to(self.device), labels.to(self.device)
+				inputs, labels = inputs.float(), labels.float()
+
+				recon_x = recon_x_val.repeat(labels.shape[0], 1)
+				recon_y = recon_y_val.repeat(labels.shape[0], 1)
+				pred_x = pred_x_val.repeat(labels.shape[0], 1)
+				pred_y = pred_y_val.repeat(labels.shape[0], 1)
+
+				recon_x_loss = functional_mse(recon_x, inputs)
+				recon_y_loss = functional_mse(recon_y, labels)
+				pred_x_loss = functional_mse(pred_x, inputs)
+				pred_y_loss = functional_mse(pred_y, labels)
+
+				other_recon_x_loss.extend(recon_x_loss)
+				other_recon_y_loss.extend(recon_y_loss)
+				other_pred_x_loss.extend(pred_x_loss)
+				other_pred_y_loss.extend(pred_y_loss)
+
+			return other_recon_x_loss, other_recon_y_loss, other_pred_x_loss, other_pred_y_loss
+
 		else:
 
-			print('Not implemented yet...')
 			return None
 
 	def get_loss_output_mean_train(self):
@@ -390,9 +612,39 @@ class ModelEvalTestSuite:
 
 			return other_recon_loss, other_pred_loss
 
+		elif self.model_mode == 'aegan_mlp':
+
+			other_recon_x_loss = []
+			other_recon_y_loss = []
+			other_pred_x_loss = []
+			other_pred_y_loss = []
+
+			recon_x_val = pred_x_val = self.mean_input
+			recon_y_val = pred_y_val = self.mean_output
+
+			for inputs, labels in self.evalloader:
+				inputs, labels = inputs.to(self.device), labels.to(self.device)
+				inputs, labels = inputs.float(), labels.float()
+
+				recon_x = recon_x_val.repeat(labels.shape[0], 1)
+				recon_y = recon_y_val.repeat(labels.shape[0], 1)
+				pred_x = pred_x_val.repeat(labels.shape[0], 1)
+				pred_y = pred_y_val.repeat(labels.shape[0], 1)
+
+				recon_x_loss = functional_mse(recon_x, inputs)
+				recon_y_loss = functional_mse(recon_y, labels)
+				pred_x_loss = functional_mse(pred_x, inputs)
+				pred_y_loss = functional_mse(pred_y, labels)
+
+				other_recon_x_loss.extend(recon_x_loss)
+				other_recon_y_loss.extend(recon_y_loss)
+				other_pred_x_loss.extend(pred_x_loss)
+				other_pred_y_loss.extend(pred_y_loss)
+
+			return other_recon_x_loss, other_recon_y_loss, other_pred_x_loss, other_pred_y_loss	
+
 		else:
 
-			print('Not implemented yet...')
 			return None
 
 	def get_loss_input_mean_sd_train(self):
@@ -434,9 +686,38 @@ class ModelEvalTestSuite:
 				other_pred_loss.extend(pred_loss)
 
 			return other_recon_loss, other_pred_loss
+
+		elif self.model_mode == 'aegan_mlp':
+
+			other_recon_x_loss = []
+			other_recon_y_loss = []
+			other_pred_x_loss = []
+			other_pred_y_loss = []
+
+			for inputs, labels in self.evalloader:
+				inputs, labels = inputs.to(self.device), labels.to(self.device)
+				inputs, labels = inputs.float(), labels.float()
+
+				mean_sd_input = self.mean_input.repeat(labels.shape[0], 1) + torch.normal(torch.zeros([labels.shape[0],self.n_in]),self.std_input)
+				mean_sd_output = self.mean_output.repeat(labels.shape[0], 1) + torch.normal(torch.zeros([labels.shape[0],self.out_dim]),self.std_output)
+
+				recon_x, recon_y, pred_x, pred_y = self.model.reconstruct_all_predict_all(
+					mean_sd_input, mean_sd_output)
+
+				recon_x_loss = functional_mse(recon_x, inputs)
+				recon_y_loss = functional_mse(recon_y, labels)
+				pred_x_loss = functional_mse(pred_x, inputs)
+				pred_y_loss = functional_mse(pred_y, labels)
+
+				other_recon_x_loss.extend(recon_x_loss)
+				other_recon_y_loss.extend(recon_y_loss)
+				other_pred_x_loss.extend(pred_x_loss)
+				other_pred_y_loss.extend(pred_y_loss)
+
+			return other_recon_x_loss, other_recon_y_loss, other_pred_x_loss, other_pred_y_loss
+
 		else:
 
-			print('Not implemented yet...')
 			return None
 
 	def get_loss_output_mean_sd_train(self):
@@ -476,9 +757,36 @@ class ModelEvalTestSuite:
 
 			return other_recon_loss, other_pred_loss
 
+		elif self.model_mode == 'aegan_mlp':
+
+			other_recon_x_loss = []
+			other_recon_y_loss = []
+			other_pred_x_loss = []
+			other_pred_y_loss = []
+
+			for inputs, labels in self.evalloader:
+				inputs, labels = inputs.to(self.device), labels.to(self.device)
+				inputs, labels = inputs.float(), labels.float()
+
+				recon_x = self.mean_input.repeat(labels.shape[0], 1) + torch.normal(torch.zeros([labels.shape[0],self.n_in]),self.std_input)
+				recon_y = self.mean_output.repeat(labels.shape[0], 1) + torch.normal(torch.zeros([labels.shape[0],self.out_dim]),self.std_output)
+				pred_x = self.mean_input.repeat(labels.shape[0], 1) + torch.normal(torch.zeros([labels.shape[0],self.n_in]),self.std_input)
+				pred_y = self.mean_output.repeat(labels.shape[0], 1) + torch.normal(torch.zeros([labels.shape[0],self.out_dim]),self.std_output)
+
+				recon_x_loss = functional_mse(recon_x, inputs)
+				recon_y_loss = functional_mse(recon_y, labels)
+				pred_x_loss = functional_mse(pred_x, inputs)
+				pred_y_loss = functional_mse(pred_y, labels)
+
+				other_recon_x_loss.extend(recon_x_loss)
+				other_recon_y_loss.extend(recon_y_loss)
+				other_pred_x_loss.extend(pred_x_loss)
+				other_pred_y_loss.extend(pred_y_loss)
+
+			return other_recon_x_loss, other_recon_y_loss, other_pred_x_loss, other_pred_y_loss	
+
 		else:
 
-			print('Not implemented yet...')
 			return None
 
 
@@ -535,9 +843,45 @@ class ModelEvalTestSuite:
 
 			return other_recon_loss, other_pred_loss
 
+		elif self.model_mode == 'aegan_mlp':
+
+			other_recon_x_loss = []
+			other_recon_y_loss = []
+			other_pred_x_loss = []
+			other_pred_y_loss = []
+
+			it = iter(self.validloader)
+
+			for inputs, labels in self.evalloader:
+				inputs, labels = inputs.to(self.device), labels.to(self.device)
+				inputs, labels = inputs.float(), labels.float()
+
+				alt_inputs, alt_labels = next(it)
+
+				alt_inputs = alt_inputs.to(self.device).float()
+				alt_labels = alt_labels.to(self.device).float()
+
+				if labels.shape[0] < alt_inputs.shape[0]:
+					alt_inputs = alt_inputs[:labels.shape[0],:]
+					alt_labels = alt_labels[:labels.shape[0],:]
+
+				recon_x, recon_y, pred_x, pred_y = self.model.reconstruct_all_predict_all(
+					alt_inputs, alt_labels)
+
+				recon_x_loss = functional_mse(recon_x, inputs)
+				recon_y_loss = functional_mse(recon_y, labels)
+				pred_x_loss = functional_mse(pred_x, inputs)
+				pred_y_loss = functional_mse(pred_y, labels)
+
+				other_recon_x_loss.extend(recon_x_loss)
+				other_recon_y_loss.extend(recon_y_loss)
+				other_pred_x_loss.extend(pred_x_loss)
+				other_pred_y_loss.extend(pred_y_loss)
+
+			return other_recon_x_loss, other_recon_y_loss, other_pred_x_loss, other_pred_y_loss
+
 		else:
 
-			print('Not implemented yet...')
 			return None
 
 	def get_loss_output_random_valid(self):
@@ -591,9 +935,50 @@ class ModelEvalTestSuite:
 
 			return other_recon_loss, other_pred_loss
 
+		elif self.model_mode == 'aegan_mlp':
+
+			other_recon_x_loss = []
+			other_recon_y_loss = []
+			other_pred_x_loss = []
+			other_pred_y_loss = []
+
+			it = iter(self.validloader)
+
+			for inputs, labels in self.evalloader:
+				inputs, labels = inputs.to(self.device), labels.to(self.device)
+				inputs, labels = inputs.float(), labels.float()
+
+				alt_inputs, alt_labels = next(it)
+
+				alt_inputs = alt_inputs.to(self.device).float()
+				alt_labels = alt_labels.to(self.device).float()
+
+				if labels.shape[0] < alt_inputs.shape[0]:
+					alt_inputs = alt_inputs[:labels.shape[0],:]
+					alt_labels = alt_labels[:labels.shape[0],:]
+
+				recon_x = alt_inputs
+				recon_y = alt_labels
+
+				idx = torch.randperm(labels.shape[0])
+				jdx = torch.randperm(labels.shape[0])
+				pred_x = alt_inputs[idx]
+				pred_y = alt_labels[jdx]
+
+				recon_x_loss = functional_mse(recon_x, inputs)
+				recon_y_loss = functional_mse(recon_y, labels)
+				pred_x_loss = functional_mse(pred_x, inputs)
+				pred_y_loss = functional_mse(pred_y, labels)
+
+				other_recon_x_loss.extend(recon_x_loss)
+				other_recon_y_loss.extend(recon_y_loss)
+				other_pred_x_loss.extend(pred_x_loss)
+				other_pred_y_loss.extend(pred_y_loss)
+
+			return other_recon_x_loss, other_recon_y_loss, other_pred_x_loss, other_pred_y_loss
+
 		else:
 
-			print('Not implemented yet...')
 			return None
 
 

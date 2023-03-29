@@ -210,7 +210,7 @@ def train_xanes(
 
 
 def train_aegan(
-    xyz, xanes, exp_name, model_mode, hyperparams, epochs, kfold, kfold_params, rng
+    xyz, xanes, exp_name, model_mode, hyperparams, epochs, kfold, kfold_params, rng, model_eval
 ):
     if kfold:
         result, model = kfold_aegan_train(
@@ -220,7 +220,7 @@ def train_aegan(
 
     else:
         print(">> fitting neural net...")
-        model, score = aegan_train(xyz, xanes, exp_name, hyperparams, epochs)
+        model, score = aegan_train(xyz, xanes, exp_name, hyperparams, epochs, model_eval)
     summary(model)
     # from plot import plot_running_aegan
 

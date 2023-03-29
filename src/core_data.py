@@ -244,6 +244,7 @@ def train_data(
                 config["kfold"],
                 config["kfold_params"],
                 rng,
+                config["model_eval"],
             )
 
         if save:
