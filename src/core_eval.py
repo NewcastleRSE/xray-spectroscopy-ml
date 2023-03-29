@@ -75,6 +75,8 @@ class ModelEvalTestSuite:
 
 	def run_all(self):
 		print(f"{'='*20} Running Model Evaluation Tests {'='*20}")
+
+		test_results = {}
 	
 		if self.model_mode == 'mlp' or self.model_mode == 'cnn':
 
@@ -91,8 +93,6 @@ class ModelEvalTestSuite:
 
 			li4 = self.get_loss_input_random_valid()
 			lo4 = self.get_loss_output_random_valid()
-
-			test_results = {}
 			
 			test_results['Shuffle Input'] = loss_ttest(l0,li1)
 			test_results['Shuffle Output'] = loss_ttest(l0,lo1)
@@ -100,14 +100,18 @@ class ModelEvalTestSuite:
 			test_results['Mean Train Input'] = loss_ttest(l0,li2)
 			test_results['Mean Train Output'] = loss_ttest(l0,lo2)
 
-			test_results['Mean + Std. Train Input'] = loss_ttest(l0,li3)
-			test_results['Mean + Std. Train Output'] = loss_ttest(l0,lo3)
+			test_results['Mean Std. Train Input'] = loss_ttest(l0,li3)
+			test_results['Mean Std. Train Output'] = loss_ttest(l0,lo3)
 
 			test_results['Random Valid Input'] = loss_ttest(l0,li4)
 			test_results['Random Valid Output'] = loss_ttest(l0,lo4)
 
 			for k, v in test_results.items():
 				print(f">>> {k:25}: {v}")
+
+			test_results = {
+				'ModelEvalResults-Prediction' : test_results
+				}
 
 		elif self.model_mode == 'ae_mlp' or self.model_mode == 'ae_cnn':
 
@@ -125,45 +129,47 @@ class ModelEvalTestSuite:
 			rli4, pli4 = self.get_loss_input_random_valid()
 			rlo4, plo4 = self.get_loss_output_random_valid()
 
-			pred_test_results = {}
-			recon_test_results = {}
+			p_results = {}
+			r_results = {}
 
-			pred_test_results['Shuffle Input'] = loss_ttest(pl0,pli1)
-			pred_test_results['Shuffle Output'] = loss_ttest(pl0,plo1)
+			p_results['Shuffle Input'] = loss_ttest(pl0,pli1)
+			p_results['Shuffle Output'] = loss_ttest(pl0,plo1)
 
-			recon_test_results['Shuffle Input'] = loss_ttest(rl0,rli1)
-			recon_test_results['Shuffle Output'] = loss_ttest(rl0,rlo1)
+			r_results['Shuffle Input'] = loss_ttest(rl0,rli1)
+			r_results['Shuffle Output'] = loss_ttest(rl0,rlo1)
 
-			pred_test_results['Mean Train Input'] = loss_ttest(pl0,pli2)
-			pred_test_results['Mean Train Output'] = loss_ttest(pl0,plo2)
+			p_results['Mean Train Input'] = loss_ttest(pl0,pli2)
+			p_results['Mean Train Output'] = loss_ttest(pl0,plo2)
 
-			recon_test_results['Mean Train Input'] = loss_ttest(rl0,rli2)
-			recon_test_results['Mean Train Output'] = loss_ttest(rl0,rlo2)
+			r_results['Mean Train Input'] = loss_ttest(rl0,rli2)
+			r_results['Mean Train Output'] = loss_ttest(rl0,rlo2)
 
-			pred_test_results['Mean + Std. Train Input'] = loss_ttest(pl0,pli3)
-			pred_test_results['Mean + Std. Train Output'] = loss_ttest(pl0,plo3)
+			p_results['Mean Std. Train Input'] = loss_ttest(pl0,pli3)
+			p_results['Mean Std. Train Output'] = loss_ttest(pl0,plo3)
 
-			recon_test_results['Mean + Std. Train Input'] = loss_ttest(rl0,rli3)
-			recon_test_results['Mean + Std. Train Output'] = loss_ttest(rl0,rlo3)
+			r_results['Mean Std. Train Input'] = loss_ttest(rl0,rli3)
+			r_results['Mean Std. Train Output'] = loss_ttest(rl0,rlo3)
 
-			pred_test_results['Random Valid Input'] = loss_ttest(pl0,pli4)
-			pred_test_results['Random Valid Output'] = loss_ttest(pl0,plo4)
+			p_results['Random Valid Input'] = loss_ttest(pl0,pli4)
+			p_results['Random Valid Output'] = loss_ttest(pl0,plo4)
 
-			recon_test_results['Random Valid Input'] = loss_ttest(rl0,rli4)
-			recon_test_results['Random Valid Output'] = loss_ttest(rl0,rlo4)
-
+			r_results['Random Valid Input'] = loss_ttest(rl0,rli4)
+			r_results['Random Valid Output'] = loss_ttest(rl0,rlo4)
 
 			print("    Prediction:")
-			for k, v in pred_test_results.items():
+			for k, v in p_results.items():
 				print(f">>> {k:25}: {v}")
 			print('\n')
 
 
 			print("    Reconstruction:")
-			for k, v in recon_test_results.items():
+			for k, v in r_results.items():
 				print(f">>> {k:25}: {v}")
 
-			test_results = recon_test_results, pred_test_results
+			test_results = {
+				'ModelEvalResults-Reconstruction' : r_results,
+				'ModelEvalResults-Prediction:' : p_results
+				}
 
 		elif self.model_mode == 'aegan_mlp':
 
@@ -181,87 +187,89 @@ class ModelEvalTestSuite:
 			rxli4, ryli4, pxli4, pyli4 = self.get_loss_input_random_valid()
 			rxlo4, rylo4, pxlo4, pylo4 = self.get_loss_output_random_valid()
 
-			pred_x_test_results = {}
-			pred_y_test_results = {}
-			recon_x_test_results = {}
-			recon_y_test_results = {}
+			p_x_results = {}
+			p_y_results = {}
+			r_x_results = {}
+			r_y_results = {}
 
 			# Prediction XYZ
-			pred_x_test_results['Shuffle Input'] = loss_ttest(pxl0,pxli1)
-			pred_x_test_results['Shuffle Output'] = loss_ttest(pxl0,pxlo1)
+			p_x_results['Shuffle Input'] = loss_ttest(pxl0,pxli1)
+			p_x_results['Shuffle Output'] = loss_ttest(pxl0,pxlo1)
 
-			pred_x_test_results['Mean Train Input'] = loss_ttest(pxl0,pxli2)
-			pred_x_test_results['Mean Train Output'] = loss_ttest(pxl0,pxlo2)
+			p_x_results['Mean Train Input'] = loss_ttest(pxl0,pxli2)
+			p_x_results['Mean Train Output'] = loss_ttest(pxl0,pxlo2)
 
-			pred_x_test_results['Mean + Std. Train Input'] = loss_ttest(pxl0,pxli3)
-			pred_x_test_results['Mean + Std. Train Output'] = loss_ttest(pxl0,pxlo3)
+			p_x_results['Mean Std. Train Input'] = loss_ttest(pxl0,pxli3)
+			p_x_results['Mean Std. Train Output'] = loss_ttest(pxl0,pxlo3)
 
-			pred_x_test_results['Random Valid Input'] = loss_ttest(pxl0,pxli4)
-			pred_x_test_results['Random Valid Output'] = loss_ttest(pxl0,pxlo4)
+			p_x_results['Random Valid Input'] = loss_ttest(pxl0,pxli4)
+			p_x_results['Random Valid Output'] = loss_ttest(pxl0,pxlo4)
 
 			# Prediction Xanes
-			pred_y_test_results['Shuffle Input'] = loss_ttest(pyl0,pyli1)
-			pred_y_test_results['Shuffle Output'] = loss_ttest(pyl0,pylo1)
+			p_y_results['Shuffle Input'] = loss_ttest(pyl0,pyli1)
+			p_y_results['Shuffle Output'] = loss_ttest(pyl0,pylo1)
 
-			pred_y_test_results['Mean Train Input'] = loss_ttest(pyl0,pyli2)
-			pred_y_test_results['Mean Train Output'] = loss_ttest(pyl0,pylo2)
+			p_y_results['Mean Train Input'] = loss_ttest(pyl0,pyli2)
+			p_y_results['Mean Train Output'] = loss_ttest(pyl0,pylo2)
 
-			pred_y_test_results['Mean + Std. Train Input'] = loss_ttest(pyl0,pyli3)
-			pred_y_test_results['Mean + Std. Train Output'] = loss_ttest(pyl0,pylo3)
+			p_y_results['Mean Std. Train Input'] = loss_ttest(pyl0,pyli3)
+			p_y_results['Mean Std. Train Output'] = loss_ttest(pyl0,pylo3)
 
-			pred_y_test_results['Random Valid Input'] = loss_ttest(pyl0,pyli4)
-			pred_y_test_results['Random Valid Output'] = loss_ttest(pyl0,pylo4)
+			p_y_results['Random Valid Input'] = loss_ttest(pyl0,pyli4)
+			p_y_results['Random Valid Output'] = loss_ttest(pyl0,pylo4)
 
 			# Reconstruction XYZ
-			recon_x_test_results['Shuffle Input'] = loss_ttest(rxl0,rxli1)
-			recon_x_test_results['Shuffle Output'] = loss_ttest(rxl0,rxlo1)
+			r_x_results['Shuffle Input'] = loss_ttest(rxl0,rxli1)
+			r_x_results['Shuffle Output'] = loss_ttest(rxl0,rxlo1)
 
-			recon_x_test_results['Mean Train Input'] = loss_ttest(rxl0,rxli2)
-			recon_x_test_results['Mean Train Output'] = loss_ttest(rxl0,rxlo2)
+			r_x_results['Mean Train Input'] = loss_ttest(rxl0,rxli2)
+			r_x_results['Mean Train Output'] = loss_ttest(rxl0,rxlo2)
 
-			recon_x_test_results['Mean + Std. Train Input'] = loss_ttest(rxl0,rxli3)
-			recon_x_test_results['Mean + Std. Train Output'] = loss_ttest(rxl0,rxlo3)
+			r_x_results['Mean Std. Train Input'] = loss_ttest(rxl0,rxli3)
+			r_x_results['Mean Std. Train Output'] = loss_ttest(rxl0,rxlo3)
 
-			recon_x_test_results['Random Valid Input'] = loss_ttest(rxl0,rxli4)
-			recon_x_test_results['Random Valid Output'] = loss_ttest(rxl0,rxlo4)
+			r_x_results['Random Valid Input'] = loss_ttest(rxl0,rxli4)
+			r_x_results['Random Valid Output'] = loss_ttest(rxl0,rxlo4)
 
 			# Reconstruction Xanes
-			recon_y_test_results['Shuffle Input'] = loss_ttest(ryl0,ryli1)
-			recon_y_test_results['Shuffle Output'] = loss_ttest(ryl0,rylo1)
+			r_y_results['Shuffle Input'] = loss_ttest(ryl0,ryli1)
+			r_y_results['Shuffle Output'] = loss_ttest(ryl0,rylo1)
 
-			recon_y_test_results['Mean Train Input'] = loss_ttest(ryl0,ryli2)
-			recon_y_test_results['Mean Train Output'] = loss_ttest(ryl0,rylo2)
+			r_y_results['Mean Train Input'] = loss_ttest(ryl0,ryli2)
+			r_y_results['Mean Train Output'] = loss_ttest(ryl0,rylo2)
 
-			recon_y_test_results['Mean + Std. Train Input'] = loss_ttest(ryl0,ryli3)
-			recon_y_test_results['Mean + Std. Train Output'] = loss_ttest(ryl0,rylo3)
+			r_y_results['Mean Std. Train Input'] = loss_ttest(ryl0,ryli3)
+			r_y_results['Mean Std. Train Output'] = loss_ttest(ryl0,rylo3)
 
-			recon_y_test_results['Random Valid Input'] = loss_ttest(ryl0,ryli4)
-			recon_y_test_results['Random Valid Output'] = loss_ttest(ryl0,rylo4)
-
-
+			r_y_results['Random Valid Input'] = loss_ttest(ryl0,ryli4)
+			r_y_results['Random Valid Output'] = loss_ttest(ryl0,rylo4)
 
 			print("    Prediction XYZ:")
-			for k, v in pred_x_test_results.items():
+			for k, v in p_x_results.items():
 				print(f">>> {k:25}: {v}")
 			print('\n')
 
 			print("    Prediction Xanes:")
-			for k, v in pred_y_test_results.items():
+			for k, v in p_y_results.items():
 				print(f">>> {k:25}: {v}")
 			print('\n')
 
 			print("    Reconstruction XYZ:")
-			for k, v in recon_x_test_results.items():
+			for k, v in r_x_results.items():
 				print(f">>> {k:25}: {v}")
 			print('\n')
 
 			print("    Reconstruction Xanes:")
-			for k, v in recon_y_test_results.items():
+			for k, v in r_y_results.items():
 				print(f">>> {k:25}: {v}")
 			print('\n')
 
-			test_results = recon_x_test_results, recon_y_test_results, pred_x_test_results, pred_y_test_results
-
+			test_results = {
+				'ModelEvalResults-Reconstruction-XYZ' : r_x_results,
+				'ModelEvalResults-Reconstruction-Xanes' : r_y_results,
+				'ModelEvalResults-Prediction-XYZ:' : p_x_results,
+				'ModelEvalResults-Prediction-Xanes' : p_y_results
+				}
 
 		else:
 

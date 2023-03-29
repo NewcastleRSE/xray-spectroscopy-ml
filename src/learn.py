@@ -244,5 +244,9 @@ def train(x, y, exp_name, model_mode, hyperparams, n_epoch, weight_seed, schedul
 
 			eval_results = core_eval.run_model_eval_tests(model, model_mode, trainloader, validloader, evalloader, n_in, out_dim)
 
+			# Log results
+			for k,v in eval_results.items():
+				mlflow.log_dict(v,f"{k}.yaml")
+
 	writer.close()
 	return model, running_loss / len(trainloader)

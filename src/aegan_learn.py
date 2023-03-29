@@ -293,4 +293,8 @@ def train_aegan(x, y, exp_name, hyperparams, n_epoch, model_eval):
 
             eval_results = core_eval.run_model_eval_tests(model, 'aegan_mlp', trainloader, validloader, evalloader, n_x_features, n_y_features)
 
+            # Log results
+            for k,v in eval_results.items():
+                mlflow.log_dict(v,f"{k}.yaml")
+
     return model, losses
