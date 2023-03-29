@@ -24,7 +24,7 @@ def kfold_init(kfold_params, rng):
 
 
 def kfold_train(
-    x, y, kfold_params, rng, exp_name, model_mode, hyperparams, epochs, weight_seed, lr_scheduler, scheduler_param,
+    x, y, kfold_params, rng, exp_name, model_mode, hyperparams, epochs, weight_seed, lr_scheduler, scheduler_param, model_eval,
 ):
     kfold_spooler, fit_time, kfold_loss_fn, prev_score = kfold_init(
         kfold_params, rng)
@@ -45,6 +45,7 @@ def kfold_train(
             weight_seed,
             lr_scheduler,
             scheduler_param,
+            model_eval,
         )
         train_score.append(score)
         fit_time.append(time.time() - start)
@@ -67,7 +68,7 @@ def kfold_train(
 
 
 def kfold_ae_train(
-    x, y, kfold_params, rng, exp_name, model_mode, hyperparams, epochs, weight_seed, lr_scheduler,
+    x, y, kfold_params, rng, exp_name, model_mode, hyperparams, epochs, weight_seed, lr_scheduler, scheduler_param, model_eval
 ):
     kfold_spooler, fit_time, kfold_loss_fn, prev_score = kfold_init(
         kfold_params, rng)
@@ -87,6 +88,8 @@ def kfold_ae_train(
             epochs,
             weight_seed,
             lr_scheduler,
+            scheduler_param,
+            model_eval,
         )
         train_score.append(score)
         fit_time.append(time.time() - start)
@@ -113,7 +116,7 @@ def kfold_ae_train(
 
 
 def kfold_aegan_train(
-    xyz, xanes, kfold_params, rng, exp_name, model_mode, hyperparams, epochs
+    xyz, xanes, kfold_params, rng, exp_name, model_mode, hyperparams, epochs, model_eval
 ):
     kfold_spooler, fit_time, kfold_loss_fn, prev_score = kfold_init(
         kfold_params, rng)
@@ -128,7 +131,7 @@ def kfold_aegan_train(
         # Training
         start = time.time()
         model, score = aegan_train(
-            xyz[train_index], xanes[train_index], exp_name, hyperparams, epochs
+            xyz[train_index], xanes[train_index], exp_name, hyperparams, epochs, model_eval,
         )
         train_score.append(score["train_loss"][-1])
         fit_time.append(time.time() - start)

@@ -68,6 +68,7 @@ def train_xyz(
                 weight_seed,
                 lr_scheduler,
                 scheduler_param,
+                model_eval,
             )
             print_cross_validation_scores(result, model_mode)
         else:
@@ -101,6 +102,7 @@ def train_xyz(
                 weight_seed,
                 lr_scheduler,
                 scheduler_param,
+                model_eval,
             )
             print_cross_validation_scores(result, model_mode)
         else:
@@ -155,6 +157,7 @@ def train_xanes(
                 weight_seed,
                 lr_scheduler,
                 scheduler_param,
+                model_eval,
             )
             print_cross_validation_scores(result, model_mode)
         else:
@@ -187,6 +190,8 @@ def train_xanes(
                 epochs,
                 weight_seed,
                 lr_scheduler,
+                scheduler_param,
+                model_eval,
             )
             print_cross_validation_scores(result, model_mode)
 
@@ -214,7 +219,7 @@ def train_aegan(
 ):
     if kfold:
         result, model = kfold_aegan_train(
-            xyz, xanes, kfold_params, rng, exp_name, model_mode, hyperparams, epochs
+            xyz, xanes, kfold_params, rng, exp_name, model_mode, hyperparams, epochs, model_eval
         )
         print_cross_validation_scores(result, model_mode)
 

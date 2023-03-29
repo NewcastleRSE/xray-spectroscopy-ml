@@ -165,6 +165,7 @@ def train_data(
             data_compress,
             config["lr_scheduler"],
             config["scheduler_param"],
+            config["model_eval"],
         )
 
     elif config["ensemble"]:
@@ -188,6 +189,7 @@ def train_data(
             data_compress,
             config["lr_scheduler"],
             config["scheduler_param"],
+            config["model_eval"],
         )
 
     else:

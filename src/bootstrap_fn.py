@@ -43,6 +43,7 @@ def bootstrap_train(
     data_compress,
     lr_scheduler,
     scheduler_param,
+    model_eval,
 ):
     parent_bootstrap_dir = "bootstrap/"
     Path(parent_bootstrap_dir).mkdir(parents=True, exist_ok=True)
@@ -74,6 +75,7 @@ def bootstrap_train(
                 hyperparams["weight_init_seed"],
                 lr_scheduler,
                 scheduler_param,
+                model_eval,
             )
         elif mode == "train_xanes":
             from core_learn import train_xanes
@@ -91,6 +93,7 @@ def bootstrap_train(
                 hyperparams["weight_init_seed"],
                 lr_scheduler,
                 scheduler_param,
+                model_eval,
             )
 
         elif mode == "train_aegan":
@@ -106,6 +109,7 @@ def bootstrap_train(
                 kfold,
                 kfold_params,
                 rng,
+                model_eval,
             )
         if save:
             with open(bootstrap_dir / "descriptor.pickle", "wb") as f:
