@@ -47,7 +47,6 @@ def train_xyz(
     rng,
     weight_seed,
     lr_scheduler,
-    scheduler_param,
     model_eval,
 ):
     print("training xyz structure")
@@ -67,7 +66,6 @@ def train_xyz(
                 epochs,
                 weight_seed,
                 lr_scheduler,
-                scheduler_param,
                 model_eval,
             )
             print_cross_validation_scores(result, model_mode)
@@ -82,7 +80,6 @@ def train_xyz(
                 epochs,
                 weight_seed,
                 lr_scheduler,
-                scheduler_param,
                 model_eval,
             )
 
@@ -101,7 +98,6 @@ def train_xyz(
                 epochs,
                 weight_seed,
                 lr_scheduler,
-                scheduler_param,
                 model_eval,
             )
             print_cross_validation_scores(result, model_mode)
@@ -116,7 +112,6 @@ def train_xyz(
                 epochs,
                 weight_seed,
                 lr_scheduler,
-                scheduler_param,
                 model_eval,
             )
 
@@ -136,7 +131,6 @@ def train_xanes(
     rng,
     weight_seed,
     lr_scheduler,
-    scheduler_param,
     model_eval,
 ):
     print("training xanes spectrum")
@@ -156,7 +150,6 @@ def train_xanes(
                 epochs,
                 weight_seed,
                 lr_scheduler,
-                scheduler_param,
                 model_eval,
             )
             print_cross_validation_scores(result, model_mode)
@@ -171,7 +164,6 @@ def train_xanes(
                 epochs,
                 weight_seed,
                 lr_scheduler,
-                scheduler_param,
                 model_eval,
             )
 
@@ -190,7 +182,6 @@ def train_xanes(
                 epochs,
                 weight_seed,
                 lr_scheduler,
-                scheduler_param,
                 model_eval,
             )
             print_cross_validation_scores(result, model_mode)
@@ -206,7 +197,6 @@ def train_xanes(
                 epochs,
                 weight_seed,
                 lr_scheduler,
-                scheduler_param,
                 model_eval,
             )
 
@@ -215,17 +205,47 @@ def train_xanes(
 
 
 def train_aegan(
-    xyz, xanes, exp_name, model_mode, hyperparams, epochs, kfold, kfold_params, rng, model_eval
+    xyz,
+    xanes,
+    exp_name,
+    model_mode,
+    hyperparams,
+    epochs,
+    kfold,
+    kfold_params,
+    rng,
+    weight_seed,
+    lr_scheduler,
+    model_eval,
 ):
     if kfold:
         result, model = kfold_aegan_train(
-            xyz, xanes, kfold_params, rng, exp_name, model_mode, hyperparams, epochs, model_eval
+            xyz,
+            xanes,
+            kfold_params,
+            rng,
+            exp_name,
+            model_mode,
+            hyperparams,
+            epochs,
+            weight_seed,
+            lr_scheduler,
+            model_eval,
         )
         print_cross_validation_scores(result, model_mode)
 
     else:
         print(">> fitting neural net...")
-        model, score = aegan_train(xyz, xanes, exp_name, hyperparams, epochs, model_eval)
+        model, score = aegan_train(
+            xyz,
+            xanes,
+            exp_name,
+            hyperparams,
+            epochs,
+            weight_seed,
+            lr_scheduler,
+            model_eval,
+        )
     summary(model)
     # from plot import plot_running_aegan
 

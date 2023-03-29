@@ -92,3 +92,23 @@ hyperparams:
 "bias_init": "zeros"
 ```
 
+### Learning Rate Scheduler
+[Pytorch lr_scheduler](https://pytorch.org/docs/stable/optim.html)
+
+| `type`   | Description | `params` |
+| ---      | ------ | ---|
+| `step`    | Decays the learning rate of each parameter group by gamma every step_size epochs                  | step_size: `int` <br />gamma:`float` |
+| `multistep`    | Decays the learning rate of each parameter group by gamma once the number of epoch reaches one of the milestones. | milestones:`list` <br /> gamma: `float` |
+| `exponential`    | Decays the learning rate of each parameter group by gamma every epoch  | gamma: `float` |
+| `linear` | Decays the learning rate of each parameter group by linearly changing small multiplicative factor until the number of epoch reaches a pre-defined milestone: total_iters.                    | start_factor :`float` <br /> end_factor:`float` <br /> total_iters:`int`   |
+| `constant`     | Decays the learning rate of each parameter group by a small constant factor until the number of epoch reaches a pre-defined milestone: total_iters.                             | factor: `float` <br /> total_iter:`int` |
+
+**Example:** 
+
+```
+lr_scheduler:  
+  scheduler: True
+  scheduler_type: step
+  scheduler_param:
+    step_size: 50
+    gamma: 0.1```

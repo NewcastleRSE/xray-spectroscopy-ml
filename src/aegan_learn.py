@@ -33,10 +33,8 @@ def log_scalar(name, value, epoch):
     mlflow.log_metric(name, value)
 
 
-def train_aegan(x, y, exp_name, hyperparams, n_epoch, model_eval):
+def train_aegan(x, y, exp_name, hyperparams, n_epoch, weight_seed, scheduler_lr, model_eval):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-    torch.manual_seed(1)
 
     EXPERIMENT_NAME = f"{exp_name}"
     RUN_NAME = f"run_{datetime.today()}"
@@ -118,7 +116,6 @@ def train_aegan(x, y, exp_name, hyperparams, n_epoch, model_eval):
     model.to(device)
 
     # Model weight & bias initialisation
-    weight_seed = hyperparams["weight_init_seed"]
     kernel_init = model_utils.WeightInitSwitch().fn(hyperparams["kernel_init"])
     bias_init = model_utils.WeightInitSwitch().fn(hyperparams["bias_init"])
     # set seed
@@ -130,6 +127,19 @@ def train_aegan(x, y, exp_name, hyperparams, n_epoch, model_eval):
             m=m, kernel_init_fn=kernel_init, bias_init_fn=bias_init
         )
     )
+
+    gen_opt, dis_opt = model.get_optimizer()
+    if scheduler_lr["scheduler"]:
+        scheduler_gen = model_utils.LRScheduler(
+            gen_opt,
+            scheduler_type=scheduler_lr["scheduler_type"],
+            params=scheduler_lr["scheduler_param"],
+        )
+        scheduler_dis = model_utils.LRScheduler(
+            gen_opt,
+            scheduler_type=scheduler_lr["scheduler_type"],
+            params=scheduler_lr["scheduler_param"],
+        )
 
     model.train()
 
@@ -188,6 +198,44 @@ def train_aegan(x, y, exp_name, hyperparams, n_epoch, model_eval):
                 running_gen_loss += loss_gen_total.item()
                 running_dis_loss += loss_dis.item()
 
+            if scheduler_lr:
+                before_lr_gen = gen_opt.param_groups[0]["lr"]
+                scheduler_gen.step()
+                after_lr_gen = gen_opt.param_groups[0]["lr"]
+                print(
+                    "Epoch %d: Adam lr %.5f -> %.5f"
+                    % (epoch, before_lr_gen, after_lr_gen)
+                )
+
+                before_lr_dis = dis_opt.param_groups[0]["lr"]
+                scheduler_dis.step()
+                after_lr_dis = dis_opt.param_groups[0]["lr"]
+                print(
+                    "Epoch %d: Adam lr %.5f -> %.5f"
+                    % (epoch, before_lr_dis, after_lr_dis)
+                )
+
+            running_gen_loss = running_gen_loss / len(trainloader)
+            running_dis_loss = running_dis_loss / len(trainloader)
+
+            running_loss_recon_x = running_loss_recon_x.item() / len(trainloader)
+            running_loss_recon_y = running_loss_recon_y.item() / len(trainloader)
+            running_loss_pred_x = running_loss_pred_x.item() / len(trainloader)
+            running_loss_pred_y = running_loss_pred_y.item() / len(trainloader)
+
+            log_scalar("gen_loss", running_gen_loss, epoch)
+            log_scalar("dis_loss", running_dis_loss, epoch)
+            log_scalar("recon_x_loss", running_loss_recon_x, epoch)
+            log_scalar("recon_y_loss", running_loss_recon_y, epoch)
+            log_scalar("pred_x_loss", running_loss_pred_x, epoch)
+            log_scalar("pred_y_loss", running_loss_pred_y, epoch)
+
+            train_loss_x_recon[epoch] = running_loss_recon_x
+            train_loss_y_recon[epoch] = running_loss_recon_y
+            train_loss_x_pred[epoch] = running_loss_pred_x
+            train_loss_y_pred[epoch] = running_loss_pred_y
+
+            train_total_loss[epoch] = running_gen_loss
 
             valid_loss_recon_x = 0
             valid_loss_recon_y = 0
@@ -219,38 +267,16 @@ def train_aegan(x, y, exp_name, hyperparams, n_epoch, model_eval):
 
                 valid_loss_total += valid_loss.item()
 
-            running_gen_loss = running_gen_loss / len(trainloader)
-            running_dis_loss = running_dis_loss / len(trainloader)
-
-            running_loss_recon_x = running_loss_recon_x.item() / len(trainloader)
-            running_loss_recon_y = running_loss_recon_y.item() / len(trainloader)
-            running_loss_pred_x = running_loss_pred_x.item() / len(trainloader)
-            running_loss_pred_y = running_loss_pred_y.item() / len(trainloader)
-
             valid_loss_recon_x = valid_loss_recon_x.item() / len(validloader)
             valid_loss_recon_y = valid_loss_recon_y.item() / len(validloader)
             valid_loss_pred_x = valid_loss_pred_x.item() / len(validloader)
             valid_loss_pred_y = valid_loss_pred_y.item() / len(validloader)
 
-            log_scalar("gen_loss", running_gen_loss, epoch)
-            log_scalar("dis_loss", running_dis_loss, epoch)
-            log_scalar("recon_x_loss", running_loss_recon_x, epoch)
-            log_scalar("recon_y_loss", running_loss_recon_y, epoch)
-            log_scalar("pred_x_loss", running_loss_pred_x, epoch)
-            log_scalar("pred_y_loss", running_loss_pred_y, epoch)
 
             log_scalar("valid_recon_x_loss", valid_loss_recon_x, epoch)
             log_scalar("valid_recon_y_loss", valid_loss_recon_y, epoch)
             log_scalar("valid_pred_x_loss", valid_loss_pred_x, epoch)
             log_scalar("valid_pred_y_loss", valid_loss_pred_y, epoch)
-
-
-            train_loss_x_recon[epoch] = running_loss_recon_x
-            train_loss_y_recon[epoch] = running_loss_recon_y
-            train_loss_x_pred[epoch] = running_loss_pred_x
-            train_loss_y_pred[epoch] = running_loss_pred_y
-
-            train_total_loss[epoch] = running_gen_loss
 
             print(f">>> Epoch {epoch}...")
             print(
@@ -287,7 +313,7 @@ def train_aegan(x, y, exp_name, hyperparams, n_epoch, model_eval):
                 "loss_y_pred": train_loss_y_pred,
             }
 
-                # Perform model evaluation using invariance tests
+        # Perform model evaluation using invariance tests
         if model_eval:
             import core_eval
 

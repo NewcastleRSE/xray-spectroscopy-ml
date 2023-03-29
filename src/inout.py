@@ -123,4 +123,3 @@ def save_xanes(xanes_f: TextIO, xanes: XANES):
         xanes_f.write(fmt.format(e_, m_))
 
     return 0
-

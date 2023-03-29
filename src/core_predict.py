@@ -19,7 +19,6 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 ############################### LIBRARY IMPORTS ###############################
 ###############################################################################
 
-import os
 import pickle as pickle
 from pathlib import Path
 
@@ -30,9 +29,9 @@ from sklearn.metrics import mean_squared_error
 
 import data_transform
 from inout import load_xanes, load_xyz, save_xanes
-from predict import average, predict_xanes, predict_xyz, y_predict_dim
+from predict import predict_xanes, predict_xyz, y_predict_dim
+from utils import linecount, list_filestems
 from spectrum.xanes import XANES
-from utils import linecount, list_filestems, unique_path
 
 ###############################################################################
 ################################ MAIN FUNCTION ################################
@@ -47,6 +46,7 @@ def main(
     model_dir: str,
     config,
     fourier_transform: bool = False,
+    save: bool = True,
 ):
     """
     PREDICT. The model state is restored from a model directory containing
@@ -107,6 +107,11 @@ def main(
                 xanes = load_xanes(f)
                 e, xanes_data[i, :] = xanes.spectrum
 
+    if xyz_path is None:
+        xyz_data = None
+    if xanes_path is None:
+        xanes_data = None
+
     print(">> ...loaded!\n")
 
     if config["bootstrap"]:
@@ -121,6 +126,7 @@ def main(
             ids,
             config["plot_save"],
             fourier_transform,
+            config,
         )
 
     elif config["ensemble"]:
@@ -135,6 +141,8 @@ def main(
             xanes_data,
             config["plot_save"],
             fourier_transform,
+            config,
+            ids,
         )
 
     else:
@@ -200,6 +208,19 @@ def main(
                 )
 
             else:
+                if save:
+                    if mode == "predict_xanes":
+                        for id_, y_predict_ in tqdm.tqdm(zip(ids, y_predict)):
+                            with open(predict_dir / f"{id_}.txt", "w") as f:
+                                save_xanes(f, XANES(e, y_predict_.detach().numpy()))
+
+                    elif mode == "predict_xyz":
+                        for id_, y_predict_ in tqdm.tqdm(zip(ids, y_predict)):
+                            with open(predict_dir / f"{id_}.txt", "w") as f:
+                                f.write(
+                                    "\n".join(map(str, y_predict_.detach().numpy()))
+                                )
+
                 if config["plot_save"]:
                     from plot import plot_predict
 
@@ -264,6 +285,19 @@ def main(
 
             else:
                 y_predict, e = y_predict_dim(y_predict, ids, model_dir)
+                if save:
+                    if mode == "predict_xanes":
+                        for id_, y_predict_ in tqdm.tqdm(zip(ids, y_predict)):
+                            with open(predict_dir / f"{id_}.txt", "w") as f:
+                                save_xanes(f, XANES(e, y_predict_.detach().numpy()))
+
+                    elif mode == "predict_xyz":
+                        for id_, y_predict_ in tqdm.tqdm(zip(ids, y_predict)):
+                            with open(predict_dir / f"{id_}.txt", "w") as f:
+                                f.write(
+                                    "\n".join(map(str, y_predict_.detach().numpy()))
+                                )
+
                 if config["plot_save"]:
                     from plot import plot_ae_predict
 
@@ -271,107 +305,34 @@ def main(
 
         elif model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
             # Convert to float
-            if xyz_path is not None:
+            if config["x_path"] is not None and config["y_path"] is not None:
                 x = torch.tensor(xyz_data).float()
-            if xanes_path is not None:
                 y = torch.tensor(xanes_data).float()
+            elif config["x_path"] is not None and config["y_path"] is None:
+                x = torch.tensor(xyz_data).float()
+                y = None
+            elif config["y_path"] is not None and config["x_path"] is None:
+                y = torch.tensor(xanes_data).float()
+                x = None
 
-            print(">> Reconstructing and predicting data with neural net...")
+            if config["monte_carlo"]:
+                from montecarlo_fn import montecarlo_dropout_aegan
 
-            if xyz_path is not None:
-                x_recon = model.reconstruct_structure(x).detach().numpy()
-                y_pred = model.predict_spectrum(x)
-                print(
-                    f">> Reconstruction error (structure) = {mean_squared_error(x,x_recon):.4f}"
+                montecarlo_dropout_aegan(model, x, y, config["mc_iter"])
+            else:
+                import aegan_predict
+
+                aegan_predict.main(
+                    config,
+                    x,
+                    y,
+                    model,
+                    fourier_transform,
+                    model_dir,
+                    predict_dir,
+                    ids,
+                    parent_model_dir,
                 )
-                if fourier_transform:
-                    y_pred = data_transform.inverse_fourier_transform_data(y_pred)
-
-                y_pred = y_pred.detach().numpy()
-
-            if xanes_path is not None:
-                if fourier_transform:
-                    z = data_transform.fourier_transform_data(xanes_data)
-                    z = torch.tensor(z).float()
-                    y_recon = model.reconstruct_spectrum(z)
-                    y_recon = (
-                        data_transform.inverse_fourier_transform_data(y_recon)
-                        .detach()
-                        .numpy()
-                    )
-                    x_pred = model.predict_structure(z).detach().numpy()
-                else:
-                    y_recon = model.reconstruct_spectrum(y).detach().numpy()
-                    x_pred = model.predict_structure(y).detach().numpy()
-
-                print(
-                    f">> Reconstruction error (spectrum) =  {mean_squared_error(y,y_recon):.4f}"
-                )
-
-            if xyz_path is not None and xanes_path is not None:  # Get prediction errors
-                print(
-                    f">> Prediction error (structure) =     {mean_squared_error(x,x_pred):.4f}"
-                )
-                print(
-                    f">> Prediction error (spectrum) =      {mean_squared_error(y,y_pred):.4f}"
-                )
-
-            print(">> ...done!\n")
-
-            print(">> Saving predictions and reconstructions...")
-
-            if xyz_path is not None:
-                with open(model_dir / "dataset.npz", "rb") as f:
-                    e = np.load(f)["e"]
-
-                for id_, y_pred_ in tqdm.tqdm(zip(ids, y_pred)):
-                    with open(predict_dir / f"spectrum_{id_}.txt", "w") as f:
-                        save_xanes(f, XANES(e.flatten(), y_pred_))
-
-            # TODO: save structure in .xyz format?
-            if xanes_path is not None:
-                for id_, x_pred_ in tqdm.tqdm(zip(ids, x_pred)):
-                    with open(predict_dir / f"structure_{id_}.txt", "w") as f:
-                        np.savetxt(f, x_pred_)
-
-            print(">> ...done!\n")
-
-            print(">> Plotting reconstructions and predictions...")
-
-            if config["plot_save"]:
-                plots_dir = unique_path(Path(parent_model_dir), "plots_predictions")
-                plots_dir.mkdir()
-
-                if xyz_path is not None and xanes_path is not None:
-                    from plot import plot_aegan_predict
-
-                    plot_aegan_predict(
-                        ids, x, y, x_recon, y_recon, x_pred, y_pred, plots_dir
-                    )
-
-                elif config["x_path"] is not None:
-                    from plot import plot_aegan_spectrum
-
-                    plot_aegan_spectrum(ids, x, x_recon, y_pred, plots_dir)
-
-                elif config["y_path"] is not None:
-                    from plot import plot_aegan_structure
-
-                    plot_aegan_structure(ids, y, y_recon, x_pred, plots_dir)
-
-                if config["x_path"] is not None and config["y_path"] is not None:
-                    print(">> Plotting and saving cosine-similarity...")
-
-                    analysis_dir = unique_path(Path(parent_model_dir), "analysis")
-                    analysis_dir.mkdir()
-
-                    from plot import plot_cosine_similarity
-
-                    plot_cosine_similarity(
-                        x, y, x_recon, y_recon, x_pred, y_pred, analysis_dir
-                    )
-
-                    print("...saved!\n")
 
         if run_shap:
             from shap_analysis import shap

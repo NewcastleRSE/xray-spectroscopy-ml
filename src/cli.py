@@ -26,7 +26,6 @@ from argparse import ArgumentParser
 import yaml
 
 from core_data import train_data
-# from core_eval import main as eval_model
 from core_predict import main as predict
 from model_utils import json_check
 from utils import print_nested_dict
@@ -137,18 +136,14 @@ def main(args: list):
             fourier_transform=args.fourier_transform,
         )
 
-    if "eval" in args.mode:
-        eval_model(
-            args.mode,
-            args.mdl_dir,
-            args.model_mode,
-            inp,
-        )
+    else:
+        print("wrong mode")
 
 
 ################################################################################
 ############################## PROGRAM STARTS HERE #############################
 ################################################################################
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

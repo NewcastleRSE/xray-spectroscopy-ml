@@ -21,7 +21,6 @@ import numpy as np
 
 def run_model_eval_tests(model, model_mode, trainloader, validloader, evalloader, n_in, out_dim):
 
-
 	test_suite = ModelEvalTestSuite(model, model_mode, trainloader, validloader, evalloader, n_in, out_dim)
 	test_results = test_suite.run_all()
 

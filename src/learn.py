@@ -34,15 +34,24 @@ def log_scalar(name, value, epoch):
 	mlflow.log_metric(name, value)
 
 
-def train(x, y, exp_name, model_mode, hyperparams, n_epoch, weight_seed, scheduler_lr, scheduler_param, model_eval):
-	EXPERIMENT_NAME = f"{exp_name}"
-	RUN_NAME = f"run_{datetime.today()}"
+def train(
+    x,
+    y,
+    exp_name,
+    model_mode,
+    hyperparams,
+    n_epoch,
+    weight_seed,
+    scheduler_lr,
+    model_eval,
+):
+    EXPERIMENT_NAME = f"{exp_name}"
+    RUN_NAME = f"run_{datetime.today()}"
 
-	try:
-		EXPERIMENT_ID = mlflow.get_experiment_by_name(
-			EXPERIMENT_NAME).experiment_id
-	except:
-		EXPERIMENT_ID = mlflow.create_experiment(EXPERIMENT_NAME)
+    try:
+        EXPERIMENT_ID = mlflow.get_experiment_by_name(EXPERIMENT_NAME).experiment_id
+    except:
+        EXPERIMENT_ID = mlflow.create_experiment(EXPERIMENT_NAME)
 
 	out_dim = y[0].size
 	n_in = x.shape[1]
@@ -142,24 +151,12 @@ def train(x, y, exp_name, model_mode, hyperparams, n_epoch, weight_seed, schedul
 	)
 	optimizer = optim.Adam(model.parameters(), lr=hyperparams["lr"])
 
-	if scheduler_lr:
-		if scheduler_param["type"] == "StepLR":
-			scheduler = lr_scheduler.StepLR(
-				optimizer, step_size=scheduler_param["step_size"], gamma=scheduler_param["gamma"])
-		elif scheduler_param["type"] == "LinearLR":
-			scheduler = lr_scheduler.LinearLR(
-				optimizer, start_factor=scheduler_param["start_factor"], end_factor=scheduler_param[
-					"end_factor"], total_iters=n_epoch*scheduler_param["iter_mul"]
-			)
-		elif scheduler_param["type"] == "CosineAnnealingWarmRestarts":
-			scheduler = lr_scheduler.CosineAnnealingWarmRestarts(
-				optimizer,
-				T_0=n_epoch,
-				T_mult=scheduler_param["T_mult"],
-				eta_min=scheduler_param["eta_min"],
-				last_epoch=scheduler_param["last_epoch"],
-				verbose=False,
-			)
+    if scheduler_lr["scheduler"]:
+        scheduler = model_utils.LRScheduler(
+            optimizer,
+            scheduler_type=scheduler_lr["scheduler_type"],
+            params=scheduler_lr["scheduler_param"],
+        )
 
 	# Select loss function
 	loss_fn = hyperparams["loss"]["loss_fn"]
@@ -170,7 +167,7 @@ def train(x, y, exp_name, model_mode, hyperparams, n_epoch, weight_seed, schedul
 		mlflow.log_params(hyperparams)
 		mlflow.log_param("n_epoch", n_epoch)
 
-		# # Create a SummaryWriter to write TensorBoard events locally
+		# Create a SummaryWriter to write TensorBoard events locally
 		output_dir = dirpath = tempfile.mkdtemp()
 
 		for epoch in range(n_epoch):
@@ -201,20 +198,17 @@ def train(x, y, exp_name, model_mode, hyperparams, n_epoch, weight_seed, schedul
 				loss = criterion(target, labels)
 				valid_loss += loss.item()
 
-			if scheduler_lr:
-				before_lr = optimizer.param_groups[0]["lr"]
-				scheduler.step()
-				after_lr = optimizer.param_groups[0]["lr"]
-				print("Epoch %d: Adam lr %.5f -> %.5f" %
-					  (epoch, before_lr, after_lr))
+            if scheduler_lr["scheduler"]:
+                before_lr = optimizer.param_groups[0]["lr"]
+                scheduler.step()
+                after_lr = optimizer.param_groups[0]["lr"]
+                print("Epoch %d: Adam lr %.5f -> %.5f" % (epoch, before_lr, after_lr))
 
 			print("Training loss:", running_loss / len(trainloader))
 			print("Validation loss:", valid_loss / len(validloader))
 
-			log_scalar("loss/train", (running_loss / len(trainloader)), epoch)
-			log_scalar("loss/validation",
-					   (valid_loss / len(validloader)), epoch)
-		# print("total step =", total_step)
+            log_scalar("loss/train", (running_loss / len(trainloader)), epoch)
+            log_scalar("loss/validation", (valid_loss / len(validloader)), epoch)
 
 		# Upload the TensorBoard event logs as a run artifact
 		print("Uploading TensorBoard events as a run artifact...")

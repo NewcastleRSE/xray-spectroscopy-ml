@@ -1,10 +1,12 @@
-import torch
-from torch import nn
-import numpy as np
+import random
 import warnings
 from pathlib import Path
-import random
+
+import numpy as np
 import shap
+import torch
+import torch.optim.lr_scheduler as lr_scheduler
+from torch import nn
 
 # Suppress non-significant warning for WCCLoss function
 warnings.filterwarnings("ignore")
@@ -109,6 +111,40 @@ def weight_bias_init(m, kernel_init_fn, bias_init_fn):
     if isinstance(m, (nn.Linear, nn.Conv1d, nn.ConvTranspose1d)):
         kernel_init_fn(m.weight)
         bias_init_fn(m.bias)
+
+
+class LRScheduler(nn.Module):
+    def fn(self, scheduler_type, *args):
+        default = nn.MSELoss()
+        return getattr(
+            self, f"scheduler_type_{scheduler_type.lower()}", lambda: default
+        )(*args)
+
+
+class LRScheduler:
+    """
+    Initialise the learning rate scheduler
+    """
+
+    def __init__(self, optimizer, scheduler_type, params=None):
+        self.optimizer = optimizer
+        scheduler_type = scheduler_type.lower()
+
+        if scheduler_type == "step":
+            self.scheduler = lr_scheduler.StepLR(optimizer, **params)
+        elif scheduler_type == "multistep":
+            self.scheduler = lr_scheduler.MultiStepLR(optimizer, **params)
+        elif scheduler_type == "exponential":
+            self.scheduler = lr_scheduler.ExponentialLR(optimizer, **params)
+        elif scheduler_type == "linear":
+            self.scheduler = lr_scheduler.LinearLR(optimizer, **params)
+        elif scheduler_type == "constant":
+            self.scheduler = lr_scheduler.ConstantLR(optimizer, **params)
+        else:
+            raise ValueError(f"Invalid scheduler type: {scheduler_type}")
+
+    def step(self):
+        self.scheduler.step()
 
 
 class EMDLoss(nn.Module):
@@ -229,8 +265,9 @@ def model_mode_error(model, mode, model_mode, xyz_shape, xanes_shape):
 
 
 def make_dir():
-    from utils import unique_path
     from pathlib import Path
+
+    from utils import unique_path
 
     parent_model_dir = "outputs/"
     Path(parent_model_dir).mkdir(parents=True, exist_ok=True)

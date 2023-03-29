@@ -473,6 +473,9 @@ class AEGANTrainer(nn.Module):
         self.gen_opt = torch.optim.Adam(params_gen, lr=self.lr_gen, weight_decay=1e-5)
         self.dis_opt = torch.optim.Adam(params_dis, lr=self.lr_dis, weight_decay=1e-5)
 
+    def get_optimizer(self):
+        return self.gen_opt, self.dis_opt
+
     # Reconstruct structure from structure
     def reconstruct_structure(self, x):
         enc = self.gen_a.encode(x)
@@ -773,3 +776,47 @@ class AutoencoderEnsemble(nn.Module):
         predictions = torch.stack(predictions).mean(dim=0)
 
         return reconstructions, predictions
+
+
+class AEGANEnsemble(nn.Module):
+    def __init__(self, models):
+        super(AEGANEnsemble, self).__init__()
+        self.models = nn.ModuleList(models)
+
+    def forward(self, x, y):
+        if x is not None and y is not None:
+            y_predictions = []
+            x_predictions = []
+            x_reconstructions = []
+            y_reconstructions = []
+            for model in self.models:
+                # Compute the reconstruction and prediction outputs for each sub-model
+                y_predictions.append(model.predict_spectrum(x))
+                x_predictions.append(model.predict_structure(y))
+                x_reconstructions.append(model.reconstruct_structure(x))
+                y_reconstructions.append(model.reconstruct_spectrum(y))
+            # Stack the reconstruction and prediction outputs along a new dimension
+            x_reconstructions = torch.stack(x_reconstructions).mean(dim=0)
+            y_reconstructions = torch.stack(y_reconstructions).mean(dim=0)
+            x_predictions = torch.stack(x_predictions).mean(dim=0)
+            y_predictions = torch.stack(y_predictions).mean(dim=0)
+
+        elif x is not None and y is None:
+            x_reconstructions = []
+            for model in self.models:
+                x_reconstructions.append(model.reconstruct_structure(x))
+            x_reconstructions = torch.stack(x_reconstructions).mean(dim=0)
+            y_predictions = None
+            x_predictions = None
+            y_reconstructions = None
+
+        elif y is not None and x is None:
+            y_reconstructions = []
+            for model in self.models:
+                y_reconstructions.append(model.reconstruct_spectrum(y))
+            y_reconstructions = torch.stack(y_reconstructions).mean(dim=0)
+            y_predictions = None
+            x_predictions = None
+            x_reconstructions = None
+
+        return x_reconstructions, y_reconstructions, x_predictions, y_predictions
