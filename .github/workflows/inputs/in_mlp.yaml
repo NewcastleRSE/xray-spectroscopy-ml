@@ -1,5 +1,5 @@
-x_path: data/datasets/fe/preconv/xyz_train
-y_path: data/datasets/fe/preconv/xanes_train
+x_path: .github/workflows/data/datasets/fe/preconv/xyz_train
+y_path: .github/workflows/data/datasets/fe/preconv/xanes_train
 
 descriptor:
     type: wacsf
@@ -9,7 +9,7 @@ descriptor:
       n_g2: 16
       n_g4: 32
 
-bootstrap: True
+bootstrap: False
 bootstrap_params: 
   n_boot: 3
   n_size: 1.0
@@ -66,4 +66,4 @@ hyperparams:
 seed: 2021
 epochs: 1
 variance_threshold: 0.0
-model_eval : True
+model_eval: True # Split training data 75/15/10% train/valid/test for model evaluation

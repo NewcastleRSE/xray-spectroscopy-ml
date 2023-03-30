@@ -36,205 +36,218 @@ from kfold_fn import kfold_aegan_train
 
 
 def train_xyz(
-    xyz,
-    xanes,
-    exp_name,
-    model_mode,
-    hyperparams,
-    epochs,
-    kfold,
-    kfold_params,
-    rng,
-    weight_seed,
-    lr_scheduler,
+	xyz,
+	xanes,
+	exp_name,
+	model_mode,
+	hyperparams,
+	epochs,
+	kfold,
+	kfold_params,
+	rng,
+	weight_seed,
+	lr_scheduler,
+	model_eval,
 ):
-    print("training xyz structure")
+	print("training xyz structure")
 
-    if model_mode == "mlp" or model_mode == "cnn":
-        if kfold:
-            x = xyz
-            y = xanes
-            result, model = kfold_train(
-                x,
-                y,
-                kfold_params,
-                rng,
-                exp_name,
-                model_mode,
-                hyperparams,
-                epochs,
-                weight_seed,
-                lr_scheduler,
-            )
-            print_cross_validation_scores(result, model_mode)
-        else:
-            print(">> fitting neural net...")
-            model, score = train(
-                xyz,
-                xanes,
-                exp_name,
-                model_mode,
-                hyperparams,
-                epochs,
-                weight_seed,
-                lr_scheduler,
-            )
+	if model_mode == "mlp" or model_mode == "cnn":
+		if kfold:
+			x = xyz
+			y = xanes
+			result, model = kfold_train(
+				x,
+				y,
+				kfold_params,
+				rng,
+				exp_name,
+				model_mode,
+				hyperparams,
+				epochs,
+				weight_seed,
+				lr_scheduler,
+				model_eval,
+			)
+			print_cross_validation_scores(result, model_mode)
+		else:
+			print(">> fitting neural net...")
+			model, score = train(
+				xyz,
+				xanes,
+				exp_name,
+				model_mode,
+				hyperparams,
+				epochs,
+				weight_seed,
+				lr_scheduler,
+				model_eval,
+			)
 
-    elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
-        if kfold:
-            x = xyz
-            y = xanes
-            result, model = kfold_ae_train(
-                x,
-                y,
-                kfold_params,
-                rng,
-                exp_name,
-                model_mode,
-                hyperparams,
-                epochs,
-                weight_seed,
-                lr_scheduler,
-            )
-            print_cross_validation_scores(result, model_mode)
-        else:
-            print(">> fitting neural net...")
-            model, score = ae_train(
-                xyz,
-                xanes,
-                exp_name,
-                model_mode,
-                hyperparams,
-                epochs,
-                weight_seed,
-                lr_scheduler,
-            )
+	elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
+		if kfold:
+			x = xyz
+			y = xanes
+			result, model = kfold_ae_train(
+				x,
+				y,
+				kfold_params,
+				rng,
+				exp_name,
+				model_mode,
+				hyperparams,
+				epochs,
+				weight_seed,
+				lr_scheduler,
+				model_eval,
+			)
+			print_cross_validation_scores(result, model_mode)
+		else:
+			print(">> fitting neural net...")
+			model, score = ae_train(
+				xyz,
+				xanes,
+				exp_name,
+				model_mode,
+				hyperparams,
+				epochs,
+				weight_seed,
+				lr_scheduler,
+				model_eval,
+			)
 
-    summary(model, (1, xyz.shape[1]))
-    return model
+	summary(model, (1, xyz.shape[1]))
+	return model
 
 
 def train_xanes(
-    xyz,
-    xanes,
-    exp_name,
-    model_mode,
-    hyperparams,
-    epochs,
-    kfold,
-    kfold_params,
-    rng,
-    weight_seed,
-    lr_scheduler,
+	xyz,
+	xanes,
+	exp_name,
+	model_mode,
+	hyperparams,
+	epochs,
+	kfold,
+	kfold_params,
+	rng,
+	weight_seed,
+	lr_scheduler,
+	model_eval,
 ):
-    print("training xanes spectrum")
+	print("training xanes spectrum")
 
-    if model_mode == "mlp" or model_mode == "cnn":
-        if kfold:
-            x = xanes
-            y = xyz
-            result, model = kfold_train(
-                x,
-                y,
-                kfold_params,
-                rng,
-                exp_name,
-                model_mode,
-                hyperparams,
-                epochs,
-                weight_seed,
-                lr_scheduler,
-            )
-            print_cross_validation_scores(result, model_mode)
-        else:
-            print(">> fitting neural net...")
-            model, score = train(
-                xanes,
-                xyz,
-                exp_name,
-                model_mode,
-                hyperparams,
-                epochs,
-                weight_seed,
-                lr_scheduler,
-            )
+	if model_mode == "mlp" or model_mode == "cnn":
+		if kfold:
+			x = xanes
+			y = xyz
+			result, model = kfold_train(
+				x,
+				y,
+				kfold_params,
+				rng,
+				exp_name,
+				model_mode,
+				hyperparams,
+				epochs,
+				weight_seed,
+				lr_scheduler,
+				model_eval,
+			)
+			print_cross_validation_scores(result, model_mode)
+		else:
+			print(">> fitting neural net...")
+			model, score = train(
+				xanes,
+				xyz,
+				exp_name,
+				model_mode,
+				hyperparams,
+				epochs,
+				weight_seed,
+				lr_scheduler,
+				model_eval,
+			)
 
-    elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
-        if kfold:
-            x = xanes
-            y = xyz
-            result, model = kfold_ae_train(
-                x,
-                y,
-                kfold_params,
-                rng,
-                exp_name,
-                model_mode,
-                hyperparams,
-                epochs,
-                weight_seed,
-                lr_scheduler,
-            )
-            print_cross_validation_scores(result, model_mode)
+	elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
+		if kfold:
+			x = xanes
+			y = xyz
+			result, model = kfold_ae_train(
+				x,
+				y,
+				kfold_params,
+				rng,
+				exp_name,
+				model_mode,
+				hyperparams,
+				epochs,
+				weight_seed,
+				lr_scheduler,
+				model_eval,
+			)
+			print_cross_validation_scores(result, model_mode)
 
-        else:
-            print(">> fitting neural net...")
-            model, score = ae_train(
-                xanes,
-                xyz,
-                exp_name,
-                model_mode,
-                hyperparams,
-                epochs,
-                weight_seed,
-                lr_scheduler,
-            )
+		else:
+			print(">> fitting neural net...")
+			model, score = ae_train(
+				xanes,
+				xyz,
+				exp_name,
+				model_mode,
+				hyperparams,
+				epochs,
+				weight_seed,
+				lr_scheduler,
+				model_eval,
+			)
 
-    summary(model, (1, xanes.shape[1]))
-    return model
+	summary(model, (1, xanes.shape[1]))
+	return model
 
 
 def train_aegan(
-    xyz,
-    xanes,
-    exp_name,
-    model_mode,
-    hyperparams,
-    epochs,
-    kfold,
-    kfold_params,
-    rng,
-    weight_seed,
-    lr_scheduler,
+	xyz,
+	xanes,
+	exp_name,
+	model_mode,
+	hyperparams,
+	epochs,
+	kfold,
+	kfold_params,
+	rng,
+	weight_seed,
+	lr_scheduler,
+	model_eval,
 ):
-    if kfold:
-        result, model = kfold_aegan_train(
-            xyz,
-            xanes,
-            kfold_params,
-            rng,
-            exp_name,
-            model_mode,
-            hyperparams,
-            epochs,
-            lr_scheduler,
-            weight_seed,
-        )
-        print_cross_validation_scores(result, model_mode)
+	if kfold:
+		result, model = kfold_aegan_train(
+			xyz,
+			xanes,
+			kfold_params,
+			rng,
+			exp_name,
+			model_mode,
+			hyperparams,
+			epochs,
+			weight_seed,
+			lr_scheduler,
+			model_eval,
+		)
+		print_cross_validation_scores(result, model_mode)
 
-    else:
-        print(">> fitting neural net...")
-        model, score = aegan_train(
-            xyz,
-            xanes,
-            exp_name,
-            hyperparams,
-            epochs,
-            lr_scheduler,
-            weight_seed,
-        )
-    summary(model)
-    # from plot import plot_running_aegan
+	else:
+		print(">> fitting neural net...")
+		model, score = aegan_train(
+			xyz,
+			xanes,
+			exp_name,
+			hyperparams,
+			epochs,
+			weight_seed,
+			lr_scheduler,
+			model_eval,
+		)
+	summary(model)
+	# from plot import plot_running_aegan
 
-    # plot_running_aegan(losses, model_dir)
-    return model
+	# plot_running_aegan(losses, model_dir)
+	return model

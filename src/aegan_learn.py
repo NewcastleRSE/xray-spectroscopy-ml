@@ -9,6 +9,8 @@ from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 import mlflow
 import mlflow.pytorch
+from sklearn.model_selection import train_test_split
+
 
 from model import AEGANTrainer
 import model_utils
@@ -31,7 +33,7 @@ def log_scalar(name, value, epoch):
     mlflow.log_metric(name, value)
 
 
-def train_aegan(x, y, exp_name, hyperparams, n_epoch, scheduler_lr, weight_seed):
+def train_aegan(x, y, exp_name, hyperparams, n_epoch, weight_seed, scheduler_lr, model_eval):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     EXPERIMENT_NAME = f"{exp_name}"
@@ -50,10 +52,48 @@ def train_aegan(x, y, exp_name, hyperparams, n_epoch, scheduler_lr, weight_seed)
     n_x_features = x.shape[1]
     n_y_features = y.shape[1]
 
-    dataset = torch.utils.data.TensorDataset(x, y)
+    if model_eval:
+
+        # Data split: train/valid/test
+        train_ratio = 0.75
+        test_ratio = 0.15
+        eval_ratio = 0.10
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            x, y, test_size = 1 - train_ratio, random_state = 42
+            )
+
+        X_test, X_eval, y_test, y_eval = train_test_split(
+            X_test, y_test, test_size = eval_ratio/(eval_ratio + test_ratio)
+            )
+    else:
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            x, y, test_size=0.2, random_state=42
+        )
+
+    trainset = torch.utils.data.TensorDataset(X_train, y_train)
     trainloader = torch.utils.data.DataLoader(
-        dataset, batch_size=hyperparams["batch_size"]
+        trainset,
+        batch_size=hyperparams["batch_size"],
+        shuffle=True,
     )
+
+    validset = torch.utils.data.TensorDataset(X_test, y_test)
+    validloader = torch.utils.data.DataLoader(
+        validset,
+        batch_size=hyperparams["batch_size"],
+        shuffle=False,
+    )
+
+    if model_eval:
+
+        evalset = torch.utils.data.TensorDataset(X_eval, y_eval)
+        evalloader = torch.utils.data.DataLoader(
+            evalset,
+            batch_size=hyperparams["batch_size"],
+            shuffle=False,
+        )
 
     hyperparams["input_size_a"] = n_x_features
     hyperparams["input_size_b"] = n_y_features
@@ -122,6 +162,7 @@ def train_aegan(x, y, exp_name, hyperparams, n_epoch, scheduler_lr, weight_seed)
         output_dir = dirpath = tempfile.mkdtemp()
 
         for epoch in range(n_epoch):
+            model.train()
             running_loss_recon_x = 0
             running_loss_recon_y = 0
             running_loss_pred_x = 0
@@ -196,18 +237,72 @@ def train_aegan(x, y, exp_name, hyperparams, n_epoch, scheduler_lr, weight_seed)
 
             train_total_loss[epoch] = running_gen_loss
 
+            valid_loss_recon_x = 0
+            valid_loss_recon_y = 0
+            valid_loss_pred_x = 0
+            valid_loss_pred_y = 0
+            valid_loss_total = 0
+
+            model.eval()
+
+            for inputs_x, inputs_y in validloader:
+                inputs_x, inputs_y = inputs_x.to(device), inputs_y.to(device)
+                inputs_x, inputs_y = inputs_x.float(), inputs_y.float()
+
+                recon_x, recon_y, pred_x, pred_y = model.reconstruct_all_predict_all(
+                    inputs_x, inputs_y
+                )
+
+                valid_loss_recon_x += criterion(recon_x, inputs_x)
+                valid_loss_recon_y += criterion(recon_y, inputs_y)
+                valid_loss_pred_x += criterion(pred_x, inputs_x)
+                valid_loss_pred_y += criterion(pred_y, inputs_y)
+
+                valid_loss = (
+                    valid_loss_recon_x +
+                    valid_loss_recon_y +
+                    valid_loss_pred_x +
+                    valid_loss_pred_y
+                )
+
+                valid_loss_total += valid_loss.item()
+
+            valid_loss_recon_x = valid_loss_recon_x.item() / len(validloader)
+            valid_loss_recon_y = valid_loss_recon_y.item() / len(validloader)
+            valid_loss_pred_x = valid_loss_pred_x.item() / len(validloader)
+            valid_loss_pred_y = valid_loss_pred_y.item() / len(validloader)
+
+
+            log_scalar("valid_recon_x_loss", valid_loss_recon_x, epoch)
+            log_scalar("valid_recon_y_loss", valid_loss_recon_y, epoch)
+            log_scalar("valid_pred_x_loss", valid_loss_pred_x, epoch)
+            log_scalar("valid_pred_y_loss", valid_loss_pred_y, epoch)
+
             print(f">>> Epoch {epoch}...")
             print(
-                f">>> Running reconstruction loss (structure) = {running_loss_recon_x:.4f}"
+                f">>> Training loss (recon x)   = {running_loss_recon_x:.4f}"
             )
             print(
-                f">>> Running reconstruction loss (spectrum) =  {running_loss_recon_y:.4f}"
+                f">>> Training loss (recon y)   = {running_loss_recon_y:.4f}"
             )
             print(
-                f">>> Running prediction loss (structure) =     {running_loss_pred_x:.4f}"
+                f">>> Training loss (pred x)    = {running_loss_pred_x:.4f}"
             )
             print(
-                f">>> Running prediction loss (spectrum) =      {running_loss_pred_y:.4f}"
+                f">>> Training loss (pred y)    = {running_loss_pred_y:.4f}"
+            )
+
+            print(
+                f">>> Validation loss (recon x) = {valid_loss_recon_x:.4f}"
+            )
+            print(
+                f">>> Validation loss (recon y) = {valid_loss_recon_y:.4f}"
+            )
+            print(
+                f">>> Validation loss (pred x)  = {valid_loss_pred_x:.4f}"
+            )
+            print(
+                f">>> Validation loss (pred y)  = {valid_loss_pred_y:.4f}"
             )
 
             losses = {
@@ -217,5 +312,15 @@ def train_aegan(x, y, exp_name, hyperparams, n_epoch, scheduler_lr, weight_seed)
                 "loss_x_pred": train_loss_x_pred,
                 "loss_y_pred": train_loss_y_pred,
             }
+
+        # Perform model evaluation using invariance tests
+        if model_eval:
+            import core_eval
+
+            eval_results = core_eval.run_model_eval_tests(model, 'aegan_mlp', trainloader, validloader, evalloader, n_x_features, n_y_features)
+
+            # Log results
+            for k,v in eval_results.items():
+                mlflow.log_dict(v,f"{k}.yaml")
 
     return model, losses

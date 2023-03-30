@@ -1,5 +1,5 @@
-x_path: data/datasets/fe/preconv/xyz_train
-y_path: data/datasets/fe/preconv/xanes_train
+x_path: .github/workflows/data/datasets/fe/preconv/xyz_train
+y_path: .github/workflows/data/datasets/fe/preconv/xanes_train
 
 descriptor:
     type: wacsf
@@ -9,7 +9,7 @@ descriptor:
       n_g2: 16
       n_g4: 32
 
-bootstrap: True
+bootstrap: False
 bootstrap_params: 
   n_boot: 3
   n_size: 1.0
@@ -46,13 +46,13 @@ lr_scheduler:
   scheduler_param:
     step_size: 50
     gamma: 0.1
-          
+
 hyperparams: 
-  model: mlp
-  batch_size: 64
-  n_hl: 2
-  hl_ini_dim: 512
-  hl_shrink: 0.5
+  model: cnn
+  batch_size: 16
+  out_channel: 32
+  channel_mul: 2
+  hidden_layer: 64
   activation: prelu
   loss:
     loss_fn: mse
@@ -62,8 +62,10 @@ hyperparams:
   weight_init_seed: 2023
   kernel_init: xavier_uniform
   bias_init: zeros
+  kernel_size: 3
+  stride: 1
 
 seed: 2021
 epochs: 1
 variance_threshold: 0.0
-model_eval : True
+model_eval: True # Split training data 75/15/10% train/valid/test for model evaluation

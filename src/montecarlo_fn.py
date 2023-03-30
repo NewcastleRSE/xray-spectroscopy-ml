@@ -155,3 +155,4 @@ def montecarlo_dropout_aegan(model, x, y, n_mc):
             "MSE y to y recon : ",
             mean_squared_error(y, mean_y_recon.detach().numpy()),
         )
+

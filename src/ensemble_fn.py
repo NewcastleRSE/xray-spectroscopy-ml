@@ -28,6 +28,7 @@ def ensemble_train(
     descriptor,
     data_compress,
     lr_scheduler,
+    model_eval,
 ):
     parent_ensemble_dir = "ensemble/"
     Path(parent_ensemble_dir).mkdir(parents=True, exist_ok=True)
@@ -54,6 +55,7 @@ def ensemble_train(
                 rng,
                 ensemble["weight_init_seed"][i],
                 lr_scheduler,
+                model_eval,
             )
         elif mode == "train_xanes":
             from core_learn import train_xanes
@@ -70,6 +72,7 @@ def ensemble_train(
                 rng,
                 ensemble["weight_init_seed"][i],
                 lr_scheduler,
+                model_eval,
             )
 
         elif mode == "train_aegan":
@@ -87,6 +90,7 @@ def ensemble_train(
                 rng,
                 ensemble["weight_init_seed"][i],
                 lr_scheduler,
+                model_eval,
             )
         if save:
             with open(ensemble_dir / "descriptor.pickle", "wb") as f:
