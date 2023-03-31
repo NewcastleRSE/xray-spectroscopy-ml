@@ -196,6 +196,8 @@ class WACSF(VectorDescriptor):
         if self.use_charge:
             wacsf = np.append(system.info["q"], wacsf)
 
+        wacsf = np.append(one_hot_encoding, wacsf)
+
         return wacsf
 
     def get_len(self) -> int:
