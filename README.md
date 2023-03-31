@@ -3,7 +3,7 @@
 
 ## About
 
-TODO
+TODO: Tom has made the most minor changes as a test
 
 ### Project Team
 Tom Penfold, Chemistry, Newcastle University  ([tom.penfold@newcastle.ac.uk](mailto:tom.penfold@newcastle.ac.uk))  
