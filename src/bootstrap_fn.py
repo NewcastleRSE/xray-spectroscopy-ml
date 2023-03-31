@@ -10,11 +10,11 @@ from sklearn.metrics import mean_squared_error
 
 import data_transform
 import plot
-from model_utils import make_dir, model_mode_error
+from model_utils import make_dir
 from predict import predict_xanes, predict_xyz, y_predict_dim
 from spectrum.xanes import XANES
 from utils import unique_path
-from inout import save_xanes_mean
+from inout import save_xanes_mean, save_xyz_mean
 
 
 def bootstrap_data(xyz, xanes, n_size, seed):
@@ -150,19 +150,14 @@ def bootstrap_predict(
     x_predict_score = []
     y_predict_all = []
 
+    parent_model_dir, predict_dir = make_dir()
+
     for i in range(1, n_boot + 1):
         n_dir = f"{model_dir}/model_{i:03d}/model.pt"
 
         model = torch.load(n_dir, map_location=torch.device("cpu"))
         model.eval()
         print("Loaded model from disk")
-
-        if model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
-            parent_model_dir, predict_dir = make_dir()
-        else:
-            parent_model_dir, predict_dir = model_mode_error(
-                model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1]
-            )
 
         if model_mode == "mlp" or model_mode == "cnn":
             if mode == "predict_xyz":
@@ -176,13 +171,6 @@ def bootstrap_predict(
                 y = xyz_data
                 y_predict = xyz_predict
 
-                for id_, y_predict_ in tqdm.tqdm(zip(ids, y_predict)):
-                    with open(predict_dir / f"{id_}.txt", "w") as f:
-                        f.write(
-                            "\n".join(
-                                map(str, y_predict_.detach().numpy()))
-                        )
-
             elif mode == "predict_xanes":
                 xanes_predict = predict_xanes(xyz_data, model)
 
@@ -194,21 +182,11 @@ def bootstrap_predict(
                     y_predict = data_transform.inverse_fourier_transform_data(
                         y_predict)
 
-                # print(y_predict.detach().numpy().shape)
-                # print(np.asarray(e).shape)
-
-                # for id_, y_predict_ in tqdm.tqdm(zip(ids, y_predict)):
-                #     with open(predict_dir / f"{id_}.txt", "w") as f:
-                #         save_xanes(
-                #             f, XANES(np.asarray(e), y_predict_.detach().numpy()))
-
             print(
                 "MSE y to y pred : ",
                 mean_squared_error(y, y_predict.detach().numpy()),
             )
             y_predict, e = y_predict_dim(y_predict, ids, model_dir)
-            print(e.shape)
-            print(y_predict.shape)
 
             if plot_save:
                 plot.plot_predict(ids, y, y_predict, e, predict_dir, mode)
@@ -312,10 +290,16 @@ def bootstrap_predict(
         mean_y_predict = np.mean(y_predict_all, axis=0)
         std_y_predict = np.std(y_predict_all, axis=0)
 
-        for id_, mean_y_predict_, std_y_predict_ in tqdm.tqdm(zip(ids, mean_y_predict, std_y_predict)):
-            with open(predict_dir / f"{id_}.txt", "w") as f:
-                save_xanes_mean(
-                    f, XANES(e, mean_y_predict_), std_y_predict_)
+        if mode == "predict_xyz":
+            for id_, mean_y_predict_, std_y_predict_ in tqdm.tqdm(zip(ids, mean_y_predict, std_y_predict)):
+                with open(predict_dir / f"{id_}.txt", "w") as f:
+                    save_xyz_mean(f, mean_y_predict_, std_y_predict_)
+
+        elif mode == "predict_xanes":
+            for id_, mean_y_predict_, std_y_predict_ in tqdm.tqdm(zip(ids, mean_y_predict, std_y_predict)):
+                with open(predict_dir / f"{id_}.txt", "w") as f:
+                    save_xanes_mean(
+                        f, XANES(e, mean_y_predict_), std_y_predict_)
 
     elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
         mean_score = torch.mean(torch.tensor(y_predict_score))
@@ -327,6 +311,17 @@ def bootstrap_predict(
         print(
             f"Mean score reconstruction: {mean_score:.4f}, Std score: {std_score:.4f}"
         )
+        if mode == "predict_xyz":
+            for id_, mean_y_predict_, std_y_predict_ in tqdm.tqdm(zip(ids, mean_y_predict, std_y_predict)):
+                with open(predict_dir / f"{id_}.txt", "w") as f:
+                    save_xyz_mean(f, mean_y_predict_, std_y_predict_)
+
+        elif mode == "predict_xanes":
+            for id_, mean_y_predict_, std_y_predict_ in tqdm.tqdm(zip(ids, mean_y_predict, std_y_predict)):
+                with open(predict_dir / f"{id_}.txt", "w") as f:
+                    save_xanes_mean(
+                        f, XANES(e, mean_y_predict_), std_y_predict_)
+
     elif model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
         if config["x_path"] is not None:
             mean_score = torch.mean(torch.tensor(x_recon_score))

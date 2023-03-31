@@ -1,5 +1,9 @@
 import torch
 from sklearn.metrics import mean_squared_error
+import tqdm as tqdm
+
+from inout import save_xanes_mean, save_xyz_mean
+from spectrum.xanes import XANES
 
 
 def montecarlo_dropout(
@@ -38,6 +42,26 @@ def montecarlo_dropout(
             predict_dir,
             mode,
         )
+
+    if mode == "predict_xyz":
+        for id_, mean_y_predict_, std_y_predict_ in tqdm.tqdm(
+            zip(data_compress["ids"], prob_mean, prob_var)
+        ):
+            with open(predict_dir / f"{id_}.txt", "w") as f:
+                save_xyz_mean(
+                    f, mean_y_predict_.detach().numpy(), std_y_predict_.detach().numpy()
+                )
+
+    elif mode == "predict_xanes":
+        for id_, mean_y_predict_, std_y_predict_ in tqdm.tqdm(
+            zip(data_compress["ids"], prob_mean, prob_var)
+        ):
+            with open(predict_dir / f"{id_}.txt", "w") as f:
+                save_xanes_mean(
+                    f,
+                    XANES(data_compress["e"], mean_y_predict_.detach().numpy()),
+                    std_y_predict_.detach().numpy(),
+                )
 
 
 def montecarlo_dropout_ae(
@@ -155,4 +179,3 @@ def montecarlo_dropout_aegan(model, x, y, n_mc):
             "MSE y to y recon : ",
             mean_squared_error(y, mean_y_recon.detach().numpy()),
         )
-

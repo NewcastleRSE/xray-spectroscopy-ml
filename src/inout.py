@@ -128,9 +128,20 @@ def save_xanes(xanes_f: TextIO, xanes: XANES):
 def save_xanes_mean(xanes_f: TextIO, xanes: XANES, std):
     # saves a mean and sandard deviation of XANES object in FDMNES (.txt) output format
     xanes_f.write(
-        f'{"FDMNES":>10}\n{"energy":>10}{"<mean_xanes>":>12}{"<std_xanes>":>12}\n')
+        f'{"FDMNES":>10}\n{"energy":>10}{"<mean_xanes>":>12}{"<std_xanes>":>12}\n'
+    )
     for e_, m_, std_ in zip(*xanes.spectrum, std):
         fmt = f"{e_:>10.2f}{m_:>15.7E}{std_:>15.7E}\n"
         xanes_f.write(fmt.format(e_, m_, std_))
+
+    return 0
+
+
+def save_xyz_mean(xyz_f: TextIO, mean, std):
+    # saves a mean and sandard deviation of XANES object in FDMNES (.txt) output format
+    xyz_f.write(f'{"<mean_xyz>":>12}{"<std_xyz>":>12}\n')
+    for m_, std_ in zip(mean, std):
+        fmt = f"{m_:>15.7E}{std_:>15.7E}\n"
+        xyz_f.write(fmt.format(m_, std_))
 
     return 0

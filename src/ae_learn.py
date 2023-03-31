@@ -67,21 +67,19 @@ def train(
     act_fn = activation_switch.fn(hyperparams["activation"])
 
     if model_eval:
-
         # Data split: train/valid/test
         train_ratio = 0.75
         test_ratio = 0.15
         eval_ratio = 0.10
 
         X_train, X_test, y_train, y_test = train_test_split(
-            x, y, test_size = 1 - train_ratio, random_state = 42
-            )
+            x, y, test_size=1 - train_ratio, random_state=42
+        )
 
         X_test, X_eval, y_test, y_eval = train_test_split(
-            X_test, y_test, test_size = eval_ratio/(eval_ratio + test_ratio)
-            )
+            X_test, y_test, test_size=eval_ratio / (eval_ratio + test_ratio)
+        )
     else:
-
         X_train, X_test, y_train, y_test = train_test_split(
             x, y, test_size=0.2, random_state=42
         )
@@ -101,7 +99,6 @@ def train(
     )
 
     if model_eval:
-
         evalset = torch.utils.data.TensorDataset(X_eval, y_eval)
         evalloader = torch.utils.data.DataLoader(
             evalset,
@@ -278,11 +275,13 @@ def train(
         if model_eval:
             import core_eval
 
-            eval_results = core_eval.run_model_eval_tests(model, model_mode, trainloader, validloader, evalloader, n_in, out_dim)
+            eval_results = core_eval.run_model_eval_tests(
+                model, model_mode, trainloader, validloader, evalloader, n_in, out_dim
+            )
 
             # Log results
-            for k,v in eval_results.items():
-                mlflow.log_dict(v,f"{k}.yaml")
+            for k, v in eval_results.items():
+                mlflow.log_dict(v, f"{k}.yaml")
 
     writer.close()
 

@@ -33,7 +33,9 @@ def log_scalar(name, value, epoch):
     mlflow.log_metric(name, value)
 
 
-def train_aegan(x, y, exp_name, hyperparams, n_epoch, weight_seed, scheduler_lr, model_eval):
+def train_aegan(
+    x, y, exp_name, hyperparams, n_epoch, weight_seed, scheduler_lr, model_eval
+):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     EXPERIMENT_NAME = f"{exp_name}"
@@ -53,21 +55,19 @@ def train_aegan(x, y, exp_name, hyperparams, n_epoch, weight_seed, scheduler_lr,
     n_y_features = y.shape[1]
 
     if model_eval:
-
         # Data split: train/valid/test
         train_ratio = 0.75
         test_ratio = 0.15
         eval_ratio = 0.10
 
         X_train, X_test, y_train, y_test = train_test_split(
-            x, y, test_size = 1 - train_ratio, random_state = 42
-            )
+            x, y, test_size=1 - train_ratio, random_state=42
+        )
 
         X_test, X_eval, y_test, y_eval = train_test_split(
-            X_test, y_test, test_size = eval_ratio/(eval_ratio + test_ratio)
-            )
+            X_test, y_test, test_size=eval_ratio / (eval_ratio + test_ratio)
+        )
     else:
-
         X_train, X_test, y_train, y_test = train_test_split(
             x, y, test_size=0.2, random_state=42
         )
@@ -87,7 +87,6 @@ def train_aegan(x, y, exp_name, hyperparams, n_epoch, weight_seed, scheduler_lr,
     )
 
     if model_eval:
-
         evalset = torch.utils.data.TensorDataset(X_eval, y_eval)
         evalloader = torch.utils.data.DataLoader(
             evalset,
@@ -259,10 +258,10 @@ def train_aegan(x, y, exp_name, hyperparams, n_epoch, weight_seed, scheduler_lr,
                 valid_loss_pred_y += criterion(pred_y, inputs_y)
 
                 valid_loss = (
-                    valid_loss_recon_x +
-                    valid_loss_recon_y +
-                    valid_loss_pred_x +
-                    valid_loss_pred_y
+                    valid_loss_recon_x
+                    + valid_loss_recon_y
+                    + valid_loss_pred_x
+                    + valid_loss_pred_y
                 )
 
                 valid_loss_total += valid_loss.item()
@@ -272,38 +271,21 @@ def train_aegan(x, y, exp_name, hyperparams, n_epoch, weight_seed, scheduler_lr,
             valid_loss_pred_x = valid_loss_pred_x.item() / len(validloader)
             valid_loss_pred_y = valid_loss_pred_y.item() / len(validloader)
 
-
             log_scalar("valid_recon_x_loss", valid_loss_recon_x, epoch)
             log_scalar("valid_recon_y_loss", valid_loss_recon_y, epoch)
             log_scalar("valid_pred_x_loss", valid_loss_pred_x, epoch)
             log_scalar("valid_pred_y_loss", valid_loss_pred_y, epoch)
 
             print(f">>> Epoch {epoch}...")
-            print(
-                f">>> Training loss (recon x)   = {running_loss_recon_x:.4f}"
-            )
-            print(
-                f">>> Training loss (recon y)   = {running_loss_recon_y:.4f}"
-            )
-            print(
-                f">>> Training loss (pred x)    = {running_loss_pred_x:.4f}"
-            )
-            print(
-                f">>> Training loss (pred y)    = {running_loss_pred_y:.4f}"
-            )
+            print(f">>> Training loss (recon x)   = {running_loss_recon_x:.4f}")
+            print(f">>> Training loss (recon y)   = {running_loss_recon_y:.4f}")
+            print(f">>> Training loss (pred x)    = {running_loss_pred_x:.4f}")
+            print(f">>> Training loss (pred y)    = {running_loss_pred_y:.4f}")
 
-            print(
-                f">>> Validation loss (recon x) = {valid_loss_recon_x:.4f}"
-            )
-            print(
-                f">>> Validation loss (recon y) = {valid_loss_recon_y:.4f}"
-            )
-            print(
-                f">>> Validation loss (pred x)  = {valid_loss_pred_x:.4f}"
-            )
-            print(
-                f">>> Validation loss (pred y)  = {valid_loss_pred_y:.4f}"
-            )
+            print(f">>> Validation loss (recon x) = {valid_loss_recon_x:.4f}")
+            print(f">>> Validation loss (recon y) = {valid_loss_recon_y:.4f}")
+            print(f">>> Validation loss (pred x)  = {valid_loss_pred_x:.4f}")
+            print(f">>> Validation loss (pred y)  = {valid_loss_pred_y:.4f}")
 
             losses = {
                 "train_loss": train_total_loss,
@@ -317,10 +299,18 @@ def train_aegan(x, y, exp_name, hyperparams, n_epoch, weight_seed, scheduler_lr,
         if model_eval:
             import core_eval
 
-            eval_results = core_eval.run_model_eval_tests(model, 'aegan_mlp', trainloader, validloader, evalloader, n_x_features, n_y_features)
+            eval_results = core_eval.run_model_eval_tests(
+                model,
+                "aegan_mlp",
+                trainloader,
+                validloader,
+                evalloader,
+                n_x_features,
+                n_y_features,
+            )
 
             # Log results
-            for k,v in eval_results.items():
-                mlflow.log_dict(v,f"{k}.yaml")
+            for k, v in eval_results.items():
+                mlflow.log_dict(v, f"{k}.yaml")
 
     return model, losses
