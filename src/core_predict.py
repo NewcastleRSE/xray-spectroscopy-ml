@@ -223,6 +223,10 @@ def main(
                 )
 
             else:
+                #                 print(e.shape)
+                #                 print(y_predict.shape)
+                #                 # (226,)
+                # # torch.Size([250, 226])
                 if save:
                     if mode == "predict_xanes":
                         for id_, y_predict_ in tqdm.tqdm(zip(ids, y_predict)):
@@ -305,6 +309,7 @@ def main(
 
             else:
                 y_predict, e = y_predict_dim(y_predict, ids, model_dir)
+
                 if save:
                     if mode == "predict_xanes":
                         for id_, y_predict_ in tqdm.tqdm(zip(ids, y_predict)):

@@ -46,7 +46,6 @@ class XANES:
         Raises:
             ValueError: if the `e` and `m` arrays are not the same length.
         """
-
         if len(e) == len(m):
             self._e = e
             self._m = m
