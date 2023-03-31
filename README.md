@@ -1,84 +1,102 @@
+<table align="center">
+<tr><td align="center" width="10000">
 
-# X-ray Spectroscopy & Machine Learning
+<img src = "./resources/xanesnet_graphic.png" width = "380">
 
-## About
+# <strong> X A N E S N E T </strong>
 
-TODO: Tom has made the most minor changes as a test
+<p>
+    <a href="https://pure.york.ac.uk/portal/en/persons/conor-rankine">Dr. Conor Rankine </a>
+    <br>
+    <a href="https://ncl.ac.uk/nes/people/profile/tompenfold.html">Prof. Thomas Penfold </a>
+    <br>
+    <a href="https://rse.ncldata.dev/nik-nikaznan">Dr. Nik Khadijah Nik Aznan </a>
+    <br>
+    <a href="https://rse.ncldata.dev/kathryn-garside">Dr. Kathryn Garside </a>
+</p>
 
-### Project Team
-Tom Penfold, Chemistry, Newcastle University  ([tom.penfold@newcastle.ac.uk](mailto:tom.penfold@newcastle.ac.uk))  
-Nik Khadijah Nik Aznan, RSE Team, Newcastle University  ([nik.nik-aznan@ncl.ac.uk](mailto:nik.nik-aznan@ncl.ac.uk))  
-Kathryn Garside, RSE Team, Newcastle University ([kathryn.garside@newcastle.ac.uk](mailto:kathryn.garside@newcastle.ac.uk))
+<p>
+    <a href="http://penfoldgroup.co.uk">Penfold Group </a> @ <a href="https://ncl.ac.uk">Newcastle University </a>
+</p>
 
+<p>
+    <a href="#setup">Setup</a> • <a href="#getting">Quickstart</a> • <a href="#publications">Publications</a>
+</p>
 
-## Getting Started
+</td></tr></table>
 
-### Prerequisites
-The code has been designed to support python 3. The project has the following dependencies and version requirements:
+#
 
-- ase
-- matplotlib
-- numpy
-- scikit_learn
-- seaborn
-- tensorflow>=2.1.0
-- torch
-- torchinfo
-- tqdm
+We think that the theoretical simulation of X-ray spectroscopy (XS) should be fast, affordable, and accessible to all researchers. 
 
+The popularity of XS is on a steep upward trajectory globally, driven by advances at, and widening access to, high-brilliance light sources such as synchrotrons and X-ray free-electron lasers (XFELs). However, the high resolution of modern X-ray spectra, coupled with ever-increasing data acquisition rates, brings into focus the challenge of accurately and cost-effectively analyzing these data. Decoding the dense information content of modern X-ray spectra demands detailed theoretical calculations that are capable of capturing satisfactorily the complexity of the underlying physics but that are - at the same time - fast, affordable, and accessible enough to appeal to researchers. 
 
-### Installation
+This is a tall order - but we're using deep neural networks to make this a reality. 
+
+Our XANESNET code addresses two fundamental challenges: the so-called forward (property/structure-to-spectrum) and reverse (spectrum-to-property/structure) mapping problems. The forward mapping appraoch is similar to the appraoch used by computational researchers in the sense that an input structure is used to generate a spectral observable. In this area the objective of XANESNET is to supplement and support analysis provided by first principles quantum mechnanical simulations. The reverse mapping problem is perhaps the more natural of the two, as it has a clear connection to the problem that X-ray spectroscopists face day-to-day in their work: how can a measurement/observable be interpreted? Here we are seeking to provide methodologies in allow the direct extraction of properties from a recorded spectrum. 
+
+XANESNET is under continuous development, so feel free to flag up any issues/make pull requests - we appreciate your input!
+
+The original version of XANESNET, which was implemented using Keras, can be obtained from <a href="https://gitlab.com/team-xnet/xanesnet_keras">here.</a>
+
+## SETUP
+
+The quickest way to get started with XANESNET is to clone this repository:
+
+```
+git clone https://gitlab.com/team-xnet/xanesnet.git 
+```
+
+This contains all the source files as well as example input files.
+
+Training sets for X-ray absorption and emission of molecules constaining first row transition metals can be obtained using:
+
+```
+git clone https://gitlab.com/team-xnet/training-sets.git
+```
+
+Now you're good to go!
+
+## GETTING STARTING 
+
+The code has been designed to support python 3. The dependencies and version requirements are installed using:
 
 ```
 pip install -r requirements.txt
 ```
+and 
+
 ```
 pip install mlflow
 ```
 
-## Training, Inference & Evaluation
+### TRAINING 
 
-To train a model, the following command is used:  
-```python src/cli.py --mode MODE --model_mode MODEL_MODE --inp_f <inputs/in.yaml>```
+To train a model, the following command is used:
+```python3 ${path}/src/cli.py --mode MODE --model_mode MODEL_MODE --inp_f <inputs/in.yaml>```
 
+The implemented training modes include:
+`train_xanes`: The xanes spectra are used the input data and the featurised structures are the target of the model.
+`train_xyz`: The featurised structures are used the input data and the xanes spectra are the target of the model.
+`train_aegan`: This mode trains featurised structures and xanes spectra simultaneously.
 
-To perform inference, the following command is used:    
-```python src/cli.py --mode MODE --model_mode MODEL_MODE --mdl <model/model_001> --inp_f <inputs/in_mlp.yaml>```
+The model modes include:
+`mlp`: Feed-foward deep multilayer perceptron model 
+`cnn`: Feed-foward deep convolution neural network model 
+`ae_mlp`: Autoencoder deep multilayer perceptron model
+`ae_cnn`: Autoencoder deep convolution neural network model
+`aegan_mlp`: Autoencoder Generative Adversarial Network model using a deep multilayer perceptron network.
+`aegan_cnn`: Autoencoder Generative Adversarial Network model using a deep convolution neural network.
 
-Select MODE from the following:  
-`train_xanes`, `train_xyz`, `train_aegan`, `predict_xyz`, `predict_xanes`, `predict_aegan`, `predict_aegan_xanes`, `predict_aegan_xyz` 
+Input files for training should be given in yaml format. Example of commented input files for training and hyper parameter options can be found in the inputs folder.
 
-Select MODEL_MODE from the following:  
-`mlp`, `cnn`, `ae_mlp`, `ae_cnn`, `aegan_mlp`, `aegan_cnn`
+### EVALUATION
 
-Input for training and prediction should be given in yaml format. The prediction input file gives the path to the input data. Example input files for training and hyper parameter options can be found in the [inputs](https://github.com/NewcastleRSE/xray-spectroscopy-ml/tree/main/inputs) folder.
-
-#### Example of training and inference. 
-```python src/cli.py --mode train_xanes --model_mode mlp --inp_f inputs/in_mlp.yaml```  
-```python src/cli.py --mode predict_xyz --model_mode mlp --mdl model/model_dir --inp_f inputs/in_predict.yaml```
-
-
-### Tensorboard
-
-[Tensorboard](https://www.tensorflow.org/tensorboard/get_started) is a tool for visualisation and measurement tracking through the machine learning workflow. During model training the following values are currently logged and accessible through the tensor board,
-- Training & validation loss
-
-To run tensorboard, run ```tensorboard --logdir=/tmp/tensorboard/ --host 0.0.0.0``` , click on the hyperlink and choose Custom Scalar.
-
-### MLFlow
-
-[MLFlow](https://mlflow.org) is used to track the hyperparameters and the loss for every run.
-
-To run the ui, run ```mlflow ui``` on the terminal (make sure the env is correct and the directory is where the local mlruns folder is), click on the hyperlink.
-
-### Evaluation 
-
-A trained model can be evaluated by performing tests. ```core_eval.py``` currently implements a few basic tests but it can be extended to include any test of a models predictive or reconstructive ability. To suggest more tests please [raise an issue](https://github.com/NewcastleRSE/xray-spectroscopy-ml/issues).
+A trained model can be evaluated by performing Invariance and T-testing
 
 #### Invariance Testing
 
-Model predictions should be closer to ground truth than to some artifically constructed target.  
-Four simple methods are implemented to create artificial target data and compare model prediction-target (or reconstruction-target) loss with prediction-modified (reconstruction-modified) target loss.
+Any model predictions should be closer to ground truth than to some artifically constructed target. Four simple methods are implemented to create artificial target data and compare model prediction-target (or reconstruction-target) loss with prediction-modified (reconstruction-modified) target loss.
 
 - ```shuffle-output``` Shuffled test set as modified output
 - ```mean_train_output``` Mean of training data as modified output
@@ -87,124 +105,48 @@ Four simple methods are implemented to create artificial target data and compare
 
 We similarly modify the input data and compare predictions based on this input with true target.
 
-- ```shuffle_input``` 
-- ```mean_train_input``` 
-- ```random_train_input``` 
-- ```guass_train_input``` 
+- ```shuffle_input```
+- ```mean_train_input```
+- ```random_train_input```
+- ```guass_train_input```
 
 A T-Test is used to return ```True``` or ```False``` if the model has passed the test positively.
 
+An example of the model evalution can be run using:
 
-#### Example of evaluation of original MLP model used to predict XANES:
+```python3 ${path}/src/cli.py eval_pred_xanes --model_mode mlp model/model_001 inputs/in_eval.yaml```
 
-```python src/cli.py eval_pred_xanes --model_mode mlp model/model_001 inputs/in_eval.yaml```
+### INFERENCE
 
+To perform inference, the following command is used:
+```python3 ${path}/src/cli.py --mode predict_xyz --model_mode mlp --mdl model/model_dir --inp_f inputs/in_predict.yaml```
 
-## Available Models
+### PREDICTION
 
-### Original XANES PyTorch Implementation
+To use a model previously developed model for predictions, the following command is used:
+```python3 ${path}/src/cli.py --mode MODE --model_mode MODEL_MODE --mdl model/model_dir --inp_f inputs/in_predict.yaml```
 
-<!---
-To run the mlp version call ```model, score = train_mlp(... )``` in the ```core_learn.py``` and run ```python cli.py learn in_mlp.yaml```.
+The implemented prediction modes include:
+`predict_xyz`: The featurised structure is predicted from an input xanes spectrum. 
+`predict_xanes`: The xanes spectrum is predicted from a featurised structural input
+`predict_aegan`: Simultaneous prediction of a featurised structure and xanes spectrum from corresponding input.
+`predict_aegan_xanes`: The xanes spectrum is predicted from a featurised structural input
+`predict_aegan_xyz`: The featurised structure is predicted from an input xanes spectrum.
 
-To run the cnn version call ```model, score = train_cnn(... )``` in the ```core_learn.py``` and run ```python cli.py learn in_cnn.yaml```.
---->
+## PUBLICATIONS
 
-### AutoEncoder
+### The Program:
+*[A Deep Neural Network for the Rapid Prediction of X-ray Absorption Spectra](https://doi.org/10.1021/acs.jpca.0c03723)* - C. D. Rankine, M. M. M. Madkhali, and T. J. Penfold, *J. Phys. Chem. A*, 2020, **124**, 4263-4270.
 
-<!---
-To run the basic AutoEncoder to train xanes :
-```python src/cli_ae.py train_xanes inputs/in_cnn.yaml```
-and run ```python src/cli_ae.py predict_xyz model/model_0xx inputs/in_predict.yaml``` to run the test.
+*[Accurate, affordable, and generalizable machine learning simulations of transition metal x-ray absorption spectra using the XANESNET deep neural network](https://doi.org/10.1063/5.0087255)* - C. D. Rankine, and T. J. Penfold, *J. Chem. Phys.*, 2022, **156**, 164102.
+ 
+#### Extension to X-ray Emission:
+*[A deep neural network for valence-to-core X-ray emission spectroscopy](https://doi.org/10.1080/00268976.2022.2123406)* - T. J. Penfold, and C. D. Rankine, *Mol. Phys.*, 2022, e2123406.
 
-To run the basic AutoEncoder to train xyz :
-```python src/cli_ae.py train_xyz inputs/in_cnn.yaml```
-and run ```python src/cli_ae.py predict_xanes model/model_0xx inputs/in_predict.yaml``` to run the test.
+#### The Applications:
+*[On the Analysis of X-ray Absorption Spectra for Polyoxometallates](https://doi.org/10.1016/j.cplett.2021.138893)* - E. Falbo, C. D. Rankine, and T. J. Penfold, *Chem. Phys. Lett.*, 2021, **780**, 138893.
 
---->
+*[Enhancing the Anaysis of Disorder in X-ray Absorption Spectra: Application of Deep Neural Networks to T-Jump-X-ray Probe Experiments](https://doi.org/10.1039/D0CP06244H)* - M. M. M. Madkhali, C. D. Rankine, and T. J. Penfold, *Phys. Chem. Chem. Phys.*, 2021, **23**, 9259-9269.
 
-### Autoencoder Generative Adversarial Network
-Trains model via a coupled Autoencoder Generative adverserial network. It consists of two generative networks, each built from an encoder and decoder block. A shared layer connects the two networks and enables cross-domain paths through the network, allowing reconstruction and prediction for both of the inputs. A discriminator network compares real inputs with those that have either been reconstructed or predicted, forcing the generative network to perform better.
-
-The trained model can then be used for prediction and reconstruction of both structure and spectrum. 
-
-- Predict and reconstruct all  
-```python src/cli.py --mode predict_aegan --model_mode aegan_mlp --mdl_dir model_dir --inp_f inputs/in_predict.yaml```  
-- Predict spectrum, reconstruct input structure  
-```python src/cli.py --mode predict_aegan_xanes --model_mode aegan_mlp --mdl_dir model_dir --inp_f inputs/in_predict.yaml```  
-- Predict structure, reconstruct input spectrum  
-```python src/cli.py --mode predict_aegan_xyz --model_mode aegan_mlp --mdl_dir model_dir --inp_f inputs/in_predict.yaml```  
-
-<!---
-A general layer in the model is MLP consisting of a linear layer, batch norm layer, activation. 
-
-Example model parameters can be found in `in_aegan.yaml`. The user can specify hidden size of linear layers (*hidden_size*), dropout (*dropout*), the number of hidden layers in the encoder-decoder (*n_hl_gen*), shared (*n_hl_shared*) and discriminator (*n_nl_dis*) networks, activation function (*activation*), loss function for the generative (*loss_gen*) and discriminator (*loss_dis*) networks, learning rates (*lr_gen* and *lr_dis*).
---->
-
-### Uncertainties
-
-The flag ```"True" or "False"``` for bootstrap is in ```inputs/in.yaml```, ```inputs/in_cnn.yaml```, and ```inputs/in_aegan.yaml```. By default, the flag is set to "False".
-
-To run the bootstrap for prediction, run   
-```python src/cli.py --mode predict_xyz --model_mode xxx --mdl_dir bootstrap/bootstrap_0xx --inp_f inputs/in_predict.yaml```.
-
-To run ensemble during prediction, change the flag for ensemble in ```inputs/in_predict.yaml``` to "True". Choose how to combine the model by either combining the prediction ```"combine": "prediction"``` or combining the weight ```"combine": "weight"```.
-Run   
-```python src/cli.py predict_xyz --model_mode xxx --mdl_dir ensemble/ensemble_0xx --inp_finputs/in_predict.yaml```.
-
-The flag ```"True" or "False"``` for monte-carlo dropout is in ```inputs/in_predict.yaml```. By default, the flag is set to "False".
-
-
-
-## Roadmap
-
-- [x] PyTorch Implementation of Original Model 
-- [x] AE
-	- [x] MLP
-	- [x] CNN
-- [ ] AEGAN
-	- [x] MLP
-	- [ ] CNN
-- [ ] Testing framework  
-
-## Contributing
-
-
-### RSE Contact
-Nik Khadijah Nik Aznan, RSE Team, Newcastle University  ([nik.nik-aznan@ncl.ac.uk](mailto:nik.nik-aznan@ncl.ac.uk))  
-Kathryn Garside, RSE Team, Newcastle University ([kathryn.garside@newcastle.ac.uk](mailto:kathryn.garside@newcastle.ac.uk))
-
-
-<!---
-### Main Branch
-Protected and can only be pushed to via pull requests. Should be considered stable and a representation of production code.
-
-### Dev Branch
-Should be considered fragile, code should compile and run but features may be prone to errors.
-
-### Feature Branches
-A branch per feature being worked on.
-
-https://nvie.com/posts/a-successful-git-branching-model/
-
-
-
-
-## License
-
-## Citiation
-
-Please cite the associated papers for this work if you use this code:
-
-```
-@article{xxx2021paper,
-  title={Title},
-  author={Author},
-  journal={arXiv},
-  year={2021}
-}
-```
-## Acknowledgements
-This work was funded by a grant from the UK Research Councils, EPSRC grant ref. EP/L012345/1, “Example project title, please update”.
-
---->
+#### Miscellaneous:
+*[The Role of Structural Representation in the Performance of a Deep Neural Network for X-ray Spectroscopy](https://doi.org/10.3390/molecules25112715)* - M. M. M. Madkhali, C. D. Rankine, and T. J. Penfold, *Molecules*, 2020, **25**, 2715.
