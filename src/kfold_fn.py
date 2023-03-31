@@ -9,18 +9,18 @@ from aegan_learn import train_aegan as aegan_train
 
 
 def kfold_init(kfold_params, rng):
-	kfold_spooler = RepeatedKFold(
-		n_splits=kfold_params["n_splits"],
-		n_repeats=kfold_params["n_repeats"],
-		random_state=rng,
-	)
-	fit_time = []
-	prev_score = 1e6
-	loss_fn = kfold_params["loss"]["loss_fn"]
-	loss_args = kfold_params["loss"]["loss_args"]
-	kfold_loss_fn = model_utils.LossSwitch().fn(loss_fn, loss_args)
+    kfold_spooler = RepeatedKFold(
+        n_splits=kfold_params["n_splits"],
+        n_repeats=kfold_params["n_repeats"],
+        random_state=rng,
+    )
+    fit_time = []
+    prev_score = 1e6
+    loss_fn = kfold_params["loss"]["loss_fn"]
+    loss_args = kfold_params["loss"]["loss_args"]
+    kfold_loss_fn = model_utils.LossSwitch().fn(loss_fn, loss_args)
 
-	return kfold_spooler, fit_time, kfold_loss_fn, prev_score
+    return kfold_spooler, fit_time, kfold_loss_fn, prev_score
 
 
 def kfold_train(
@@ -36,7 +36,8 @@ def kfold_train(
     lr_scheduler,
     model_eval,
 ):
-    kfold_spooler, fit_time, kfold_loss_fn, prev_score = kfold_init(kfold_params, rng)
+    kfold_spooler, fit_time, kfold_loss_fn, prev_score = kfold_init(
+        kfold_params, rng)
     # K-fold Cross Validation model evaluation
     train_score = []
     test_score = []
@@ -61,7 +62,8 @@ def kfold_train(
         model.eval()
         x_test = torch.from_numpy(x[test_index]).float()
         pred_xanes = model(x_test)
-        pred_score = kfold_loss_fn(torch.tensor(y[test_index]), pred_xanes).item()
+        pred_score = kfold_loss_fn(torch.tensor(
+            y[test_index]), pred_xanes).item()
         test_score.append(pred_score)
         if pred_score < prev_score:
             best_model = model
@@ -87,7 +89,8 @@ def kfold_ae_train(
     lr_scheduler,
     model_eval,
 ):
-    kfold_spooler, fit_time, kfold_loss_fn, prev_score = kfold_init(kfold_params, rng)
+    kfold_spooler, fit_time, kfold_loss_fn, prev_score = kfold_init(
+        kfold_params, rng)
     train_score = []
     test_recon_score = []
     test_pred_score = []
@@ -143,7 +146,8 @@ def kfold_aegan_train(
     lr_scheduler,
     model_eval,
 ):
-    kfold_spooler, fit_time, kfold_loss_fn, prev_score = kfold_init(kfold_params, rng)
+    kfold_spooler, fit_time, kfold_loss_fn, prev_score = kfold_init(
+        kfold_params, rng)
     # K-fold Cross Validation model evaluation
     train_score = []
     test_recon_xyz_score = []
@@ -196,12 +200,12 @@ def kfold_aegan_train(
             best_model = model
         prev_score = mean_score
 
-	result = {
-		"fit_time": fit_time,
-		"train_score": train_score,
-		"test_recon_xyz_score": test_recon_xyz_score,
-		"test_recon_xanes_score": test_recon_xanes_score,
-		"test_pred_xyz_score": test_pred_xyz_score,
-		"test_pred_xanes_score": test_pred_xanes_score,
-	}
-	return result, best_model
+    result = {
+        "fit_time": fit_time,
+        "train_score": train_score,
+        "test_recon_xyz_score": test_recon_xyz_score,
+        "test_recon_xanes_score": test_recon_xanes_score,
+        "test_pred_xyz_score": test_pred_xyz_score,
+        "test_pred_xanes_score": test_pred_xanes_score,
+    }
+    return result, best_model
