@@ -18,9 +18,9 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # setup tensorboard stuff
 layout = {
-    "Multi": {
-        "loss": ["Multiline", ["loss/train", "loss/validation"]],
-    },
+	"Multi": {
+		"loss": ["Multiline", ["loss/train", "loss/validation"]],
+	},
 }
 writer = SummaryWriter(f"/tmp/tensorboard/{int(time.time())}")
 writer.add_custom_scalars(layout)
@@ -29,9 +29,9 @@ total_step = 0
 
 
 def log_scalar(name, value, epoch):
-    """Log a scalar value to both MLflow and TensorBoard"""
-    writer.add_scalar(name, value, epoch)
-    mlflow.log_metric(name, value)
+	"""Log a scalar value to both MLflow and TensorBoard"""
+	writer.add_scalar(name, value, epoch)
+	mlflow.log_metric(name, value)
 
 
 def train(

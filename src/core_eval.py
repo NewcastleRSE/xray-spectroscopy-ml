@@ -19,7 +19,6 @@ from scipy.stats import ttest_ind
 import torch
 import numpy as np
 
-
 def run_model_eval_tests(
     model, model_mode, trainloader, validloader, evalloader, n_in, out_dim
 ):

@@ -23,25 +23,6 @@ jobs:
           python3 -m pip install --upgrade pip
           pip3 install -r requirements.txt
 
-      - name: Create dummy data
-        run: |
-          export TRAIN_PATH_XYZ="data/datasets/fe/preconv/xyz_train"
-          export TRAIN_PATH_XANES="data/datasets/fe/preconv/xanes_train"
-
-          export TEST_PATH_XYZ="data/datasets/fe/preconv/xyz_test"
-          export TEST_PATH_XANES="data/datasets/fe/preconv/xanes_test"
-
-          mkdir -p ./.github/workflows/$TRAIN_PATH_XYZ
-          mkdir -p ./.github/workflows/$TRAIN_PATH_XANES
-          mkdir -p ./.github/workflows/$TEST_PATH_XYZ
-          mkdir -p ./.github/workflows/$TEST_PATH_XANES
-
-          ls $TRAIN_PATH_XYZ | head -100 | xargs -I {} cp $TRAIN_PATH_XYZ/{} ./.github/workflows/$TRAIN_PATH_XYZ/
-          ls $TRAIN_PATH_XANES | head -100 | xargs -I {} cp $TRAIN_PATH_XANES/{} ./.github/workflows/$TRAIN_PATH_XANES/
-          ls $TEST_PATH_XYZ | head -10 | xargs -I {} cp $TEST_PATH_XYZ/{} ./.github/workflows/$TEST_PATH_XYZ/
-          ls $TEST_PATH_XANES | head -10 | xargs -I {} cp $TEST_PATH_XANES/{} ./.github/workflows/$TEST_PATH_XANES/
-
-
       - name: MLP XYZ --> Xanes
         run: |
           rm -rf model/model_001

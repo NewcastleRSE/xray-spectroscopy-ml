@@ -251,3 +251,4 @@ def train_aegan(
 
     # plot_running_aegan(losses, model_dir)
     return model
+    

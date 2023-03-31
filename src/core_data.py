@@ -22,12 +22,12 @@ import random
 
 
 def train_data(
-    mode: str,
-    model_mode: str,
-    config,
-    save: bool = True,
-    fourier_transform: bool = False,
-    # max_samples: int = None,
+	mode: str,
+	model_mode: str,
+	config,
+	save: bool = True,
+	fourier_transform: bool = False,
+	# max_samples: int = None,
 ):
     rng = RandomState(seed=config["seed"])
 

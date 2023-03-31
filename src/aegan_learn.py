@@ -55,6 +55,7 @@ def train_aegan(
     n_y_features = y.shape[1]
 
     if model_eval:
+
         # Data split: train/valid/test
         train_ratio = 0.75
         test_ratio = 0.15
@@ -68,6 +69,7 @@ def train_aegan(
             X_test, y_test, test_size=eval_ratio / (eval_ratio + test_ratio)
         )
     else:
+    
         X_train, X_test, y_train, y_test = train_test_split(
             x, y, test_size=0.2, random_state=42
         )
@@ -87,6 +89,7 @@ def train_aegan(
     )
 
     if model_eval:
+
         evalset = torch.utils.data.TensorDataset(X_eval, y_eval)
         evalloader = torch.utils.data.DataLoader(
             evalset,
@@ -258,10 +261,10 @@ def train_aegan(
                 valid_loss_pred_y += criterion(pred_y, inputs_y)
 
                 valid_loss = (
-                    valid_loss_recon_x
-                    + valid_loss_recon_y
-                    + valid_loss_pred_x
-                    + valid_loss_pred_y
+                    valid_loss_recon_x +
+                    valid_loss_recon_y +
+                    valid_loss_pred_x +
+                    valid_loss_pred_y
                 )
 
                 valid_loss_total += valid_loss.item()
@@ -277,6 +280,7 @@ def train_aegan(
             log_scalar("valid_pred_y_loss", valid_loss_pred_y, epoch)
 
             print(f">>> Epoch {epoch}...")
+
             print(f">>> Training loss (recon x)   = {running_loss_recon_x:.4f}")
             print(f">>> Training loss (recon y)   = {running_loss_recon_y:.4f}")
             print(f">>> Training loss (pred x)    = {running_loss_pred_x:.4f}")
