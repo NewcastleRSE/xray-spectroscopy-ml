@@ -48,6 +48,7 @@ def train_xyz(
 	weight_seed,
 	lr_scheduler,
 	model_eval,
+	optuna_params,
 ):
 	print("training xyz structure")
 
@@ -70,6 +71,23 @@ def train_xyz(
 			)
 			print_cross_validation_scores(result, model_mode)
 		else:
+			if optuna_params["tune"]:
+				from optuna_learn import main as learn_optparams
+
+				print(">> Finding optimal hyperparams...")
+				opt_trial, opt_score = learn_optparams(optuna_params,
+								xyz,
+								xanes,
+								exp_name,
+								model_mode,
+								hyperparams,
+								epochs,
+								weight_seed,
+								lr_scheduler,
+								model_eval,
+							)
+				hyperparams.update(opt_trial.params)
+
 			print(">> fitting neural net...")
 			model, score = train(
 				xyz,
@@ -102,6 +120,24 @@ def train_xyz(
 			)
 			print_cross_validation_scores(result, model_mode)
 		else:
+
+			if optuna_params["tune"]:
+				from optuna_learn import main as learn_optparams
+
+				print(">> Finding optimal hyperparams...")
+				opt_trial, opt_score = learn_optparams(optuna_params,
+								xyz,
+								xanes,
+								exp_name,
+								model_mode,
+								hyperparams,
+								epochs,
+								weight_seed,
+								lr_scheduler,
+								model_eval,
+							)
+				hyperparams.update(opt_trial.params)
+
 			print(">> fitting neural net...")
 			model, score = ae_train(
 				xyz,
@@ -132,6 +168,7 @@ def train_xanes(
 	weight_seed,
 	lr_scheduler,
 	model_eval,
+	optuna_params,
 ):
 	print("training xanes spectrum")
 
@@ -154,6 +191,23 @@ def train_xanes(
 			)
 			print_cross_validation_scores(result, model_mode)
 		else:
+			if optuna_params["tune"]:
+				from optuna_learn import main as learn_optparams
+
+				print(">> Finding optimal hyperparams...")
+				opt_trial, opt_score = learn_optparams(optuna_params,
+								xyz,
+								xanes,
+								exp_name,
+								model_mode,
+								hyperparams,
+								epochs,
+								weight_seed,
+								lr_scheduler,
+								model_eval,
+							)
+				hyperparams.update(opt_trial.params)
+
 			print(">> fitting neural net...")
 			model, score = train(
 				xanes,
@@ -187,6 +241,23 @@ def train_xanes(
 			print_cross_validation_scores(result, model_mode)
 
 		else:
+			if optuna_params["tune"]:
+				from optuna_learn import main as learn_optparams
+
+				print(">> Finding optimal hyperparams...")
+				opt_trial, opt_score = learn_optparams(optuna_params,
+								xyz,
+								xanes,
+								exp_name,
+								model_mode,
+								hyperparams,
+								epochs,
+								weight_seed,
+								lr_scheduler,
+								model_eval,
+							)
+				hyperparams.update(opt_trial.params)
+
 			print(">> fitting neural net...")
 			model, score = ae_train(
 				xanes,
@@ -217,6 +288,7 @@ def train_aegan(
 	weight_seed,
 	lr_scheduler,
 	model_eval,
+	optuna_params,
 ):
 	if kfold:
 		result, model = kfold_aegan_train(
@@ -235,6 +307,23 @@ def train_aegan(
 		print_cross_validation_scores(result, model_mode)
 
 	else:
+		if optuna_params["tune"]:
+			from optuna_learn import main as learn_optparams
+
+			print(">> Finding optimal hyperparams...")
+			opt_trial, opt_score = learn_optparams(optuna_params,
+							xyz,
+							xanes,
+							exp_name,
+							model_mode,
+							hyperparams,
+							epochs,
+							weight_seed,
+							lr_scheduler,
+							model_eval,
+						)
+			hyperparams.update(opt_trial.params)
+
 		print(">> fitting neural net...")
 		model, score = aegan_train(
 			xyz,

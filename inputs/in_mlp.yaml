@@ -67,4 +67,15 @@ hyperparams:
 seed: 2021
 epochs: 1
 variance_threshold: 0.0
-model_eval : True
+model_eval : False
+
+optuna_params:
+  tune: True
+  n_trials: 3
+  tune_optim_fn: True
+  tune_batch_size: True
+  tune_activation: True
+  tune_loss_fn: True
+  tune_lr: True
+  tune_dropout: True
+  tune_hidden_layers: True

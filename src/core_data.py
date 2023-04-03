@@ -200,6 +200,7 @@ def train_data(
 				config["hyperparams"]["weight_init_seed"],
 				config["lr_scheduler"],
 				config["model_eval"],
+				config["optuna_params"],
 			)
 
 		elif mode == "train_xanes":
@@ -218,6 +219,7 @@ def train_data(
 				config["hyperparams"]["weight_init_seed"],
 				config["lr_scheduler"],
 				config["model_eval"],
+				config["optuna_params"],
 			)
 
 		elif mode == "train_aegan":
@@ -236,6 +238,7 @@ def train_data(
 				config["hyperparams"]["weight_init_seed"],
 				config["lr_scheduler"],
 				config["model_eval"],
+				config["optuna_params"],
 			)
 
 		if save:
