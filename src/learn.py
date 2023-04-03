@@ -149,7 +149,8 @@ def train(
 			m=m, kernel_init_fn=kernel_init, bias_init_fn=bias_init
 		)
 	)
-	optimizer = optim.Adam(model.parameters(), lr=hyperparams["lr"])
+	optim_fn = model_utils.OptimSwitch().fn(hyperparams["optim_fn"])
+	optimizer = optim_fn(model.parameters(), lr=hyperparams["lr"])
 
 	if scheduler_lr["scheduler"]:
 		scheduler = model_utils.LRScheduler(
@@ -202,7 +203,7 @@ def train(
 				before_lr = optimizer.param_groups[0]["lr"]
 				scheduler.step()
 				after_lr = optimizer.param_groups[0]["lr"]
-				print("Epoch %d: Adam lr %.5f -> %.5f" % (epoch, before_lr, after_lr))
+				print("Epoch %d: Scheduler lr %.5f -> %.5f" % (epoch, before_lr, after_lr))
 
 			print("Training loss:", running_loss / len(trainloader))
 			print("Validation loss:", valid_loss / len(validloader))

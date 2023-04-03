@@ -58,6 +58,7 @@ hyperparams:
     loss_fn: mse
     loss_args: null
   lr: 0.00001
+  optim_fn: SGD
   dropout: 0.2
   weight_init_seed: 2023
   kernel_init: xavier_uniform

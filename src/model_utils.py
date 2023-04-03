@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import shap
 import torch
+from torch import optim
 import torch.optim.lr_scheduler as lr_scheduler
 from torch import nn
 
@@ -145,6 +146,26 @@ class LRScheduler:
 
     def step(self):
         self.scheduler.step()
+
+
+class OptimSwitch():
+    def fn(self, opt_fn):
+        default = optim.Adam
+        return getattr(
+            self, f"optim_function_{opt_fn.lower()}", lambda: default
+        )()
+
+    # Adam
+    def optim_function_adam(self):
+        return optim.Adam
+
+    # Stochastic Gradient Descent
+    def optim_function_sgd(self):
+        return optim.SGD
+
+    # RMSprop
+    def optim_function_rmsprop(self):
+        return optim.RMSprop
 
 
 class EMDLoss(nn.Module):

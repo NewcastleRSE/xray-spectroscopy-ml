@@ -62,6 +62,8 @@ hyperparams:
     loss_args: null
   lr_gen: 0.01
   lr_dis: 0.0001
+  optim_fn_gen: Adam
+  optim_fn_dis: Adam
   dropout: 0.0
   weight_init_seed: 2023
   kernel_init: xavier_uniform

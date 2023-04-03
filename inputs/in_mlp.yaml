@@ -9,7 +9,7 @@ descriptor:
       n_g2: 16
       n_g4: 32
 
-bootstrap: True
+bootstrap: False
 bootstrap_params: 
   n_boot: 3
   n_size: 1.0
@@ -58,6 +58,7 @@ hyperparams:
     loss_fn: mse
     loss_args: null
   lr: 0.00001
+  optim_fn: SGD
   dropout: 0.2
   weight_init_seed: 2023
   kernel_init: xavier_uniform
