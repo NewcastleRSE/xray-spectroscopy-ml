@@ -31,7 +31,7 @@ from utils import linecount
 from utils import list_filestems
 from structure.rdc import RDC
 from structure.wacsf import WACSF
-from structure.soap import SOAP
+# from structure.soap import SOAP
 # from structure.mbtr import MBTR
 # from structure.lmbtr import LMBTR
 
@@ -76,7 +76,7 @@ def train_data(
 			ids.sort()
 
 			# descriptors = {"rdc": RDC, "wacsf": WACSF, "soap": SOAP, "mbtr": MBTR, "lmbtr": LMBTR}
-			descriptors = {"rdc": RDC, "wacsf": WACSF, "soap": SOAP}
+			descriptors = {"rdc": RDC, "wacsf": WACSF}
 
 			descriptor = descriptors.get(config["descriptor"]["type"])(
 				**config["descriptor"]["params"]
