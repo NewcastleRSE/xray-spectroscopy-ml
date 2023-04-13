@@ -1,6 +1,5 @@
 """
 XANESNET
-Copyright (C) 2021  Conor D. Rankine
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
@@ -103,41 +102,41 @@ def parse_args(args: list):
 
 
 def main(args: list):
-	if len(args) == 0:
-		sys.exit()
-	else:
-		args = parse_args(args)
+    if len(args) == 0:
+        sys.exit()
+    else:
+        args = parse_args(args)
 
-	print(f">> loading JSON input @ {args.inp_f}\n")
-	# with open(args.inp_f) as f:
-	#     inp = json.load(f)
-	with open(args.inp_f, "r") as f:
-		inp = yaml.safe_load(f)
-	# print_nested_dict(inp, nested_level=1)
-	# print("")
+    print(f">> loading JSON input @ {args.inp_f}\n")
+    # with open(args.inp_f) as f:
+    #     inp = json.load(f)
+    with open(args.inp_f, "r") as f:
+        inp = yaml.safe_load(f)
+    # print_nested_dict(inp, nested_level=1)
+    # print("")
 
-	if "train" in args.mode:
-		train_data(
-			args.mode,
-			args.model_mode,
-			inp,
-			save=args.save,
-			fourier_transform=args.fourier_transform,
-		)
+    if "train" in args.mode:
+        train_data(
+            args.mode,
+            args.model_mode,
+            inp,
+            save=args.save,
+            fourier_transform=args.fourier_transform,
+        )
 
-	elif "predict" in args.mode:
-		predict(
-			args.mode,
-			args.model_mode,
-			args.run_shap,
-			args.shap_nsamples,
-			args.mdl_dir,
-			inp,
-			fourier_transform=args.fourier_transform,
-		)
+    elif "predict" in args.mode:
+        predict(
+            args.mode,
+            args.model_mode,
+            args.run_shap,
+            args.shap_nsamples,
+            args.mdl_dir,
+            inp,
+            fourier_transform=args.fourier_transform,
+        )
 
-	else:
-		print("wrong mode")
+    else:
+        print("wrong mode")
 
 
 ################################################################################

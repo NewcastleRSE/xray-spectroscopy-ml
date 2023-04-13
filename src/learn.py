@@ -1,7 +1,24 @@
+"""
+XANESNET
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either Version 3 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
 import os
 import pickle
 import tempfile
 import time
+from glob import glob
 from datetime import datetime
 
 import mlflow
@@ -35,213 +52,248 @@ def log_scalar(name, value, epoch):
 
 
 def train(
-	x,
-	y,
-	exp_name,
-	model_mode,
-	hyperparams,
-	n_epoch,
-	weight_seed,
-	scheduler_lr,
-	model_eval,
+    x,
+    y,
+    exp_name,
+    model_mode,
+    hyperparams,
+    n_epoch,
+    weight_seed,
+    scheduler_lr,
+    model_eval,
+    load_guess,
+    loadguess_params,
 ):
-	EXPERIMENT_NAME = f"{exp_name}"
-	RUN_NAME = f"run_{datetime.today()}"
+    EXPERIMENT_NAME = f"{exp_name}"
+    RUN_NAME = f"run_{datetime.today()}"
 
-	try:
-		EXPERIMENT_ID = mlflow.get_experiment_by_name(EXPERIMENT_NAME).experiment_id
-	except:
-		EXPERIMENT_ID = mlflow.create_experiment(EXPERIMENT_NAME)
+    try:
+        EXPERIMENT_ID = mlflow.get_experiment_by_name(EXPERIMENT_NAME).experiment_id
+    except:
+        EXPERIMENT_ID = mlflow.create_experiment(EXPERIMENT_NAME)
 
-	out_dim = y[0].size
-	n_in = x.shape[1]
+    out_dim = y[0].size
+    n_in = x.shape[1]
 
-	x = torch.from_numpy(x)
-	y = torch.from_numpy(y)
+    x = torch.from_numpy(x)
+    y = torch.from_numpy(y)
 
-	activation_switch = model_utils.ActivationSwitch()
-	act_fn = activation_switch.fn(hyperparams["activation"])
+    activation_switch = model_utils.ActivationSwitch()
+    act_fn = activation_switch.fn(hyperparams["activation"])
 
-	if model_eval:
+    if model_eval:
+        # Data split: train/valid/test
+        train_ratio = 0.75
+        test_ratio = 0.15
+        eval_ratio = 0.10
 
-		# Data split: train/valid/test
-		train_ratio = 0.75
-		test_ratio = 0.15
-		eval_ratio = 0.10
+        X_train, X_test, y_train, y_test = train_test_split(
+            x, y, test_size=1 - train_ratio, random_state=42
+        )
 
-		X_train, X_test, y_train, y_test = train_test_split(
-			x, y, test_size = 1 - train_ratio, random_state = 42
-			)
+        X_test, X_eval, y_test, y_eval = train_test_split(
+            X_test, y_test, test_size=eval_ratio / (eval_ratio + test_ratio)
+        )
+    else:
+        X_train, X_test, y_train, y_test = train_test_split(
+            x, y, test_size=0.2, random_state=42
+        )
 
-		X_test, X_eval, y_test, y_eval = train_test_split(
-			X_test, y_test, test_size = eval_ratio/(eval_ratio + test_ratio)
-			)
-	else:
+    trainset = torch.utils.data.TensorDataset(X_train, y_train)
+    trainloader = torch.utils.data.DataLoader(
+        trainset,
+        batch_size=hyperparams["batch_size"],
+        shuffle=True,
+    )
 
-		X_train, X_test, y_train, y_test = train_test_split(
-			x, y, test_size=0.2, random_state=42
-		)
+    validset = torch.utils.data.TensorDataset(X_test, y_test)
+    validloader = torch.utils.data.DataLoader(
+        validset,
+        batch_size=hyperparams["batch_size"],
+        shuffle=False,
+    )
 
-	trainset = torch.utils.data.TensorDataset(X_train, y_train)
-	trainloader = torch.utils.data.DataLoader(
-		trainset,
-		batch_size=hyperparams["batch_size"],
-		shuffle=True,
-	)
+    if model_eval:
+        evalset = torch.utils.data.TensorDataset(X_eval, y_eval)
+        evalloader = torch.utils.data.DataLoader(
+            evalset,
+            batch_size=hyperparams["batch_size"],
+            shuffle=False,
+        )
 
-	validset = torch.utils.data.TensorDataset(X_test, y_test)
-	validloader = torch.utils.data.DataLoader(
-		validset,
-		batch_size=hyperparams["batch_size"],
-		shuffle=False,
-	)
+    if model_mode == "mlp":
+        from model import MLP
 
-	if model_eval:
+        if load_guess:
+             model_dir = loadguess_params["model_dir"] 
+             model = torch.load(model_dir, map_location=torch.device("cpu"))
+             i=0
+             for name, param in model.named_parameters():
+                 i = i + 1
+             num_layers = i
+             num_freeze = loadguess_params["n_freeze"]
+             if num_freeze > 0:
+                i=0
+                for name, param in model.named_parameters():
+                    if i < (num_layers-(num_freeze*2)):
+                       param.requires_grad = False
+                    else:
+                       continue
+                    i=i+1
+        else:
+             model = MLP(
+                 n_in,
+                 hyperparams["hl_ini_dim"],
+                 hyperparams["dropout"],
+                 int(hyperparams["hl_ini_dim"] * hyperparams["hl_shrink"]),
+                 out_dim,
+                 act_fn,
+             )
 
-		evalset = torch.utils.data.TensorDataset(X_eval, y_eval)
-		evalloader = torch.utils.data.DataLoader(
-			evalset,
-			batch_size=hyperparams["batch_size"],
-			shuffle=False,
-		)
+    elif model_mode == "cnn":
+        from model import CNN
 
+        if load_guess:
+             model_dir = loadguess_params["model_dir"]
+             model = torch.load(model_dir, map_location=torch.device("cpu"))
+             i=0
+             for name, param in model.named_parameters():
+                 i = i + 1
+             num_layers = i
+             num_freeze = loadguess_params["n_freeze"]
+             if num_freeze > 0:
+                i=0
+                for name, param in model.named_parameters():
+                    if i < (num_layers-(num_freeze*2)):
+                       param.requires_grad = False
+                    else:
+                       continue
+                    i=i+1
+        else:
+             model = CNN(
+                 n_in,
+                 hyperparams["out_channel"],
+                 hyperparams["channel_mul"],
+                 hyperparams["hidden_layer"],
+                 out_dim,
+                 hyperparams["dropout"],
+                 hyperparams["kernel_size"],
+                 hyperparams["stride"],
+                 act_fn,
+             )
 
-	if model_mode == "mlp":
-		from model import MLP
+    model.to(device)
 
-		model = MLP(
-			n_in,
-			hyperparams["hl_ini_dim"],
-			hyperparams["dropout"],
-			int(hyperparams["hl_ini_dim"] * hyperparams["hl_shrink"]),
-			out_dim,
-			act_fn,
-		)
+    if load_guess == False:
+        # Model weight & bias initialisation
+        kernel_init = model_utils.WeightInitSwitch().fn(hyperparams["kernel_init"])
+        bias_init = model_utils.WeightInitSwitch().fn(hyperparams["bias_init"])
+        
+        # set seed
+        torch.cuda.manual_seed(
+            weight_seed
+        ) if torch.cuda.is_available() else torch.manual_seed(weight_seed)
+        model.apply(
+            lambda m: model_utils.weight_bias_init(
+                m=m, kernel_init_fn=kernel_init, bias_init_fn=bias_init
+            )
+        )
 
-	elif model_mode == "cnn":
-		from model import CNN
+    optim_fn = model_utils.OptimSwitch().fn(hyperparams["optim_fn"])
+    optimizer = optim_fn(model.parameters(), lr=hyperparams["lr"])
 
-		model = CNN(
-			n_in,
-			hyperparams["out_channel"],
-			hyperparams["channel_mul"],
-			hyperparams["hidden_layer"],
-			out_dim,
-			hyperparams["dropout"],
-			hyperparams["kernel_size"],
-			hyperparams["stride"],
-			act_fn,
-		)
+    if scheduler_lr["scheduler"]:
+        scheduler = model_utils.LRScheduler(
+            optimizer,
+            scheduler_type=scheduler_lr["scheduler_type"],
+            params=scheduler_lr["scheduler_param"],
+        )
 
-	model.to(device)
+    # Select loss function
+    loss_fn = hyperparams["loss"]["loss_fn"]
+    loss_args = hyperparams["loss"]["loss_args"]
+    criterion = model_utils.LossSwitch().fn(loss_fn, loss_args)
 
-	# Model weight & bias initialisation
-	kernel_init = model_utils.WeightInitSwitch().fn(hyperparams["kernel_init"])
-	bias_init = model_utils.WeightInitSwitch().fn(hyperparams["bias_init"])
+    with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=RUN_NAME):
+        mlflow.log_params(hyperparams)
+        mlflow.log_param("n_epoch", n_epoch)
 
-	print(weight_seed)
-	# set seed
-	torch.cuda.manual_seed(
-		weight_seed
-	) if torch.cuda.is_available() else torch.manual_seed(weight_seed)
-	model.apply(
-		lambda m: model_utils.weight_bias_init(
-			m=m, kernel_init_fn=kernel_init, bias_init_fn=bias_init
-		)
-	)
-	optim_fn = model_utils.OptimSwitch().fn(hyperparams["optim_fn"])
-	optimizer = optim_fn(model.parameters(), lr=hyperparams["lr"])
+        # Create a SummaryWriter to write TensorBoard events locally
+        output_dir = dirpath = tempfile.mkdtemp()
 
-	if scheduler_lr["scheduler"]:
-		scheduler = model_utils.LRScheduler(
-			optimizer,
-			scheduler_type=scheduler_lr["scheduler_type"],
-			params=scheduler_lr["scheduler_param"],
-		)
+        for epoch in range(n_epoch):
+            print(f">>> epoch = {epoch}")
+            model.train()
+            running_loss = 0
+            for inputs, labels in trainloader:
+                inputs, labels = inputs.to(device), labels.to(device)
+                inputs, labels = inputs.float(), labels.float()
 
-	# Select loss function
-	loss_fn = hyperparams["loss"]["loss_fn"]
-	loss_args = hyperparams["loss"]["loss_args"]
-	criterion = model_utils.LossSwitch().fn(loss_fn, loss_args)
+                optimizer.zero_grad()
+                logps = model(inputs)
 
-	with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=RUN_NAME):
-		mlflow.log_params(hyperparams)
-		mlflow.log_param("n_epoch", n_epoch)
+                loss = criterion(logps, labels)
+                loss.mean().backward()
+                optimizer.step()
 
-		# Create a SummaryWriter to write TensorBoard events locally
-		output_dir = dirpath = tempfile.mkdtemp()
+                running_loss += loss.item()
 
-		for epoch in range(n_epoch):
-			print(f">>> epoch = {epoch}")
-			model.train()
-			running_loss = 0
-			for inputs, labels in trainloader:
-				inputs, labels = inputs.to(device), labels.to(device)
-				inputs, labels = inputs.float(), labels.float()
+            valid_loss = 0
+            model.eval()
+            for inputs, labels in validloader:
+                inputs, labels = inputs.to(device), labels.to(device)
+                inputs, labels = inputs.float(), labels.float()
 
-				optimizer.zero_grad()
-				logps = model(inputs)
+                target = model(inputs)
 
-				loss = criterion(logps, labels)
-				loss.mean().backward()
-				optimizer.step()
+                loss = criterion(target, labels)
+                valid_loss += loss.item()
 
-				running_loss += loss.item()
+            if scheduler_lr["scheduler"]:
+                before_lr = optimizer.param_groups[0]["lr"]
+                scheduler.step()
+                after_lr = optimizer.param_groups[0]["lr"]
+                print("Epoch %d: Adam lr %.5f -> %.5f" % (epoch, before_lr, after_lr))
 
-			valid_loss = 0
-			model.eval()
-			for inputs, labels in validloader:
-				inputs, labels = inputs.to(device), labels.to(device)
-				inputs, labels = inputs.float(), labels.float()
+            print("Training loss:", running_loss / len(trainloader))
+            print("Validation loss:", valid_loss / len(validloader))
 
-				target = model(inputs)
+            log_scalar("loss/train", (running_loss / len(trainloader)), epoch)
+            log_scalar("loss/validation", (valid_loss / len(validloader)), epoch)
 
-				loss = criterion(target, labels)
-				valid_loss += loss.item()
+        # Upload the TensorBoard event logs as a run artifact
+        print("Uploading TensorBoard events as a run artifact...")
+        mlflow.log_artifacts(output_dir, artifact_path="events")
+        print(
+            "\nLaunch TensorBoard with:\n\ntensorboard --logdir=%s"
+            % os.path.join(mlflow.get_artifact_uri(), "events")
+        )
 
-			if scheduler_lr["scheduler"]:
-				before_lr = optimizer.param_groups[0]["lr"]
-				scheduler.step()
-				after_lr = optimizer.param_groups[0]["lr"]
-				print("Epoch %d: Scheduler lr %.5f -> %.5f" % (epoch, before_lr, after_lr))
+        # Log the model as an artifact of the MLflow run.
+        print("\nLogging the trained model as a run artifact...")
+        mlflow.pytorch.log_model(
+            model, artifact_path="pytorch-model", pickle_module=pickle
+        )
+        print(
+            "\nThe model is logged at:\n%s"
+            % os.path.join(mlflow.get_artifact_uri(), "pytorch-model")
+        )
 
-			print("Training loss:", running_loss / len(trainloader))
-			print("Validation loss:", valid_loss / len(validloader))
+        loaded_model = mlflow.pytorch.load_model(
+            mlflow.get_artifact_uri("pytorch-model")
+        )
 
-			log_scalar("loss/train", (running_loss / len(trainloader)), epoch)
-			log_scalar("loss/validation", (valid_loss / len(validloader)), epoch)
+        # Perform model evaluation using invariance tests
+        if model_eval:
+            import core_eval
 
-		# Upload the TensorBoard event logs as a run artifact
-		print("Uploading TensorBoard events as a run artifact...")
-		mlflow.log_artifacts(output_dir, artifact_path="events")
-		print(
-			"\nLaunch TensorBoard with:\n\ntensorboard --logdir=%s"
-			% os.path.join(mlflow.get_artifact_uri(), "events")
-		)
+            eval_results = core_eval.run_model_eval_tests(
+                model, model_mode, trainloader, validloader, evalloader, n_in, out_dim
+            )
 
-		# Log the model as an artifact of the MLflow run.
-		print("\nLogging the trained model as a run artifact...")
-		mlflow.pytorch.log_model(
-			model, artifact_path="pytorch-model", pickle_module=pickle
-		)
-		print(
-			"\nThe model is logged at:\n%s"
-			% os.path.join(mlflow.get_artifact_uri(), "pytorch-model")
-		)
+            # Log results
+            for k, v in eval_results.items():
+                mlflow.log_dict(v, f"{k}.yaml")
 
-		loaded_model = mlflow.pytorch.load_model(
-			mlflow.get_artifact_uri("pytorch-model")
-		)
-
-		# Perform model evaluation using invariance tests
-		if model_eval:
-			import core_eval
-
-			eval_results = core_eval.run_model_eval_tests(model, model_mode, trainloader, validloader, evalloader, n_in, out_dim)
-
-			# Log results
-			for k,v in eval_results.items():
-				mlflow.log_dict(v,f"{k}.yaml")
-
-	writer.close()
-	return model, running_loss / len(trainloader)
+    writer.close()
+    return model, running_loss / len(trainloader)

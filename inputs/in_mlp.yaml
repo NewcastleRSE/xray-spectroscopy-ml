@@ -1,5 +1,5 @@
-x_path: data/datasets/fe/preconv/xyz_train
-y_path: data/datasets/fe/preconv/xanes_train
+x_path: /home/tom/ML-XS/training-data/XAS-3dtm/fe/preconv/xyz_train
+y_path: /home/tom/ML-XS/training-data/XAS-3dtm/fe/preconv/xanes_train
 
 descriptor:
     type: wacsf
@@ -9,7 +9,12 @@ descriptor:
       n_g2: 16
       n_g4: 32
 
-bootstrap: False
+load_guess: False 
+loadguess_params:
+  model_dir: /home/tom/ML-XS/code-test/model/model_001/model.pt
+  n_freeze: 1
+
+bootstrap: False 
 bootstrap_params: 
   n_boot: 3
   n_size: 1.0
@@ -44,8 +49,8 @@ lr_scheduler:
   scheduler: True
   scheduler_type: step
   scheduler_param:
-    step_size: 50
-    gamma: 0.1
+    step_size: 100
+    gamma: 0.5
           
 hyperparams: 
   model: mlp
@@ -79,3 +84,4 @@ optuna_params:
   tune_lr: True
   tune_dropout: True
   tune_hidden_layers: True
+  

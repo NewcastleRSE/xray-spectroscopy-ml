@@ -1,22 +1,21 @@
 """
 XANESNET
-Copyright (C) 2021  Conor D. Rankine
 
 This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software 
-Foundation, either Version 3 of the License, or (at your option) any later 
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either Version 3 of the License, or (at your option) any later
 version.
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License along with 
+You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 ###############################################################################
-############################### LIBRARY IMPORTS ###############################t
+# LIBRARY IMPORTS ###############################t
 ###############################################################################
 
 import numpy as np
@@ -121,5 +120,27 @@ def save_xanes(xanes_f: TextIO, xanes: XANES):
     for e_, m_ in zip(*xanes.spectrum):
         fmt = f"{e_:>10.2f}{m_:>15.7E}\n"
         xanes_f.write(fmt.format(e_, m_))
+
+    return 0
+
+
+def save_xanes_mean(xanes_f: TextIO, xanes: XANES, std):
+    # saves a mean and sandard deviation of XANES object in FDMNES (.txt) output format
+    xanes_f.write(
+        f'{"FDMNES":>10}\n{"energy":>10}{"<mean_xanes>":>12}{"<std_xanes>":>12}\n'
+    )
+    for e_, m_, std_ in zip(*xanes.spectrum, std):
+        fmt = f"{e_:>10.2f}{m_:>15.7E}{std_:>15.7E}\n"
+        xanes_f.write(fmt.format(e_, m_, std_))
+
+    return 0
+
+
+def save_xyz_mean(xyz_f: TextIO, mean, std):
+    # saves a mean and sandard deviation of XANES object in FDMNES (.txt) output format
+    xyz_f.write(f'{"<mean_xyz>":>12}{"<std_xyz>":>12}\n')
+    for m_, std_ in zip(mean, std):
+        fmt = f"{m_:>15.7E}{std_:>15.7E}\n"
+        xyz_f.write(fmt.format(m_, std_))
 
     return 0

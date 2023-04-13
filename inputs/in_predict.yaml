@@ -1,13 +1,14 @@
+
 x_path: data/datasets/fe/preconv/xyz_test
 # y_path: null
 y_path: data/datasets/fe/preconv/xanes_test
 
-plot_save: False
+plot_save: True
 
-monte_carlo: False
+monte_carlo: True
 mc_iter: 100
 
-bootstrap: True
+bootstrap: False
 
 ensemble: False
 ensemble_combine: weight

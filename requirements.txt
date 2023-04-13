@@ -1,6 +1,6 @@
 ase==3.22.1
 matplotlib==3.4.3
-numpy==1.23.5
+numpy==1.22
 pyemd==0.5.1
 scikit_learn==1.2.0
 seaborn==0.11.2

@@ -1,6 +1,5 @@
 """
 XANESNET
-Copyright (C) 2021  Conor D. Rankine
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software 
@@ -48,6 +47,8 @@ def train_xyz(
 	weight_seed,
 	lr_scheduler,
 	model_eval,
+  load_guess,
+  loadguess_params,
 	optuna_params,
 ):
 	print("training xyz structure")
@@ -68,6 +69,8 @@ def train_xyz(
 				weight_seed,
 				lr_scheduler,
 				model_eval,
+        load_guess,
+        loadguess_params,
 			)
 			print_cross_validation_scores(result, model_mode)
 		else:
@@ -99,6 +102,8 @@ def train_xyz(
 				weight_seed,
 				lr_scheduler,
 				model_eval,
+        load_guess,
+        loadguess_params,
 			)
 
 	elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
@@ -117,6 +122,8 @@ def train_xyz(
 				weight_seed,
 				lr_scheduler,
 				model_eval,
+        load_guess,
+        loadguess_params,
 			)
 			print_cross_validation_scores(result, model_mode)
 		else:
@@ -149,6 +156,8 @@ def train_xyz(
 				weight_seed,
 				lr_scheduler,
 				model_eval,
+        load_guess,
+        loadguess_params,
 			)
 
 	summary(model, (1, xyz.shape[1]))
@@ -168,6 +177,8 @@ def train_xanes(
 	weight_seed,
 	lr_scheduler,
 	model_eval,
+  load_guess,
+  loadguess_params,
 	optuna_params,
 ):
 	print("training xanes spectrum")
@@ -188,6 +199,8 @@ def train_xanes(
 				weight_seed,
 				lr_scheduler,
 				model_eval,
+        load_guess,
+        loadguess_params,
 			)
 			print_cross_validation_scores(result, model_mode)
 		else:
@@ -219,6 +232,8 @@ def train_xanes(
 				weight_seed,
 				lr_scheduler,
 				model_eval,
+        load_guess,
+        loadguess_params,
 			)
 
 	elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
@@ -237,6 +252,8 @@ def train_xanes(
 				weight_seed,
 				lr_scheduler,
 				model_eval,
+        load_guess,
+        loadguess_params,
 			)
 			print_cross_validation_scores(result, model_mode)
 
@@ -269,6 +286,8 @@ def train_xanes(
 				weight_seed,
 				lr_scheduler,
 				model_eval,
+        load_guess,
+        loadguess_params,
 			)
 
 	summary(model, (1, xanes.shape[1]))
@@ -288,6 +307,8 @@ def train_aegan(
 	weight_seed,
 	lr_scheduler,
 	model_eval,
+  load_guess,
+  loadguess_params,
 	optuna_params,
 ):
 	if kfold:
@@ -303,6 +324,8 @@ def train_aegan(
 			weight_seed,
 			lr_scheduler,
 			model_eval,
+      load_guess,
+      loadguess_params,
 		)
 		print_cross_validation_scores(result, model_mode)
 
@@ -334,6 +357,8 @@ def train_aegan(
 			weight_seed,
 			lr_scheduler,
 			model_eval,
+      load_guess,
+      loadguess_params,
 		)
 	summary(model)
 	# from plot import plot_running_aegan
