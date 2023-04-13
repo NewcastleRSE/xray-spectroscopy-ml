@@ -131,6 +131,9 @@ def optuna_train(trial,
 			if optuna_params["tune_hidden_layers"]:
 				hyperparams["hidden_layer"] = trial.suggest_categorical("hidden_layer", options["hl_size"])
 
+	# Set load_guess to False for tuning
+	load_guess = False
+	load_guess_params = {}
 
 	if model_mode == "mlp" or model_mode == "cnn":
 
@@ -144,6 +147,8 @@ def optuna_train(trial,
 			weight_seed,
 			lr_scheduler,
 			model_eval,
+			load_guess,
+			load_guess_params,
 			)
 
 	elif model_mode == 'ae_mlp' or model_mode == 'ae_cnn':
@@ -158,6 +163,8 @@ def optuna_train(trial,
 			weight_seed,
 			lr_scheduler,
 			model_eval,
+			load_guess,
+			load_guess_params,
 		)
 	
 	elif model_mode == 'aegan_mlp':
@@ -171,6 +178,8 @@ def optuna_train(trial,
 			weight_seed,
 			lr_scheduler,
 			model_eval,
+			load_guess,
+			load_guess_params,
 		)
 
 		score = sum([v[-1] for k,v in score.items()])

@@ -9,6 +9,11 @@ descriptor:
       n_g2: 16
       n_g4: 32
 
+load_guess: False 
+loadguess_params:
+  model_dir: /home/tom/ML-XS/code-test/model/model_001/model.pt
+  n_freeze: 1
+
 bootstrap: False
 bootstrap_params: 
   n_boot: 3
