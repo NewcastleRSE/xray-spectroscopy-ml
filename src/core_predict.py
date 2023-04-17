@@ -308,7 +308,7 @@ def main(
                 )
 
             else:
-                y_predict, e = y_predict_dim(y_predict, ids)
+                y_predict = y_predict_dim(y_predict, ids)
 
                 if save:
                     if mode == "predict_xanes":
