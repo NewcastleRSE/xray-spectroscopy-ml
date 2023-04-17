@@ -204,7 +204,7 @@ def main(
                 "MSE y to y pred : ",
                 mean_squared_error(y, y_predict.detach().numpy()),
             )
-            y_predict = y_predict_dim(y_predict, ids, model_dir)
+            y_predict = y_predict_dim(y_predict, ids)
 
             if config["monte_carlo"]:
                 from montecarlo_fn import montecarlo_dropout
@@ -236,16 +236,16 @@ def main(
                                     "\n".join(
                                         map(str, y_predict_.detach().numpy()))
                                 )
-                        for id_, y_ in tqdm.tqdm(zip(ids, y)):
-                            with open(predict_dir / f"{id_}.wacsf", "w") as f:
-                                f.write(
-                                    "\n".join(map(str, y_))
-                                )
+                        # for id_, y_ in tqdm.tqdm(zip(ids, y)):
+                        #     with open(predict_dir / f"{id_}.wacsf", "w") as f:
+                        #         f.write(
+                        #             "\n".join(map(str, y_))
+                        #         )
 
                 if config["plot_save"]:
                     from plot import plot_predict
 
-                    plot_predict(ids, y, y_predict, e, predict_dir, mode)
+                    plot_predict(ids, y, y_predict, predict_dir, mode)
 
         elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
             if mode == "predict_xyz":
@@ -308,7 +308,7 @@ def main(
                 )
 
             else:
-                y_predict, e = y_predict_dim(y_predict, ids, model_dir)
+                y_predict, e = y_predict_dim(y_predict, ids)
 
                 if save:
                     if mode == "predict_xanes":
