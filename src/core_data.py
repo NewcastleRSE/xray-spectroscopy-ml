@@ -39,297 +39,273 @@ import torch
 import random
 
 
-def train_data(
-	mode: str,
-	model_mode: str,
-	config,
-	save: bool = True,
-	fourier_transform: bool = False,
-	# max_samples: int = None,
-):
-	rng = RandomState(seed=config["seed"])
+def train_data(mode: str, model_mode: str, config, save: bool = True, fourier_transform: bool = False):
+    rng = RandomState(seed=config["seed"])
 
-	xyz_path = [Path(p) for p in glob(config["x_path"])]
-	xanes_path = [Path(p) for p in glob(config["y_path"])]
+    xyz_path = Path(config["x_path"])
+    xanes_path = Path(config["y_path"])
 
-	xyz_list = []
-	xanes_list = []
-	e_list = []
-	element_label = []
+    for path in (xyz_path, xanes_path):
 
-	for n_element in range(0, len(xyz_path)):
-		element_name = str(xyz_path[n_element]).split("/")[-3]
+        for path in (xyz_path, xanes_path):
+            if not path.exists():
+                err_str = f"path to X/Y data ({path}) doesn't exist"
+                raise FileNotFoundError(err_str)
 
-		for path in (xyz_path[n_element], xanes_path[n_element]):
-			if not path.exists():
-				err_str = f"path to X/Y data ({path}) doesn't exist"
-				raise FileNotFoundError(err_str)
+    if xyz_path.is_dir() and xanes_path.is_dir():
 
-		if xyz_path[n_element].is_dir() and xanes_path[n_element].is_dir():
-			print(">> loading data from directories...\n")
+        ids = list(
+            set(list_filestems(xyz_path))
+            & set(list_filestems(xanes_path))
+        )
 
-			ids = list(
-				set(list_filestems(xyz_path[n_element]))
-				& set(list_filestems(xanes_path[n_element]))
-			)
+        ids.sort()
 
-			ids.sort()
+        # descriptors = {"rdc": RDC, "wacsf": WACSF, "soap": SOAP, "mbtr": MBTR, "lmbtr": LMBTR}
+        descriptors = {"rdc": RDC, "wacsf": WACSF}
 
-			# descriptors = {"rdc": RDC, "wacsf": WACSF, "soap": SOAP, "mbtr": MBTR, "lmbtr": LMBTR}
-			descriptors = {"rdc": RDC, "wacsf": WACSF}
+        descriptor = descriptors.get(config["descriptor"]["type"])(
+            **config["descriptor"]["params"]
+        )
 
-			descriptor = descriptors.get(config["descriptor"]["type"])(
-				**config["descriptor"]["params"]
-			)
+        n_samples = len(ids)
+        if config["descriptor"]["type"] == 'wacsf' or config["descriptor"]["type"] == 'rdc':
+            n_x_features = descriptor.get_len()
+        else:
+            n_x_features = descriptor.get_number_of_features()
+        n_y_features = linecount(
+            xanes_path / f"{ids[0]}.txt") - 2
 
-			n_samples = len(ids)
-			if config["descriptor"]["type"] == 'wacsf' or config["descriptor"]["type"] == 'rdc':
-				n_x_features = descriptor.get_len()
-			else:    
-				n_x_features = descriptor.get_number_of_features()
-			n_y_features = linecount(xanes_path[n_element] / f"{ids[0]}.txt") - 2
+        xyz_data = np.full((n_samples, n_x_features), np.nan)
+        print(">> preallocated {}x{} array for X data...".format(*xyz_data.shape))
+        xanes_data = np.full((n_samples, n_y_features), np.nan)
+        print(">> preallocated {}x{} array for Y data...".format(
+            *xanes_data.shape))
+        print(">> ...everything preallocated!\n")
 
-			xyz_data = np.full((n_samples, n_x_features), np.nan)
-			print(">> preallocated {}x{} array for X data...".format(*xyz_data.shape))
-			xanes_data = np.full((n_samples, n_y_features), np.nan)
-			print(">> preallocated {}x{} array for Y data...".format(*xanes_data.shape))
-			print(">> ...everything preallocated!\n")
+        if config["descriptor"]["type"] == 'wacsf' or config["descriptor"]["type"] == 'rdc':
+            print(">> loading data into array(s)...")
+            for i, id_ in enumerate(tqdm.tqdm(ids)):
+                with open(xyz_path / f"{id_}.xyz", "r") as f:
+                    atoms = load_xyz(f)
+                xyz_data[i, :] = descriptor.transform(atoms)
+                with open(xanes_path / f"{id_}.txt", "r") as f:
+                    xanes = load_xanes(f)
+                e, xanes_data[i, :] = xanes.spectrum
+            print(">> ...loaded into array(s)!\n")
+        elif config["descriptor"]["type"] == 'mbtr':
+            print(">> loading data into array(s)...")
+            for i, id_ in enumerate(tqdm.tqdm(ids)):
+                with open(xyz_path / f"{id_}.xyz", "r") as f:
+                    atoms = load_xyz(f)
+                    tmp = descriptor.create(atoms)
+                xyz_data[i, :] = tmp
+                with open(xanes_path / f"{id_}.txt", "r") as f:
+                    xanes = load_xanes(f)
+                e, xanes_data[i, :] = xanes.spectrum
+            print(">> ...loaded into array(s)!\n")
+        elif config["descriptor"]["type"] == 'lmbtr':
+            print(">> loading data into array(s)...")
+            for i, id_ in enumerate(tqdm.tqdm(ids)):
+                with open(xyz_path / f"{id_}.xyz", "r") as f:
+                    atoms = load_xyz(f)
+                    tmp = descriptor.create(atoms, positions=[0])
+                xyz_data[i, :] = tmp
+                with open(xanes_path / f"{id_}.txt", "r") as f:
+                    xanes = load_xanes(f)
+                e, xanes_data[i, :] = xanes.spectrum
+            print(">> ...loaded into array(s)!\n")
+        else:
+            print(">> loading data into array(s)...")
+            for i, id_ in enumerate(tqdm.tqdm(ids)):
+                with open(xyz_path / f"{id_}.xyz", "r") as f:
+                    atoms = load_xyz(f)
+                    tmp = descriptor.create_single(atoms, positions=[0])
+                xyz_data[i, :] = tmp
+                with open(xanes_path / f"{id_}.txt", "r") as f:
+                    xanes = load_xanes(f)
+                e, xanes_data[i, :] = xanes.spectrum
+            print(">> ...loaded into array(s)!\n")
 
-			if config["descriptor"]["type"] == 'wacsf' or config["descriptor"]["type"] == 'rdc':
-				print(">> loading data into array(s)...")
-				for i, id_ in enumerate(tqdm.tqdm(ids)):
-					element_label.append(element_name)
-					with open(xyz_path[n_element] / f"{id_}.xyz", "r") as f:
-						atoms = load_xyz(f)
-					xyz_data[i, :] = descriptor.transform(atoms)
-					with open(xanes_path[n_element] / f"{id_}.txt", "r") as f:
-						xanes = load_xanes(f)
-					e, xanes_data[i, :] = xanes.spectrum
-				print(">> ...loaded into array(s)!\n")
-			elif config["descriptor"]["type"] == 'mbtr': 
-				print(">> loading data into array(s)...")
-				for i, id_ in enumerate(tqdm.tqdm(ids)):
-					element_label.append(element_name)
-					with open(xyz_path[n_element] / f"{id_}.xyz", "r") as f:
-						atoms = load_xyz(f)
-						tmp = descriptor.create(atoms)
-					xyz_data[i, :] = tmp
-					with open(xanes_path[n_element] / f"{id_}.txt", "r") as f:
-						xanes = load_xanes(f)
-					e, xanes_data[i, :] = xanes.spectrum
-				print(">> ...loaded into array(s)!\n")
-			elif config["descriptor"]["type"] == 'lmbtr':
-				print(">> loading data into array(s)...")
-				for i, id_ in enumerate(tqdm.tqdm(ids)):
-					element_label.append(element_name)
-					with open(xyz_path[n_element] / f"{id_}.xyz", "r") as f:
-						atoms = load_xyz(f)
-						tmp = descriptor.create(atoms, positions=[0])
-					xyz_data[i, :] = tmp
-					with open(xanes_path[n_element] / f"{id_}.txt", "r") as f:
-						xanes = load_xanes(f)
-					e, xanes_data[i, :] = xanes.spectrum
-				print(">> ...loaded into array(s)!\n")
-			else:
-				print(">> loading data into array(s)...")
-				for i, id_ in enumerate(tqdm.tqdm(ids)):
-					element_label.append(element_name)
-					with open(xyz_path[n_element] / f"{id_}.xyz", "r") as f:
-						atoms = load_xyz(f)
-						tmp = descriptor.create_single(atoms, positions=[0])
-					xyz_data[i, :] = tmp
-					with open(xanes_path[n_element] / f"{id_}.txt", "r") as f:
-						xanes = load_xanes(f)
-					e, xanes_data[i, :] = xanes.spectrum
-				print(">> ...loaded into array(s)!\n")
+    elif xyz_path.is_file() and xanes_path.is_file():
+        print(">> loading data from .npz archive(s)...\n")
 
-			xyz_list.append(xyz_data)
-			xanes_list.append(xanes_data)
-			e_list.append(e)
+        with open(xyz_path, "rb") as f:
+            xyz_data = np.load(f)["x"]
+        print(">> ...loaded {}x{} array of X data".format(*xyz_data.shape))
+        with open(xanes_path, "rb") as f:
+            xanes_data = np.load(f)["y"]
+            e = np.load(f)["e"]
+        print(">> ...loaded {}x{} array of Y data".format(*xanes_data.shape))
+        print(">> ...everything loaded!\n")
 
-		elif xyz_path[n_element].is_file() and xanes_path[n_element].is_file():
-			print(">> loading data from .npz archive(s)...\n")
+        if save:
+            print(">> overriding save flag (running in `--no-save` mode)\n")
+            save = False
 
-			with open(xyz_path[n_element], "rb") as f:
-				xyz_data = np.load(f)["x"]
-			print(">> ...loaded {}x{} array of X data".format(*xyz_data.shape))
-			with open(xanes_path[n_element], "rb") as f:
-				xanes_data = np.load(f)["y"]
-				e = np.load(f)["e"]
-			print(">> ...loaded {}x{} array of Y data".format(*xanes_data.shape))
-			print(">> ...everything loaded!\n")
+    else:
+        err_str = (
+            "paths to X/Y data are expected to be either a) both "
+            "files (.npz archives), or b) both directories"
+        )
+        raise TypeError(err_str)
 
-			xyz_list.append(xyz_data)
-			xanes_list.append(xanes_data)
-			e_list.append(e)
+    xyz = xyz_data
+    xanes = xanes_data
 
-			if save:
-				print(">> overriding save flag (running in `--no-save` mode)\n")
-				save = False
+    # Transform data
+    if fourier_transform:
+        from data_transform import fourier_transform_data
 
-		else:
-			err_str = (
-				"paths to X/Y data are expected to be either a) both "
-				"files (.npz archives), or b) both directories"
-			)
-			raise TypeError(err_str)
+        print(">> Transforming training data using Fourier transform...")
+        xanes = fourier_transform_data(xanes)
 
-	xyz = np.vstack(xyz_list)
-	xanes = np.vstack(xanes_list)
-	e = np.vstack(e_list)
-	element_label = np.asarray(element_label)
+    # DATA AUGMENTATION
+    if config["data_params"]:
+        from data_augmentation import data_augment
 
-	# Transform data
-	if fourier_transform:
-		from data_transform import fourier_transform_data
+        xyz, xanes = data_augment(
+            config["augment"], xyz, xanes, n_samples, n_x_features, n_y_features
+        )
 
-		print(">> Transforming training data using Fourier transform...")
-		xanes = fourier_transform_data(xanes)
+    if config["bootstrap"]:
+        from bootstrap_fn import bootstrap_train
 
-	# DATA AUGMENTATION
-	if config["data_params"]:
-		from data_augmentation import data_augment
+        data_compress = {"ids": ids, "x": xyz_data, "y": xanes_data}
 
-		xyz, xanes = data_augment(
-			config["augment"], xyz, xanes, n_samples, n_x_features, n_y_features
-		)
+        bootstrap_train(
+            config["bootstrap_params"],
+            xyz,
+            xanes,
+            mode,
+            model_mode,
+            config["hyperparams"],
+            config["epochs"],
+            save,
+            config["kfold"],
+            config["kfold_params"],
+            rng,
+            descriptor,
+            data_compress,
+            config["lr_scheduler"],
+            config["model_eval"],
+            config["load_guess"],
+            config["loadguess_params"],
+            config["optuna_params"]
+        )
 
-	if config["bootstrap"]:
-		from bootstrap_fn import bootstrap_train
+    elif config["ensemble"]:
+        from ensemble_fn import ensemble_train
 
-		data_compress = {"ids": ids, "x": xyz_data, "y": xanes_data, "e": e}
+        data_compress = {"ids": ids, "x": xyz_data, "y": xanes_data}
 
-		bootstrap_train(
-			config["bootstrap_params"],
-			xyz,
-			xanes,
-			mode,
-			model_mode,
-			config["hyperparams"],
-			config["epochs"],
-			save,
-			config["kfold"],
-			config["kfold_params"],
-			rng,
-			descriptor,
-			data_compress,
-			config["lr_scheduler"],
-			config["model_eval"],
-			config["load_guess"],
-			config["loadguess_params"],
-		)
+        ensemble_train(
+            config["ensemble_params"],
+            xyz,
+            xanes,
+            mode,
+            model_mode,
+            config["hyperparams"],
+            config["epochs"],
+            save,
+            config["kfold"],
+            config["kfold_params"],
+            rng,
+            descriptor,
+            data_compress,
+            config["lr_scheduler"],
+            config["model_eval"],
+            config["load_guess"],
+            config["loadguess_params"],
+            config["optuna_params"]
+        )
 
-	elif config["ensemble"]:
-		from ensemble_fn import ensemble_train
+    else:
+        # getting exp name for mlflow
+        exp_name = f"{mode}_{model_mode}"
+        if mode == "train_xyz":
+            from core_learn import train_xyz
 
-		data_compress = {"ids": ids, "x": xyz_data, "y": xanes_data, "e": e}
+            model = train_xyz(
+                xyz,
+                xanes,
+                exp_name,
+                model_mode,
+                config["hyperparams"],
+                config["epochs"],
+                config["kfold"],
+                config["kfold_params"],
+                rng,
+                config["hyperparams"]["weight_init_seed"],
+                config["lr_scheduler"],
+                config["model_eval"],
+                config["load_guess"],
+                config["loadguess_params"],
+                config["optuna_params"],
+            )
 
-		ensemble_train(
-			config["ensemble_params"],
-			xyz,
-			xanes,
-			mode,
-			model_mode,
-			config["hyperparams"],
-			config["epochs"],
-			save,
-			config["kfold"],
-			config["kfold_params"],
-			rng,
-			descriptor,
-			data_compress,
-			config["lr_scheduler"],
-			config["model_eval"],
-			config["load_guess"],
-			config["loadguess_params"],
-		)
+        elif mode == "train_xanes":
+            from core_learn import train_xanes
 
-	else:
-		# getting exp name for mlflow
-		exp_name = f"{mode}_{model_mode}"
-		if mode == "train_xyz":
-			from core_learn import train_xyz
+            model = train_xanes(
+                xyz,
+                xanes,
+                exp_name,
+                model_mode,
+                config["hyperparams"],
+                config["epochs"],
+                config["kfold"],
+                config["kfold_params"],
+                rng,
+                config["hyperparams"]["weight_init_seed"],
+                config["lr_scheduler"],
+                config["model_eval"],
+                config["load_guess"],
+                config["loadguess_params"],
+                config["optuna_params"],
+            )
 
-			model = train_xyz(
-				xyz,
-				xanes,
-				exp_name,
-				model_mode,
-				config["hyperparams"],
-				config["epochs"],
-				config["kfold"],
-				config["kfold_params"],
-				rng,
-				config["hyperparams"]["weight_init_seed"],
-				config["lr_scheduler"],
-				config["model_eval"],
-				config["load_guess"],
-				config["loadguess_params"],
-				config["optuna_params"],
-			)
+        elif mode == "train_aegan":
+            from core_learn import train_aegan
 
-		elif mode == "train_xanes":
-			from core_learn import train_xanes
+            model = train_aegan(
+                xyz,
+                xanes,
+                exp_name,
+                model_mode,
+                config["hyperparams"],
+                config["epochs"],
+                config["kfold"],
+                config["kfold_params"],
+                rng,
+                config["hyperparams"]["weight_init_seed"],
+                config["lr_scheduler"],
+                config["model_eval"],
+                config["load_guess"],
+                config["loadguess_params"],
+                config["optuna_params"],
+            )
 
-			model = train_xanes(
-				xyz,
-				xanes,
-				exp_name,
-				model_mode,
-				config["hyperparams"],
-				config["epochs"],
-				config["kfold"],
-				config["kfold_params"],
-				rng,
-				config["hyperparams"]["weight_init_seed"],
-				config["lr_scheduler"],
-				config["model_eval"],
-				config["load_guess"],
-				config["loadguess_params"],
-				config["optuna_params"],
-			)
+        if save:
+            parent_model_dir = "model/"
+            Path(parent_model_dir).mkdir(parents=True, exist_ok=True)
 
-		elif mode == "train_aegan":
-			from core_learn import train_aegan
+            model_dir = unique_path(Path(parent_model_dir), "model")
+            model_dir.mkdir()
 
-			model = train_aegan(
-				xyz,
-				xanes,
-				exp_name,
-				model_mode,
-				config["hyperparams"],
-				config["epochs"],
-				config["kfold"],
-				config["kfold_params"],
-				rng,
-				config["hyperparams"]["weight_init_seed"],
-				config["lr_scheduler"],
-				config["model_eval"],
-				config["load_guess"],
-				config["loadguess_params"],
-				config["optuna_params"],
-			)
+            with open(model_dir / "descriptor.pickle", "wb") as f:
+                pickle.dump(descriptor, f)
+            with open(model_dir / "dataset.npz", "wb") as f:
+                np.savez_compressed(f, ids=ids, x=xyz_data, y=xanes_data)
 
-		if save:
-			parent_model_dir = "model/"
-			Path(parent_model_dir).mkdir(parents=True, exist_ok=True)
+            torch.save(model, model_dir / f"model.pt")
+            print("Saved model to disk")
+            descriptor_type = config["descriptor"]["type"]
+            json.dump(
+                config["descriptor"]["params"],
+                open(f"{model_dir}/{descriptor_type}.txt", "w"),
+            )
+        else:
+            print("none")
 
-			model_dir = unique_path(Path(parent_model_dir), "model")
-			model_dir.mkdir()
-
-			with open(model_dir / "descriptor.pickle", "wb") as f:
-				pickle.dump(descriptor, f)
-			with open(model_dir / "dataset.npz", "wb") as f:
-				np.savez_compressed(f, ids=ids, x=xyz_data, y=xanes_data, e=e)
-
-			torch.save(model, model_dir / f"model.pt")
-			print("Saved model to disk")
-			descriptor_type = config["descriptor"]["type"]
-			json.dump(
-				config["descriptor"]["params"],
-				open(f"{model_dir}/{descriptor_type}.txt", "w"),
-			)
-		else:
-			print("none")
-
-	return
+    return

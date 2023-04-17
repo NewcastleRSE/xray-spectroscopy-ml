@@ -27,7 +27,7 @@ def average(lst):
     return lst
 
 
-def y_predict_dim(y_predict, ids, model_dir):
+def y_predict_dim(y_predict, ids):
     if y_predict.ndim == 1:
         if len(ids) == 1:
             y_predict = y_predict.reshape(-1, y_predict.size)
@@ -35,10 +35,7 @@ def y_predict_dim(y_predict, ids, model_dir):
             y_predict = y_predict.reshape(y_predict.size, -1)
     print(">> ...predicted Y data!\n")
 
-    with open(model_dir / "dataset.npz", "rb") as f:
-        e = np.load(f)["e"]
-
-    return y_predict, e.flatten()
+    return y_predict
 
 
 def predict_xyz(xanes_data, model):

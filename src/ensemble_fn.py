@@ -16,16 +16,19 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
 import pickle as pickle
-import numpy as np
 import random
 from pathlib import Path
 
+import numpy as np
 import torch
+import tqdm as tqdm
 from sklearn.metrics import mean_squared_error
 
 import data_transform
 import model_utils
+from inout import save_xanes_mean, save_xyz_mean, save_xanes
 from predict import predict_xanes, predict_xyz
+from spectrum.xanes import XANES
 from utils import unique_path
 
 
@@ -47,6 +50,7 @@ def ensemble_train(
     model_eval,
     load_guess,
     loadguess_params,
+    optuna_params,
 ):
     parent_ensemble_dir = "ensemble/"
     Path(parent_ensemble_dir).mkdir(parents=True, exist_ok=True)
@@ -75,6 +79,8 @@ def ensemble_train(
                 lr_scheduler,
                 model_eval,
                 load_guess,
+                loadguess_params,
+                optuna_params,
             )
         elif mode == "train_xanes":
             from core_learn import train_xanes
@@ -94,6 +100,7 @@ def ensemble_train(
                 model_eval,
                 load_guess,
                 loadguess_params,
+                optuna_params,
             )
 
         elif mode == "train_aegan":
@@ -114,6 +121,7 @@ def ensemble_train(
                 model_eval,
                 load_guess,
                 loadguess_params,
+                optuna_params,
             )
         if save:
             with open(ensemble_dir / "descriptor.pickle", "wb") as f:
@@ -124,7 +132,6 @@ def ensemble_train(
                     ids=data_compress["ids"],
                     x=data_compress["x"],
                     y=data_compress["y"],
-                    e=data_compress["e"],
                 )
 
             model_dir = unique_path(Path(ensemble_dir), "model")
@@ -139,6 +146,7 @@ def ensemble_predict(
     model_mode,
     xyz_data,
     xanes_data,
+    e,
     plot_save,
     fourier_transform,
     config,
@@ -155,6 +163,7 @@ def ensemble_predict(
         else:
             ensemble_preds = []
             ensemble_recons = []
+
         for i in range(n_model):
             n_dir = f"{model_dir}/model_00{i+1}/model.pt"
 
@@ -177,10 +186,11 @@ def ensemble_predict(
             if model_mode == "mlp" or model_mode == "cnn":
                 if mode == "predict_xyz":
                     if fourier_transform:
-                        xanes_data = data_transform.fourier_transform_data(xanes_data)
+                        xanes_data = data_transform.fourier_transform_data(
+                            xanes_data)
 
                     xyz_predict = predict_xyz(xanes_data, model)
-                    ensemble_preds.append(xyz_predict)
+                    ensemble_preds.append(xyz_predict.detach().numpy())
                     y = xyz_data
 
                 elif mode == "predict_xanes":
@@ -191,7 +201,7 @@ def ensemble_predict(
                             xanes_predict
                         )
 
-                    ensemble_preds.append(xanes_predict)
+                    ensemble_preds.append(xanes_predict.detach().numpy())
                     y = xanes_data
 
             elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
@@ -200,7 +210,8 @@ def ensemble_predict(
                     y = xyz_data
 
                     if fourier_transform:
-                        xanes_data = data_transform.fourier_transform_data(xanes_data)
+                        xanes_data = data_transform.fourier_transform_data(
+                            xanes_data)
 
                     xanes_recon, xyz_predict = predict_xyz(xanes_data, model)
 
@@ -265,20 +276,24 @@ def ensemble_predict(
 
         if model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
             if config["x_path"] is not None:
-                ensemble_x_recon = sum(ensemble_x_recon) / len(ensemble_x_recon)
+                ensemble_x_recon = sum(ensemble_x_recon) / \
+                    len(ensemble_x_recon)
                 print(
                     "MSE x to x recon : ",
                     mean_squared_error(x, ensemble_x_recon),
                 )
             if config["y_path"] is not None:
-                ensemble_y_recon = sum(ensemble_y_recon) / len(ensemble_y_recon)
+                ensemble_y_recon = sum(ensemble_y_recon) / \
+                    len(ensemble_y_recon)
                 print(
                     "MSE y to y recon : ",
                     mean_squared_error(y, ensemble_y_recon),
                 )
             if config["x_path"] is not None and config["y_path"] is not None:
-                ensemble_y_predict = sum(ensemble_y_predict) / len(ensemble_y_predict)
-                ensemble_x_predict = sum(ensemble_x_predict) / len(ensemble_x_predict)
+                ensemble_y_predict = sum(
+                    ensemble_y_predict) / len(ensemble_y_predict)
+                ensemble_x_predict = sum(
+                    ensemble_x_predict) / len(ensemble_x_predict)
                 print(
                     "MSE y to y predict : ",
                     mean_squared_error(y, ensemble_y_predict),
@@ -291,14 +306,31 @@ def ensemble_predict(
             ensemble_pred = sum(ensemble_preds) / len(ensemble_preds)
             print(
                 "MSE y to y pred : ",
-                mean_squared_error(y, ensemble_pred.detach().numpy()),
+                mean_squared_error(y, ensemble_pred),
             )
             if model_mode == "ae_mlp" or model_mode == "ae_cnn":
                 ensemble_recon = sum(ensemble_recons) / len(ensemble_recons)
                 print(
                     "MSE x to x recon : ",
                     mean_squared_error(x, ensemble_recon.detach().numpy()),
+
                 )
+
+            ensemble_preds = np.asarray(ensemble_preds)
+            mean_ensemble_pred = np.mean(ensemble_preds, axis=0)
+            std_ensemble_pred = np.std(ensemble_preds, axis=0)
+
+            if mode == "predict_xyz":
+                for id_, mean_y_predict_, std_y_predict_ in tqdm.tqdm(zip(ids, mean_ensemble_pred, std_ensemble_pred)):
+                    with open(predict_dir / f"{id_}.txt", "w") as f:
+                        save_xyz_mean(f, mean_y_predict_, std_y_predict_)
+
+            elif mode == "predict_xanes":
+                for id_, mean_y_predict_, std_y_predict_ in tqdm.tqdm(zip(ids, mean_ensemble_pred, std_ensemble_pred)):
+                    with open(predict_dir / f"{id_}.txt", "w") as f:
+                        save_xanes_mean(
+                            f, XANES(e, mean_y_predict_), std_y_predict_)
+
     elif ensemble == "weight":
         print("ensemble by combining weight")
 
@@ -321,7 +353,8 @@ def ensemble_predict(
             print("Loaded model from disk")
             if mode == "predict_xyz":
                 if fourier_transform:
-                    xanes_data = data_transform.fourier_transform_data(xanes_data)
+                    xanes_data = data_transform.fourier_transform_data(
+                        xanes_data)
 
                 y_predict = predict_xyz(xanes_data, model)
                 y = xyz_data
@@ -347,12 +380,14 @@ def ensemble_predict(
                 y = xyz_data
 
                 if fourier_transform:
-                    xanes_data = data_transform.fourier_transform_data(xanes_data)
+                    xanes_data = data_transform.fourier_transform_data(
+                        xanes_data)
 
                 x_recon, y_predict = predict_xyz(xanes_data, model)
 
                 if fourier_transform:
-                    x_recon = data_transform.inverse_fourier_transform_data(x_recon)
+                    x_recon = data_transform.inverse_fourier_transform_data(
+                        x_recon)
 
             elif mode == "predict_xanes":
                 x = xyz_data
@@ -361,7 +396,8 @@ def ensemble_predict(
                 x_recon, y_predict = predict_xanes(xyz_data, model)
 
                 if fourier_transform:
-                    y_predict = data_transform.inverse_fourier_transform_data(y_predict)
+                    y_predict = data_transform.inverse_fourier_transform_data(
+                        y_predict)
 
         elif model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
             from model import AEGANEnsemble
@@ -411,3 +447,16 @@ def ensemble_predict(
                     "MSE x to x recon : ",
                     mean_squared_error(x, x_recon.detach().numpy()),
                 )
+
+            if mode == "predict_xyz":
+                for id_, y_predict_ in tqdm.tqdm(zip(ids, y_predict)):
+                    with open(predict_dir / f"{id_}.txt", "w") as f:
+                        f.write(
+                            "\n".join(
+                                map(str, y_predict_.detach().numpy())))
+
+            elif mode == "predict_xanes":
+                for id_, y_predict_ in tqdm.tqdm(zip(ids, y_predict)):
+                    with open(predict_dir / f"{id_}.txt", "w") as f:
+                        save_xanes(
+                            f, XANES(e, y_predict_.detach().numpy()))

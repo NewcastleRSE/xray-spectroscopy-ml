@@ -25,7 +25,7 @@ from spectrum.xanes import XANES
 from sklearn.metrics.pairwise import cosine_similarity
 
 
-def plot_predict(ids, y, y_predict, e, predict_dir, mode):
+def plot_predict(ids, y, y_predict, predict_dir, mode):
     total_y = []
     total_y_pred = []
     for id_, y_predict_, y_ in tqdm.tqdm(zip(ids, y_predict, y)):

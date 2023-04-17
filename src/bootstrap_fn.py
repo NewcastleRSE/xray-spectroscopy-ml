@@ -63,6 +63,7 @@ def bootstrap_train(
     model_eval,
     load_guess,
     loadguess_params,
+    optuna_params,
 ):
     parent_bootstrap_dir = "bootstrap/"
     Path(parent_bootstrap_dir).mkdir(parents=True, exist_ok=True)
@@ -115,6 +116,7 @@ def bootstrap_train(
                 model_eval,
                 load_guess,
                 loadguess_params,
+                optuna_params
             )
 
         elif mode == "train_aegan":
@@ -135,6 +137,7 @@ def bootstrap_train(
                 model_eval,
                 load_guess,
                 loadguess_params,
+                optuna_params
             )
         if save:
             with open(bootstrap_dir / "descriptor.pickle", "wb") as f:
@@ -145,7 +148,6 @@ def bootstrap_train(
                     ids=data_compress["ids"],
                     x=data_compress["x"],
                     y=data_compress["y"],
-                    e=data_compress["e"],
                 )
 
             model_dir = unique_path(Path(bootstrap_dir), "model")
@@ -209,10 +211,10 @@ def bootstrap_predict(
                 "MSE y to y pred : ",
                 mean_squared_error(y, y_predict.detach().numpy()),
             )
-            y_predict, e = y_predict_dim(y_predict, ids, model_dir)
+            y_predict = y_predict_dim(y_predict, ids)
 
             if plot_save:
-                plot.plot_predict(ids, y, y_predict, e, predict_dir, mode)
+                plot.plot_predict(ids, y, y_predict, predict_dir, mode)
 
             y_predict_score.append(mean_squared_error(
                 y, y_predict.detach().numpy()))
@@ -262,10 +264,10 @@ def bootstrap_predict(
                 "MSE y to y pred : ",
                 mean_squared_error(y, y_predict.detach().numpy()),
             )
-            y_predict, e = y_predict_dim(y_predict, ids, model_dir)
+            y_predict = y_predict_dim(y_predict, ids, model_dir)
             if plot_save:
                 plot.plot_ae_predict(
-                    ids, y, y_predict, x, x_recon, e, predict_dir, mode
+                    ids, y, y_predict, x, x_recon, predict_dir, mode
                 )
 
         elif model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
