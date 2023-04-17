@@ -44,7 +44,8 @@ def predict_aegan(xyz_path, xanes_path, x, y, model, fourier_transform):
             z = torch.tensor(z).float()
             y_recon = model.reconstruct_spectrum(z)
             y_recon = (
-                data_transform.inverse_fourier_transform_data(y_recon).detach().numpy()
+                data_transform.inverse_fourier_transform_data(
+                    y_recon).detach().numpy()
             )
             x_pred = model.predict_structure(z).detach().numpy()
         else:
@@ -86,6 +87,7 @@ def main(
     predict_dir,
     ids,
     parent_model_dir,
+    e,
 ):
     print(">> Reconstructing and predicting data with neural net...")
 
@@ -96,8 +98,6 @@ def main(
     print(">> Saving predictions and reconstructions...")
 
     if config["x_path"] is not None:
-        with open(model_dir / "dataset.npz", "rb") as f:
-            e = np.load(f)["e"]
 
         for id_, y_pred_ in tqdm.tqdm(zip(ids, y_pred)):
             with open(predict_dir / f"spectrum_{id_}.txt", "w") as f:
@@ -119,7 +119,8 @@ def main(
         if config["x_path"] is not None and config["y_path"] is not None:
             from plot import plot_aegan_predict
 
-            plot_aegan_predict(ids, x, y, x_recon, y_recon, x_pred, y_pred, plots_dir)
+            plot_aegan_predict(ids, x, y, x_recon, y_recon,
+                               x_pred, y_pred, plots_dir)
 
         elif config["x_path"] is not None:
             from plot import plot_aegan_spectrum
@@ -139,7 +140,8 @@ def main(
 
             from plot import plot_cosine_similarity
 
-            plot_cosine_similarity(x, y, x_recon, y_recon, x_pred, y_pred, analysis_dir)
+            plot_cosine_similarity(
+                x, y, x_recon, y_recon, x_pred, y_pred, analysis_dir)
 
             print("...saved!\n")
 

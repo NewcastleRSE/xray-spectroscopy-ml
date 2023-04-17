@@ -344,6 +344,7 @@ def main(
             elif config["x_path"] is not None and config["y_path"] is None:
                 x = torch.tensor(xyz_data).float()
                 y = None
+                e = None
             elif config["y_path"] is not None and config["x_path"] is None:
                 y = torch.tensor(xanes_data).float()
                 x = None
@@ -365,6 +366,7 @@ def main(
                     predict_dir,
                     ids,
                     parent_model_dir,
+                    e
                 )
 
         if run_shap:
