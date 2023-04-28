@@ -3,9 +3,9 @@ x_path: data/datasets/fe/preconv/xyz_test
 # y_path: null
 y_path: data/datasets/fe/preconv/xanes_test
 
-plot_save: True
+plot_save: False
 
-monte_carlo: True
+monte_carlo: False
 mc_iter: 100
 
 bootstrap: False

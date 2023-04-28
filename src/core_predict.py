@@ -31,6 +31,7 @@ from inout import load_xanes, load_xyz, save_xanes
 from predict import predict_xanes, predict_xyz, y_predict_dim
 from utils import linecount, list_filestems
 from spectrum.xanes import XANES
+from model_utils import make_dir
 
 ###############################################################################
 ################################ MAIN FUNCTION ################################
@@ -184,21 +185,20 @@ def main(
         model.eval()
         print("Loaded model from disk")
 
-        if xyz_path is not None and xanes_path is not None:
-            from model_utils import model_mode_error
+        # if xyz_path is not None and xanes_path is not None:
+        #     from model_utils import model_mode_error
 
-            if fourier_transform:
-                parent_model_dir, predict_dir = model_mode_error(
-                    model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1] * 2
-                )
-            else:
-                parent_model_dir, predict_dir = model_mode_error(
-                    model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1]
-                )
-        else:
-            from model_utils import make_dir
+        #     if fourier_transform:
+        #         parent_model_dir, predict_dir = model_mode_error(
+        #             model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1] * 2
+        #         )
+        #     else:
+        #         parent_model_dir, predict_dir = model_mode_error(
+        #             model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1]
+        #         )
+        # else:
 
-            parent_model_dir, predict_dir = make_dir()
+        parent_model_dir, predict_dir = make_dir()
 
         if model_mode == "mlp" or model_mode == "cnn":
             if mode == "predict_xyz":
