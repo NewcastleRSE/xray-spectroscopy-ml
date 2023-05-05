@@ -42,8 +42,18 @@ class MLP(nn.Module):
         self.hl_shrink = hl_shrink
         self.act_fn = act_fn
 
+        # check if the last hidden layer size is at least 1 and not less than the output size
+        last_hidden_layer_size = int(
+            self.hidden_size * self.hl_shrink ** (self.num_hidden_layers - 1))
+
+        if last_hidden_layer_size < 1:
+            raise ValueError(
+                "The size of the last hidden layer is less than 1, please adjust hyperparameters.")
+        # if last_hidden_layer_size < self.output_size:
+        #     raise ValueError(
+        #         "The size of the last hidden layer is less than the output size, please adjust hyperparameters.")
+
         # Define input and output layers
-        self.input_layer = nn.Linear(self.input_size, self.hidden_size)
         self.output_layer = nn.Linear(
             int(self.hidden_size * self.hl_shrink **
                 (self.num_hidden_layers - 1)),
