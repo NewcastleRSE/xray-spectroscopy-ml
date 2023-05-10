@@ -39,7 +39,7 @@ import torch
 import random
 
 
-def train_data(mode: str, model_mode: str, config, save: bool = True, fourier_transform: bool = False):
+def train_data(mode: str, model_mode: str, config, save: bool = True, fourier_transform: bool = False, max_samples: int = None):
     rng = RandomState(seed=config["seed"])
 
     xyz_path = Path(config["x_path"])
@@ -152,13 +152,8 @@ def train_data(mode: str, model_mode: str, config, save: bool = True, fourier_tr
         )
         raise TypeError(err_str)
 
-    print(xyz_data.shape)
-    print(xanes_data.shape)
-    print(config["max_samples"])
     xyz, xanes = shuffle(xyz_data, xanes_data,
-                         random_state=rng, n_samples=config["max_samples"])
-    print(xyz.shape)
-    print(xanes.shape)
+                         random_state=rng, n_samples=max_samples)
 
     # Transform data
     if fourier_transform:

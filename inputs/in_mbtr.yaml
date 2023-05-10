@@ -32,8 +32,6 @@ descriptor:
        periodic: False
        normalization: l2_each
 
-max_samples: Null
-
 load_guess: False 
 loadguess_params:
   model_dir: /home/tom/ML-XS/code-test/model/model_001/model.pt

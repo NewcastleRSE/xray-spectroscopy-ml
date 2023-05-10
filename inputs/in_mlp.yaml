@@ -1,5 +1,5 @@
-x_path:  /Users/nnn28/Data/xanes/data/datasets/fe/preconv/xyz_train
-y_path:  /Users/nnn28/Data/xanes/data/datasets/fe/preconv/xanes_train
+x_path:  data/datasets/fe/preconv/xyz_train
+y_path:  data/datasets/fe/preconv/xanes_train
 
 descriptor:
     type: wacsf
@@ -8,8 +8,6 @@ descriptor:
       r_max: 6.0
       n_g2: 16
       n_g4: 32
-
-max_samples: Null
 
 load_guess: False 
 loadguess_params:
