@@ -154,6 +154,7 @@ def train_data(mode: str, model_mode: str, config, save: bool = True, fourier_tr
 
     print(xyz_data.shape)
     print(xanes_data.shape)
+    print(config["max_samples"])
     xyz, xanes = shuffle(xyz_data, xanes_data,
                          random_state=rng, n_samples=config["max_samples"])
     print(xyz.shape)
