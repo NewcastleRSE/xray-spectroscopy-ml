@@ -217,6 +217,11 @@ def train(
     loss_args = hyperparams["loss"]["loss_args"]
     criterion = model_utils.LossSwitch().fn(loss_fn, loss_args)
 
+    # Regularisation of loss function
+    loss_reg_type = hyperparams["loss"]["loss_reg_type"]
+    loss_reg = True if loss_reg_type is not None else False
+    lambda_reg = hyperparams["loss"]["loss_reg_param"]
+ 
     with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=RUN_NAME):
         mlflow.log_params(hyperparams)
         mlflow.log_param("n_epoch", n_epoch)
@@ -236,6 +241,11 @@ def train(
                 logps = model(inputs)
 
                 loss = criterion(logps, labels)
+
+                if loss_reg:
+                    l_reg = model_utils.loss_reg_fn(model, loss_reg_type, device)
+                    loss += lambda_reg * l_reg
+
                 loss.mean().backward()
                 optimizer.step()
 

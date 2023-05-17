@@ -67,6 +67,8 @@ kfold_params:
   loss: 
     loss_fn: mse 
     loss_args: null
+    loss_reg_type: L2 # null, L1, L2
+    loss_reg_param: 0.001
 
 lr_scheduler: 
   scheduler: True
@@ -85,8 +87,10 @@ hyperparams:
   loss:
     loss_fn: mse
     loss_args: null
-  lr: 0.00001
-  optim_fn: SGD
+    loss_reg_type: L2 # null, L1, L2
+    loss_reg_param: 0.001
+  lr: 0.0001
+  optim_fn: Adam
   dropout: 0.2
   weight_init_seed: 2023
   kernel_init: xavier_uniform

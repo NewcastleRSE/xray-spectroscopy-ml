@@ -423,3 +423,27 @@ def run_shap_analysis(
     for i in range(shap_values.shape[0]):
         with open(energ_dir / f"energy{i}.shap", "w") as f:
             f.writelines(map("{} {}\n".format, np.arange(n_features), energy_imp[i, :]))
+
+
+def loss_reg_fn(
+    model, loss_reg_type, device
+):
+    """ Computes L1 or L2 norm of model parameters for use in regularisation of loss function
+
+    Args:
+        model 
+        loss_reg_type (_str_): Regularisation type. L1 or 
+        device
+    """
+    l_reg = torch.tensor(0.0).to(device)
+    if loss_reg_type.lower() == "l1":
+
+        for param in model.parameters():
+            l_reg += torch.norm(param, p = 1)
+    
+    elif loss_reg_type.lower() == "l2":
+    
+        for param in model.parameters():
+            l_reg += torch.norm(param)
+    
+    return l_reg
