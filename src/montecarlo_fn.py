@@ -42,10 +42,11 @@ def montecarlo_dropout(
     prob_mean = torch.mean(torch.stack(prob_output), dim=0)
     prob_var = torch.std(torch.stack(prob_output), dim=0)
 
-    print(
-        "MSE y to y prob : ",
-        mean_squared_error(data_compress["y"], prob_mean.detach().numpy()),
-    )
+    if data_compress["y"] is not None:
+        print(
+            "MSE y to y prob : ",
+            mean_squared_error(data_compress["y"], prob_mean.detach().numpy()),
+        )
 
     if plot_save:
         plot_mc_predict(

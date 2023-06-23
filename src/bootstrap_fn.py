@@ -208,18 +208,20 @@ def bootstrap_predict(
                 if fourier_transform:
                     y_predict = data_transform.inverse_fourier_transform_data(
                         y_predict)
-
-            print(
-                "MSE y to y pred : ",
-                mean_squared_error(y, y_predict.detach().numpy()),
-            )
+                    
+            if y is not None:
+                print(
+                    "MSE y to y pred : ",
+                    mean_squared_error(y, y_predict.detach().numpy()),
+                )
             y_predict = y_predict_dim(y_predict, ids)
 
             if plot_save:
                 plot.plot_predict(ids, y, y_predict, predict_dir, mode)
 
-            y_predict_score.append(mean_squared_error(
-                y, y_predict.detach().numpy()))
+            if y is not None:
+                y_predict_score.append(mean_squared_error(
+                    y, y_predict.detach().numpy()))
 
             y_predict_all.append(y_predict.detach().numpy())
 
@@ -316,6 +318,10 @@ def bootstrap_predict(
         y_predict_all = np.asarray(y_predict_all)
         mean_y_predict = np.mean(y_predict_all, axis=0)
         std_y_predict = np.std(y_predict_all, axis=0)
+
+        if y is None:
+            # Dummy array for e
+            e = np.arange(y_predict.shape[1])
 
         if mode == "predict_xyz":
             for id_, mean_y_predict_, std_y_predict_ in tqdm.tqdm(zip(ids, mean_y_predict, std_y_predict)):

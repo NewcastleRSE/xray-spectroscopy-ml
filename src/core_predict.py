@@ -130,6 +130,8 @@ def main(
             with open(xanes_path / f"{id_}.txt", "r") as f:
                 xanes = load_xanes(f)
                 e, xanes_data[i, :] = xanes.spectrum
+    else:
+        e = None
 
     if xyz_path is None:
         xyz_data = None
@@ -197,6 +199,7 @@ def main(
         #             model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1]
         #         )
         # else:
+        
 
         parent_model_dir, predict_dir = make_dir()
 
@@ -223,11 +226,17 @@ def main(
                     y_predict = data_transform.inverse_fourier_transform_data(
                         y_predict)
 
-            print(
-                "MSE y to y pred : ",
-                mean_squared_error(y, y_predict.detach().numpy()),
-            )
+            if y is not None:
+
+                print(
+                    "MSE y to y pred : ",
+                    mean_squared_error(y, y_predict.detach().numpy()),
+                )
+
             y_predict = y_predict_dim(y_predict, ids)
+            if y is None:
+                # Dummy array for e
+                e = np.arange(y_predict.shape[1])
 
             if config["monte_carlo"]:
                 from montecarlo_fn import montecarlo_dropout
@@ -251,6 +260,7 @@ def main(
                             with open(predict_dir / f"{id_}.txt", "w") as f:
                                 save_xanes(
                                     f, XANES(e, y_predict_.detach().numpy()))
+
 
                     elif mode == "predict_xyz":
                         for id_, y_predict_ in tqdm.tqdm(zip(ids, y_predict)):

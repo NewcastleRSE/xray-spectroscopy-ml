@@ -25,6 +25,7 @@ import tqdm as tqdm
 from sklearn.metrics import mean_squared_error
 
 import data_transform
+import plot
 import model_utils
 from inout import save_xanes_mean, save_xyz_mean, save_xanes
 from predict import predict_xanes, predict_xyz
@@ -164,6 +165,10 @@ def ensemble_predict(
             ensemble_preds = []
             ensemble_recons = []
 
+
+        from model_utils import make_dir
+        parent_model_dir, predict_dir = make_dir()
+
         for i in range(n_model):
             n_dir = f"{model_dir}/model_00{i+1}/model.pt"
 
@@ -171,17 +176,17 @@ def ensemble_predict(
             model.eval()
             print("Loaded model from disk")
 
-            if fourier_transform:
-                parent_model_dir, predict_dir = model_utils.model_mode_error(
-                    model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1] * 2
-                )
-            else:
-                if model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
-                    parent_model_dir, predict_dir = model_utils.make_dir()
-                else:
-                    parent_model_dir, predict_dir = model_utils.model_mode_error(
-                        model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1]
-                    )
+            # if fourier_transform:
+            #     parent_model_dir, predict_dir = model_utils.model_mode_error(
+            #         model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1] * 2
+            #     )
+            # else:
+            #     if model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
+            #         parent_model_dir, predict_dir = model_utils.make_dir()
+            #     else:
+            #         parent_model_dir, predict_dir = model_utils.model_mode_error(
+            #             model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1]
+            #         )
 
             if model_mode == "mlp" or model_mode == "cnn":
                 if mode == "predict_xyz":
@@ -304,32 +309,42 @@ def ensemble_predict(
                 )
         else:
             ensemble_pred = sum(ensemble_preds) / len(ensemble_preds)
-            print(
-                "MSE y to y pred : ",
-                mean_squared_error(y, ensemble_pred),
-            )
+
+            if y is not None:
+                print(
+                    "MSE y to y pred : ",
+                    mean_squared_error(y, ensemble_pred),
+                )
+            else:
+                # Dummy array for e
+                e = np.arange(ensemble_pred.shape[1])
+
             if model_mode == "ae_mlp" or model_mode == "ae_cnn":
                 ensemble_recon = sum(ensemble_recons) / len(ensemble_recons)
-                print(
-                    "MSE x to x recon : ",
-                    mean_squared_error(x, ensemble_recon.detach().numpy()),
+                if x is not None:
+                    print(
+                        "MSE x to x recon : ",
+                        mean_squared_error(x, ensemble_recon.detach().numpy()),
 
-                )
+                    )
 
-            ensemble_preds = np.asarray(ensemble_preds)
-            mean_ensemble_pred = np.mean(ensemble_preds, axis=0)
-            std_ensemble_pred = np.std(ensemble_preds, axis=0)
+            ensemble_preds = torch.tensor(np.asarray(ensemble_preds)).float()
+            mean_ensemble_pred = torch.mean(ensemble_preds, dim=0)
+            std_ensemble_pred = torch.std(ensemble_preds, dim=0)
 
             if mode == "predict_xyz":
                 for id_, mean_y_predict_, std_y_predict_ in tqdm.tqdm(zip(ids, mean_ensemble_pred, std_ensemble_pred)):
                     with open(predict_dir / f"{id_}.txt", "w") as f:
-                        save_xyz_mean(f, mean_y_predict_, std_y_predict_)
+                        save_xyz_mean(f, mean_y_predict_.detach().numpy(), std_y_predict_.detach().numpy())
 
             elif mode == "predict_xanes":
                 for id_, mean_y_predict_, std_y_predict_ in tqdm.tqdm(zip(ids, mean_ensemble_pred, std_ensemble_pred)):
                     with open(predict_dir / f"{id_}.txt", "w") as f:
                         save_xanes_mean(
-                            f, XANES(e, mean_y_predict_), std_y_predict_)
+                            f, XANES(e, mean_y_predict_.detach().numpy()), std_y_predict_.detach().numpy())
+                        
+            if plot_save:
+                plot.plot_predict(ids, y, mean_ensemble_pred, predict_dir, mode)
 
     elif ensemble == "weight":
         print("ensemble by combining weight")
@@ -438,15 +453,19 @@ def ensemble_predict(
                     mean_squared_error(x, x_pred.detach().numpy()),
                 )
         else:
-            print(
-                "MSE y to y pred : ",
-                mean_squared_error(y, y_predict.detach().numpy()),
-            )
-            if model_mode == "ae_mlp" or model_mode == "ae_cnn":
+            if y is not None:
                 print(
-                    "MSE x to x recon : ",
-                    mean_squared_error(x, x_recon.detach().numpy()),
+                    "MSE y to y pred : ",
+                    mean_squared_error(y, y_predict.detach().numpy()),
                 )
+                if model_mode == "ae_mlp" or model_mode == "ae_cnn":
+                    print(
+                        "MSE x to x recon : ",
+                        mean_squared_error(x, x_recon.detach().numpy()),
+                    )
+            else:
+                # Dummy array for e
+                e = np.arange(y_predict.shape[1])
 
             if mode == "predict_xyz":
                 for id_, y_predict_ in tqdm.tqdm(zip(ids, y_predict)):
@@ -460,3 +479,6 @@ def ensemble_predict(
                     with open(predict_dir / f"{id_}.txt", "w") as f:
                         save_xanes(
                             f, XANES(e, y_predict_.detach().numpy()))
+                        
+            if plot_save:
+                    plot.plot_predict(ids, y, y_predict, predict_dir, mode)

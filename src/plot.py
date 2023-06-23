@@ -28,24 +28,28 @@ from sklearn.metrics.pairwise import cosine_similarity
 def plot_predict(ids, y, y_predict, predict_dir, mode):
     total_y = []
     total_y_pred = []
-    for id_, y_predict_, y_ in tqdm.tqdm(zip(ids, y_predict, y)):
-        sns.set()
-        plt.figure()
-        plt.plot(y_predict_.detach().numpy(), label="prediction")
-        plt.plot(y_, label="target")
-        plt.legend(loc="upper right")
-        total_y.append(y_)
-        total_y_pred.append(y_predict_.detach().numpy())
+    if y is not None:
+        for id_, y_predict_, y_ in tqdm.tqdm(zip(ids, y_predict, y)):
+            sns.set()
+            plt.figure()
+            plt.plot(y_predict_.detach().numpy(), label="prediction")
+            plt.plot(y_, label="target")
+            plt.legend(loc="upper right")
+            total_y.append(y_)
+            total_y_pred.append(y_predict_.detach().numpy())
 
-        if mode == "predict_xanes":
-            with open(predict_dir / f"{id_}.txt", "w") as f:
-                plt.savefig(predict_dir / f"{id_}.pdf")
+            plt.savefig(predict_dir / f"{id_}.pdf")
+            plt.close()
+    else:
+        for id_, y_predict_, in tqdm.tqdm(zip(ids, y_predict)):
+            sns.set()
+            plt.figure()
+            plt.plot(y_predict_.detach().numpy(), label="prediction")
+            plt.legend(loc="upper right")
+            total_y_pred.append(y_predict_.detach().numpy())
 
-        elif mode == "predict_xyz":
-            with open(predict_dir / f"{id_}.txt", "w") as f:
-                plt.savefig(predict_dir / f"{id_}.pdf")
-
-        plt.close()
+            plt.savefig(predict_dir / f"{id_}.pdf")
+            plt.close()
 
     print(">> saving Y data predictions...")
 
@@ -56,17 +60,18 @@ def plot_predict(ids, y, y_predict, predict_dir, mode):
     sns.set_style("dark")
     plt.figure()
 
-    mean_y = np.mean(total_y, axis=0)
-    stddev_y = np.std(total_y, axis=0)
-    plt.plot(mean_y, label="target")
+    if y is not None:
+        mean_y = np.mean(total_y, axis=0)
+        stddev_y = np.std(total_y, axis=0)
+        plt.plot(mean_y, label="target")
 
-    plt.fill_between(
-        np.arange(mean_y.shape[0]),
-        mean_y + stddev_y,
-        mean_y - stddev_y,
-        alpha=0.4,
-        linewidth=0,
-    )
+        plt.fill_between(
+            np.arange(mean_y.shape[0]),
+            mean_y + stddev_y,
+            mean_y - stddev_y,
+            alpha=0.4,
+            linewidth=0,
+        )
 
     mean_y_pred = np.mean(total_y_pred, axis=0)
     stddev_y_pred = np.std(total_y_pred, axis=0)
@@ -114,15 +119,8 @@ def plot_ae_predict(ids, y, y_predict, x, x_recon, e, predict_dir, mode):
         # total_x.append(x_.detach().numpy())
         total_x.append(x_)
         total_x_recon.append(x_recon_.detach().numpy())
-        if mode == "predict_xanes":
-            with open(predict_dir / f"{id_}.txt", "w") as f:
-                save_xanes(f, XANES(e, y_predict_.detach().numpy()))
-                plt.savefig(predict_dir / f"{id_}.pdf")
 
-        elif mode == "predict_xyz":
-            with open(predict_dir / f"{id_}.txt", "w") as f:
-                f.write("\n".join(map(str, y_predict_.detach().numpy())))
-                plt.savefig(predict_dir / f"{id_}.pdf")
+        plt.savefig(predict_dir / f"{id_}.pdf")
 
         fig.clf()
         plt.close(fig)
@@ -333,37 +331,69 @@ def plot_cosine_similarity(x, y, x_recon, y_recon, x_pred, y_pred, analysis_dir)
 def plot_mc_predict(ids, y, y_predict, prob_mean, prob_var, e, predict_dir, mode):
     total_y = []
     total_y_pred = []
-    for id_, y_predict_, y_, prob_mean_, prob_var_ in tqdm.tqdm(
-        zip(ids, y_predict, y, prob_mean, prob_var)
-    ):
-        sns.set()
-        plt.figure()
-        plt.plot(y_predict_.detach().numpy(), label="prediction")
-        plt.plot(y_, label="target")
-        plt.plot(prob_mean_, label="monte_carlo")
+    if y is not None:
+        for id_, y_predict_, y_, prob_mean_, prob_var_ in tqdm.tqdm(
+            zip(ids, y_predict, y, prob_mean, prob_var)
+        ):
+            sns.set()
+            plt.figure()
+            plt.plot(y_predict_.detach().numpy(), label="prediction")
+            plt.plot(y_, label="target")
+            plt.plot(prob_mean_, label="monte_carlo")
 
-        plt.fill_between(
-            np.arange(prob_mean_.shape[0]),
-            prob_mean_ + prob_var_,
-            prob_mean_ - prob_var_,
-            alpha=0.4,
-            linewidth=0,
-        )
-        plt.legend(loc="upper right")
-        total_y.append(y_)
-        total_y_pred.append(y_predict_.detach().numpy())
+            plt.fill_between(
+                np.arange(prob_mean_.shape[0]),
+                prob_mean_ + prob_var_,
+                prob_mean_ - prob_var_,
+                alpha=0.4,
+                linewidth=0,
+            )
+            plt.legend(loc="upper right")
+            total_y.append(y_)
+            total_y_pred.append(y_predict_.detach().numpy())
 
-        if mode == "predict_xanes":
-            with open(predict_dir / f"{id_}.txt", "w") as f:
-                save_xanes(f, XANES(e, y_predict_.detach().numpy()))
-                plt.savefig(predict_dir / f"{id_}.pdf")
+            if mode == "predict_xanes":
+                with open(predict_dir / f"{id_}.txt", "w") as f:
+                    save_xanes(f, XANES(e, y_predict_.detach().numpy()))
+                    plt.savefig(predict_dir / f"{id_}.pdf")
 
-        elif mode == "predict_xyz":
-            with open(predict_dir / f"{id_}.txt", "w") as f:
-                f.write("\n".join(map(str, y_predict_.detach().numpy())))
-                plt.savefig(predict_dir / f"{id_}.pdf")
+            elif mode == "predict_xyz":
+                with open(predict_dir / f"{id_}.txt", "w") as f:
+                    f.write("\n".join(map(str, y_predict_.detach().numpy())))
+                    plt.savefig(predict_dir / f"{id_}.pdf")
 
-        plt.close()
+            plt.close()
+    else:
+        for id_, y_predict_, prob_mean_, prob_var_ in tqdm.tqdm(
+            zip(ids, y_predict, prob_mean, prob_var)
+        ):
+            sns.set()
+            plt.figure()
+            plt.plot(y_predict_.detach().numpy(), label="prediction")
+            plt.plot(prob_mean_, label="monte_carlo")
+
+            plt.fill_between(
+                np.arange(prob_mean_.shape[0]),
+                prob_mean_ + prob_var_,
+                prob_mean_ - prob_var_,
+                alpha=0.4,
+                linewidth=0,
+            )
+            plt.legend(loc="upper right")
+            total_y_pred.append(y_predict_.detach().numpy())
+
+            if mode == "predict_xanes":
+                with open(predict_dir / f"{id_}.txt", "w") as f:
+                    save_xanes(f, XANES(e, y_predict_.detach().numpy()))
+                    plt.savefig(predict_dir / f"{id_}.pdf")
+
+            elif mode == "predict_xyz":
+                with open(predict_dir / f"{id_}.txt", "w") as f:
+                    f.write("\n".join(map(str, y_predict_.detach().numpy())))
+                    plt.savefig(predict_dir / f"{id_}.pdf")
+
+            plt.close()
+
 
     print(">> saving Y data predictions...")
 
@@ -374,17 +404,18 @@ def plot_mc_predict(ids, y, y_predict, prob_mean, prob_var, e, predict_dir, mode
     sns.set_style("dark")
     plt.figure()
 
-    mean_y = np.mean(total_y, axis=0)
-    stddev_y = np.std(total_y, axis=0)
-    plt.plot(mean_y, label="target")
+    if y is not None:
+        mean_y = np.mean(total_y, axis=0)
+        stddev_y = np.std(total_y, axis=0)
+        plt.plot(mean_y, label="target")
 
-    plt.fill_between(
-        np.arange(mean_y.shape[0]),
-        mean_y + stddev_y,
-        mean_y - stddev_y,
-        alpha=0.4,
-        linewidth=0,
-    )
+        plt.fill_between(
+            np.arange(mean_y.shape[0]),
+            mean_y + stddev_y,
+            mean_y - stddev_y,
+            alpha=0.4,
+            linewidth=0,
+        )
 
     mean_y_pred = np.mean(total_y_pred, axis=0)
     stddev_y_pred = np.std(total_y_pred, axis=0)
