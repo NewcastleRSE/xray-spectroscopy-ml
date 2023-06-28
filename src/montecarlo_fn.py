@@ -110,10 +110,12 @@ def montecarlo_dropout_ae(
         "MSE x to x prob : ",
         mean_squared_error(data_compress["x"], mean_recon.detach().numpy()),
     )
-    print(
-        "MSE y to y prob : ",
-        mean_squared_error(data_compress["y"], mean_output.detach().numpy()),
-    )
+
+    if data_compress["y"] is not None:
+        print(
+            "MSE y to y prob : ",
+            mean_squared_error(data_compress["y"], mean_output.detach().numpy()),
+        )
     # confidence interval
     if plot_save:
         plot_mc_ae_predict(

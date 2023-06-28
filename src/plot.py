@@ -97,33 +97,60 @@ def plot_ae_predict(ids, y, y_predict, x, x_recon, e, predict_dir, mode):
     total_x = []
     total_x_recon = []
 
-    for id_, y_predict_, y_, x_recon_, x_ in tqdm.tqdm(
-        zip(ids, y_predict, y, x_recon, x)
-    ):
-        sns.set()
-        fig, (ax1, ax2) = plt.subplots(2)
+    if y is not None:
+        for id_, y_predict_, y_, x_recon_, x_ in tqdm.tqdm(
+            zip(ids, y_predict, y, x_recon, x)
+        ):
+            sns.set()
+            fig, (ax1, ax2) = plt.subplots(2)
 
-        ax1.plot(y_predict_.detach().numpy(), label="prediction")
-        ax1.set_title("prediction")
-        ax1.plot(y_, label="target")
-        ax1.legend(loc="upper right")
+            ax1.plot(y_predict_.detach().numpy(), label="prediction")
+            ax1.set_title("prediction")
+            ax1.plot(y_, label="target")
+            ax1.legend(loc="upper right")
 
-        ax2.plot(x_recon_.detach().numpy(), label="prediction")
-        ax2.set_title("reconstruction")
-        ax2.plot(x_, label="target")
-        ax2.legend(loc="upper right")
-        # print(type(x_))
-        total_y.append(y_)
-        total_y_pred.append(y_predict_.detach().numpy())
+            ax2.plot(x_recon_.detach().numpy(), label="prediction")
+            ax2.set_title("reconstruction")
+            ax2.plot(x_, label="target")
+            ax2.legend(loc="upper right")
+            # print(type(x_))
+            total_y.append(y_)
+            total_y_pred.append(y_predict_.detach().numpy())
 
-        # total_x.append(x_.detach().numpy())
-        total_x.append(x_)
-        total_x_recon.append(x_recon_.detach().numpy())
+            # total_x.append(x_.detach().numpy())
+            total_x.append(x_)
+            total_x_recon.append(x_recon_.detach().numpy())
 
-        plt.savefig(predict_dir / f"{id_}.pdf")
+            plt.savefig(predict_dir / f"{id_}.pdf")
 
-        fig.clf()
-        plt.close(fig)
+            fig.clf()
+            plt.close(fig)
+    else:
+        for id_, y_predict_, x_recon_, x_ in tqdm.tqdm(
+        zip(ids, y_predict, x_recon, x)
+        ):
+            sns.set()
+            fig, (ax1, ax2) = plt.subplots(2)
+
+            ax1.plot(y_predict_.detach().numpy(), label="prediction")
+            ax1.set_title("prediction")
+            ax1.legend(loc="upper right")
+
+            ax2.plot(x_recon_.detach().numpy(), label="prediction")
+            ax2.set_title("reconstruction")
+            ax2.plot(x_, label="target")
+            ax2.legend(loc="upper right")
+
+            total_y_pred.append(y_predict_.detach().numpy())
+
+            # total_x.append(x_.detach().numpy())
+            total_x.append(x_)
+            total_x_recon.append(x_recon_.detach().numpy())
+
+            plt.savefig(predict_dir / f"{id_}.pdf")
+
+            fig.clf()
+            plt.close(fig)
 
     print(">> saving Y data predictions...")
 
@@ -136,17 +163,18 @@ def plot_ae_predict(ids, y, y_predict, x, x_recon, e, predict_dir, mode):
     sns.set_style("dark")
     fig, (ax1, ax2) = plt.subplots(2)
 
-    mean_y = np.mean(total_y, axis=0)
-    stddev_y = np.std(total_y, axis=0)
+    if y is not None:
+        mean_y = np.mean(total_y, axis=0)
+        stddev_y = np.std(total_y, axis=0)
 
-    ax1.plot(mean_y, label="target")
-    ax1.fill_between(
-        np.arange(mean_y.shape[0]),
-        mean_y + stddev_y,
-        mean_y - stddev_y,
-        alpha=0.4,
-        linewidth=0,
-    )
+        ax1.plot(mean_y, label="target")
+        ax1.fill_between(
+            np.arange(mean_y.shape[0]),
+            mean_y + stddev_y,
+            mean_y - stddev_y,
+            alpha=0.4,
+            linewidth=0,
+        )
 
     mean_y_pred = np.mean(total_y_pred, axis=0)
     stddev_y_pred = np.std(total_y_pred, axis=0)
@@ -453,82 +481,116 @@ def plot_mc_ae_predict(
     total_y_pred = []
     total_x = []
     total_x_recon = []
-    for (
-        id_,
-        y_predict_,
-        y_,
-        x_recon_,
-        x_,
-        mean_output_,
-        var_output_,
-        mean_recon_,
-        var_recon_,
-    ) in tqdm.tqdm(
-        zip(
-            ids,
-            y_predict,
-            y,
-            x_recon,
-            x,
-            mean_output,
-            var_output,
-            mean_recon,
-            var_recon,
-        )
-    ):
-        sns.set()
-        fig, (ax1, ax2) = plt.subplots(2)
 
-        ax1.plot(y_predict_.detach().numpy(), label="prediction")
-        ax1.plot(y_, label="target")
-        ax1.plot(mean_output_, label="monte_carlo")
-        ax1.set_title("prediction")
-        ax1.legend(loc="upper right")
+    if y is not None:
+        for id_, y_predict_, y_, x_recon_, x_, mean_output_, var_output_, mean_recon_, var_recon_ in tqdm.tqdm(
+            zip(ids, y_predict, y, x_recon, x, mean_output, var_output, mean_recon, var_recon)
+        ):
+            sns.set()
+            fig, (ax1, ax2) = plt.subplots(2)
 
-        ax1.fill_between(
-            np.arange(mean_output_.shape[0]),
-            mean_output_ + var_output_,
-            mean_output_ - var_output_,
-            alpha=0.4,
-            linewidth=0,
-        )
+            ax1.plot(y_predict_.detach().numpy(), label="prediction")
+            ax1.plot(y_, label="target")
+            ax1.plot(mean_output_, label="monte_carlo")
+            ax1.set_title("prediction")
+            ax1.legend(loc="upper right")
 
-        ax2.plot(x_recon_.detach().numpy(), label="reconstruction")
-        ax2.plot(x_, label="target")
-        ax2.plot(mean_recon_, label="monte_carlo")
-        ax2.set_title("prediction")
-        ax2.legend(loc="upper right")
+            ax1.fill_between(
+                np.arange(mean_output_.shape[0]),
+                mean_output_ + var_output_,
+                mean_output_ - var_output_,
+                alpha=0.4,
+                linewidth=0,
+            )
 
-        ax2.fill_between(
-            np.arange(mean_recon_.shape[0]),
-            mean_recon_ + var_recon_,
-            mean_recon_ - var_recon_,
-            alpha=0.4,
-            linewidth=0,
-        )
+            ax2.plot(x_recon_.detach().numpy(), label="reconstruction")
+            ax2.plot(x_, label="target")
+            ax2.plot(mean_recon_, label="monte_carlo")
+            ax2.set_title("prediction")
+            ax2.legend(loc="upper right")
 
-        plt.legend(loc="upper right")
+            ax2.fill_between(
+                np.arange(mean_recon_.shape[0]),
+                mean_recon_ + var_recon_,
+                mean_recon_ - var_recon_,
+                alpha=0.4,
+                linewidth=0,
+            )
 
-        if mode == "predict_xanes":
-            with open(predict_dir / f"{id_}.txt", "w") as f:
-                save_xanes(f, XANES(e, y_predict_.detach().numpy()))
-                plt.savefig(predict_dir / f"{id_}.pdf")
+            plt.legend(loc="upper right")
 
-        elif mode == "predict_xyz":
-            with open(predict_dir / f"{id_}.txt", "w") as f:
-                f.write("\n".join(map(str, y_predict_.detach().numpy())))
-                plt.savefig(predict_dir / f"{id_}.pdf")
+            if mode == "predict_xanes":
+                with open(predict_dir / f"{id_}.txt", "w") as f:
+                    save_xanes(f, XANES(e, y_predict_.detach().numpy()))
 
-        fig.clf()
-        plt.close(fig)
+            elif mode == "predict_xyz":
+                with open(predict_dir / f"{id_}.txt", "w") as f:
+                    f.write("\n".join(map(str, y_predict_.detach().numpy())))
+                    
+            plt.savefig(predict_dir / f"{id_}.pdf")
+            fig.clf()
+            plt.close(fig)
+
+            total_y.append(y_)
+            total_y_pred.append(y_predict_.detach().numpy())
+
+            total_x.append(x_)
+            total_x_recon.append(x_recon_.detach().numpy())
+
+    else:
+        for id_, y_predict_, x_recon_, x_, mean_output_, var_output_, mean_recon_, var_recon_ in tqdm.tqdm(
+            zip(ids, y_predict, x_recon, x, mean_output, var_output, mean_recon, var_recon)
+        ):
+            sns.set()
+            fig, (ax1, ax2) = plt.subplots(2)
+
+            ax1.plot(y_predict_.detach().numpy(), label="prediction")
+            ax1.plot(mean_output_, label="monte_carlo")
+            ax1.set_title("prediction")
+            ax1.legend(loc="upper right")
+
+            ax1.fill_between(
+                np.arange(mean_output_.shape[0]),
+                mean_output_ + var_output_,
+                mean_output_ - var_output_,
+                alpha=0.4,
+                linewidth=0,
+            )
+
+            ax2.plot(x_recon_.detach().numpy(), label="reconstruction")
+            ax2.plot(x_, label="target")
+            ax2.plot(mean_recon_, label="monte_carlo")
+            ax2.set_title("prediction")
+            ax2.legend(loc="upper right")
+
+            ax2.fill_between(
+                np.arange(mean_recon_.shape[0]),
+                mean_recon_ + var_recon_,
+                mean_recon_ - var_recon_,
+                alpha=0.4,
+                linewidth=0,
+            )
+
+            plt.legend(loc="upper right")
+
+            if mode == "predict_xanes":
+                with open(predict_dir / f"{id_}.txt", "w") as f:
+                    save_xanes(f, XANES(e, y_predict_.detach().numpy()))                 
+
+            elif mode == "predict_xyz":
+                with open(predict_dir / f"{id_}.txt", "w") as f:
+                    f.write("\n".join(map(str, y_predict_.detach().numpy())))
+
+            plt.savefig(predict_dir / f"{id_}.pdf")
+            fig.clf()
+            plt.close(fig)
+
+            total_y_pred.append(y_predict_.detach().numpy())
+
+            total_x.append(x_)
+            total_x_recon.append(x_recon_.detach().numpy())
 
     print(">> saving Y data predictions...")
-
-    total_y.append(y_)
-    total_y_pred.append(y_predict_.detach().numpy())
-
-    total_x.append(x_)
-    total_x_recon.append(x_recon_.detach().numpy())
 
     total_y = np.asarray(total_y)
     total_y_pred = np.asarray(total_y_pred)
@@ -539,17 +601,18 @@ def plot_mc_ae_predict(
     sns.set_style("dark")
     fig, (ax1, ax2) = plt.subplots(2)
 
-    mean_y = np.mean(total_y, axis=0)
-    stddev_y = np.std(total_y, axis=0)
+    if y is not None:
+        mean_y = np.mean(total_y, axis=0)
+        stddev_y = np.std(total_y, axis=0)
 
-    ax1.plot(mean_y, label="target")
-    ax1.fill_between(
-        np.arange(mean_y.shape[0]),
-        mean_y + stddev_y,
-        mean_y - stddev_y,
-        alpha=0.4,
-        linewidth=0,
-    )
+        ax1.plot(mean_y, label="target")
+        ax1.fill_between(
+            np.arange(mean_y.shape[0]),
+            mean_y + stddev_y,
+            mean_y - stddev_y,
+            alpha=0.4,
+            linewidth=0,
+        )
 
     mean_y_pred = np.mean(total_y_pred, axis=0)
     stddev_y_pred = np.std(total_y_pred, axis=0)

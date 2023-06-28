@@ -225,8 +225,8 @@ def ensemble_predict(
                             xanes_recon
                         )
 
-                    ensemble_preds.append(xyz_predict)
-                    ensemble_recons.append(xanes_recon)
+                    ensemble_preds.append(xyz_predict.detach().numpy())
+                    ensemble_recons.append(xanes_recon.detach().numpy())
 
                 elif mode == "predict_xanes":
                     x = xyz_data
@@ -239,8 +239,8 @@ def ensemble_predict(
                             xanes_predict
                         )
 
-                    ensemble_preds.append(xanes_predict)
-                    ensemble_recons.append(xyz_recon)
+                    ensemble_preds.append(xanes_predict.detach().numpy())
+                    ensemble_recons.append(xyz_recon.detach().numpy())
 
             elif model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
                 # Convert to float
@@ -324,13 +324,16 @@ def ensemble_predict(
                 if x is not None:
                     print(
                         "MSE x to x recon : ",
-                        mean_squared_error(x, ensemble_recon.detach().numpy()),
+                        mean_squared_error(x, ensemble_recon),
 
                     )
 
             ensemble_preds = torch.tensor(np.asarray(ensemble_preds)).float()
             mean_ensemble_pred = torch.mean(ensemble_preds, dim=0)
             std_ensemble_pred = torch.std(ensemble_preds, dim=0)
+            # ensemble_preds = np.asarray(ensemble_preds)
+            # mean_ensemble_pred = np.mean(ensemble_preds, axis=0)
+            # std_ensemble_pred = np.std(ensemble_preds, axis=0)
 
             if mode == "predict_xyz":
                 for id_, mean_y_predict_, std_y_predict_ in tqdm.tqdm(zip(ids, mean_ensemble_pred, std_ensemble_pred)):

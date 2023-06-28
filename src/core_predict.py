@@ -309,15 +309,23 @@ def main(
                 if fourier_transform:
                     y_predict = data_transform.inverse_fourier_transform_data(
                         y_predict)
+                    
+            if x is not None:
+                print(
+                    "MSE x to x recon : ",
+                    mean_squared_error(x, x_recon.detach().numpy()),
+                )
 
-            print(
-                "MSE x to x recon : ",
-                mean_squared_error(x, x_recon.detach().numpy()),
-            )
-            print(
-                "MSE y to y pred : ",
-                mean_squared_error(y, y_predict.detach().numpy()),
-            )
+            if y is not None:
+                print(
+                    "MSE y to y pred : ",
+                    mean_squared_error(y, y_predict.detach().numpy()),
+                )
+
+            if y is None: 
+                # Dummy array for e
+                e = np.arange(y_predict.shape[1])
+
 
             if config["monte_carlo"]:
                 from montecarlo_fn import montecarlo_dropout_ae
@@ -343,6 +351,8 @@ def main(
             else:
                 y_predict = y_predict_dim(y_predict, ids)
 
+
+
                 if save:
                     if mode == "predict_xanes":
                         for id_, y_predict_ in tqdm.tqdm(zip(ids, y_predict)):
@@ -357,11 +367,11 @@ def main(
                                     "\n".join(
                                         map(str, y_predict_.detach().numpy()))
                                 )
-                        for id_, y_ in tqdm.tqdm(zip(ids, y)):
-                            with open(predict_dir / f"{id_}.wacsf", "w") as f:
-                                f.write(
-                                    "\n".join(map(str, y_))
-                                )
+                        # for id_, y_ in tqdm.tqdm(zip(ids, y)):
+                        #     with open(predict_dir / f"{id_}.wacsf", "w") as f:
+                        #         f.write(
+                        #             "\n".join(map(str, y_))
+                        #         )
 
                 if config["plot_save"]:
                     from plot import plot_ae_predict

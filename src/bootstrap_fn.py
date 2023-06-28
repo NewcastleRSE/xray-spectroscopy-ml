@@ -255,23 +255,28 @@ def bootstrap_predict(
                     y_predict = data_transform.inverse_fourier_transform_data(
                         y_predict)
 
-            y_predict_score.append(mean_squared_error(
-                y, y_predict.detach().numpy()))
+            if y is not None:
+                y_predict_score.append(mean_squared_error(
+                    y, y_predict.detach().numpy()))
+                
             x_recon_score.append(mean_squared_error(
                 x, x_recon.detach().numpy()))
+            
+            y_predict_all.append(y_predict.detach().numpy())
 
             print(
                 "MSE x to x recon : ",
                 mean_squared_error(x, x_recon.detach().numpy()),
             )
-            print(
-                "MSE y to y pred : ",
-                mean_squared_error(y, y_predict.detach().numpy()),
-            )
-            y_predict = y_predict_dim(y_predict, ids, model_dir)
+            if y is not None:
+                print(
+                    "MSE y to y pred : ",
+                    mean_squared_error(y, y_predict.detach().numpy()),
+                )
+            y_predict = y_predict_dim(y_predict, ids)
             if plot_save:
                 plot.plot_ae_predict(
-                    ids, y, y_predict, x, x_recon, predict_dir, mode
+                    ids, y, y_predict, x, x_recon, e, predict_dir, mode
                 )
 
         elif model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
@@ -344,6 +349,15 @@ def bootstrap_predict(
         print(
             f"Mean score reconstruction: {mean_score:.4f}, Std score: {std_score:.4f}"
         )
+
+        y_predict_all = np.asarray(y_predict_all)
+        mean_y_predict = np.mean(y_predict_all, axis=0)
+        std_y_predict = np.std(y_predict_all, axis=0)
+
+        if y is None:
+            # Dummy array for e
+            e = np.arange(y_predict.shape[1])
+
         if mode == "predict_xyz":
             for id_, mean_y_predict_, std_y_predict_ in tqdm.tqdm(zip(ids, mean_y_predict, std_y_predict)):
                 with open(predict_dir / f"{id_}.txt", "w") as f:
