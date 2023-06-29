@@ -261,36 +261,130 @@ def plot_running_aegan(losses, model_dir):
     plt.close(fig)
 
 
-def plot_aegan_predict(ids, x, y, x_recon, y_recon, x_pred, y_pred, plots_dir):
-    for id_, x_, y_, x_recon_, y_recon_, x_pred_, y_pred_ in tqdm.tqdm(
-        zip(ids, x, y, x_recon, y_recon, x_pred, y_pred)
-    ):
-        sns.set()
-        fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, figsize=(20, 20))
+def plot_aegan_predict(ids, x, y, x_recon, y_recon, x_pred, y_pred, predict_dir, mode):
 
-        ax1.plot(x_recon_, label="Reconstruction")
-        ax1.set_title(f"Structure Reconstruction")
-        ax1.plot(x_, label="target")
-        ax1.legend(loc="upper left")
+    x_recon = x_recon.detach().numpy() if x_recon is not None else None
+    y_recon = y_recon.detach().numpy() if y_recon is not None else None
 
-        ax2.plot(y_recon_, label="Reconstruction")
-        ax2.set_title(f"Spectrum Reconstruction")
-        ax2.plot(y_, label="target")
-        ax2.legend(loc="upper left")
+    x_pred = x_pred.detach().numpy() if x_pred is not None else None
+    y_pred = y_pred.detach().numpy() if y_pred is not None else None
 
-        ax3.plot(y_pred_, label="Prediction")
-        ax3.set_title(f"Spectrum Prediction")
-        ax3.plot(y_, label="target")
-        ax3.legend(loc="upper left")
+    if mode == "predict_xyz":
 
-        ax4.plot(x_pred_, label="Prediction")
-        ax4.set_title(f"Structure Prediction")
-        ax4.plot(x_, label="target")
-        ax4.legend(loc="upper left")
+        if x is None and y is not None:
 
-        plt.savefig(plots_dir / f"{id_}.pdf")
-        fig.clf()
-        plt.close(fig)
+            for id_, y_, y_recon_, x_pred_ in tqdm.tqdm(zip(ids, y, y_recon, x_pred)):
+                sns.set()
+                fig, (ax1, ax2) = plt.subplots(2, figsize=(20, 20))
+
+                ax1.plot(y_recon_, label="Reconstruction")
+                ax1.set_title(f"Spectrum Reconstruction")
+                ax1.plot(y_, label="target")
+                ax1.legend(loc="upper left")
+
+                ax2.plot(x_pred_, label="Prediction")
+                ax2.set_title(f"Structure Prediction")
+                ax2.legend(loc="upper left")
+
+                plt.savefig(predict_dir / f"{id_}.pdf")
+                fig.clf()
+                plt.close(fig)
+        
+        elif x is not None and y is not None:
+
+            for id_, y_, x_, y_recon_, x_pred_ in tqdm.tqdm(zip(ids, y, x, y_recon, x_pred)):
+                sns.set()
+                fig, (ax1, ax2) = plt.subplots(2, figsize=(20, 20))
+
+                ax1.plot(y_recon_, label="Reconstruction")
+                ax1.set_title(f"Spectrum Reconstruction")
+                ax1.plot(y_, label="target")
+                ax1.legend(loc="upper left")
+
+                ax2.plot(x_pred_, label="Prediction")
+                ax2.set_title(f"Structure Prediction")
+                ax2.plot(x_, label="target")
+                ax2.legend(loc="upper left")
+
+                plt.savefig(predict_dir / f"{id_}.pdf")
+                fig.clf()
+                plt.close(fig)
+
+
+    elif mode == "predict_xanes":
+
+        if x is not None and y is None:
+
+            for id_, x_, x_recon_, y_pred_ in tqdm.tqdm(zip(ids, x, x_recon, y_pred)):
+                sns.set()
+                fig, (ax1, ax2) = plt.subplots(2, figsize=(20, 20))
+
+                ax1.plot(x_recon_, label="Reconstruction")
+                ax1.set_title(f"Structure Reconstruction")
+                ax1.plot(x_, label="target")
+                ax1.legend(loc="upper left")
+
+                ax2.plot(y_pred_, label="Prediction")
+                ax2.set_title(f"Spectrum Prediction")
+                ax2.legend(loc="upper left")
+
+                plt.savefig(predict_dir / f"{id_}.pdf")
+                fig.clf()
+                plt.close(fig)
+        
+        elif x is not None and y is not None:
+
+            for id_, x_, y_, x_recon_, y_pred_ in tqdm.tqdm(zip(ids, x, y, x_recon, y_pred)):
+                sns.set()
+                fig, (ax1, ax2) = plt.subplots(2, figsize=(20, 20))
+
+                ax1.plot(x_recon_, label="Reconstruction")
+                ax1.set_title(f"Structure Reconstruction")
+                ax1.plot(x_, label="target")
+                ax1.legend(loc="upper left")
+
+                ax2.plot(y_pred_, label="Prediction")
+                ax2.set_title(f"Spectrum Prediction")
+                ax2.plot(y_, label="target")
+                ax2.legend(loc="upper left")
+
+                plt.savefig(predict_dir / f"{id_}.pdf")
+                fig.clf()
+                plt.close(fig)
+
+    elif mode == "predict_all":
+
+        if x is not None and y is not None:
+
+            for id_, x_, y_, x_recon_, y_recon_, x_pred_, y_pred_ in tqdm.tqdm(
+                zip(ids, x, y, x_recon, y_recon, x_pred, y_pred)
+            ):
+                sns.set()
+                fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, figsize=(20, 20))
+
+                ax1.plot(x_recon_, label="Reconstruction")
+                ax1.set_title(f"Structure Reconstruction")
+                ax1.plot(x_, label="target")
+                ax1.legend(loc="upper left")
+
+                ax2.plot(y_recon_, label="Reconstruction")
+                ax2.set_title(f"Spectrum Reconstruction")
+                ax2.plot(y_, label="target")
+                ax2.legend(loc="upper left")
+
+                ax3.plot(y_pred_, label="Prediction")
+                ax3.set_title(f"Spectrum Prediction")
+                ax3.plot(y_, label="target")
+                ax3.legend(loc="upper left")
+
+                ax4.plot(x_pred_, label="Prediction")
+                ax4.set_title(f"Structure Prediction")
+                ax4.plot(x_, label="target")
+                ax4.legend(loc="upper left")
+
+                plt.savefig(predict_dir / f"{id_}.pdf")
+                fig.clf()
+                plt.close(fig)
 
 
 def plot_aegan_spectrum(ids, x, x_recon, y_pred, plots_dir):

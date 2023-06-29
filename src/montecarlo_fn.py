@@ -137,6 +137,9 @@ def montecarlo_dropout_ae(
 def montecarlo_dropout_aegan(model, x, y, n_mc):
     model.train()
 
+    x = torch.tensor(x).float() if x is not None else None
+    y = torch.tensor(y).float() if y is not None else None 
+
     if x is not None and y is not None:
         prob_x_pred = []
         prob_y_pred = []

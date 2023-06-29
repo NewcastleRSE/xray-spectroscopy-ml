@@ -26,55 +26,113 @@ from spectrum.xanes import XANES
 from utils import unique_path
 
 
-def predict_aegan(xyz_path, xanes_path, x, y, model, fourier_transform):
-    if xyz_path is not None:
-        x_recon = model.reconstruct_structure(x).detach().numpy()
-        y_pred = model.predict_spectrum(x)
-        print(
-            f">> Reconstruction error (structure) = {mean_squared_error(x,x_recon):.4f}"
-        )
-        if fourier_transform:
-            y_pred = data_transform.inverse_fourier_transform_data(y_pred)
+def predict_aegan(x, y, model, mode, fourier_transform):
 
-        y_pred = y_pred.detach().numpy()
+    x = torch.tensor(x).float() if x is not None else None
+    y = torch.tensor(y).float() if y is not None else None
 
-    if xanes_path is not None:
+    if mode == "predict_xyz":
+
         if fourier_transform:
             z = data_transform.fourier_transform_data(y)
             z = torch.tensor(z).float()
             y_recon = model.reconstruct_spectrum(z)
             y_recon = (
                 data_transform.inverse_fourier_transform_data(
-                    y_recon).detach().numpy()
+                y_recon)
             )
-            x_pred = model.predict_structure(z).detach().numpy()
+            x_pred = model.predict_structure(z)
         else:
-            y_recon = model.reconstruct_spectrum(y).detach().numpy()
-            x_pred = model.predict_structure(y).detach().numpy()
+            y_recon = model.reconstruct_spectrum(y)
+            x_pred = model.predict_structure(y)
 
-        print(
-            f">> Reconstruction error (spectrum) =  {mean_squared_error(y,y_recon):.4f}"
-        )
-
-    if xyz_path is None:
-        x_recon = None
         y_pred = None
+        x_recon = None
 
-    if xanes_path is None:
-        y_recon = None
+    elif mode == "predict_xanes":
+
+        x_recon = model.reconstruct_structure(x)
+        y_pred = model.predict_spectrum(x)
+
+        if fourier_transform:
+            y_pred = data_transform.inverse_fourier_transform_data(y_pred)
+
         x_pred = None
+        y_recon = None
+            
+    elif mode == "predict_all":
 
-    if xyz_path is not None and xanes_path is not None:  # Get prediction errors
-        print(
-            f">> Prediction error (structure) =     {mean_squared_error(x,x_pred):.4f}"
-        )
-        print(
-            f">> Prediction error (spectrum) =      {mean_squared_error(y,y_pred):.4f}"
-        )
+        x_recon = model.reconstruct_structure(x)
+        y_pred = model.predict_spectrum(x)
 
-    print(">> ...done!\n")
+        if fourier_transform:
+            # xyz -> xanes
+            y_pred = data_transform.inverse_fourier_transform_data(y_pred)
+
+            # xanes -> xyz
+            z = data_transform.fourier_transform_data(y)
+            z = torch.tensor(z).float()
+            y_recon = model.reconstruct_spectrum(z)
+            y_recon = (
+                data_transform.inverse_fourier_transform_data(
+                    y_recon)
+            )
+            x_pred = model.predict_structure(z)
+        else:
+            y_recon = model.reconstruct_spectrum(y)
+            x_pred = model.predict_structure(y)
 
     return x_recon, y_pred, y_recon, x_pred
+
+# def predict_aegan(xyz_path, xanes_path, x, y, model, fourier_transform):
+#     if xyz_path is not None:
+#         x_recon = model.reconstruct_structure(x).detach().numpy()
+#         y_pred = model.predict_spectrum(x)
+#         print(
+#             f">> Reconstruction error (structure) = {mean_squared_error(x,x_recon):.4f}"
+#         )
+#         if fourier_transform:
+#             y_pred = data_transform.inverse_fourier_transform_data(y_pred)
+
+#         y_pred = y_pred.detach().numpy()
+
+#     if xanes_path is not None:
+#         if fourier_transform:
+#             z = data_transform.fourier_transform_data(y)
+#             z = torch.tensor(z).float()
+#             y_recon = model.reconstruct_spectrum(z)
+#             y_recon = (
+#                 data_transform.inverse_fourier_transform_data(
+#                     y_recon).detach().numpy()
+#             )
+#             x_pred = model.predict_structure(z).detach().numpy()
+#         else:
+#             y_recon = model.reconstruct_spectrum(y).detach().numpy()
+#             x_pred = model.predict_structure(y).detach().numpy()
+
+#         print(
+#             f">> Reconstruction error (spectrum) =  {mean_squared_error(y,y_recon):.4f}"
+#         )
+
+#     if xyz_path is None:
+#         x_recon = None
+#         y_pred = None
+
+#     if xanes_path is None:
+#         y_recon = None
+#         x_pred = None
+
+#     if xyz_path is not None and xanes_path is not None:  # Get prediction errors
+#         print(
+#             f">> Prediction error (structure) =     {mean_squared_error(x,x_pred):.4f}"
+#         )
+#         print(
+#             f">> Prediction error (spectrum) =      {mean_squared_error(y,y_pred):.4f}"
+#         )
+
+#     print(">> ...done!\n")
+
+#     return x_recon, y_pred, y_recon, x_pred
 
 
 def main(

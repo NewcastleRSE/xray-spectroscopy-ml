@@ -280,40 +280,25 @@ def bootstrap_predict(
                 )
 
         elif model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
-            # Convert to float
-            if config["x_path"] is not None and config["y_path"] is not None:
-                x = torch.tensor(xyz_data).float()
-                y = torch.tensor(xanes_data).float()
-            elif config["x_path"] is not None and config["y_path"] is None:
-                x = torch.tensor(xyz_data).float()
-                y = None
-            elif config["y_path"] is not None and config["x_path"] is None:
-                y = torch.tensor(xanes_data).float()
-                x = None
+
+            x = xyz_data
+            y = xanes_data
 
             import aegan_predict
 
-            x_recon, y_predict, y_recon, x_predict = aegan_predict.main(
-                config,
-                x,
-                y,
-                model,
-                fourier_transform,
-                model_dir,
-                predict_dir,
-                ids,
-                parent_model_dir,
-            )
+            x_recon, y_pred, y_recon, x_pred = aegan_predict.predict_aegan(x, y, model, mode, fourier_transform)
 
-            if config["x_path"] is not None:
-                x_recon_score.append(mean_squared_error(x, x_recon))
+            if x is not None and x_recon is not None:
+                x_recon_score.append(mean_squared_error(x, x_recon.detach().numpy()))
 
-            if config["y_path"] is not None:
-                y_recon_score.append(mean_squared_error(y, y_recon))
+            if x is not None and x_pred is not None:
+                x_predict_score.append(mean_squared_error(x, x_pred.detach().numpy()))
 
-            if config["x_path"] is not None and config["y_path"] is not None:
-                y_predict_score.append(mean_squared_error(y, y_predict))
-                x_predict_score.append(mean_squared_error(x, x_predict))
+            if y is not None and y_recon is not None:
+                y_recon_score.append(mean_squared_error(y, y_recon.detach().numpy()))
+
+            if y is not None and y_pred is not None:
+                y_predict_score.append(mean_squared_error(y, y_pred.detach().numpy()))
 
     if model_mode == "mlp" or model_mode == "cnn":
         mean_score = torch.mean(torch.tensor(y_predict_score))

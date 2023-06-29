@@ -243,70 +243,120 @@ def ensemble_predict(
                     ensemble_recons.append(xyz_recon.detach().numpy())
 
             elif model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
-                # Convert to float
-                if config["x_path"] is not None and config["y_path"] is not None:
-                    x = torch.tensor(xyz_data).float()
-                    y = torch.tensor(xanes_data).float()
-                elif config["x_path"] is not None and config["y_path"] is None:
-                    x = torch.tensor(xyz_data).float()
-                    y = None
-                elif config["y_path"] is not None and config["x_path"] is None:
-                    y = torch.tensor(xanes_data).float()
-                    x = None
+
+                x = xyz_data
+                y = xanes_data
 
                 import aegan_predict
 
-                x_recon, y_predict, y_recon, x_predict = aegan_predict.main(
-                    config,
-                    x,
-                    y,
-                    model,
-                    fourier_transform,
-                    model_dir,
-                    predict_dir,
-                    ids,
-                    parent_model_dir,
-                )
-                print(x_recon.shape)
-                if config["x_path"] is not None:
-                    print(x_recon.shape)
+                x_recon, y_pred, y_recon, x_pred = aegan_predict.predict_aegan(x, y, model, mode, fourier_transform)
+
+                if x_recon is not None:
                     ensemble_x_recon.append(x_recon)
 
-                if config["y_path"] is not None:
+                if x_pred is not None:
+                    ensemble_x_predict.append(x_pred)
+
+                if y_recon is not None:
                     ensemble_y_recon.append(y_recon)
 
-                if config["x_path"] is not None and config["y_path"] is not None:
-                    ensemble_y_predict.append(y_predict)
-                    ensemble_x_predict.append(x_predict)
+                if y_pred is not None:
+                    ensemble_y_predict.append(y_pred)
+
 
         if model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
-            if config["x_path"] is not None:
-                ensemble_x_recon = sum(ensemble_x_recon) / \
-                    len(ensemble_x_recon)
+
+            ensemble_x_recon = sum(ensemble_x_recon) / len(ensemble_x_recon) if len(ensemble_x_recon) > 0 else None
+            ensemble_y_recon = sum(ensemble_y_recon) / len(ensemble_y_recon) if len(ensemble_y_recon) > 0 else None
+
+            ensemble_y_predict = sum(ensemble_y_predict) / len(ensemble_y_predict) if len(ensemble_y_predict) > 0 else None
+            ensemble_x_predict = sum(ensemble_x_predict) / len(ensemble_x_predict) if len(ensemble_x_predict) > 0 else None
+
+            if x is not None and mode in ["predict_xanes", "predict_all"]:
                 print(
                     "MSE x to x recon : ",
-                    mean_squared_error(x, ensemble_x_recon),
+                    mean_squared_error(x, ensemble_x_recon.detach().numpy()),
                 )
-            if config["y_path"] is not None:
-                ensemble_y_recon = sum(ensemble_y_recon) / \
-                    len(ensemble_y_recon)
+
+            if y is not None and mode in ["predict_xyz", "predict_all"]:
                 print(
                     "MSE y to y recon : ",
-                    mean_squared_error(y, ensemble_y_recon),
+                    mean_squared_error(y, ensemble_y_recon.detach().numpy()),
                 )
-            if config["x_path"] is not None and config["y_path"] is not None:
-                ensemble_y_predict = sum(
-                    ensemble_y_predict) / len(ensemble_y_predict)
-                ensemble_x_predict = sum(
-                    ensemble_x_predict) / len(ensemble_x_predict)
+
+            if y is not None and mode in ["predict_xanes", "predict_all"]:
                 print(
-                    "MSE y to y predict : ",
-                    mean_squared_error(y, ensemble_y_predict),
+                    "MSE y to y pred : ",
+                    mean_squared_error(y, ensemble_y_predict.detach().numpy()),
                 )
+
+            if x is not None and mode in ["predict_xyz", "predict_all"]:
                 print(
-                    "MSE x to x predict : ",
-                    mean_squared_error(x, ensemble_x_predict),
+                    "MSE x to x recon : ",
+                    mean_squared_error(x, ensemble_x_predict.detach().numpy()),
                 )
+
+            if y is None:
+                # Dummy array for e
+                e = np.arange(ensemble_y_predict.shape[1])
+
+            if mode == "predict_xanes":
+                        
+                for id_, ensemble_y_pred_ in tqdm.tqdm(zip(ids, ensemble_y_predict)):
+                    with open(predict_dir / f"predict-{id_}.txt", "w") as f:
+                        save_xanes(
+                            f, XANES(e, ensemble_y_pred_.detach().numpy()))
+                        
+                for id_, ensemble_x_recon_ in tqdm.tqdm(zip(ids, ensemble_x_recon)):
+                    with open(predict_dir / f"recon-{id_}.txt", "w") as f:
+                        f.write(
+                            "\n".join(
+                                map(str, ensemble_x_recon_.detach().numpy()))
+                        )
+
+            elif mode == "predict_xyz":
+                
+                for id_, ensemble_x_pred_ in tqdm.tqdm(zip(ids, ensemble_x_predict)):
+                    with open(predict_dir / f"predict-{id_}.txt", "w") as f:
+                        f.write(
+                            "\n".join(
+                                map(str, ensemble_x_pred_.detach().numpy()))
+                        )
+                for id_, ensemble_y_recon_ in tqdm.tqdm(zip(ids, ensemble_y_recon)):
+                    with open(predict_dir / f"recon-{id_}.txt", "w") as f:
+                        save_xanes(
+                            f, XANES(e, ensemble_y_recon_.detach().numpy()))
+        
+            elif mode == "predict_all":
+
+                for id_, ensemble_y_pred_ in tqdm.tqdm(zip(ids, ensemble_y_predict)):
+                    with open(predict_dir / f"predict-{id_}.txt", "w") as f:
+                        save_xanes(
+                            f, XANES(e, ensemble_y_pred_.detach().numpy()))
+                        
+                for id_, ensemble_x_recon_ in tqdm.tqdm(zip(ids, ensemble_x_recon)):
+                    with open(predict_dir / f"recon-{id_}.txt", "w") as f:
+                        f.write(
+                            "\n".join(
+                                map(str, ensemble_x_recon_.detach().numpy()))
+                        )
+                for id_, ensemble_x_pred_ in tqdm.tqdm(zip(ids, ensemble_x_predict)):
+                    with open(predict_dir / f"predict-{id_}.txt", "w") as f:
+                        f.write(
+                            "\n".join(
+                                map(str, ensemble_x_pred_.detach().numpy()))
+                        )
+                for id_, ensemble_y_recon_ in tqdm.tqdm(zip(ids, ensemble_y_recon)):
+                    with open(predict_dir / f"recon-{id_}.txt", "w") as f:
+                        save_xanes(
+                            f, XANES(e, ensemble_y_recon_.detach().numpy()))
+
+            if plot_save:
+                from plot import plot_aegan_predict
+
+                plot_aegan_predict(ids, x, y, ensemble_x_recon, ensemble_y_recon, ensemble_x_predict, ensemble_y_predict, predict_dir, mode)
+
+
         else:
             ensemble_pred = sum(ensemble_preds) / len(ensemble_preds)
 
@@ -422,39 +472,101 @@ def ensemble_predict(
 
             model = AEGANEnsemble(ensemble_model)
             print("Loaded model from disk")
-            # Convert to float
-            if config["x_path"] is not None and config["y_path"] is not None:
-                x = torch.tensor(xyz_data).float()
-                y = torch.tensor(xanes_data).float()
-            elif config["x_path"] is not None and config["y_path"] is None:
-                x = torch.tensor(xyz_data).float()
-                y = None
-            elif config["y_path"] is not None and config["x_path"] is None:
-                y = torch.tensor(xanes_data).float()
-                x = None
+
+            x = xyz_data
+            y = xanes_data
+
+            x = torch.tensor(x).float() if x is not None else None
+            y = torch.tensor(y).float() if y is not None else None
 
             x_recon, y_recon, x_pred, y_pred = model(x, y)
 
         if model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
-            if config["x_path"] is not None:
+
+            if x is not None and mode in ["predict_xanes", "predict_all"]:
                 print(
                     "MSE x to x recon : ",
                     mean_squared_error(x, x_recon.detach().numpy()),
                 )
-            if config["y_path"] is not None:
+
+            if y is not None and mode in ["predict_xyz", "predict_all"]:
                 print(
                     "MSE y to y recon : ",
                     mean_squared_error(y, y_recon.detach().numpy()),
                 )
-            if config["x_path"] is not None and config["y_path"] is not None:
+
+            if y is not None and mode in ["predict_xanes", "predict_all"]:
                 print(
-                    "MSE y to y predict : ",
+                    "MSE y to y pred : ",
                     mean_squared_error(y, y_pred.detach().numpy()),
                 )
+
+            if x is not None and mode in ["predict_xyz", "predict_all"]:
                 print(
-                    "MSE x to x predict : ",
+                    "MSE x to x recon : ",
                     mean_squared_error(x, x_pred.detach().numpy()),
                 )
+
+            if y is None:
+                # Dummy array for e
+                e = np.arange(y_pred.shape[1])
+
+            if mode == "predict_xanes":
+                        
+                for id_, y_pred_ in tqdm.tqdm(zip(ids, y_pred)):
+                    with open(predict_dir / f"predict-{id_}.txt", "w") as f:
+                        save_xanes(
+                            f, XANES(e, y_pred_.detach().numpy()))
+                        
+                for id_, x_recon_ in tqdm.tqdm(zip(ids, x_recon)):
+                    with open(predict_dir / f"recon-{id_}.txt", "w") as f:
+                        f.write(
+                            "\n".join(
+                                map(str, x_recon_.detach().numpy()))
+                        )
+
+            elif mode == "predict_xyz":
+                
+                for id_, x_pred_ in tqdm.tqdm(zip(ids, x_pred)):
+                    with open(predict_dir / f"predict-{id_}.txt", "w") as f:
+                        f.write(
+                            "\n".join(
+                                map(str, x_pred_.detach().numpy()))
+                        )
+                for id_, y_recon_ in tqdm.tqdm(zip(ids, y_recon)):
+                    with open(predict_dir / f"recon-{id_}.txt", "w") as f:
+                        save_xanes(
+                            f, XANES(e, y_recon_.detach().numpy()))
+        
+            elif mode == "predict_all":
+
+                for id_, y_pred_ in tqdm.tqdm(zip(ids, y_pred)):
+                    with open(predict_dir / f"predict-{id_}.txt", "w") as f:
+                        save_xanes(
+                            f, XANES(e, y_pred_.detach().numpy()))
+                        
+                for id_, x_recon_ in tqdm.tqdm(zip(ids, x_recon)):
+                    with open(predict_dir / f"recon-{id_}.txt", "w") as f:
+                        f.write(
+                            "\n".join(
+                                map(str, x_recon_.detach().numpy()))
+                        )
+                for id_, x_pred_ in tqdm.tqdm(zip(ids, x_pred)):
+                    with open(predict_dir / f"predict-{id_}.txt", "w") as f:
+                        f.write(
+                            "\n".join(
+                                map(str, x_pred_.detach().numpy()))
+                        )
+                for id_, y_recon_ in tqdm.tqdm(zip(ids, y_recon)):
+                    with open(predict_dir / f"recon-{id_}.txt", "w") as f:
+                        save_xanes(
+                            f, XANES(e, y_recon_.detach().numpy()))
+
+            if plot_save:
+                from plot import plot_aegan_predict
+
+                plot_aegan_predict(ids, x, y, x_recon, y_recon, x_pred, y_pred, predict_dir, mode)
+
         else:
             if y is not None:
                 print(

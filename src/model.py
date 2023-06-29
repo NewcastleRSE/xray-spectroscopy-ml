@@ -870,20 +870,24 @@ class AEGANEnsemble(nn.Module):
 
         elif x is not None and y is None:
             x_reconstructions = []
+            y_predictions = []
             for model in self.models:
                 x_reconstructions.append(model.reconstruct_structure(x))
+                y_predictions.append(model.predict_spectrum(x))
             x_reconstructions = torch.stack(x_reconstructions).mean(dim=0)
-            y_predictions = None
-            x_predictions = None
             y_reconstructions = None
+            x_predictions = None
+            y_predictions = torch.stack(y_predictions).mean(dim=0)     
 
         elif y is not None and x is None:
             y_reconstructions = []
+            x_predictions = []
             for model in self.models:
                 y_reconstructions.append(model.reconstruct_spectrum(y))
-            y_reconstructions = torch.stack(y_reconstructions).mean(dim=0)
-            y_predictions = None
-            x_predictions = None
+                x_predictions.append(model.predict_structure(y))
             x_reconstructions = None
+            y_reconstructions = torch.stack(y_reconstructions).mean(dim=0)
+            x_predictions = torch.stack(x_predictions).mean(dim=0)
+            y_predictions = None            
 
         return x_reconstructions, y_reconstructions, x_predictions, y_predictions
