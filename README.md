@@ -105,9 +105,7 @@ To use a model previously developed model for predictions, the following command
 The implemented prediction modes include:  
 - `predict_xyz`: The featurised structure is predicted from an input xanes spectrum   
 - `predict_xanes`: The xanes spectrum is predicted from a featurised structural input  
-- `predict_aegan`: Simultaneous prediction of a featurised structure and xanes spectrum from corresponding input  
-- `predict_aegan_xanes`: The xanes spectrum is predicted from a featurised structural input  
-- `predict_aegan_xyz`: The featurised structure is predicted from an input xanes spectrum  
+- `predict_all`: Simultaneous prediction of a featurised structure and xanes spectrum from corresponding input as well as reconstruction of inputs. Only for AEGAN model type.
 
 ### MLFLOW
 
