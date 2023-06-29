@@ -76,7 +76,7 @@ jobs:
         run: |
           rm -rf model/model_001
           python3 src/cli.py --mode train_aegan --model_mode aegan_mlp --inp_f ./.github/workflows/inputs/in_aegan.yaml
-          python3 src/cli.py --mode predict_aegan --model_mode aegan_mlp --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
+          python3 src/cli.py --mode predict_all --model_mode aegan_mlp --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
 
 
 
