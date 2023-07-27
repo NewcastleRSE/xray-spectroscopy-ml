@@ -31,7 +31,6 @@ from inout import load_xanes, load_xyz, save_xanes
 from predict import predict_xanes, predict_xyz, y_predict_dim
 from utils import linecount, list_filestems
 from spectrum.xanes import XANES
-from model_utils import make_dir
 
 ###############################################################################
 ################################ MAIN FUNCTION ################################
@@ -108,30 +107,28 @@ def main(
                     atoms = load_xyz(f)
                 xyz_data[i, :] = descriptor.transform(atoms)
         elif str(type(descriptor).__name__) == 'MBTR':
-            with open(xyz_path / f"{id_}.xyz", "r") as f:
-                atoms = load_xyz(f)
-                tmp = descriptor.create(atoms)
-            xyz_data[i, :] = tmp
+                with open(xyz_path / f"{id_}.xyz", "r") as f:
+                    atoms = load_xyz(f)
+                    tmp = descriptor.create(atoms)
+                xyz_data[i, :] = tmp
         elif str(type(descriptor).__name__) == 'LMBTR':
-            with open(xyz_path / f"{id_}.xyz", "r") as f:
-                atoms = load_xyz(f)
-                tmp = descriptor.create(atoms, positions=[0])
-            xyz_data[i, :] = tmp
+                with open(xyz_path / f"{id_}.xyz", "r") as f:
+                    atoms = load_xyz(f)
+                    tmp = descriptor.create(atoms, positions=[0])
+                xyz_data[i, :] = tmp
         elif str(type(descriptor).__name__) == 'SOAP':
-            with open(xyz_path / f"{id_}.xyz", "r") as f:
-                atoms = load_xyz(f)
-                tmp = descriptor.create_single(atoms, positions=[0])
-            xyz_data[i, :] = tmp
+                with open(xyz_path / f"{id_}.xyz", "r") as f:
+                    atoms = load_xyz(f)
+                    tmp = descriptor.create_single(atoms, positions=[0])
+                xyz_data[i, :] = tmp
         else:
-            print(">> ...This descriptor doesn't exist, try again!!\n")
+            print(">> ...This descriptor doesn't exist, try again!!\n") 
 
     if xanes_path is not None:
         for i, id_ in enumerate(tqdm.tqdm(ids)):
             with open(xanes_path / f"{id_}.txt", "r") as f:
                 xanes = load_xanes(f)
                 e, xanes_data[i, :] = xanes.spectrum
-    else:
-        e = None
 
     if xyz_path is None:
         xyz_data = None
@@ -187,23 +184,23 @@ def main(
         model.eval()
         print("Loaded model from disk")
 
-        # if xyz_path is not None and xanes_path is not None:
-        #     from model_utils import model_mode_error
+        if xyz_path is not None and xanes_path is not None:
+            from model_utils import model_mode_error
 
-        #     if fourier_transform:
-        #         parent_model_dir, predict_dir = model_mode_error(
-        #             model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1] * 2
-        #         )
-        #     else:
-        #         parent_model_dir, predict_dir = model_mode_error(
-        #             model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1]
-        #         )
-        # else:
-        
+            if fourier_transform:
+                parent_model_dir, predict_dir = model_mode_error(
+                    model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1] * 2
+                )
+            else:
+                parent_model_dir, predict_dir = model_mode_error(
+                    model, mode, model_mode, xyz_data.shape[1], xanes_data.shape[1]
+                )
+        else:
+            from model_utils import make_dir
 
-        parent_model_dir, predict_dir = make_dir()
+            parent_model_dir, predict_dir = make_dir()
 
-        if model_mode == "mlp" or model_mode == "cnn":
+        if model_mode == "mlp" or model_mode == "cnn" or model_mode == "lstm":
             if mode == "predict_xyz":
                 if fourier_transform:
                     xanes_data = data_transform.fourier_transform_data(
@@ -226,17 +223,11 @@ def main(
                     y_predict = data_transform.inverse_fourier_transform_data(
                         y_predict)
 
-            if y is not None:
-
-                print(
-                    "MSE y to y pred : ",
-                    mean_squared_error(y, y_predict.detach().numpy()),
-                )
-
+            print(
+                "MSE y to y pred : ",
+                mean_squared_error(y, y_predict.detach().numpy()),
+            )
             y_predict = y_predict_dim(y_predict, ids)
-            if y is None:
-                # Dummy array for e
-                e = np.arange(y_predict.shape[1])
 
             if config["monte_carlo"]:
                 from montecarlo_fn import montecarlo_dropout
@@ -260,7 +251,6 @@ def main(
                             with open(predict_dir / f"{id_}.txt", "w") as f:
                                 save_xanes(
                                     f, XANES(e, y_predict_.detach().numpy()))
-
 
                     elif mode == "predict_xyz":
                         for id_, y_predict_ in tqdm.tqdm(zip(ids, y_predict)):
@@ -309,23 +299,15 @@ def main(
                 if fourier_transform:
                     y_predict = data_transform.inverse_fourier_transform_data(
                         y_predict)
-                    
-            if x is not None:
-                print(
-                    "MSE x to x recon : ",
-                    mean_squared_error(x, x_recon.detach().numpy()),
-                )
 
-            if y is not None:
-                print(
-                    "MSE y to y pred : ",
-                    mean_squared_error(y, y_predict.detach().numpy()),
-                )
-
-            if y is None: 
-                # Dummy array for e
-                e = np.arange(y_predict.shape[1])
-
+            print(
+                "MSE x to x recon : ",
+                mean_squared_error(x, x_recon.detach().numpy()),
+            )
+            print(
+                "MSE y to y pred : ",
+                mean_squared_error(y, y_predict.detach().numpy()),
+            )
 
             if config["monte_carlo"]:
                 from montecarlo_fn import montecarlo_dropout_ae
@@ -351,8 +333,6 @@ def main(
             else:
                 y_predict = y_predict_dim(y_predict, ids)
 
-
-
                 if save:
                     if mode == "predict_xanes":
                         for id_, y_predict_ in tqdm.tqdm(zip(ids, y_predict)):
@@ -367,11 +347,11 @@ def main(
                                     "\n".join(
                                         map(str, y_predict_.detach().numpy()))
                                 )
-                        # for id_, y_ in tqdm.tqdm(zip(ids, y)):
-                        #     with open(predict_dir / f"{id_}.wacsf", "w") as f:
-                        #         f.write(
-                        #             "\n".join(map(str, y_))
-                        #         )
+                        for id_, y_ in tqdm.tqdm(zip(ids, y)):
+                            with open(predict_dir / f"{id_}.wacsf", "w") as f:
+                                f.write(
+                                    "\n".join(map(str, y_))
+                                )
 
                 if config["plot_save"]:
                     from plot import plot_ae_predict
@@ -380,136 +360,37 @@ def main(
                                     x_recon, e, predict_dir, mode)
 
         elif model_mode == "aegan_mlp" or model_mode == "aegan_cnn":
-
-            x = xyz_data
-            y = xanes_data
-
-            import aegan_predict
-
-            x_recon, y_pred, y_recon, x_pred = aegan_predict.predict_aegan(x, y, model, mode, fourier_transform)
-
-            if x is not None and x_recon is not None:
-                print(
-                    "MSE x to x recon : ",
-                    mean_squared_error(x, x_recon.detach().numpy()),
-                )
-            if x is not None and x_pred is not None:
-                print(
-                    "MSE x to x pred : ",
-                    mean_squared_error(x, x_pred.detach().numpy()),
-                )
-
-            if y is not None and y_recon is not None:
-                print(
-                    "MSE y to y recon : ",
-                    mean_squared_error(y, y_recon.detach().numpy()),
-                )
-
-            if y is not None and y_pred is not None:
-                print(
-                    "MSE y to y pred : ",
-                    mean_squared_error(y, y_pred.detach().numpy()),
-                )
-
-            if y is None: 
-                # Dummy array for e
-                e = np.arange(y_pred.shape[1])
+            # Convert to float
+            if config["x_path"] is not None and config["y_path"] is not None:
+                x = torch.tensor(xyz_data).float()
+                y = torch.tensor(xanes_data).float()
+            elif config["x_path"] is not None and config["y_path"] is None:
+                x = torch.tensor(xyz_data).float()
+                y = None
+                e = None
+            elif config["y_path"] is not None and config["x_path"] is None:
+                y = torch.tensor(xanes_data).float()
+                x = None
 
             if config["monte_carlo"]:
                 from montecarlo_fn import montecarlo_dropout_aegan
 
                 montecarlo_dropout_aegan(model, x, y, config["mc_iter"])
-
             else:
-                if save:
-                    if mode == "predict_xanes":
-                        
-                        for id_, y_pred_ in tqdm.tqdm(zip(ids, y_pred)):
-                            with open(predict_dir / f"predict-{id_}.txt", "w") as f:
-                                save_xanes(
-                                    f, XANES(e, y_pred_.detach().numpy()))
-                                
-                        for id_, x_recon_ in tqdm.tqdm(zip(ids, x_recon)):
-                            with open(predict_dir / f"recon-{id_}.txt", "w") as f:
-                                f.write(
-                                    "\n".join(
-                                        map(str, x_recon_.detach().numpy()))
-                                )
+                import aegan_predict
 
-                    elif mode == "predict_xyz":
-                        
-                        for id_, x_pred_ in tqdm.tqdm(zip(ids, x_pred)):
-                            with open(predict_dir / f"predict-{id_}.txt", "w") as f:
-                                f.write(
-                                    "\n".join(
-                                        map(str, x_pred_.detach().numpy()))
-                                )
-                        for id_, y_recon_ in tqdm.tqdm(zip(ids, y_recon)):
-                            with open(predict_dir / f"recon-{id_}.txt", "w") as f:
-                                save_xanes(
-                                    f, XANES(e, y_recon_.detach().numpy()))
-                
-                    elif mode == "predict_all":
-
-                        for id_, y_pred_ in tqdm.tqdm(zip(ids, y_pred)):
-                            with open(predict_dir / f"predict-{id_}.txt", "w") as f:
-                                save_xanes(
-                                    f, XANES(e, y_pred_.detach().numpy()))
-                                
-                        for id_, x_recon_ in tqdm.tqdm(zip(ids, x_recon)):
-                            with open(predict_dir / f"recon-{id_}.txt", "w") as f:
-                                f.write(
-                                    "\n".join(
-                                        map(str, x_recon_.detach().numpy()))
-                                )
-                        for id_, x_pred_ in tqdm.tqdm(zip(ids, x_pred)):
-                            with open(predict_dir / f"predict-{id_}.txt", "w") as f:
-                                f.write(
-                                    "\n".join(
-                                        map(str, x_pred_.detach().numpy()))
-                                )
-                        for id_, y_recon_ in tqdm.tqdm(zip(ids, y_recon)):
-                            with open(predict_dir / f"recon-{id_}.txt", "w") as f:
-                                save_xanes(
-                                    f, XANES(e, y_recon_.detach().numpy()))
-
-                if config["plot_save"]:
-                    from plot import plot_aegan_predict
-
-                    plot_aegan_predict(ids, x, y, x_recon, y_recon, x_pred, y_pred, predict_dir, mode)
-
-
-            # # Convert to float
-            # if config["x_path"] is not None and config["y_path"] is not None:
-            #     x = torch.tensor(xyz_data).float()
-            #     y = torch.tensor(xanes_data).float()
-            # elif config["x_path"] is not None and config["y_path"] is None:
-            #     x = torch.tensor(xyz_data).float()
-            #     y = None
-            #     e = None
-            # elif config["y_path"] is not None and config["x_path"] is None:
-            #     y = torch.tensor(xanes_data).float()
-            #     x = None
-
-           # if config["monte_carlo"]:
-            #     from montecarlo_fn import montecarlo_dropout_aegan
-
-            #     montecarlo_dropout_aegan(model, x, y, config["mc_iter"]) 
-            # else:
-            #     import aegan_predict
-
-            #     aegan_predict.main(
-            #         config,
-            #         x,
-            #         y,
-            #         model,
-            #         fourier_transform,
-            #         model_dir,
-            #         predict_dir,
-            #         ids,
-            #         parent_model_dir,
-            #         e
-            #     )
+                aegan_predict.main(
+                    config,
+                    x,
+                    y,
+                    model,
+                    fourier_transform,
+                    model_dir,
+                    predict_dir,
+                    ids,
+                    parent_model_dir,
+                    e
+                )
 
         if run_shap:
             from shap_analysis import shap

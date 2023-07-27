@@ -53,7 +53,7 @@ def train_xyz(
 ):
 	print("training xyz structure")
 
-	if model_mode == "mlp" or model_mode == "cnn":
+	if model_mode == "mlp" or model_mode == "cnn" or model_mode == "lstm":
 		if kfold:
 			x = xyz
 			y = xanes
@@ -183,7 +183,7 @@ def train_xanes(
 ):
 	print("training xanes spectrum")
 
-	if model_mode == "mlp" or model_mode == "cnn":
+	if model_mode == "mlp" or model_mode == "cnn" or model_mode == "lstm":
 		if kfold:
 			x = xanes
 			y = xyz
