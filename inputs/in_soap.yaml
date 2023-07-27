@@ -1,5 +1,5 @@
-x_path: /home/tom/ML-XS/training-data/XAS-3dtm/fe/preconv/xyz_train
-y_path: /home/tom/ML-XS/training-data/XAS-3dtm/fe/preconv/xanes_train
+x_path: data/datasets/fe/preconv/xyz_train
+y_path: data/datasets/fe/preconv/xanes_train
 
 descriptor:
     type: soap
