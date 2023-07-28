@@ -180,68 +180,105 @@ class CNN(nn.Module):
 
 
 class AE_mlp(nn.Module):
-    def __init__(self, input_size, hidden_size, dropout, hl_size, out_dim, act_fn):
+
+    def __init__(
+        self,
+        input_size,
+        hidden_size,
+        dropout_rate,
+        num_hidden_layers,
+        hl_shrink,
+        output_size,
+        act_fn,
+    ):
+
         super().__init__()
 
         self.input_size = input_size
         self.hidden_size = hidden_size
-        self.dropout = dropout
-        self.hl_size = hl_size
-        self.out_dim = out_dim
+        self.dropout_rate = dropout_rate
+        self.output_size = output_size
+        self.num_hidden_layers = num_hidden_layers
+        self.hl_shrink = hl_shrink
         self.act_fn = act_fn
 
-        self.encoder_hidden_1 = nn.Sequential(
-            nn.Linear(self.input_size, self.hidden_size), self.act_fn(),
+        # check if the last hidden layer size is at least 1 and not less than the output size
+        last_hidden_layer_size = int(
+            self.hidden_size * self.hl_shrink ** (self.num_hidden_layers - 1)
         )
 
-        self.encoder_hidden_2 = nn.Sequential(
-            nn.Linear(self.hidden_size, self.hl_size), self.act_fn(),
-        )
+        if last_hidden_layer_size < 1:
+            raise ValueError(
+                "The size of the last hidden layer is less than 1, please adjust hyperparameters."
+            )
 
-        self.fc1 = nn.Sequential(
-            nn.Linear(self.hl_size, self.hl_size),
-            self.act_fn(),
-            nn.Dropout(self.dropout),
-        )
+        enc_layers = []
+        dec_layers = []
 
-        self.fc2 = nn.Sequential(nn.Linear(self.hl_size, self.out_dim),)
+        for i in range(self.num_hidden_layers):
 
-        self.decoder_hidden_1 = nn.Sequential(
-            nn.Linear(self.hl_size, self.hidden_size), self.act_fn(),
-        )
+            if i == 0:
+                enc_layer = nn.Sequential(
+                                nn.Linear(self.input_size, self.hidden_size),
+                                act_fn(),
+                            )
+                dec_layer = nn.Sequential(
+                                nn.Linear(self.hidden_size, self.input_size),
+                                act_fn(),
+                            )
+            else:
+                enc_layer = nn.Sequential(
+                                nn.Linear(int(self.hidden_size * self.hl_shrink ** (i - 1)), int(self.hidden_size * self.hl_shrink ** i)),
+                                act_fn(),
+                            )
+                dec_layer = nn.Sequential(
+                                nn.Linear(int(self.hidden_size * self.hl_shrink ** i), int(self.hidden_size * self.hl_shrink ** (i - 1))),
+                                act_fn(),
+                            )
 
-        self.decoder_hidden_2 = nn.Sequential(
-            nn.Linear(self.hidden_size, self.input_size),
-            # self.act_fn(),
-        )
+            enc_layers.append(enc_layer)
+            dec_layers.insert(0,dec_layer)
+
+
+        self.encoder_layers = nn.Sequential(*enc_layers)
+        self.decoder_layers = nn.Sequential(*dec_layers)
+
+
+        fc_layers = []
+
+        fc_layer1 = nn.Sequential(
+                        nn.Linear(int(self.hidden_size * self.hl_shrink ** (self.num_hidden_layers-1)), self.hidden_size),
+                        act_fn(),
+                        nn.Dropout(self.dropout_rate),
+                    )
+        fc_layer2 = nn.Linear(self.hidden_size, self.output_size)
+
+        fc_layers.append(fc_layer1)
+        fc_layers.append(fc_layer2)
+
+        self.dense_layers = nn.Sequential(*fc_layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.encoder_hidden_1(x)
-        latent_space = self.encoder_hidden_2(x)
 
-        in_fc = self.fc1(latent_space)
-        pred_y = self.fc2(in_fc)
+        out = self.encoder_layers(x)
 
-        out = self.decoder_hidden_1(latent_space)
-        recon = self.decoder_hidden_2(out)
+        pred = self.dense_layers(out)
 
-        return recon, pred_y
+        recon = self.decoder_layers(out)
+
+        return recon, pred
 
     def predict(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.encoder_hidden_1(x)
-        latent_space = self.encoder_hidden_2(x)
 
-        in_fc = self.fc1(latent_space)
-        pred_y = self.fc2(in_fc)
+        out = self.encoder_layers(x)
+        pred = self.dense_layers(out)
 
-        return pred_y
+        return pred
 
     def reconstruct(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.encoder_hidden_1(x)
-        latent_space = self.encoder_hidden_2(x)
 
-        out = self.decoder_hidden_1(latent_space)
-        recon = self.decoder_hidden_2(out)
+        out = self.encoder_layers(x)
+        recon = self.decoder_layers(out)
 
         return recon
 
