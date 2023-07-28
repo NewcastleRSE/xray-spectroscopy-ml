@@ -182,6 +182,7 @@ def train(
                 hyperparams["kernel_size"],
                 hyperparams["stride"],
                 act_fn,
+                hyperparams["n_cl"],
             )
 
     model.to(device)

@@ -57,6 +57,7 @@ lr_scheduler:
 hyperparams: 
   model: cnn
   batch_size: 16
+  n_cl: 3   # Number of Convolutional layers
   out_channel: 32
   channel_mul: 2
   hidden_layer: 64

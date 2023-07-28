@@ -30,6 +30,8 @@ def optuna_defaults():
     options["hl_shrink_max"] = 0.5
 
     # CNN Specific
+    options["n_cl_min"] = 1
+    options["n_cl_max"] = 5
     options["out_channel"] = [8, 16, 32, 64]
     options["channel_mul"] = [2, 3, 4]
 
@@ -129,6 +131,7 @@ def optuna_train(trial,
         elif model_mode == "cnn" or model_mode == "ae_cnn":
             # CNN specific hyperparams
             if optuna_params["tune_hidden_layers"]:
+                hyperparams["n_cl"] = trial.suggest_int("n_cl", options["n_cl_min"], options["n_cl_max"])
                 hyperparams["hidden_layer"] = trial.suggest_categorical("hidden_layer", options["hl_size"])
 
     # Set load_guess to False for tuning
