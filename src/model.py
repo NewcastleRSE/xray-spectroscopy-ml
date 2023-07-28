@@ -56,38 +56,33 @@ class MLP(nn.Module):
         #     raise ValueError(
         #         "The size of the last hidden layer is less than the output size, please adjust hyperparameters.")
 
-        # Define input and output layers
-        self.output_layer = nn.Linear(
-            int(self.hidden_size * self.hl_shrink ** (self.num_hidden_layers - 1)),
-            self.output_size,
-        )
 
-        # Define hidden layers
-        self.hidden_layers = nn.ModuleList()
-        for i in range(self.num_hidden_layers):
+        layers = []
+
+        for i in range(self.num_hidden_layers-1):
+
             if i == 0:
                 layer = nn.Sequential(
-                    nn.Linear(self.input_size, self.hidden_size),
-                    nn.Dropout(p=dropout_rate),
-                    self.act_fn(),
-                )
+                            nn.Linear(self.input_size, self.hidden_size),
+                            nn.Dropout(self.dropout_rate),
+                            self.act_fn(),
+                        )
             else:
                 layer = nn.Sequential(
-                    nn.Linear(
-                        int(self.hidden_size * self.hl_shrink ** (i - 1)),
-                        int(self.hidden_size * self.hl_shrink ** i),
-                    ),
-                    nn.Dropout(p=self.dropout_rate),
-                    self.act_fn(),
-                )
-            self.hidden_layers.append(layer)
+                            nn.Linear(int(self.hidden_size * self.hl_shrink ** (i - 1)), int(self.hidden_size * self.hl_shrink ** i)),
+                            nn.Dropout(self.dropout_rate),
+                            self.act_fn(),
+                        )
+
+            layers.append(layer)
+
+        self.output_layer = nn.Linear(int(self.hidden_size * self.hl_shrink ** (self.num_hidden_layers - 2)), self.output_size)
+
+        self.hidden_layers = nn.Sequential(*layers)
 
     def forward(self, x):
         # Feed forward through hidden layers
-        for i, hidden_layer in enumerate(self.hidden_layers):
-            x = hidden_layer(x)
-            if i != 0:
-                x = x[:, : int(self.hidden_size * self.hl_shrink ** i)]
+        x = self.hidden_layers(x)
 
         # Feed forward through output layer
         x = self.output_layer(x)
