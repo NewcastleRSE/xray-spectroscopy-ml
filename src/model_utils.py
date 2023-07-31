@@ -240,6 +240,9 @@ class WCCLoss(nn.Module):
 
     def __init__(self, gaussianHWHM):
         super().__init__()
+        if gaussianHWHM is None:
+            print(">> WCC Loss Function Gaussian HWHM parameter not set in input yaml file. Setting equal to 10")
+            gaussianHWHM = 10
         self.gaussianHWHM = gaussianHWHM
 
     def forward(self, y_true, y_pred):
