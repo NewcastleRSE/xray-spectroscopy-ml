@@ -51,6 +51,8 @@ def kfold_train(
     weight_seed,
     lr_scheduler,
     model_eval,
+    load_guess,
+    loadguess_params,
 ):
     kfold_spooler, fit_time, kfold_loss_fn, prev_score = kfold_init(
         kfold_params, rng)
@@ -71,6 +73,8 @@ def kfold_train(
             weight_seed,
             lr_scheduler,
             model_eval,
+            load_guess,
+            loadguess_params
         )
         train_score.append(score)
         fit_time.append(time.time() - start)
@@ -104,6 +108,8 @@ def kfold_ae_train(
     weight_seed,
     lr_scheduler,
     model_eval,
+    load_guess,
+    loadguess_params,
 ):
     kfold_spooler, fit_time, kfold_loss_fn, prev_score = kfold_init(
         kfold_params, rng)
@@ -124,6 +130,8 @@ def kfold_ae_train(
             weight_seed,
             lr_scheduler,
             model_eval,
+            load_guess,
+            loadguess_params,
         )
         train_score.append(score)
         fit_time.append(time.time() - start)
@@ -161,6 +169,8 @@ def kfold_aegan_train(
     weight_seed,
     lr_scheduler,
     model_eval,
+    load_guess,
+    loadguess_params,
 ):
     kfold_spooler, fit_time, kfold_loss_fn, prev_score = kfold_init(
         kfold_params, rng)
@@ -180,9 +190,11 @@ def kfold_aegan_train(
             exp_name,
             hyperparams,
             epochs,
-            lr_scheduler,
             weight_seed,
+            lr_scheduler,
             model_eval,
+            load_guess,
+            loadguess_params,
         )
         train_score.append(score["train_loss"][-1])
         fit_time.append(time.time() - start)

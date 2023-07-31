@@ -69,8 +69,8 @@ def train_xyz(
 				weight_seed,
 				lr_scheduler,
 				model_eval,
-		load_guess,
-		loadguess_params,
+				load_guess,
+				loadguess_params,
 			)
 			print_cross_validation_scores(result, model_mode)
 		else:
@@ -102,8 +102,8 @@ def train_xyz(
 				weight_seed,
 				lr_scheduler,
 				model_eval,
-		load_guess,
-		loadguess_params,
+				load_guess,
+				loadguess_params,
 			)
 
 	elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
@@ -122,8 +122,8 @@ def train_xyz(
 				weight_seed,
 				lr_scheduler,
 				model_eval,
-		load_guess,
-		loadguess_params,
+				load_guess,
+				loadguess_params,
 			)
 			print_cross_validation_scores(result, model_mode)
 		else:
@@ -156,8 +156,8 @@ def train_xyz(
 				weight_seed,
 				lr_scheduler,
 				model_eval,
-		load_guess,
-		loadguess_params,
+				load_guess,
+				loadguess_params,
 			)
 
 	summary(model, (1, xyz.shape[1]))
@@ -324,8 +324,8 @@ def train_aegan(
 			weight_seed,
 			lr_scheduler,
 			model_eval,
-	  load_guess,
-	  loadguess_params,
+	  		load_guess,
+	  		loadguess_params,
 		)
 		print_cross_validation_scores(result, model_mode)
 
@@ -357,8 +357,8 @@ def train_aegan(
 			weight_seed,
 			lr_scheduler,
 			model_eval,
-	  load_guess,
-	  loadguess_params,
+	  		load_guess,
+	  		loadguess_params,
 		)
 	summary(model)
 	# from plot import plot_running_aegan

@@ -344,9 +344,20 @@ class AE_cnn(nn.Module):
 
         # PREDICTOR DENSE LAYERS
 
-        dense_in_shape = (
-            self.out_channel * self.channel_mul * self.n_cl * all_conv_shapes[-1]
-        )
+        # dense_in_shape = (
+        #     self.out_channel * self.channel_mul * self.n_cl * all_conv_shapes[-1]
+        # )
+
+        
+
+        # DECODER TRANSPOSE CONVOLUTIONAL LAYERS
+
+        dec_in_channel = self.out_channel * self.channel_mul * (self.n_cl-1)
+        dec_out_channel = self.out_channel * (self.channel_mul - 1) * (self.n_cl-1)
+
+
+        # PREDICTOR DENSE LAYERS
+        dense_in_shape = dec_in_channel * all_conv_shapes[-1]
 
         self.dense_layers = nn.Sequential(
             nn.Linear(dense_in_shape, self.hidden_layer),
@@ -354,11 +365,6 @@ class AE_cnn(nn.Module):
             nn.Dropout(self.dropout),
             nn.Linear(self.hidden_layer, self.out_dim),
         )
-
-        # DECODER TRANSPOSE CONVOLUTIONAL LAYERS
-
-        dec_in_channel = self.out_channel * self.channel_mul * self.n_cl
-        dec_out_channel = self.out_channel * self.n_cl
 
         dec_layers = []
 
