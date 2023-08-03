@@ -76,18 +76,22 @@ class MLP(nn.Module):
 
             layers.append(layer)
 
-        self.output_layer = nn.Linear(int(self.hidden_size * self.hl_shrink ** (self.num_hidden_layers - 2)), self.output_size)
+        output_layer = nn.Sequential(
+            nn.Linear(int(self.hidden_size * self.hl_shrink ** (self.num_hidden_layers - 2)), self.output_size)
+        )
 
-        self.hidden_layers = nn.Sequential(*layers)
+        layers.append(output_layer)
+
+        self.dense_layers = nn.Sequential(*layers)
 
     def forward(self, x):
         # Feed forward through hidden layers
-        x = self.hidden_layers(x)
+        out = self.dense_layers(x)
 
         # Feed forward through output layer
-        x = self.output_layer(x)
+        # x = self.output_layer(x)
 
-        return x
+        return out
 
 
 class CNN(nn.Module):
@@ -130,6 +134,7 @@ class CNN(nn.Module):
 
         # Convolutional Layers
         conv_layers = []
+        dense_layers = []
 
         in_channel = 1
 
@@ -157,19 +162,28 @@ class CNN(nn.Module):
 
         # Fully Connected Layers
 
-        self.dense_layer1 = nn.Sequential(
-            nn.Linear(out_conv_block_size, self.hidden_layer,), self.act_fn(),
-        )
+        dense_layer1 = nn.Sequential(
+            nn.Linear(out_conv_block_size, self.hidden_layer,), 
+            self.act_fn()
+            )
 
-        self.dense_layer2 = nn.Sequential(nn.Linear(self.hidden_layer, self.out_dim))
+        dense_layer2 = nn.Sequential(
+            nn.Linear(self.hidden_layer, self.out_dim)
+            )
+
+        dense_layers.append(dense_layer1)
+        dense_layers.append(dense_layer2)
+        
+        self.dense_layers = nn.Sequential(*dense_layers)
+
+
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = x.unsqueeze(0)
         x = x.permute(1, 0, 2)
         x = self.conv_layers(x)
         x = x.view(x.size(0), -1)
-        x = self.dense_layer1(x)
-        out = self.dense_layer2(x)
+        out = self.dense_layers(x)
 
         return out
 
@@ -246,7 +260,9 @@ class AE_mlp(nn.Module):
                         act_fn(),
                         nn.Dropout(self.dropout_rate),
                     )
-        fc_layer2 = nn.Linear(self.hidden_size, self.output_size)
+        fc_layer2 = nn.Sequential(
+            nn.Linear(self.hidden_size, self.output_size)
+        )
 
         fc_layers.append(fc_layer1)
         fc_layers.append(fc_layer2)
@@ -346,12 +362,22 @@ class AE_cnn(nn.Module):
 
         dense_in_shape = self.out_channel * self.channel_mul ** (self.n_cl-1) * all_conv_shapes[-1]
 
-        self.dense_layers = nn.Sequential(
+        dense_layers = []
+
+        dense_layer1 = nn.Sequential(
             nn.Linear(dense_in_shape, self.hidden_layer),
             self.act_fn(),
-            nn.Dropout(self.dropout),
+            nn.Dropout(self.dropout)
+        )
+
+        dense_layer2 = nn.Sequential(
             nn.Linear(self.hidden_layer, self.out_dim),
         )
+
+        dense_layers.append(dense_layer1)
+        dense_layers.append(dense_layer2)
+
+        self.dense_layers = nn.Sequential(*dense_layers)
         
         # DECODER TRANSPOSE CONVOLUTIONAL LAYERS
 
@@ -693,21 +719,30 @@ class SharedLayer(nn.Module):
         self.hidden_size = hidden_size
         self.activation = activation
         self.dropout = dropout
-        linear_layers = []
+
+        dense_layers = []
         for layer in range(num_hidden_layer):
-            linear_layers.append(nn.Linear(self.hidden_size, self.hidden_size))
-            linear_layers.append(nn.BatchNorm1d(self.hidden_size))
-            linear_layers.append(self.activation())
-        self.linear_layers = nn.Sequential(*linear_layers)
-        self.out_layer = nn.Sequential(
+            dense_layer = nn.Sequential(
+                nn.Linear(self.hidden_size, self.hidden_size),
+                nn.BatchNorm1d(self.hidden_size),
+                self.activation()
+            )
+            dense_layers.append(dense_layer)
+        
+        output_layer = nn.Sequential(
             nn.Linear(self.hidden_size, self.hidden_size),
             nn.BatchNorm1d(self.hidden_size),
         )
 
+        dense_layers.append(output_layer)
+
+
+
+        self.dense_layers = nn.Sequential(*dense_layers)
+
     def forward(self, x):
-        x = self.linear_layers(x)
-        x = self.out_layer(x)
-        return x
+        out = self.dense_layers(x)
+        return out
 
 
 class AEGen(nn.Module):
@@ -721,41 +756,63 @@ class AEGen(nn.Module):
         self.hidden_size = hidden_size
         self.dropout = dropout
 
-        enc_layer = []
-        for layer in range(num_hidden_layer - 1):
-            enc_layer.append(nn.Linear(self.hidden_size, self.hidden_size))
-            enc_layer.append(nn.BatchNorm1d(self.hidden_size))
-            enc_layer.append(self.activation())
-        self.enc_layer = nn.Sequential(*enc_layer)
-
-        dec_layer = []
-        for layer in range(num_hidden_layer):
-            dec_layer.append(nn.Linear(self.hidden_size, self.hidden_size))
-            dec_layer.append(nn.BatchNorm1d(self.hidden_size))
-            dec_layer.append(self.activation())
-        self.dec_layer = nn.Sequential(*dec_layer)
-        self.enc_input = nn.Sequential(
+        # Encoder input layer
+        encoder_input = nn.Sequential(
             nn.Linear(self.input_size, self.hidden_size),
             nn.BatchNorm1d(self.hidden_size),
             self.activation(),
         )
-        self.enc_output = nn.Sequential(
+        # Encoder mid layers
+        encoder_mid_layers = []
+        for layer in range(num_hidden_layer - 1):
+            mid_layer = nn.Sequential(
+                nn.Linear(self.hidden_size, self.hidden_size),
+                nn.BatchNorm1d(self.hidden_size),
+                self.activation()
+            )
+            encoder_mid_layers.append(mid_layer)
+        encoder_mid_layers = nn.Sequential(*encoder_mid_layers)
+        # Encoder output layer
+        encoder_output = nn.Sequential(
             nn.Linear(self.hidden_size, self.hidden_size),
             nn.BatchNorm1d(self.hidden_size),
         )
-        self.dec_output = nn.Sequential(
-            nn.Linear(self.hidden_size, self.output_size), self.activation()
+
+        # Decoder input and mid layer
+        decoder_mid_layers = []
+        for layer in range(num_hidden_layer):
+            mid_layer = nn.Sequential(
+                nn.Linear(self.hidden_size, self.hidden_size),
+                nn.BatchNorm1d(self.hidden_size),
+                self.activation()
+            )
+            decoder_mid_layers.append(mid_layer)
+        decoder_mid_layers = nn.Sequential(*decoder_mid_layers)
+        # Decoder output layer
+        decoder_output = nn.Sequential(
+            nn.Linear(self.hidden_size, self.output_size),
+            self.activation()
         )
 
+        # Collect encoder layers
+        encoder_layers = []
+        encoder_layers.append(encoder_input)
+        encoder_layers.append(encoder_mid_layers)
+        encoder_layers.append(encoder_output)
+        self.encoder_layers = nn.Sequential(*encoder_layers)
+
+        # Collect decoder layers
+        decoder_layers = []
+        decoder_layers.append(decoder_mid_layers)
+        decoder_layers.append(decoder_output)
+        self.decoder_layers = nn.Sequential(*decoder_layers)
+
     def encode(self, x):
-        x = self.enc_input(x)
-        x = self.enc_layer(x)
-        out = self.enc_output(x)
-        return x
+        out = self.encoder_layers(x)
+        return out
 
     def decode(self, x):
-        x = self.dec_layer(x)
-        out = self.dec_output(x)
+        out = self.decoder_layers(x)
         return out
 
 
@@ -771,23 +828,40 @@ class Dis(nn.Module):
         self.dropout = dropout
         self.activation = activation
         self.loss_fn = loss_fn
-        linear_layers = []
+
+        mid_layers = []
         for layer in range(num_hidden_layer - 1):
-            linear_layers.append(nn.Linear(self.hidden_size, self.hidden_size))
-            linear_layers.append(nn.BatchNorm1d(self.hidden_size))
-            linear_layers.append(self.activation())
-        self.linear_layers = nn.Sequential(*linear_layers)
-        self.input_layer = nn.Sequential(
+
+            mid_layer = nn.Sequential(
+                nn.Linear(self.hidden_size, self.hidden_size),
+                nn.BatchNorm1d(self.hidden_size),
+                self.activation()            
+            )
+            mid_layers.append(mid_layer)
+
+        mid_layers = nn.Sequential(*mid_layers)
+
+        input_layer = nn.Sequential(
             nn.Linear(self.input_size, self.hidden_size),
             nn.BatchNorm1d(self.hidden_size),
             self.activation(),
         )
-        self.output_layer = nn.Sequential(nn.Linear(self.hidden_size, 1), nn.Sigmoid())
+        
+        output_layer = nn.Sequential(
+            nn.Linear(self.hidden_size, 1), 
+            nn.Sigmoid()
+            )
+
+        dense_layers = []
+
+        dense_layers.append(input_layer)
+        dense_layers.append(mid_layers)
+        dense_layers.append(output_layer)
+
+        self.dense_layers = nn.Sequential(*dense_layers)
 
     def forward(self, x):
-        x = self.input_layer(x)
-        x = self.linear_layers(x)
-        out = self.output_layer(x)
+        out = self.dense_layers(x)
         return out
 
     def calc_dis_loss(self, input_fake, input_real):
