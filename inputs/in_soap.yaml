@@ -9,10 +9,19 @@ descriptor:
        l_max: 6
        r_cut: 6.0
 
-load_guess: False 
+load_guess: False
 loadguess_params:
-  model_dir: /home/tom/ML-XS/code-test/model/model_001/model.pt
-  n_freeze: 1
+  model_dir: ./model/model_001/model.pt
+  freeze_mlp_params:    # MLP Freeze Layer Parameters:
+    freeze_dense: True
+    n_freeze_dense: 2
+  freeze_ae_mlp_params: # AE_MLP Freeze Layer Parameters:
+    freeze_encoder: True
+    freeze_decoder: True
+    freeze_dense: True
+    n_freeze_encoder: 2
+    n_freeze_decoder: 2
+    n_freeze_dense: 1
 
 bootstrap: False 
 bootstrap_params: 

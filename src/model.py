@@ -467,29 +467,45 @@ class AE_cnn(nn.Module):
         return recon
 
 
-class AEGANTrainer(nn.Module):
-    def __init__(self, **params):
+class AEGAN(nn.Module):
+    def __init__(
+        self, 
+        input_size_a,
+        input_size_b,
+        hidden_size,
+        dropout,
+        n_hl_gen,
+        n_hl_shared,
+        n_hl_dis,
+        act_fn,
+        loss_gen,
+        loss_dis,
+        lr_gen,
+        lr_dis,
+        optim_fn_gen,
+        optim_fn_dis,
+        ):
         super().__init__()
 
-        self.input_size_a = params["dim_a"]
-        self.input_size_b = params["dim_b"]
-        self.hidden_size = params["hidden_size"]
-        self.dropout = params["dropout"]
+        self.input_size_a = input_size_a
+        self.input_size_b = input_size_b
+        self.hidden_size = hidden_size
+        self.dropout = dropout
 
-        self.n_hl_gen = params["n_hl_gen"]
-        self.n_hl_shared = params["n_hl_shared"]
-        self.n_hl_dis = params["n_hl_dis"]
+        self.n_hl_gen = n_hl_gen
+        self.n_hl_shared = n_hl_shared
+        self.n_hl_dis = n_hl_dis
 
         # Select activation function
         activation_switch = ActivationSwitch()
-        self.activation = activation_switch.fn(params["activation"])
+        self.activation = activation_switch.fn(act_fn)
 
         # Select loss functions
-        loss_gen_fn = params["loss_gen"]["loss_fn"]
-        loss_dis_fn = params["loss_dis"]["loss_fn"]
+        loss_gen_fn = loss_gen["loss_fn"]
+        loss_dis_fn = loss_dis["loss_fn"]
 
-        loss_gen_args = params["loss_gen"]["loss_args"]
-        loss_dis_args = params["loss_dis"]["loss_args"]
+        loss_gen_args = loss_gen["loss_args"]
+        loss_dis_args = loss_dis["loss_args"]
 
         self.loss_fn_gen = LossSwitch().fn(loss_gen_fn, loss_gen_args)
         self.loss_fn_dis = LossSwitch().fn(loss_dis_fn, loss_dis_args)
@@ -543,8 +559,8 @@ class AEGANTrainer(nn.Module):
         )  # discriminator for domain b
 
         # Learning rate
-        self.lr_gen = params["lr_gen"]
-        self.lr_dis = params["lr_dis"]
+        self.lr_gen = lr_gen
+        self.lr_dis = lr_dis
 
         params_gen = [
             param for name, param in self.named_parameters() if "dis" not in name
@@ -552,8 +568,8 @@ class AEGANTrainer(nn.Module):
         params_dis = [param for name, param in self.named_parameters() if "dis" in name]
 
         # Optim for generators and discriminators
-        optim_fn_gen = OptimSwitch().fn(params["optim_fn_gen"])
-        optim_fn_dis = OptimSwitch().fn(params["optim_fn_dis"])
+        optim_fn_gen = OptimSwitch().fn(optim_fn_gen)
+        optim_fn_dis = OptimSwitch().fn(optim_fn_dis)
 
         self.gen_opt = optim_fn_gen(params_gen, lr=self.lr_gen, weight_decay=1e-5)
         self.dis_opt = optim_fn_dis(params_dis, lr=self.lr_dis, weight_decay=1e-5)

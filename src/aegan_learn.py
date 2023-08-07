@@ -27,7 +27,7 @@ import mlflow.pytorch
 from sklearn.model_selection import train_test_split
 
 
-from model import AEGANTrainer
+from model import AEGAN
 import model_utils
 
 # setup tensorboard stuff
@@ -118,25 +118,36 @@ def train_aegan(
             shuffle=False,
         )
 
-    hyperparams["input_size_a"] = n_x_features
-    hyperparams["input_size_b"] = n_y_features
+    n_in = n_x_features
+    out_dim = n_y_features
 
-    model = AEGANTrainer(
-        dim_a=hyperparams["input_size_a"],
-        dim_b=hyperparams["input_size_b"],
-        hidden_size=hyperparams["hidden_size"],
-        dropout=hyperparams["dropout"],
-        n_hl_gen=hyperparams["n_hl_gen"],
-        n_hl_shared=hyperparams["n_hl_shared"],
-        n_hl_dis=hyperparams["n_hl_dis"],
-        activation=hyperparams["activation"],
-        loss_gen=hyperparams["loss_gen"],
-        loss_dis=hyperparams["loss_dis"],
-        lr_gen=hyperparams["lr_gen"],
-        lr_dis=hyperparams["lr_dis"],
-        optim_fn_gen=hyperparams["optim_fn_gen"],
-        optim_fn_dis=hyperparams["optim_fn_dis"],
-    )
+    model_mode = "aegan_mlp"
+
+    if load_guess:
+        import freeze_fn
+
+        model_dir = loadguess_params["model_dir"]
+        freeze_params = loadguess_params["freeze_params"]
+        model = freeze_fn.freeze_layers(model_dir, model_mode, freeze_params)
+
+    else:
+
+        model = AEGAN(
+            n_in,
+            out_dim,
+            hyperparams["hidden_size"],
+            hyperparams["dropout"],
+            hyperparams["n_hl_gen"],
+            hyperparams["n_hl_shared"],
+            hyperparams["n_hl_dis"],
+            hyperparams["activation"],
+            hyperparams["loss_gen"],
+            hyperparams["loss_dis"],
+            hyperparams["lr_gen"],
+            hyperparams["lr_dis"],
+            hyperparams["optim_fn_gen"],
+            hyperparams["optim_fn_dis"],
+        )
 
     model.to(device)
 

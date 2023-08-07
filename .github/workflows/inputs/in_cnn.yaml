@@ -9,10 +9,21 @@ descriptor:
       n_g2: 16
       n_g4: 32
 
-load_guess: False 
+load_guess: False
 loadguess_params:
-  model_dir: /home/tom/ML-XS/code-test/model/model_001/model.pt
-  n_freeze: 1
+  model_dir: ./model/model_001/model.pt
+  freeze_cnn_params:    # CNN Freeze Layer Parameters
+    freeze_conv: True
+    freeze_dense: True
+    n_freeze_conv: 4
+    n_freeze_dense: 1
+  freeze_ae_cnn_params: # AE_CNN Freeze Layer Parameters
+    freeze_encoder: True
+    freeze_decoder: True
+    freeze_dense: True
+    n_freeze_encoder: 2
+    n_freeze_decoder: 2
+    n_freeze_dense: 11
 
 bootstrap: False
 bootstrap_params: 

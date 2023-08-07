@@ -126,31 +126,48 @@ def train(
 	if model_mode == "ae_mlp":
 		from model import AE_mlp
 
-		model = AE_mlp(
-			n_in,
-			hyperparams["hl_ini_dim"],
-			hyperparams["dropout"],
-			hyperparams["n_hl"],
-			hyperparams["hl_shrink"],
-			out_dim,
-			act_fn,
-		)
+		if load_guess:
+			import freeze_fn
+			
+			model_dir = loadguess_params["model_dir"]
+			freeze_params = loadguess_params["freeze_ae_mlp_params"]
+			model = freeze_fn.freeze_layers(model_dir, model_mode, freeze_params)
+		
+		else:
+			model = AE_mlp(
+				n_in,
+				hyperparams["hl_ini_dim"],
+				hyperparams["dropout"],
+				hyperparams["n_hl"],
+				hyperparams["hl_shrink"],
+				out_dim,
+				act_fn,
+			)
 
 	elif model_mode == "ae_cnn":
 		from model import AE_cnn
 
-		model = AE_cnn(
-			n_in,
-			hyperparams["out_channel"],
-			hyperparams["channel_mul"],
-			hyperparams["hidden_layer"],
-			out_dim,
-			hyperparams["dropout"],
-			hyperparams["kernel_size"],
-			hyperparams["stride"],
-			act_fn,
-			hyperparams["n_cl"]
-		)
+		if load_guess:
+			import freeze_fn
+
+			model_dir = loadguess_params["model_dir"]
+			freeze_params = loadguess_params["freeze_ae_cnn_params"]
+			model = freeze_fn.freeze_layers(model_dir, model_mode, freeze_params)
+		
+		else:
+
+			model = AE_cnn(
+				n_in,
+				hyperparams["out_channel"],
+				hyperparams["channel_mul"],
+				hyperparams["hidden_layer"],
+				out_dim,
+				hyperparams["dropout"],
+				hyperparams["kernel_size"],
+				hyperparams["stride"],
+				act_fn,
+				hyperparams["n_cl"]
+			)
 
 	model.to(device)
 

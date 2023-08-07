@@ -126,21 +126,11 @@ def train(
         from model import MLP
 
         if load_guess:
+            import freeze_fn
+
             model_dir = loadguess_params["model_dir"]
-            model = torch.load(model_dir, map_location=torch.device("cpu"))
-            i = 0
-            for name, param in model.named_parameters():
-                i = i + 1
-            num_layers = i
-            num_freeze = loadguess_params["n_freeze"]
-            if num_freeze > 0:
-                i = 0
-                for name, param in model.named_parameters():
-                    if i < (num_layers-(num_freeze*2)):
-                        param.requires_grad = False
-                    else:
-                        continue
-                    i = i+1
+            freeze_params = loadguess_params["freeze_mlp_params"]
+            model = freeze_fn.freeze_layers(model_dir, model_mode, freeze_params)
         else:
             model = MLP(
                 n_in,
@@ -156,21 +146,12 @@ def train(
         from model import CNN
 
         if load_guess:
+            import freeze_fn
+
             model_dir = loadguess_params["model_dir"]
-            model = torch.load(model_dir, map_location=torch.device("cpu"))
-            i = 0
-            for name, param in model.named_parameters():
-                i = i + 1
-            num_layers = i
-            num_freeze = loadguess_params["n_freeze"]
-            if num_freeze > 0:
-                i = 0
-                for name, param in model.named_parameters():
-                    if i < (num_layers-(num_freeze*2)):
-                        param.requires_grad = False
-                    else:
-                        continue
-                    i = i+1
+            freeze_params = loadguess_params["freeze_cnn_params"]
+            model = freeze_fn.freeze_layers(model_dir, model_mode, freeze_params)
+
         else:
             model = CNN(
                 n_in,

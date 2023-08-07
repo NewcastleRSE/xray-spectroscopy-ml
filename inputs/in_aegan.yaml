@@ -9,10 +9,26 @@ descriptor:
       n_g2: 16
       n_g4: 32
 
-load_guess: False 
+load_guess: False
 loadguess_params:
-  model_dir: /home/tom/ML-XS/code-test/model/model_001/model.pt
-  n_freeze: 1
+  model_dir: ./model/model_001/model.pt
+  freeze_params:
+    freeze_encoder1: True
+    freeze_encoder2: True
+    freeze_decoder1: True
+    freeze_decoder2: True
+    freeze_shared_encoder: True
+    freeze_shared_decoder: True
+    freeze_discrim1: True
+    freeze_discrim2: True
+    n_freeze_encoder1: 1
+    n_freeze_encoder2: 1
+    n_freeze_decoder1: 1
+    n_freeze_decoder2: 1
+    n_freeze_shared_encoder: 1
+    n_freeze_shared_decoder: 1
+    n_freeze_discrim1: 1
+    n_freeze_discrim2: 1
 
 bootstrap: False
 bootstrap_params: 
@@ -60,7 +76,7 @@ hyperparams:
   hidden_size: 256
   activation: prelu
   loss_gen:
-    loss_fn: wcc
+    loss_fn: mse
     loss_args: 
     loss_reg_type: null # null, L1, L2
     loss_reg_param: 0.001
@@ -84,7 +100,7 @@ variance_threshold: 0.0
 model_eval : False
 
 optuna_params:
-  tune: True
+  tune: False
   n_trials: 3
   tune_optim_fn: True
   tune_batch_size: True
