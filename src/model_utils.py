@@ -130,15 +130,7 @@ def weight_bias_init(m, kernel_init_fn, bias_init_fn):
         bias_init_fn(m.bias)
 
 
-class LRScheduler(nn.Module):
-    def fn(self, scheduler_type, *args):
-        default = nn.MSELoss()
-        return getattr(
-            self, f"scheduler_type_{scheduler_type.lower()}", lambda: default
-        )(*args)
-
-
-class LRScheduler:
+class LRScheduler():
     """
     Initialise the learning rate scheduler
     """
