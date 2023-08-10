@@ -1,0 +1,90 @@
+x_path: data/datasets/fe/preconv/xyz_train
+y_path: data/datasets/fe/preconv/xanes_train
+
+descriptor:
+    type: wacsf
+    params:
+      r_min: 1.0
+      r_max: 6.0
+      n_g2: 16
+      n_g4: 32
+
+load_guess: False
+loadguess_params:
+  model_dir: /home/sneha/augmen_uncertainity/model/model_001/model.pt
+  n_freeze: 1
+
+bootstrap: False
+bootstrap_params:
+  n_boot: 3
+  n_size: 1.0
+  seed_boot: [97, 39, 22]
+
+ensemble: False
+ensemble_params:
+  n_ens: 3
+  weight_init_seed: [97, 39, 22]
+
+data_params: False
+augment:
+  augment_type: random_noise
+  # augment_type: random_combination
+  augment_mult: 5
+  # for random noise
+  augment_params:
+    normal_mean: 0
+    normal_sd: 0.1
+  # for random combination
+  # augment_params : {}
+
+kfold: False
+kfold_params:
+  n_splits: 1
+  n_repeats: 1
+  loss:
+    loss_fn: mse
+    loss_args: null
+    loss_reg_type: L2 # null, L1, L2
+    loss_reg_param: 0.001
+
+lr_scheduler:
+  scheduler: True
+  scheduler_type: step
+  scheduler_param:
+    step_size: 100
+    gamma: 0.5
+
+hyperparams:
+  model: lstm
+  batch_size: 64
+  hidden_size: 100
+  num_layers: 1
+  hl_ini_dim : 50
+  activation: prelu
+  loss:
+    loss_fn: mse
+    loss_args: null
+    loss_reg_type: L2 # null, L1, L2
+    loss_reg_param: 0.001
+  lr: 0.00001
+  optim_fn: Adam
+  dropout: 0.2
+  weight_init_seed: 2023
+  kernel_init: xavier_uniform
+  bias_init: zeros
+
+seed: 2021
+epochs: 10
+variance_threshold: 0.0
+model_eval : False
+
+optuna_params:
+  tune: False
+  n_trials: 3
+  tune_optim_fn: True
+  tune_batch_size: True
+  tune_activation: True
+  tune_loss_fn: True
+  tune_lr: True
+  tune_dropout: True
+  tune_hidden_layers: True
