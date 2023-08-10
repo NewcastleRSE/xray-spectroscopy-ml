@@ -48,7 +48,6 @@ def train_data(mode: str, model_mode: str, config, save: bool = True, fourier_tr
     for path in (xyz_path, xanes_path):
 
         for path in (xyz_path, xanes_path):
-            print(path)
             if not path.exists():
                 err_str = f"path to X/Y data ({path}) doesn't exist"
                 raise FileNotFoundError(err_str)

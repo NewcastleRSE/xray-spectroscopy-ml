@@ -85,6 +85,7 @@ The implemented training modes include:
 The model modes include:  
 - `mlp`: Feed-foward deep multilayer perceptron model  
 - `cnn`: Feed-foward deep convolution neural network model  
+- `lstm`: Feed-foward long short-term memory neural network model  
 - `ae_mlp`: Autoencoder deep multilayer perceptron model 
 - `ae_cnn`: Autoencoder deep convolution neural network model  
 - `aegan_mlp`: Autoencoder Generative Adversarial Network model using a deep multilayer perceptron network   
@@ -105,7 +106,9 @@ To use a model previously developed model for predictions, the following command
 The implemented prediction modes include:  
 - `predict_xyz`: The featurised structure is predicted from an input xanes spectrum   
 - `predict_xanes`: The xanes spectrum is predicted from a featurised structural input  
-- `predict_all`: Simultaneous prediction of a featurised structure and xanes spectrum from corresponding input as well as reconstruction of inputs. Only for AEGAN model type.
+- `predict_aegan`: Simultaneous prediction of a featurised structure and xanes spectrum from corresponding input  
+- `predict_aegan_xanes`: The xanes spectrum is predicted from a featurised structural input  
+- `predict_aegan_xyz`: The featurised structure is predicted from an input xanes spectrum  
 
 ### MLFLOW
 
@@ -133,10 +136,6 @@ Model hyperparameters can be automatically tuned by setting `tune: True` within 
 Tuning uses [Optuna](https://optuna.org), an open source hyperparameter optimization framework to automate hyperparameter search. The user can also specify which hyperameters they would like to tune in `optuna_params`, for example exploring the effect of different activation functions whilst holding all other hyperparameters static. Default options for each hyperparameter are specified with the `optuna_defaults()` function within `optuna_learn.py` and can easily be extended or modified to restrict or include other options. 
 
 The user should specify the number of trials they wish to run during tuning. After tuning the optimal values found will be used to train the model.
-
-## LICENSE
-
-This project is licensed under the GPL-3.0 License - see the LICENSE.md file for details.
 
 ## PUBLICATIONS
 
