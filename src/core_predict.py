@@ -203,7 +203,7 @@ def main(
 
         parent_model_dir, predict_dir = make_dir()
 
-        if model_mode == "mlp" or model_mode == "cnn":
+        if model_mode == "mlp" or model_mode == "cnn" or model_mode == "lstm":
             if mode == "predict_xyz":
                 if fourier_transform:
                     xanes_data = data_transform.fourier_transform_data(

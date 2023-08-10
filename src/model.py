@@ -188,6 +188,42 @@ class CNN(nn.Module):
         return out
 
 
+class LSTM(nn.Module):
+    def __init__(
+        self,
+        input_size,
+        hidden_size,
+        num_layers,
+        dropout,
+        hl_size,
+        out_dim,
+        act_fn,
+    ):
+        super(LSTM, self).__init__()
+
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.dropout = dropout
+        self.hl_size = hl_size
+        self.out_dim = out_dim
+        self.act_fn = act_fn
+
+        self.lstm = nn.LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, bidirectional=True)
+        self.fc = nn.Sequential(
+            nn.Linear(2 * hidden_size, hl_size),
+            act_fn(),
+            nn.Dropout(p=dropout),
+            nn.Linear(hl_size, out_dim),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x, _ = self.lstm(x)
+        out = self.fc(x)
+
+        return out
+
+
 class AE_mlp(nn.Module):
 
     def __init__(

@@ -53,7 +53,7 @@ def train_xyz(
 ):
 	print("training xyz structure")
 
-	if model_mode == "mlp" or model_mode == "cnn":
+	if model_mode == "mlp" or model_mode == "cnn" or model_mode == "lstm":
 		if kfold:
 			x = xyz
 			y = xanes
@@ -183,7 +183,7 @@ def train_xanes(
 ):
 	print("training xanes spectrum")
 
-	if model_mode == "mlp" or model_mode == "cnn":
+	if model_mode == "mlp" or model_mode == "cnn" or model_mode == "lstm":
 		if kfold:
 			x = xanes
 			y = xyz
@@ -199,8 +199,8 @@ def train_xanes(
 				weight_seed,
 				lr_scheduler,
 				model_eval,
-		load_guess,
-		loadguess_params,
+				load_guess,
+				loadguess_params,
 			)
 			print_cross_validation_scores(result, model_mode)
 		else:
@@ -232,8 +232,8 @@ def train_xanes(
 				weight_seed,
 				lr_scheduler,
 				model_eval,
-		load_guess,
-		loadguess_params,
+				load_guess,
+				loadguess_params,
 			)
 
 	elif model_mode == "ae_mlp" or model_mode == "ae_cnn":
@@ -252,8 +252,8 @@ def train_xanes(
 				weight_seed,
 				lr_scheduler,
 				model_eval,
-		load_guess,
-		loadguess_params,
+				load_guess,
+				loadguess_params,
 			)
 			print_cross_validation_scores(result, model_mode)
 
@@ -286,8 +286,8 @@ def train_xanes(
 				weight_seed,
 				lr_scheduler,
 				model_eval,
-		load_guess,
-		loadguess_params,
+				load_guess,
+				loadguess_params,
 			)
 
 	summary(model, (1, xanes.shape[1]))
