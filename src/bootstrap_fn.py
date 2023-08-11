@@ -186,7 +186,7 @@ def bootstrap_predict(
         model.eval()
         print("Loaded model from disk")
 
-        if model_mode == "mlp" or model_mode == "cnn":
+        if model_mode == "mlp" or model_mode == "cnn" or model_mode == "lstm":
             if mode == "predict_xyz":
                 if fourier_transform:
                     xanes_data = data_transform.fourier_transform_data(
@@ -300,7 +300,7 @@ def bootstrap_predict(
             if y is not None and y_pred is not None:
                 y_predict_score.append(mean_squared_error(y, y_pred.detach().numpy()))
 
-    if model_mode == "mlp" or model_mode == "cnn":
+    if model_mode == "mlp" or model_mode == "cnn" or model_mode == "lstm":
         mean_score = torch.mean(torch.tensor(y_predict_score))
         std_score = torch.std(torch.tensor(y_predict_score))
         print(f"Mean score: {mean_score:.4f}, Std score: {std_score:.4f}")

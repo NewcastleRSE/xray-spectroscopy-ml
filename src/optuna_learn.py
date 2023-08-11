@@ -76,7 +76,7 @@ def optuna_train(trial,
     model_eval,
     optuna_params,
     ):
-     
+
     options = optuna_defaults()
 
     # Suggest hyperparameters for the trial
@@ -121,7 +121,7 @@ def optuna_train(trial,
         if optuna_params["tune_lr"]:
             hyperparams["lr"] = trial.suggest_float("lr", options["lr_min"], options["lr_max"], log=True)
 
-        if model_mode == "mlp" or "ae_mlp":
+        if model_mode == "mlp" or model_mode == "ae_mlp":
             # MLP params
             if optuna_params["tune_hidden_layers"]:
                 hyperparams["n_hl"] = trial.suggest_int("n_hl", options["n_hl_min"], options["n_hl_max"])
@@ -134,11 +134,16 @@ def optuna_train(trial,
                 hyperparams["n_cl"] = trial.suggest_int("n_cl", options["n_cl_min"], options["n_cl_max"])
                 hyperparams["hidden_layer"] = trial.suggest_categorical("hidden_layer", options["hl_size"])
 
+        elif model_mode == "lstm":
+            if optuna_params["tune_hidden_layers"]:
+                hyperparams["num_layers"] = trial.suggest_int("n_hl", options["n_hl_min"], options["n_hl_max"])
+                hyperparams["hl_ini_dim"] = trial.suggest_categorical("hl_ini_dim", options["hl_size"])
+
     # Set load_guess to False for tuning
     load_guess = False
     load_guess_params = {}
 
-    if model_mode == "mlp" or model_mode == "cnn":
+    if model_mode == "mlp" or model_mode == "cnn" or model_mode == "lstm":
 
         model, score = train(
             x,
