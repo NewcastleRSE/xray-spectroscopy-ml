@@ -24,6 +24,8 @@ def freeze_layers(model_dir, model_mode, freeze_params):
         freeze_layers_ae(model, freeze_params)
     elif model_mode == "aegan_mlp":
         freeze_layers_aegan_mlp(model, freeze_params)
+    elif model_mode == "lstm":
+        freeze_layers_lstm(model, freeze_params)
 
     return model
 
@@ -265,5 +267,39 @@ def freeze_layers_aegan_mlp(model, freeze_params):
                 if count <= n_freeze_discrim2:
                     for param in layer.parameters():
                         param.requires_grad = False
+
+    return model
+
+
+def freeze_layers_lstm(model, freeze_params):
+    """
+    freeze_params = {
+        # Which layers to freeze
+        freeze_lstm: bool
+        freeze_dense: bool
+        # Number of layers to freeze
+        n_freeze_lstm: int
+        n_freeze_dense: int
+    }
+    """
+    freeze_lstm = freeze_params["freeze_lstm"]
+    freeze_dense = freeze_params["freeze_dense"]
+
+    n_freeze_lstm = freeze_params["n_freeze_lstm"]
+    n_freeze_dense = freeze_params["n_freeze_dense"]
+
+    if freeze_lstm:
+        LSTM_BLOCK_SIZE = 8 
+        count = 0
+        for name, param in model.lstm.named_parameters():
+            if count // LSTM_BLOCK_SIZE + 1 <= n_freeze_lstm:
+                param.requires_grad = False
+            count += 1
+
+    if freeze_dense:
+        print(">>> Note current implementation freezes all model.fc layers.")
+        count = 0
+        for name, param in model.fc.named_parameters():
+            param.requires_grad = False
 
     return model

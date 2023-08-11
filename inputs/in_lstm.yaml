@@ -11,8 +11,12 @@ descriptor:
 
 load_guess: False
 loadguess_params:
-  model_dir: /home/sneha/augmen_uncertainity/model/model_001/model.pt
-  n_freeze: 1
+  model_dir: ./model/model_001/model.pt
+  freeze_lstm_params:
+    freeze_lstm: True
+    freeze_dense: False
+    n_freeze_lstm: 1
+    n_freeze_dense: 1
 
 bootstrap: False
 bootstrap_params:

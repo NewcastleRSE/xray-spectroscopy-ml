@@ -48,6 +48,12 @@ jobs:
           python3 src/cli.py --mode train_xyz --model_mode lstm --inp_f ./.github/workflows/inputs/in_lstm.yaml
           python3 src/cli.py --mode predict_xanes --model_mode lstm --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
 
+      - name: LSTM XANES --> XYZ
+        run: |
+          rm -rf model/model_001
+          python3 src/cli.py --mode train_xanes --model_mode lstm --inp_f ./.github/workflows/inputs/in_lstm.yaml
+          python3 src/cli.py --mode predict_xyz --model_mode lstm --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
+
       - name: CNN Xanes --> XYZ
         run: |
           rm -rf model/model_001
