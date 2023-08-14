@@ -21,7 +21,7 @@ from model_utils import run_shap_analysis
 def shap(
     model_mode, mode, xyz_data, xanes_data, model, predict_dir, ids, shap_nsamples
 ):
-    if model_mode == "mlp" or model_mode == "cnn":
+    if model_mode == "mlp" or model_mode == "cnn" or model_mode == "lstm":
         if mode == "predict_xanes":
             data = xyz_data
 
