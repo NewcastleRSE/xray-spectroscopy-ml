@@ -2,7 +2,7 @@
 X A N E S N E T
 ===============
 
-.. image:: xanesnet_graphic.png
+.. image:: images/xanesnet_graphic.png
    :align: center
 
 |
