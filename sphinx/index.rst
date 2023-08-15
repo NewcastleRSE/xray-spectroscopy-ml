@@ -31,7 +31,7 @@ XANESNET is an open source project developed through the `Penfold Group <http://
 	XANESNET GitLab Repostiory <https://gitlab.com/team-xnet/xanesnet>
 	XANESNET Training Datasets <https://gitlab.com/team-xnet/training-sets>
 	Penfold Group <http://penfoldgroup.co.uk>
-	Original Keras Implmentation <https://gitlab.com/team-xnet/xanesnet_keras>
+	Original Keras Implementation <https://gitlab.com/team-xnet/xanesnet_keras>
 
 ------------
 Publications
