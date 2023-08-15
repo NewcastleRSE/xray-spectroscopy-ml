@@ -3,6 +3,26 @@ Long Short Term Memory Network
 ==============================
 
 
+The ``lstm`` model is constructed as a `PyTorch LSTM <https://pytorch.org/docs/stable/generated/torch.nn.LSTM.html>`_ class with ``num_layers`` and two dense layers. 
+
+
+**Network Architecture:**
+
+A forward pass through the model passes through these layers in sequence:
+
+	* LSTM Layer
+		* LSTM 
+	* Dense Layer 1
+		* Linear
+		* Activation
+		* Dropout
+	* Dense Layer 2
+		* Linear
+
+
+**Example hyperparameters:**
+
+
 .. code-block::
 
 	hyperparams:

@@ -48,13 +48,16 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="running.html">Running the Code</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="models.html">Model Modes and Hyperparameters</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="model_mlp.html">Multilayer Perceptron Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_cnn.html">Convolutional Neural Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_ae_mlp.html">Autoencoder Multilayer Perceptron Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_ae_cnn.html">Autoencoder Convolutional Neural Network</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Autoencoder Generative Adversarial Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_lstm.html">Long Short Term Memory Network</a></li>
 <li class="toctree-l2"><a class="reference internal" href="models.html#general-model-hyperparameters">General Model Hyperparameters</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="models.html#specific-model-parameters">Specific Model Parameters</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="model_mlp.html">Multilayer Perceptron Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_cnn.html">Convolutional Neural Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_ae_mlp.html">Autoencoder Multilayer Perceptron Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_ae_cnn.html">Autoencoder Convolutional Neural Network</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Autoencoder Generative Adversarial Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_lstm.html">Long Short Term Memory Network</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
@@ -95,6 +98,46 @@
              
   <section id="autoencoder-generative-adversarial-network">
 <h1>Autoencoder Generative Adversarial Network<a class="headerlink" href="#autoencoder-generative-adversarial-network" title="Permalink to this heading"></a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">aegan_mlp</span></code> model trains both structure and spectra at the same time using two autoencoders or generators that have shared parameters and two discriminators. The discriminators are used to encourage better performance from the generators, whilst the generators try to fool the discriminators. This structure allows different paths through the model for either data type. It can be used to reconstruct the input data or predict the output data for either structure or spectra without changing the model. All constituent parts of the model are multilayer perceptron networks. Aside from input and output shape, the dimension of the linear layers is currently fixed by the value <code class="docutils literal notranslate"><span class="pre">hidden_size</span></code>. The generative and discriminative parts of the model can have different loss functions, learning rates and optimisers specified using the options <code class="docutils literal notranslate"><span class="pre">loss_gen</span></code>, <code class="docutils literal notranslate"><span class="pre">loss_dis</span></code> and <code class="docutils literal notranslate"><span class="pre">lr_gen</span></code>, <code class="docutils literal notranslate"><span class="pre">lr_dis</span></code> and <code class="docutils literal notranslate"><span class="pre">optim_fn_gen</span></code>, <code class="docutils literal notranslate"><span class="pre">optim_fn_dis</span></code>, respectively.</p>
+<p><strong>Network Diagram:</strong></p>
+<img alt="_images/model_aegan_diagram.png" class="align-center" src="_images/model_aegan_diagram.png" />
+<p><strong>Network Architecture:</strong></p>
+<blockquote>
+<div><ul>
+<li><p><strong>Generative Layers</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>Structure Encoder &amp; Spectrum Encoder</dt><dd><p><code class="docutils literal notranslate"><span class="pre">n_hl_gen</span></code> number of layers contructed as {linear, batch normalisation, activation}. Final layer has no activation.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Shared Encoder &amp; Shared Decoder</dt><dd><p><code class="docutils literal notranslate"><span class="pre">n_hl_shared</span></code> number of layers contructed as {linear, batch normalisation, activation}. Final layer has no activation.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Structure Generator &amp; Spectrum Generator</dt><dd><p><code class="docutils literal notranslate"><span class="pre">n_hl_gen</span></code> number of layers constructed as {linear, batch normalisation, activation}. Final layer has no activation.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><strong>Discriminative Layers</strong></p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">n_hl_dis</span></code> number of layers contructed as {linear, batch normalisation, activation}. Final layer has <a class="reference external" href="https://pytorch.org/docs/stable/generated/torch.nn.Sigmoid.html">Sigmoid</a> activation. The recommended loss function for the discriminator <code class="docutils literal notranslate"><span class="pre">loss_dis</span></code> is the <a class="reference external" href="https://pytorch.org/docs/stable/generated/torch.nn.BCEWithLogitsLoss.html#torch.nn.BCEWithLogitsLoss">Binary Cross Entropy with Logits Loss</a> specified using the <code class="docutils literal notranslate"><span class="pre">bce</span></code> option.</p>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+<p><strong>Training the Model:</strong></p>
+<blockquote>
+<div><p>Training of the AEGAN is achieved as alternating updates of the generative and discriminative parts of the model. The loss for the generative part is calculated as the sum of the scaled difference between model output and target output for both reconstructions and predictions for spectra and structure. The individual losses are currently scaled by the max value of the model output to compensate for the scaling differences between spectra and structure.</p>
+<p>The discriminator part of the model tries to predict whether the data is real - i.e. from the training set - or fake - produced from the generative part of the model. The total loss is the sum of the <em>real loss</em> and <em>fake loss</em>. The fake loss is calculated as the difference between the predicted labels for the real and fake data produced by the generator. The real loss is calculated as the the difference between the predicted labels for the fake data and the true label for the data.</p>
+</div></blockquote>
+<p><strong>Example hyperparameters:</strong></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hyperparams</span><span class="p">:</span>
   <span class="n">model</span><span class="p">:</span> <span class="n">aegan</span>
   <span class="n">batch_size</span><span class="p">:</span> <span class="mi">64</span>

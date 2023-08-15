@@ -48,13 +48,16 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="running.html">Running the Code</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="models.html">Model Modes and Hyperparameters</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Multilayer Perceptron Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_cnn.html">Convolutional Neural Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_ae_mlp.html">Autoencoder Multilayer Perceptron Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_ae_cnn.html">Autoencoder Convolutional Neural Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_aegan_mlp.html">Autoencoder Generative Adversarial Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_lstm.html">Long Short Term Memory Network</a></li>
 <li class="toctree-l2"><a class="reference internal" href="models.html#general-model-hyperparameters">General Model Hyperparameters</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="models.html#specific-model-parameters">Specific Model Parameters</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Multilayer Perceptron Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_cnn.html">Convolutional Neural Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_ae_mlp.html">Autoencoder Multilayer Perceptron Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_ae_cnn.html">Autoencoder Convolutional Neural Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_aegan_mlp.html">Autoencoder Generative Adversarial Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_lstm.html">Long Short Term Memory Network</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
@@ -95,6 +98,48 @@
              
   <section id="multilayer-perceptron-network">
 <h1>Multilayer Perceptron Network<a class="headerlink" href="#multilayer-perceptron-network" title="Permalink to this heading"></a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">mlp</span></code> model is constructed as <code class="docutils literal notranslate"><span class="pre">n_hl</span></code> dense layers. All layers except the final output layer are comprised of a linear layer, a dropout layer and the activation function. The final layer is a linear layer. The size of each hidden linear layer is controlled via the intial dimension <code class="docutils literal notranslate"><span class="pre">hl_ini_dim</span></code> and the value <code class="docutils literal notranslate"><span class="pre">hl_shrink</span></code> that reduces the layer dimension multiplicatively. An error will be returned if the last hidden layer size is less than 1.</p>
+<p><strong>Network Architecture:</strong></p>
+<p>A forward pass through the model passes through these layers in sequence:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>Dense Layer 1</dt><dd><ul>
+<li><p>Linear</p></li>
+<li><p>Dropout</p></li>
+<li><p>Activation</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Dense Layer 2</dt><dd><ul>
+<li><p>Linear</p></li>
+<li><p>Dropout</p></li>
+<li><p>Activation</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Dense Layer …</dt><dd><ul>
+<li><p>Linear</p></li>
+<li><p>Dropout</p></li>
+<li><p>Activation</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Dense Layer n_hl</dt><dd><ul>
+<li><p>Linear</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<p><strong>Example hyperparameters:</strong></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hyperparams</span><span class="p">:</span>
   <span class="n">model</span><span class="p">:</span> <span class="n">mlp</span>
   <span class="n">batch_size</span><span class="p">:</span> <span class="mi">64</span>

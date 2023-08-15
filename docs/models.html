@@ -48,13 +48,16 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="running.html">Running the Code</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Model Modes and Hyperparameters</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="model_mlp.html">Multilayer Perceptron Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_cnn.html">Convolutional Neural Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_ae_mlp.html">Autoencoder Multilayer Perceptron Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_ae_cnn.html">Autoencoder Convolutional Neural Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_aegan_mlp.html">Autoencoder Generative Adversarial Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_lstm.html">Long Short Term Memory Network</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#general-model-hyperparameters">General Model Hyperparameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#specific-model-parameters">Specific Model Parameters</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="model_mlp.html">Multilayer Perceptron Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_cnn.html">Convolutional Neural Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_ae_mlp.html">Autoencoder Multilayer Perceptron Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_ae_cnn.html">Autoencoder Convolutional Neural Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_aegan_mlp.html">Autoencoder Generative Adversarial Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_lstm.html">Long Short Term Memory Network</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
@@ -94,21 +97,9 @@
              
   <section id="model-modes-and-hyperparameters">
 <h1>Model Modes and Hyperparameters<a class="headerlink" href="#model-modes-and-hyperparameters" title="Permalink to this heading"></a></h1>
-<p>The user now has the ability to train structure-to-spectrum and spectrum-to-structure
-using 5 different model types:</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="model_mlp.html">Multilayer Perceptron Network</a></li>
-<li class="toctree-l1"><a class="reference internal" href="model_cnn.html">Convolutional Neural Network</a></li>
-<li class="toctree-l1"><a class="reference internal" href="model_ae_mlp.html">Autoencoder Multilayer Perceptron Network</a></li>
-<li class="toctree-l1"><a class="reference internal" href="model_ae_cnn.html">Autoencoder Convolutional Neural Network</a></li>
-<li class="toctree-l1"><a class="reference internal" href="model_aegan_mlp.html">Autoencoder Generative Adversarial Network</a></li>
-<li class="toctree-l1"><a class="reference internal" href="model_lstm.html">Long Short Term Memory Network</a></li>
-</ul>
-</div>
 <section id="general-model-hyperparameters">
 <h2>General Model Hyperparameters<a class="headerlink" href="#general-model-hyperparameters" title="Permalink to this heading"></a></h2>
-<p>Each model type has specific hyperparameters used to specify the architecture of the network. These model specific hyperparameters are described on their respective model type page linked above. However, there are some common hyperparameters across all model modes.</p>
+<p>Each model type has specific hyperparameters used to specify the architecture of the network. These model specific hyperparameters are described on their respective model type page linked below. However, there are some common hyperparameters across all model modes.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hyperparams</span><span class="p">:</span>
         <span class="o">...</span>
         <span class="n">batch_size</span><span class="p">:</span> <span class="mi">32</span>
@@ -228,12 +219,27 @@ using 5 different model types:</p>
 <li><p><a class="reference external" href="https://pytorch.org/docs/stable/nn.init.html?highlight=xavier#torch.nn.init.normal_">normal</a></p></li>
 <li><p><a class="reference external" href="https://pytorch.org/docs/stable/nn.init.html?highlight=xavier#torch.nn.init.xavier_normal_">xavier_normal</a></p></li>
 <li><p><a class="reference external" href="https://pytorch.org/docs/stable/nn.init.html?highlight=xavier#torch.nn.init.kaiming_uniform_">kaiming_uniform</a></p></li>
-<li><p><a class="reference external" href="https://pytorch.org/docs/stable/nn.init.html?highlight=xavier#torch.nn.init.zeros_">zeros</a> (default for <a href="#id1"><span class="problematic" id="id2">`</span></a>bias_init)</p></li>
+<li><p><a class="reference external" href="https://pytorch.org/docs/stable/nn.init.html?highlight=xavier#torch.nn.init.zeros_">zeros</a> (default for bias_init)</p></li>
 <li><p><a class="reference external" href="https://pytorch.org/docs/stable/nn.init.html?highlight=xavier#torch.nn.init.ones_">ones</a></p></li>
 </ul>
 </div></blockquote>
 </li>
 </ul>
+</section>
+<section id="specific-model-parameters">
+<h2>Specific Model Parameters<a class="headerlink" href="#specific-model-parameters" title="Permalink to this heading"></a></h2>
+<p>The user now has the ability to train structure-to-spectrum and spectrum-to-structure
+using 5 different model types:</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="model_mlp.html">Multilayer Perceptron Network</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_cnn.html">Convolutional Neural Network</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_ae_mlp.html">Autoencoder Multilayer Perceptron Network</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_ae_cnn.html">Autoencoder Convolutional Neural Network</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_aegan_mlp.html">Autoencoder Generative Adversarial Network</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_lstm.html">Long Short Term Memory Network</a></li>
+</ul>
+</div>
 </section>
 </section>
 

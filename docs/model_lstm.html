@@ -48,13 +48,16 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="running.html">Running the Code</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="models.html">Model Modes and Hyperparameters</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="model_mlp.html">Multilayer Perceptron Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_cnn.html">Convolutional Neural Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_ae_mlp.html">Autoencoder Multilayer Perceptron Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_ae_cnn.html">Autoencoder Convolutional Neural Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_aegan_mlp.html">Autoencoder Generative Adversarial Network</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Long Short Term Memory Network</a></li>
 <li class="toctree-l2"><a class="reference internal" href="models.html#general-model-hyperparameters">General Model Hyperparameters</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="models.html#specific-model-parameters">Specific Model Parameters</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="model_mlp.html">Multilayer Perceptron Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_cnn.html">Convolutional Neural Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_ae_mlp.html">Autoencoder Multilayer Perceptron Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_ae_cnn.html">Autoencoder Convolutional Neural Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_aegan_mlp.html">Autoencoder Generative Adversarial Network</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Long Short Term Memory Network</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
@@ -95,6 +98,37 @@
              
   <section id="long-short-term-memory-network">
 <h1>Long Short Term Memory Network<a class="headerlink" href="#long-short-term-memory-network" title="Permalink to this heading"></a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">lstm</span></code> model is constructed as a <a class="reference external" href="https://pytorch.org/docs/stable/generated/torch.nn.LSTM.html">PyTorch LSTM</a> class with <code class="docutils literal notranslate"><span class="pre">num_layers</span></code> and two dense layers.</p>
+<p><strong>Network Architecture:</strong></p>
+<p>A forward pass through the model passes through these layers in sequence:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>LSTM Layer</dt><dd><ul>
+<li><p>LSTM</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Dense Layer 1</dt><dd><ul>
+<li><p>Linear</p></li>
+<li><p>Activation</p></li>
+<li><p>Dropout</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Dense Layer 2</dt><dd><ul>
+<li><p>Linear</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<p><strong>Example hyperparameters:</strong></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hyperparams</span><span class="p">:</span>
   <span class="n">model</span><span class="p">:</span> <span class="n">lstm</span>
   <span class="n">batch_size</span><span class="p">:</span> <span class="mi">64</span>

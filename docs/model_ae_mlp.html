@@ -48,13 +48,16 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="running.html">Running the Code</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="models.html">Model Modes and Hyperparameters</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="model_mlp.html">Multilayer Perceptron Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_cnn.html">Convolutional Neural Network</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Autoencoder Multilayer Perceptron Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_ae_cnn.html">Autoencoder Convolutional Neural Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_aegan_mlp.html">Autoencoder Generative Adversarial Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_lstm.html">Long Short Term Memory Network</a></li>
 <li class="toctree-l2"><a class="reference internal" href="models.html#general-model-hyperparameters">General Model Hyperparameters</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="models.html#specific-model-parameters">Specific Model Parameters</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="model_mlp.html">Multilayer Perceptron Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_cnn.html">Convolutional Neural Network</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Autoencoder Multilayer Perceptron Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_ae_cnn.html">Autoencoder Convolutional Neural Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_aegan_mlp.html">Autoencoder Generative Adversarial Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_lstm.html">Long Short Term Memory Network</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
@@ -95,6 +98,96 @@
              
   <section id="autoencoder-multilayer-perceptron-network">
 <h1>Autoencoder Multilayer Perceptron Network<a class="headerlink" href="#autoencoder-multilayer-perceptron-network" title="Permalink to this heading"></a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">ae_mlp</span></code> model has three main components; encoder, decoder and dense layers. For input data the model can reconstruct the input data as well as predict the output data. Reconstruction performs a forward pass through the encoder and decoder. Prediction performs a forward pass through the encoder and dense layers. Hyperparameter specification is the same as for the <code class="docutils literal notranslate"><span class="pre">mlp</span></code> model type.</p>
+<p>The encoder is constructed as <code class="docutils literal notranslate"><span class="pre">n_hl</span></code> dense layers with the dimension of each linear layer decreasing multiplicately according to the value <code class="docutils literal notranslate"><span class="pre">hl_shrink</span></code>. The decoder is similarly constructed with the dimension of each linear layer instead increasing multiplicately according to <code class="docutils literal notranslate"><span class="pre">hl_shrink</span></code>. The dense layers that perform prediction are comprised of two linear layers. An error will be returned if the last hidden layer size of the encoder is less than 1.</p>
+<p><strong>Network Architecture:</strong></p>
+<blockquote>
+<div><ul>
+<li><p><strong>Encoder Layers:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>Layer 1</dt><dd><ul>
+<li><p>Linear</p></li>
+<li><p>Activation</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Layer …</dt><dd><ul>
+<li><p>Linear</p></li>
+<li><p>Activation</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Layer n_hl</dt><dd><ul>
+<li><p>Linear</p></li>
+<li><p>Activation</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><strong>Decoder Layers:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>Layer 1</dt><dd><ul>
+<li><p>Linear</p></li>
+<li><p>Activation</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Layer …</dt><dd><ul>
+<li><p>Linear</p></li>
+<li><p>Activation</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Layer n_hl</dt><dd><ul>
+<li><p>Linear</p></li>
+<li><p>Activation</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</li>
+<li><dl class="simple">
+<dt><strong>Dense Layers:</strong></dt><dd><ul class="simple">
+<li><dl class="simple">
+<dt>Layer 1</dt><dd><ul>
+<li><p>Linear</p></li>
+<li><p>Activation</p></li>
+<li><p>Dropout</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Layer 2</dt><dd><ul>
+<li><p>Linear</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<p><strong>Example hyperparameters:</strong></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hyperparams</span><span class="p">:</span>
   <span class="n">model</span><span class="p">:</span> <span class="n">ae_mlp</span>
   <span class="n">batch_size</span><span class="p">:</span> <span class="mi">64</span>

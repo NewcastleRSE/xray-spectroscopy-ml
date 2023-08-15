@@ -48,13 +48,16 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="running.html">Running the Code</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="models.html">Model Modes and Hyperparameters</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="model_mlp.html">Multilayer Perceptron Network</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Convolutional Neural Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_ae_mlp.html">Autoencoder Multilayer Perceptron Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_ae_cnn.html">Autoencoder Convolutional Neural Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_aegan_mlp.html">Autoencoder Generative Adversarial Network</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_lstm.html">Long Short Term Memory Network</a></li>
 <li class="toctree-l2"><a class="reference internal" href="models.html#general-model-hyperparameters">General Model Hyperparameters</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="models.html#specific-model-parameters">Specific Model Parameters</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="model_mlp.html">Multilayer Perceptron Network</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Convolutional Neural Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_ae_mlp.html">Autoencoder Multilayer Perceptron Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_ae_cnn.html">Autoencoder Convolutional Neural Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_aegan_mlp.html">Autoencoder Generative Adversarial Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_lstm.html">Long Short Term Memory Network</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
@@ -95,6 +98,59 @@
              
   <section id="convolutional-neural-network">
 <h1>Convolutional Neural Network<a class="headerlink" href="#convolutional-neural-network" title="Permalink to this heading"></a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">cnn</span></code> model is constructed as <code class="docutils literal notranslate"><span class="pre">n_cl</span></code> convolutional layers and two dense layers. The convolutional layers are comprised of a 1D convolution, batch normalisation, activation function and dropout. The number of <code class="docutils literal notranslate"><span class="pre">out_channels</span></code> in the convolutional layers is increased multiplicatively at each layer by the value <code class="docutils literal notranslate"><span class="pre">channel_mul</span></code>.</p>
+<p><strong>Network Architecture:</strong></p>
+<p>A forward pass through the model passes through these layers in sequence:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>Convolutional Layer 1</dt><dd><ul>
+<li><p>1D Convolution</p></li>
+<li><p>Batch Normalisation</p></li>
+<li><p>Activation</p></li>
+<li><p>Dropout</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Convolutional Layer …</dt><dd><ul>
+<li><p>1D Convolution</p></li>
+<li><p>Batch Normalisation</p></li>
+<li><p>Activation</p></li>
+<li><p>Dropout</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Convolutional Layer n_cl</dt><dd><ul>
+<li><p>1D Convolution</p></li>
+<li><p>Batch Normalisation</p></li>
+<li><p>Activation</p></li>
+<li><p>Dropout</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Dense Layer 1</dt><dd><ul>
+<li><p>Linear</p></li>
+<li><p>Activation</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Dense Layer 2</dt><dd><ul>
+<li><p>Linear</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<p><strong>Example hyperparameters:</strong></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hyperparams</span><span class="p">:</span>
   <span class="n">model</span><span class="p">:</span> <span class="n">cnn</span>
   <span class="n">batch_size</span><span class="p">:</span> <span class="mi">16</span>
