@@ -128,6 +128,11 @@ def optuna_train(trial,
                 hyperparams["hl_ini_dim"] = trial.suggest_categorical("hl_ini_dim", options["hl_size"])
                 hyperparams["hl_shrink"] = trial.suggest_uniform("hl_shrink", options["hl_shrink_min"], options["hl_shrink_max"])
 
+                last_hidden_layer_size = int(hyperparams["hl_ini_dim"] * hyperparams["hl_shrink"] ** (hyperparams["n_hl"] - 1))
+
+                if last_hidden_layer_size < 1:
+                    raise optuna.exceptions.TrialPruned("The size of the last hidden layer was less than 1. Terminated Optuna trial for this parameterisation.")
+
         elif model_mode == "cnn" or model_mode == "ae_cnn":
             # CNN specific hyperparams
             if optuna_params["tune_hidden_layers"]:
