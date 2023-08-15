@@ -33,9 +33,6 @@ This documentation is build and deployed to GitHub Pages automatically using Git
 Code
 ----
 
-
-**Issues**
-
 **Adding a new model**
 
 	Coming soon!
