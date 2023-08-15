@@ -26,7 +26,7 @@ This documentation is build and deployed to GitHub Pages automatically using Git
 
 	This will build a local copy you can preview by clicking on one of the created html files in the ``sphinx/_build/html`` directory
 
-* When you are happy with your changes, commit and push them to your development branch
+* When you are happy with your changes, commit and push them to your development branch. This will trigger the GitHub action and deploy to GitHub pages.
 
 
 ----
