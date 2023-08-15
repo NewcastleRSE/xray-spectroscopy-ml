@@ -2,23 +2,11 @@
 Model Modes and Hyperparameters
 ===============================
 
-The user now has the ability to train structure-to-spectrum and spectrum-to-structure
-using 5 different model types:
-
-.. toctree::
-
-	model_mlp
-	model_cnn
-	model_ae_mlp
-	model_ae_cnn
-	model_aegan_mlp
-	model_lstm
-
 -----------------------------
 General Model Hyperparameters
 -----------------------------
 
-Each model type has specific hyperparameters used to specify the architecture of the network. These model specific hyperparameters are described on their respective model type page linked above. However, there are some common hyperparameters across all model modes.
+Each model type has specific hyperparameters used to specify the architecture of the network. These model specific hyperparameters are described on their respective model type page linked below. However, there are some common hyperparameters across all model modes.
 
 .. code-block::
 
@@ -117,7 +105,22 @@ Each model type has specific hyperparameters used to specify the architecture of
 	* `normal <https://pytorch.org/docs/stable/nn.init.html?highlight=xavier#torch.nn.init.normal_>`_
 	* `xavier_normal <https://pytorch.org/docs/stable/nn.init.html?highlight=xavier#torch.nn.init.xavier_normal_>`_
 	* `kaiming_uniform <https://pytorch.org/docs/stable/nn.init.html?highlight=xavier#torch.nn.init.kaiming_uniform_>`_
-	* `zeros <https://pytorch.org/docs/stable/nn.init.html?highlight=xavier#torch.nn.init.zeros_>`_ (default for `bias_init)
+	* `zeros <https://pytorch.org/docs/stable/nn.init.html?highlight=xavier#torch.nn.init.zeros_>`_ (default for bias_init)
 	* `ones <https://pytorch.org/docs/stable/nn.init.html?highlight=xavier#torch.nn.init.ones_>`_
 
 
+-------------------------
+Specific Model Parameters
+-------------------------
+
+The user now has the ability to train structure-to-spectrum and spectrum-to-structure
+using 5 different model types:
+
+.. toctree::
+
+	model_mlp
+	model_cnn
+	model_ae_mlp
+	model_ae_cnn
+	model_aegan_mlp
+	model_lstm

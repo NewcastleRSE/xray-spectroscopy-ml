@@ -2,6 +2,50 @@
 Autoencoder Multilayer Perceptron Network
 =========================================
 
+
+The ``ae_mlp`` model has three main components; encoder, decoder and dense layers. For input data the model can reconstruct the input data as well as predict the output data. Reconstruction performs a forward pass through the encoder and decoder. Prediction performs a forward pass through the encoder and dense layers. Hyperparameter specification is the same as for the ``mlp`` model type.
+
+The encoder is constructed as ``n_hl`` dense layers with the dimension of each linear layer decreasing multiplicately according to the value ``hl_shrink``. The decoder is similarly constructed with the dimension of each linear layer instead increasing multiplicately according to ``hl_shrink``. The dense layers that perform prediction are comprised of two linear layers. An error will be returned if the last hidden layer size of the encoder is less than 1. 
+
+**Network Architecture:**
+
+	* **Encoder Layers:**
+
+		* Layer 1
+			* Linear
+			* Activation
+		* Layer ...
+			* Linear
+			* Activation
+		* Layer n_hl
+			* Linear
+			* Activation
+	
+	* **Decoder Layers:**
+
+		* Layer 1
+			* Linear
+			* Activation
+		* Layer ...
+			* Linear
+			* Activation
+		* Layer n_hl
+			* Linear
+			* Activation
+
+	* **Dense Layers:**
+		* Layer 1
+			* Linear
+			* Activation
+			* Dropout
+		* Layer 2
+			* Linear
+
+
+
+
+**Example hyperparameters:**
+
 .. code-block::
 
 	hyperparams: 

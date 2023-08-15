@@ -2,6 +2,50 @@
 Autoencoder Convolutional Neural Network
 ========================================
 
+
+
+The ``ae_cnn`` model has three main components; encoder, decoder and dense layers. For input data the model can reconstruct the input data as well as predict the output data. Reconstruction performs a forward pass through the encoder and decoder. Prediction performs a forward pass through the encoder and dense layers. Hyperparameter specification is the same as for the ``cnn`` model type.
+
+The encoder is constructed as ``n_cl`` convolutional layers with the number of ``out_channels`` increasing multiplicately according to the value ``channel_mul``. The decoder is constructed as a sequence of transpose convolutional layers with dimensions matching the corresponding layers in the encoder. The dense layers that perform prediction are comprised of two linear layers. 
+
+**Network Architecture:**
+
+	* **Encoder Layers:**
+
+		* Layer 1
+			* 1D Convolution
+			* Activation
+		* Layer ...
+			* 1D Convolution
+			* Activation
+		* Layer n_cl
+			* 1D Convolution
+			* Activation
+	
+	* **Decoder Layers:**
+
+		* Layer 1
+			* 1D Transpose Convolution
+			* Activation
+		* Layer ...
+			* 1D Transpose Convolution
+			* Activation
+		* Layer n_cl
+			* 1D Transpose Convolution
+			* Activation
+
+	* **Dense Layers:**
+		* Layer 1
+			* Linear
+			* Activation
+			* Dropout
+		* Layer 2
+			* Linear
+
+
+
+**Example hyperparameters:**
+
 .. code-block::
 
 	hyperparams: 

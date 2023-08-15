@@ -3,6 +3,38 @@ Convolutional Neural Network
 ============================
 
 
+The ``cnn`` model is constructed as ``n_cl`` convolutional layers and two dense layers. The convolutional layers are comprised of a 1D convolution, batch normalisation, activation function and dropout. The number of ``out_channels`` in the convolutional layers is increased multiplicatively at each layer by the value ``channel_mul``.
+
+**Network Architecture:**
+
+A forward pass through the model passes through these layers in sequence:
+
+	* Convolutional Layer 1
+		* 1D Convolution
+		* Batch Normalisation
+		* Activation
+		* Dropout
+	* Convolutional Layer ...
+		* 1D Convolution
+		* Batch Normalisation
+		* Activation
+		* Dropout
+	* Convolutional Layer n_cl
+		* 1D Convolution
+		* Batch Normalisation
+		* Activation
+		* Dropout
+	* Dense Layer 1
+		* Linear
+		* Activation
+	* Dense Layer 2
+		* Linear
+
+
+
+**Example hyperparameters:**
+
+
 .. code-block::
 
 	hyperparams: 

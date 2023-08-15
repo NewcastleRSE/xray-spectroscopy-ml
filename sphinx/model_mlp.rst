@@ -2,7 +2,28 @@
 Multilayer Perceptron Network
 =============================
 
+The ``mlp`` model is constructed as ``n_hl`` dense layers. All layers except the final output layer are comprised of a linear layer, a dropout layer and the activation function. The final layer is a linear layer. The size of each hidden linear layer is controlled via the intial dimension ``hl_ini_dim`` and the value ``hl_shrink`` that reduces the layer dimension multiplicatively. An error will be returned if the last hidden layer size is less than 1. 
 
+**Network Architecture:**
+
+A forward pass through the model passes through these layers in sequence:
+
+	* Dense Layer 1
+		* Linear
+		* Dropout
+		* Activation
+	* Dense Layer 2
+		* Linear
+		* Dropout
+		* Activation
+	* Dense Layer ...
+		* Linear
+		* Dropout
+		* Activation
+	* Dense Layer n_hl
+		* Linear
+
+**Example hyperparameters:**
 
 .. code-block::
 
