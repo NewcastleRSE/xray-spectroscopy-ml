@@ -37,6 +37,7 @@ from structure.lmbtr import LMBTR
 
 import torch
 import random
+import yaml
 
 
 def train_data(mode: str, model_mode: str, config, save: bool = True, fourier_transform: bool = False, max_samples: int = None):
@@ -170,6 +171,11 @@ def train_data(mode: str, model_mode: str, config, save: bool = True, fourier_tr
             config["augment"], xyz, xanes, n_samples, n_x_features, n_y_features
         )
 
+    descriptor_param = {
+        "descriptor_type": config["descriptor"]["type"],
+        "descriptor_params": config["descriptor"]["params"],
+    }
+
     if config["bootstrap"]:
         from bootstrap_fn import bootstrap_train
 
@@ -188,6 +194,7 @@ def train_data(mode: str, model_mode: str, config, save: bool = True, fourier_tr
             config["kfold_params"],
             rng,
             descriptor,
+            descriptor_param,
             data_compress,
             config["lr_scheduler"],
             config["model_eval"],
@@ -214,6 +221,7 @@ def train_data(mode: str, model_mode: str, config, save: bool = True, fourier_tr
             config["kfold_params"],
             rng,
             descriptor,
+            descriptor_param,
             data_compress,
             config["lr_scheduler"],
             config["model_eval"],
@@ -307,6 +315,21 @@ def train_data(mode: str, model_mode: str, config, save: bool = True, fourier_tr
                 config["descriptor"]["params"],
                 open(f"{model_dir}/{descriptor_type}.txt", "w"),
             )
+
+            metadata = {
+                "mode": mode,
+                "model_mode": model_mode,
+                "mdl_dir": str(model_dir),
+                "descriptor": descriptor_param,
+                "epoch": config["epochs"],
+                "hyperparams": config["hyperparams"],
+                "lr_scheduler": config["lr_scheduler"],
+            }
+
+            with open(model_dir / "metadata.yaml", "w") as f:
+                yaml.dump_all([metadata], f)
+
+
         else:
             print("none")
 

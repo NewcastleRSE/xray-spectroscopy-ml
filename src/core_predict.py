@@ -45,6 +45,7 @@ def main(
     shap_nsamples: int,
     model_dir: str,
     config,
+    metadata,
     fourier_transform: bool = False,
     save: bool = True,
 ):

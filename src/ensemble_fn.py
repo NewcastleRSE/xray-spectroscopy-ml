@@ -21,6 +21,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+import yaml
 import tqdm as tqdm
 from sklearn.metrics import mean_squared_error
 
@@ -46,6 +47,7 @@ def ensemble_train(
     kfold_params,
     rng,
     descriptor,
+    descriptor_param,
     data_compress,
     lr_scheduler,
     model_eval,
@@ -138,6 +140,19 @@ def ensemble_train(
             model_dir = unique_path(Path(ensemble_dir), "model")
             model_dir.mkdir()
             torch.save(model, model_dir / f"model.pt")
+
+            metadata = {
+                "mode": mode,
+                "model_mode": model_mode,
+                "mdl_dir": str(ensemble_dir),
+                "descriptor": descriptor_param,
+                "epoch": epochs,
+                "hyperparams": hyperparams,
+                "lr_scheduler": lr_scheduler,
+            }
+
+            with open(ensemble_dir / "metadata.yaml", "w") as f:
+                yaml.dump_all([metadata], f)
 
 
 def ensemble_predict(

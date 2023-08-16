@@ -20,6 +20,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+import yaml
 import tqdm as tqdm
 from sklearn.metrics import mean_squared_error
 
@@ -59,6 +60,7 @@ def bootstrap_train(
     kfold_params,
     rng,
     descriptor,
+    descriptor_param,
     data_compress,
     lr_scheduler,
     model_eval,
@@ -155,6 +157,19 @@ def bootstrap_train(
             model_dir = unique_path(Path(bootstrap_dir), "model")
             model_dir.mkdir()
             torch.save(model, model_dir / f"model.pt")
+
+            metadata = {
+                "mode": mode,
+                "model_mode": model_mode,
+                "mdl_dir": str(bootstrap_dir),
+                "descriptor": descriptor_param,
+                "epoch": epochs,
+                "hyperparams": hyperparams,
+                "lr_scheduler": lr_scheduler,
+            }
+
+            with open(bootstrap_dir / "metadata.yaml", "w") as f:
+                yaml.dump_all([metadata], f)
 
 
 def bootstrap_predict(

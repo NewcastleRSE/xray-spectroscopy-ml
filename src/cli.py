@@ -20,6 +20,8 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
 import sys
+import os
+from pathlib import Path
 from argparse import ArgumentParser
 
 import yaml
@@ -102,41 +104,87 @@ def parse_args(args: list):
 
 
 def main(args: list):
-    if len(args) == 0:
-        sys.exit()
-    else:
-        args = parse_args(args)
+	if len(args) == 0:
+		sys.exit()
+	else:
+		args = parse_args(args)
 
-    print(f">> loading JSON input @ {args.inp_f}\n")
-    # with open(args.inp_f) as f:
-    #     inp = json.load(f)
-    with open(args.inp_f, "r") as f:
-        inp = yaml.safe_load(f)
-    # print_nested_dict(inp, nested_level=1)
-    # print("")
+	print(f">> loading JSON input @ {args.inp_f}\n")
+	# with open(args.inp_f) as f:
+	#     inp = json.load(f)
+	with open(args.inp_f, "r") as f:
+		inp = yaml.safe_load(f)
+	# print_nested_dict(inp, nested_level=1)
+	# print("")
 
-    if "train" in args.mode:
-        train_data(
-            args.mode,
-            args.model_mode,
-            inp,
-            save=args.save,
-            fourier_transform=args.fourier_transform,
-        )
+	if "train" in args.mode:
 
-    elif "predict" in args.mode:
-        predict(
-            args.mode,
-            args.model_mode,
-            args.run_shap,
-            args.shap_nsamples,
-            args.mdl_dir,
-            inp,
-            fourier_transform=args.fourier_transform,
-        )
+		if args.mode == "train_aegan" and args.model_mode != "aegan_mlp":
+			print(">>> Incompatible mode and model_mode. Please try again.")
 
-    else:
-        print("wrong mode")
+		elif args.mode in ["train_xyz", "train_xanes"] and args.model_mode not in ["mlp", "cnn", "ae_mlp", "ae_cnn"]:
+			print(">>> Incompatible mode and model_mode. Please try again.")
+
+		else:
+
+			train_data(
+				args.mode,
+				args.model_mode,
+				inp,
+				save=args.save,
+				fourier_transform=args.fourier_transform,
+			)
+
+	elif "predict" in args.mode:
+
+		# Load saved metadata from trained model
+		metadata_file = Path(f"{args.mdl_dir}/metadata.yaml")
+		if os.path.isfile(metadata_file):
+
+			with open(metadata_file, "r") as f:
+				metadata = yaml.safe_load(f)
+
+			if metadata["mode"] == "train_xyz":
+				mode = "predict_xanes"
+
+			elif metadata["mode"] == "train_xanes":
+   				mode = "predict_xyz"
+
+			elif metadata["mode"] == "train_aegan":
+				if inp["x_path"] is None:
+					if args.mode != "predict_xyz":
+						mode = "predict_xyz"
+				elif inp["y_path"] is None:
+					if args.mode != "predict_xanes":
+						mode = "predict_xanes"
+				else:
+					if args.mode not in ["predict_xyz", "predict_xanes", "predict_all"]:
+						mode = "predict_all"
+					else:
+						mode = args.mode
+
+			model_mode = metadata["model_mode"]
+
+		else:
+			# For compatibility with models trained before metadata
+			# Remove at a later date
+			mode = args.mode
+			model_mode = args.model_mode
+
+
+		predict(
+			mode,
+			model_mode,
+			args.run_shap,
+			args.shap_nsamples,
+			args.mdl_dir,
+			inp,
+			metadata,
+			fourier_transform=args.fourier_transform,
+		)
+
+	else:
+		print(">>> Incorrect mode. Please try again.")
 
 
 ################################################################################
