@@ -248,7 +248,7 @@ for epoch in range(num_epochs):
         loss_cycle = loss_cycle_A + loss_cycle_B
 
         # Total generator loss
-        loss_G = loss_identity + loss_GAN + loss_cycle
+        loss_G = loss_identity + loss_GAN + (loss_cycle*1000)
         loss_G.backward()
         optimizer_G.step()
 
