@@ -122,7 +122,7 @@ def main(args: list):
 		if args.mode == "train_aegan" and args.model_mode != "aegan_mlp":
 			print(">>> Incompatible mode and model_mode. Please try again.")
 
-		elif args.mode in ["train_xyz", "train_xanes"] and args.model_mode not in ["mlp", "cnn", "ae_mlp", "ae_cnn"]:
+		elif args.mode in ["train_xyz", "train_xanes"] and args.model_mode not in ["mlp", "cnn", "ae_mlp", "ae_cnn", "lstm"]:
 			print(">>> Incompatible mode and model_mode. Please try again.")
 
 		else:
