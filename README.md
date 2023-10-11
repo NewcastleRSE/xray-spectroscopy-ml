@@ -64,12 +64,55 @@ git clone https://gitlab.com/team-xnet/training-sets.git
 
 Now you're good to go!
 
-## GETTING STARTING 
+## GETTING STARTED
 
 The code has been designed to support python 3. The dependencies and version requirements are installed using:
 
 ```
 pip install -r requirements.txt
+```
+
+### Apple Silicon Notes
+
+For Mac's running the Apple Silicon M1/M2 system chips based on ARM64 architecture, some additional steps will be needed to get started. The problem revolves around the maintainer's of tensorflow not making the package available
+to ARM64 based systems. We consider several possible alternatives:
+
+1. Using Rosetta2, emulating AMD64 architecture and installing the AMD64 versions of the dependencies. Unfortunately, this method results in an error when trying to import tensorflow: 'zsh: illegal hardware instruction ...' The reason
+for this is that Rosetta is unable to translate the AVX instructions implemented by tensorflow (further reading https://medium.com/macoclock/m1-rosetta-2-limitation-illegal-hardware-instruction-a3b48fae02e). A possible solution is to compile 
+tensorflow from source (as suggested in this thread https://github.com/tensorflow/tensorflow/issues/46044#issuecomment-753549970), however this seems rife with its own difficulties. 
+
+2. Use Apple's maintained Mac version of tensorflow, tensorflow-macos. This is the solution that will be described here.
+
+First of all, you will need MiniForge. 
+
+```
+brew install miniforge
+```
+
+Create a conda environment:
+
+```
+conda create -n spectroscopy python=3.9.6
+conda activate spectroscopy
+```
+
+and install the tensorflow dependencies:
+
+```
+conda install -c apple tensorflow-deps=2.9.0
+```
+
+in the requirements.txt file in the root folder of the repository, replace 'tensorflow=2.9.2' to 'tensorflow-macos=2.9.2' and run 
+
+```
+pip install -r requirements.txt
+```
+
+You may have to re-install the dscribe package as it is installed incorrectly for some unknown reason:
+
+```
+pip uninstall dscribe
+ARCHFLAGS="-arch arm64" pip install dscribe==1.2.2  --compile --no-cache-dir
 ```
 
 ### TRAINING 
