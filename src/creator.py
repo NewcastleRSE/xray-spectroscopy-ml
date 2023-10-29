@@ -41,7 +41,7 @@ def create_model(name, **kwargs):
 
 
 def create_descriptor(name, **kwargs):
-    from descriptor import RDC, WACSF, SOAP, MBTR, LMBTR
+    from descriptor import RDC, WACSF, SOAP, MBTR, LMBTR, MSR, ARMSR
 
     descriptors = {
         "rdc": RDC,
@@ -49,6 +49,8 @@ def create_descriptor(name, **kwargs):
         "soap": SOAP,
         "mbtr": MBTR,
         "lmbtr": LMBTR,
+        "msr": MSR,
+        "armsr": ARMSR,
     }
 
     if name in descriptors:

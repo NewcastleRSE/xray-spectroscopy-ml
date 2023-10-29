@@ -72,7 +72,7 @@ bootstrap_params:
   n_size: 1.0
   weight_seed: [97, 39, 22]
 
-ensemble: True
+ensemble: False
 ensemble_params:
   n_ens: 3
   weight_seed: [97, 39, 22]
