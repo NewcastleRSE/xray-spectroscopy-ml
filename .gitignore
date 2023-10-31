@@ -9,5 +9,5 @@ mlruns/
 ensemble/
 bootstrap/
 model/*
-!src/model/*
+!xanesnet/model/*
 
