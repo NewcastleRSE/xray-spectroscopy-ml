@@ -26,69 +26,69 @@ jobs:
       - name: MLP XYZ --> Xanes
         run: |
           rm -rf model/model_001
-          python3 xanesnet/cli.py --mode train_xyz --inp_f ./.github/workflows/inputs/in_mlp.yaml
-          # python3 xanesnet/cli.py --mode predict_xanes --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode train_xyz --inp_f ./.github/workflows/inputs/in_mlp.yaml
+          # python3 -m xanesnet.cli --mode predict_xanes --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
 
 
       - name: MLP Xanes --> XYZ
         run: |
           rm -rf model/model_001
-          python3 xanesnet/cli.py --mode train_xanes --inp_f ./.github/workflows/inputs/in_mlp.yaml
-          # python3 xanesnet/cli.py --mode predict_xyz --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode train_xanes --inp_f ./.github/workflows/inputs/in_mlp.yaml
+          # python3 -m xanesnet.cli --mode predict_xyz --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
           
       - name: CNN XYZ --> Xanes
         run: |
           rm -rf model/model_001
-          python3 xanesnet/cli.py --mode train_xyz --inp_f ./.github/workflows/inputs/in_cnn.yaml
-          # python3 xanesnet/cli.py --mode predict_xanes --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode train_xyz --inp_f ./.github/workflows/inputs/in_cnn.yaml
+          # python3 -m xanesnet.cli --mode predict_xanes --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
 
       - name: LSTM XYZ --> Xanes
         run: |
           rm -rf model/model_001
-          python3 xanesnet/cli.py --mode train_xyz --inp_f ./.github/workflows/inputs/in_lstm.yaml
-          # python3 xanesnet/cli.py --mode predict_xanes --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode train_xyz --inp_f ./.github/workflows/inputs/in_lstm.yaml
+          # python3 -m xanesnet.cli --mode predict_xanes --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
 
       - name: LSTM XANES --> XYZ
         run: |
           rm -rf model/model_001
-          python3 xanesnet/cli.py --mode train_xanes --inp_f ./.github/workflows/inputs/in_lstm.yaml
-          # python3 xanesnet/cli.py --mode predict_xyz --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode train_xanes --inp_f ./.github/workflows/inputs/in_lstm.yaml
+          # python3 -m xanesnet.cli --mode predict_xyz --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
 
       - name: CNN Xanes --> XYZ
         run: |
           rm -rf model/model_001
-          python3 xanesnet/cli.py --mode train_xanes --inp_f ./.github/workflows/inputs/in_cnn.yaml
-          # python3 xanesnet/cli.py --mode predict_xyz --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode train_xanes --inp_f ./.github/workflows/inputs/in_cnn.yaml
+          # python3 -m xanesnet.cli --mode predict_xyz --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
 
       - name: AE_MLP XYZ -> Xanes
         run: |
           rm -rf model/model_001
-          python3 xanesnet/cli.py --mode train_xyz --inp_f ./.github/workflows/inputs/in_ae_mlp.yaml
-          # python3 xanesnet/cli.py --mode predict_xanes --model_mode ae_mlp --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode train_xyz --inp_f ./.github/workflows/inputs/in_ae_mlp.yaml
+          # python3 -m xanesnet.cli --mode predict_xanes --model_mode ae_mlp --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
 
       - name: AE_MLP Xanes --> XYZ
         run: |
           rm -rf model/model_001
-          python3 xanesnet/cli.py --mode train_xanes --inp_f ./.github/workflows/inputs/in_ae_mlp.yaml
-          # python3 xanesnet/cli.py --mode predict_xyz  --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode train_xanes --inp_f ./.github/workflows/inputs/in_ae_mlp.yaml
+          # python3 -m xanesnet.cli --mode predict_xyz  --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
 
       - name: AE_CNN XYZ --> Xanes
         run: |
           rm -rf model/model_001
-          python3 xanesnet/cli.py --mode train_xyz --inp_f ./.github/workflows/inputs/in_ae_cnn.yaml
-          # python3 xanesnet/cli.py --mode predict_xanes --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode train_xyz --inp_f ./.github/workflows/inputs/in_ae_cnn.yaml
+          # python3 -m xanesnet.cli --mode predict_xanes --mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
 
       - name: AE_CNN Xanes --> XYZ
         run: |
           rm -rf model/model_001
-          python3 xanesnet/cli.py --mode train_xanes --inp_f ./.github/workflows/inputs/in_ae_cnn.yaml
-          # python3 xanesnet/cli.py --mode predict_xyz ---mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode train_xanes --inp_f ./.github/workflows/inputs/in_ae_cnn.yaml
+          # python3 -m xanesnet.cli --mode predict_xyz ---mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
 
       - name: AEGAN
         run: |
           rm -rf model/model_001
-          python3 xanesnet/cli.py --mode train_aegan --inp_f ./.github/workflows/inputs/in_aegan.yaml
-          # python3 xanesnet/cli.py --mode predict_all ---mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode train_aegan --inp_f ./.github/workflows/inputs/in_aegan.yaml
+          # python3 -m xanesnet.cli --mode predict_all ---mdl model/model_001 --inp_f ./.github/workflows/inputs/in_predict.yaml
 
 
 
