@@ -16,6 +16,7 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 import copy
 
 import mlflow
+import optuna
 import torch
 import time
 import os
@@ -30,6 +31,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from xanesnet.creator import create_model
 from xanesnet.model_utils import LRScheduler, WeightInitSwitch, weight_bias_init
+from xanesnet.param_optuna import ParamOptuna
 
 
 class Learn(ABC):
@@ -47,6 +49,8 @@ class Learn(ABC):
         ensemble_params,
         scheduler,
         scheduler_params,
+        optuna,
+        optuna_params,
     ):
         self.x_data = x_data
         self.y_data = y_data
@@ -55,6 +59,8 @@ class Learn(ABC):
         self.lr_scheduler = scheduler
         self.scheduler_params = scheduler_params
         self.model_params = model_params["params"]
+        self.optuna = optuna
+        self.optuna_params = optuna_params
 
         # kfold parameter set
         self.n_splits = kfold_params["n_splits"]
@@ -109,6 +115,22 @@ class Learn(ABC):
     @abstractmethod
     def train_ensemble(self):
         pass
+
+    def train_optuna(self, trial, x_data, y_data, seed):
+        po = ParamOptuna(trial, self.model_params, self.hyper_params)
+
+        for name, flag in self.optuna_params.items():
+            if name.startswith("tune_") and flag:
+                po.get_fn(name)
+
+        model = self.setup_model(x_data, y_data)
+        model = self.setup_weight(model, seed)
+        _, score = self.train(model, x_data, y_data)
+
+        if len(score) > 1:
+            score = sum([v[-1] for k, v in score.items()])
+
+        return score
 
     def setup_writer(self, layout):
         # setup tensorboard stuff
@@ -228,3 +250,28 @@ class Learn(ABC):
         )
 
         mlflow.pytorch.load_model(mlflow.get_artifact_uri("pytorch-model"))
+
+    def proc_optuna(self, x_data, y_data, seed):
+        n_trials = self.optuna_params["n_trials"]
+
+        func = lambda trial: self.train_optuna(trial, x_data, y_data, seed)
+
+        study = optuna.create_study(direction="minimize")
+        study.optimize(func, n_trials=n_trials, timeout=None)
+        self.print_optuna(study)
+
+    def print_optuna(self, study):
+        # Print optuna study statistics
+        print(f"{'='*20} Optuna {'='*20}")
+        print("Study statistics: ")
+        print(f"  Number of finished trials: {len(study.trials)}")
+
+        print("Best trial:")
+        trial = study.best_trial
+
+        print(f"  Value: {trial.value}")
+
+        print("  Params: ")
+        for k, v in trial.params.items():
+            print(f"    {k}: {v}")
+        print(f"{'='*20} Optuna {'='*20}")

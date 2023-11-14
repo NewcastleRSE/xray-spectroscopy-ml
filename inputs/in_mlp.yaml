@@ -1,5 +1,5 @@
-xyz_path:  data/datasets/fe/preconv/xyz_train
-xanes_path:  data/datasets/fe/preconv/xanes_train
+xyz_path:  /home/bowen/Workspace/xray-spectroscopy-ml/data/datasets/fe/preconv/xyz_train
+xanes_path:  /home/bowen/Workspace/xray-spectroscopy-ml/data/datasets/fe/preconv/xanes_train
 
 descriptor:
   type: wacsf
@@ -21,7 +21,7 @@ model:
 hyperparams:
   batch_size: 64
   lr: 0.0001
-  epochs: 10
+  epochs: 1
   optim_fn: Adam
   kernel_init: xavier_uniform
   bias_init: zeros
@@ -34,7 +34,7 @@ hyperparams:
     loss_reg_type: L2 # null, L1, L2
     loss_reg_param: 0.001
 
-kfold: True
+kfold: False
 kfold_params:
   n_splits: 3
   n_repeats: 1
@@ -63,7 +63,18 @@ bootstrap_params:
   n_size: 1.0
   weight_seed: [97, 39, 22]
 
-ensemble: True
+ensemble: False
 ensemble_params:
   n_ens: 3
   weight_seed: [97, 39, 22]
+
+optuna: False
+optuna_params:
+  n_trials: 3
+  tune_optim_fn: True
+  tune_batch_size: True
+  tune_activation: True
+  tune_loss_fn: True
+  tune_lr: True
+  tune_dropout: True
+  tune_mlp: True

@@ -19,12 +19,14 @@ import mlflow
 import time
 import mlflow.pytorch
 import numpy as np
+import optuna
 import torch
 
 from numpy.random import RandomState
 from torchinfo import summary
 from sklearn.model_selection import RepeatedKFold
 
+from xanesnet.param_optuna import ParamOptuna
 from xanesnet.scheme.base_learn import Learn
 from xanesnet.creator import create_eval_scheme
 from xanesnet.model_utils import (
@@ -47,6 +49,8 @@ class NNLearn(Learn):
         ensemble_params,
         scheduler,
         scheduler_params,
+        optuna,
+        optuna_params,
     ):
         # Call the constructor of the parent class
         super().__init__(
@@ -60,6 +64,8 @@ class NNLearn(Learn):
             ensemble_params,
             scheduler,
             scheduler_params,
+            optuna,
+            optuna_params,
         )
 
         # loss parameter set
@@ -185,6 +191,9 @@ class NNLearn(Learn):
         x_data = self.x_data
         y_data = self.y_data
 
+        if self.optuna:
+            self.proc_optuna(x_data, y_data, self.weight_seed)
+
         model = self.setup_model(x_data, y_data)
         model = self.setup_weight(model, self.weight_seed)
         model, _ = self.train(model, x_data, y_data)
@@ -271,6 +280,9 @@ class NNLearn(Learn):
             if self.kfold:
                 model = self.train_kfold(boot_x, boot_y)
             else:
+                if self.optuna:
+                    self.proc_optuna(x_data, y_data, weight_seed)
+
                 model = self.setup_model(boot_x, boot_y)
                 model = self.setup_weight(model, weight_seed)
                 model, _ = self.train(model, boot_x, boot_y)
@@ -288,6 +300,9 @@ class NNLearn(Learn):
             if self.kfold:
                 model = self.train_kfold()
             else:
+                if self.optuna:
+                    self.proc_optuna(x_data, y_data, self.weight_seed_ens[i])
+
                 model = self.setup_model(x_data, y_data)
                 model = self.setup_weight(model, self.weight_seed_ens[i])
                 model, _ = self.train(model, x_data, y_data)

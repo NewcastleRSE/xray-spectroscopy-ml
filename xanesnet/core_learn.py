@@ -92,6 +92,8 @@ def train_model(config, args):
         config["ensemble_params"],
         config["lr_scheduler"],
         config["scheduler_params"],
+        config["optuna"],
+        config["optuna_params"],
     )
 
     # Train the model using selected training strategy
