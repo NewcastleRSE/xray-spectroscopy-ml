@@ -65,11 +65,14 @@ class NNPredict(Predict):
         predict_all = []
 
         for model in model_list:
+            model.eval()
             if self.pred_mode == "predict_xyz":
                 pred_xyz = self.predict(model)
+
                 if self.pred_eval:
                     mse = mean_squared_error(self.xyz_data, pred_xyz.detach().numpy())
                     predict_score.append(mse)
+
                 predict_all.append(pred_xyz.detach().numpy())
 
             elif self.pred_mode == "predict_xanes":
@@ -86,11 +89,11 @@ class NNPredict(Predict):
             std_score = torch.std(torch.tensor(predict_score))
             print(f"Mean score: {mean_score:.4f}, Std score: {std_score:.4f}")
 
-            y_predict_all = np.asarray(predict_all)
-            mean_y_predict = np.mean(y_predict_all, axis=0)
-            std_y_predict = np.std(y_predict_all, axis=0)
+            predict_all = np.asarray(predict_all)
+            mean_predict = np.mean(predict_all, axis=0)
+            std_predict = np.std(predict_all, axis=0)
 
-        return mean_y_predict, std_y_predict
+        return mean_predict, std_predict
 
     def predict_ensemble(self, model_list):
         ensemble_preds = []
