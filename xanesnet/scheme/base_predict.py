@@ -44,8 +44,6 @@ class Predict(ABC):
             else:
                 data = data.reshape(data.size, -1)
 
-        print(">> ...predicted Xanes data!\n")
-
         return data
 
     @staticmethod

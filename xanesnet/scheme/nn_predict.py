@@ -29,93 +29,91 @@ class NNPredict(Predict):
         model.eval()
         if self.pred_mode == "predict_xyz":
             if self.fourier:
-                fourier_xanes = fourier_transform_data(self.xanes_data)
-                xanes = torch.from_numpy(fourier_xanes)
+                xanes_fourier = fourier_transform_data(self.xanes_data)
+                xanes = torch.from_numpy(xanes_fourier)
             else:
                 xanes = torch.from_numpy(self.xanes_data)
 
             xanes = xanes.float()
-            pred_xyz = model(xanes)
+            pred = model(xanes)
 
             if self.pred_eval:
-                Predict.print_mse("xyz", self.xyz_data, pred_xyz)
+                Predict.print_mse("xyz", self.xyz_data, pred)
 
-            self.predict_dim(pred_xyz)
-
-            return pred_xyz, self.xyz_data
+            return pred
 
         elif self.pred_mode == "predict_xanes":
             xyz = torch.from_numpy(self.xyz_data)
             xyz = xyz.float()
 
-            pred_xanes = model(xyz)
+            pred = model(xyz)
 
             if self.fourier:
-                pred_xanes = inverse_fourier_transform_data(pred_xanes)
+                pred = inverse_fourier_transform_data(pred)
 
             if self.pred_eval:
-                Predict.print_mse("xanes", self.xanes_data, pred_xanes)
+                Predict.print_mse("xanes", self.xanes_data, pred)
 
-            self.predict_dim(pred_xanes)
-
-            return pred_xanes
+            return pred
 
     def predict_bootstrap(self, model_list):
         predict_score = []
-        predict_all = []
+        pred_all = []
 
         for model in model_list:
             model.eval()
             if self.pred_mode == "predict_xyz":
-                pred_xyz = self.predict(model)
+                xyz_pred = self.predict(model)
 
                 if self.pred_eval:
-                    mse = mean_squared_error(self.xyz_data, pred_xyz.detach().numpy())
+                    mse = mean_squared_error(self.xyz_data, xyz_pred.detach().numpy())
                     predict_score.append(mse)
 
-                predict_all.append(pred_xyz.detach().numpy())
+                pred_all.append(xyz_pred.detach().numpy())
 
             elif self.pred_mode == "predict_xanes":
-                pred_xanes = self.predict(model)
+                xanes_pred = self.predict(model)
                 if self.pred_eval:
                     mse = mean_squared_error(
-                        self.xyz_xanes, pred_xanes.detach().numpy()
+                        self.xanes_data, xanes_pred.detach().numpy()
                     )
                     predict_score.append(mse)
-                predict_all.append(pred_xanes.detach().numpy())
+
+                pred_all.append(xanes_pred.detach().numpy())
 
         if self.pred_eval:
             mean_score = torch.mean(torch.tensor(predict_score))
             std_score = torch.std(torch.tensor(predict_score))
             print(f"Mean score: {mean_score:.4f}, Std score: {std_score:.4f}")
 
-            predict_all = np.asarray(predict_all)
-            mean_predict = np.mean(predict_all, axis=0)
-            std_predict = np.std(predict_all, axis=0)
+        pred_all = np.asarray(pred_all)
+        pred_mean = np.mean(pred_all, axis=0)
+        pred_std = np.std(pred_all, axis=0)
 
-        return mean_predict, std_predict
+        return pred_mean, pred_std
 
     def predict_ensemble(self, model_list):
-        ensemble_preds = []
+        pred_list = []
 
         for model in model_list:
+            model.eval()
             if self.pred_mode == "predict_xyz":
-                pred_xyz = self.predict(model)
-                ensemble_preds.append(pred_xyz.detach().numpy())
-                y_data = self.xyz_data
+                xyz_pred = self.predict(model)
+                pred_list.append(xyz_pred.detach().numpy())
 
             elif self.pred_mode == "predict_xanes":
-                pred_xanes = self.predict(model)
-                ensemble_preds.append(pred_xanes.detach().numpy())
-                y_data = self.xanes_data
+                xanes_pred = self.predict(model)
+                pred_list.append(xanes_pred.detach().numpy())
 
-        ensemble_pred = sum(ensemble_preds) / len(ensemble_preds)
+        pred = sum(pred_list) / len(pred_list)
 
-        if self.pred_eval:
-            mse = mean_squared_error(y_data, ensemble_pred)
+        if self.pred_mode == "predict_xyz":
+            Predict.print_mse("xyz", self.xyz_data, pred)
+        elif self.pred_mode == "predict_xanes":
+            Predict.print_mse("xanes", self.xanes_data, pred)
 
-        ensemble_preds = torch.tensor(np.asarray(ensemble_preds)).float()
-        mean_ensemble_pred = torch.mean(ensemble_preds, dim=0)
-        std_ensemble_pred = torch.std(ensemble_preds, dim=0)
+        pred_list = torch.tensor(np.asarray(pred_list)).float()
+        pred_mean = torch.mean(pred_list, dim=0)
+        pred_std = torch.std(pred_list, dim=0)
 
-        return std_ensemble_pred, mean_ensemble_pred
+        return pred_std, pred_mean
