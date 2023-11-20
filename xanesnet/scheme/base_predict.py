@@ -37,7 +37,7 @@ class Predict(ABC):
         self.recon_xyz = None
         self.recon_xanes = None
 
-    def predict_dim(self, data):
+    def reshape(self, data):
         if data.ndim == 1:
             if len(self.ids) == 1:
                 data = data.reshape(-1, data.size)
@@ -47,9 +47,9 @@ class Predict(ABC):
         return data
 
     @staticmethod
-    def print_mse(name, data, pred_data):
+    def print_mse(name, name2, data, pred_data):
         mse = mean_squared_error(data, pred_data.detach().numpy())
-        print(f"MSE {name} to {name} pred: {mse}")
+        print(f"MSE {name} to {name2} predict: {mse}")
 
     @abstractmethod
     def predict(self, model):

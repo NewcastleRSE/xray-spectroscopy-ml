@@ -111,9 +111,7 @@ class AE_MLP(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         out = self.encoder_layers(x)
-
         pred = self.dense_layers(out)
-
         recon = self.decoder_layers(out)
 
         return recon, pred

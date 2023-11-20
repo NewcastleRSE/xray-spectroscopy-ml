@@ -19,14 +19,12 @@ import mlflow
 import time
 import mlflow.pytorch
 import numpy as np
-import optuna
 import torch
 
 from numpy.random import RandomState
 from torchinfo import summary
 from sklearn.model_selection import RepeatedKFold
 
-from xanesnet.param_optuna import ParamOptuna
 from xanesnet.scheme.base_learn import Learn
 from xanesnet.creator import create_eval_scheme
 from xanesnet.model_utils import (
