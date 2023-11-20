@@ -17,7 +17,7 @@ import numpy as np
 import torch
 from sklearn.metrics import mean_squared_error
 
-from xanesnet.scheme import Predict
+from xanesnet.scheme.base_predict import Predict
 from xanesnet.scheme.nn_predict import NNPredict
 from xanesnet.data_transform import (
     fourier_transform_data,
