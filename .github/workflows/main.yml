@@ -82,13 +82,13 @@ jobs:
         run: |
           rm -rf models/model_ae_cnn_001
           python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_ae_cnn.yaml
-          python3 -m xanesnet.cli --mode predict_xyz ---in_model models/model_ae_cnn_001 --in_file ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode predict_xyz --in_model models/model_ae_cnn_001 --in_file ./.github/workflows/inputs/in_predict.yaml
 
       - name: AEGAN
         run: |
           rm -rf models/model_aegan_mlp_001
           python3 -m xanesnet.cli --mode train_aegan --in_file ./.github/workflows/inputs/in_aegan.yaml
-          python3 -m xanesnet.cli --mode predict_all ---in_model models/model_aegan_mlp_001 --in_file ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode predict_all --in_model models/model_aegan_mlp_001 --in_file ./.github/workflows/inputs/in_predict.yaml
 
 
 
