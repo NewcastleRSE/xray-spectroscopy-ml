@@ -10,4 +10,7 @@ ensemble/
 bootstrap/
 model/*
 !xanesnet/model/*
-
+*.egg-info
+build/
+models/
+/xanesnet/model

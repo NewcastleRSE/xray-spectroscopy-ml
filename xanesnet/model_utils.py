@@ -305,7 +305,7 @@ def model_mode_error(
 def make_output_dir():
     from pathlib import Path
 
-    from utils import unique_path
+    from xanesnet.utils import unique_path
 
     parent_model_dir = "outputs/"
     Path(parent_model_dir).mkdir(parents=True, exist_ok=True)
