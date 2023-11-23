@@ -298,11 +298,11 @@ def model_mode_error(
                 output_size == input_data
             ), "the model was not train for this, please swap your predict mode"
 
-    parent_model_dir, predict_dir = make_dir()
+    parent_model_dir, predict_dir = make_output_dir()
     return parent_model_dir, predict_dir
 
 
-def make_dir():
+def make_output_dir():
     from pathlib import Path
 
     from utils import unique_path
@@ -313,7 +313,7 @@ def make_dir():
     predict_dir = unique_path(Path(parent_model_dir), "predictions")
     predict_dir.mkdir()
 
-    return parent_model_dir, predict_dir
+    return predict_dir
 
 
 def json_check(inp):

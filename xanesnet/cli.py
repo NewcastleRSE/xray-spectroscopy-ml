@@ -45,19 +45,14 @@ def parse_args(args: list):
         help="the mode of the run",
         required=True,
     )
+
     parser.add_argument(
-        "--model_mode",
-        type=str,
-        help="the model to use to train or to predict",
-        required=False,
-    )
-    parser.add_argument(
-        "--mdl_dir",
+        "--in_model",
         type=str,
         help="path to populated model directory during prediction",
     )
     parser.add_argument(
-        "--inp_f",
+        "--in_file",
         type=str,
         help="path to .json input file w/ variable definitions",
         required=True,
@@ -105,9 +100,9 @@ def main(args: list):
     else:
         args = parse_args(args)
 
-    print(f">> loading JSON input @ {args.inp_f}\n")
+    print(f">> loading JSON input @ {args.in_file}\n")
 
-    with open(args.inp_f, "r") as f:
+    with open(args.in_file, "r") as f:
         config = yaml.safe_load(f)
 
     if "train" in args.mode:

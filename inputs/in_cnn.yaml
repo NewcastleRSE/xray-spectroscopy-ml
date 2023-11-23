@@ -38,7 +38,7 @@ hyperparams:
     loss_reg_type: L2 # null, L1, L2
     loss_reg_param: 0.001
 
-kfold: False
+kfold: True
 kfold_params:
   n_splits: 5
   n_repeats: 1

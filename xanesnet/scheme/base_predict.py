@@ -13,6 +13,8 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import numpy as np
+import torch
 
 from abc import ABC, abstractmethod
 from sklearn.metrics import mean_squared_error
@@ -37,19 +39,14 @@ class Predict(ABC):
         self.recon_xyz = None
         self.recon_xanes = None
 
-    def reshape(self, data):
-        if data.ndim == 1:
-            if len(self.ids) == 1:
-                data = data.reshape(-1, data.size)
-            else:
-                data = data.reshape(data.size, -1)
-
-        return data
-
     @staticmethod
-    def print_mse(name, name2, data, pred_data):
-        mse = mean_squared_error(data, pred_data.detach().numpy())
-        print(f"MSE {name} to {name2} predict: {mse}")
+    def print_mse(name, name2, data, result):
+        if isinstance(result, torch.Tensor):
+            mse = mean_squared_error(data, result.detach().numpy())
+        elif isinstance(result, np.ndarray):
+            mse = mean_squared_error(data, result)
+
+        print(f"MSE {name} data -> {name2}: {mse}")
 
     @abstractmethod
     def predict(self, model):

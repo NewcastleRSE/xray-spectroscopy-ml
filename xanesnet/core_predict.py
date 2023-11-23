@@ -24,47 +24,51 @@ from pathlib import Path
 
 from xanesnet.creator import create_predict_scheme
 from xanesnet.data_descriptor import encode_predict
-from xanesnet.model_utils import make_dir
-from xanesnet.utils import save_prediction
+from xanesnet.plot import plot_predict, plot_aegan_predict
+from xanesnet.utils import save_prediction, save_prediction_mul, mkdir_output
 
 
 def predict_data(config, args):
     # Load saved metadata from model directory
-    metadata_file = Path(f"{args.mdl_dir}/metadata.yaml")
-    model_dir = Path(args.mdl_dir)
+    metadata_file = Path(f"{args.in_model}/metadata.yaml")
+    model_dir = Path(args.in_model)
 
-    # Get prediction mode from metafile if present.
-    # Otherwise, get the info from args
+    # Get prediction mode from argument
     if os.path.isfile(metadata_file):
         with open(metadata_file, "r") as f:
             metadata = yaml.safe_load(f)
+        # Consistency check between metadata and args
+        if metadata["mode"] != "train_aegan" and (
+            (metadata["mode"] == "train_xyz" and args.mode != "predict_xanes")
+            or (metadata["mode"] == "train_xanes" and args.mode != "predict_xyz")
+        ):
+            meta_mode = metadata["mode"]
+            raise ValueError(
+                f"Inconsistent prediction mode in metadata ({meta_mode}) and args ({args.mode})"
+            )
 
-        if metadata["mode"] == "train_xyz":
-            mode = "predict_xanes"
-
-        elif metadata["mode"] == "train_xanes":
-            mode = "predict_xyz"
-
-        elif metadata["mode"] == "train_aegan":
-            if config["xyz_path"] is None:
-                mode = "predict_xyz"
-            elif config["xanes_path"] is None:
-                mode = "predict_xanes"
-            else:
-                mode = "predict_all"
-
-        model_name = metadata["model_mode"]
+        mode = args.mode
+        print(f"Prediction mode: {mode}")
+        model_name = metadata["model_type"]
     else:
         mode = args.mode
-        model_name = args.model_mode
+        model_name = args.model_type
 
     # Load descriptor
     with open(model_dir / "descriptor.pickle", "rb") as f:
         descriptor = pickle.load(f)
 
+    # Enable model evaluation if test data is present
+    if (mode == "predict_xanes" and config["xanes_path"] is not None) or (
+        mode == "predict_xyz" and config["xyz_path"] is not None
+    ):
+        pred_eval = True
+    else:
+        pred_eval = False
+
     # Encode prediction dataset with saved descriptor
     xyz, xanes, index, e = encode_predict(
-        config["xyz_path"], config["xanes_path"], descriptor, mode, config["eval"]
+        config["xyz_path"], config["xanes_path"], descriptor, mode, pred_eval
     )
 
     # Initialise prediction scheme
@@ -74,33 +78,57 @@ def predict_data(config, args):
         xanes,
         mode,
         index,
-        config["eval"],
+        pred_eval,
         args.fourier_transform,
     )
 
     # Predict with loaded models and scheme
-    if config["bootstrap"]:
-        if not str(model_dir).startswith("bootstrap"):
+    predict_scheme = metadata["scheme"]
+    if predict_scheme == "bootstrap":
+        if "bootstrap" not in str(model_dir):
             raise ValueError("Invalid bootstrap directory")
 
         model_list = load_model_list(model_dir)
-        mean, std = scheme.predict(model_list)
+        result = scheme.predict_bootstrap(model_list)
 
-    elif config["ensemble"]:
-        if not str(model_dir).startswith("ensemble"):
+    elif predict_scheme == "ensemble":
+        if "ensemble" not in str(model_dir):
             raise ValueError("Invalid ensemble directory")
         model_list = load_model_list(model_dir)
-        mean, std = scheme.predict(model_list)
+        result = scheme.predict_ensemble(model_list)
 
     else:
         model = torch.load(model_dir / "model.pt", map_location=torch.device("cpu"))
-        pred_results = scheme.predict(model)
+        result = scheme.predict(model)
 
     # Save prediction result
-    if args.save:
-        save_path = make_dir()
-        # TODO
-        pass
+    if config["result_save"]:
+        if mode == "predict_xanes":
+            save_path = mkdir_output("outputs/" + args.in_model + "/xanes")
+        else:
+            save_path = mkdir_output("outputs/" + args.in_model + "/xyz")
+        save_prediction(save_path, mode, result.xyz_pred, result.xanes_pred, index, e)
+
+    # Plot prediction result
+    if config["plot_save"]:
+        save_path = mkdir_output("outputs/" + args.in_model + "/plot")
+        if model_name.startswith("ae"):
+            plot_aegan_predict(
+                index,
+                xyz,
+                xanes,
+                result.xyz_recon,
+                result.xanes_recon,
+                result.xyz_pred,
+                result.xanes_pred,
+                save_path,
+                mode,
+            )
+        else:
+            if mode == "predict_xyz":
+                plot_predict(index, xyz, result.xyz_pred, save_path)
+            elif mode == "predict_xanes":
+                plot_predict(index, xanes, result.xanes_pred, save_path)
 
 
 def load_model_list(model_dir):

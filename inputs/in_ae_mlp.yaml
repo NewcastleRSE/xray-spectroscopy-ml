@@ -34,7 +34,7 @@ hyperparams:
     loss_reg_type: L2 # null, L1, L2
     loss_reg_param: 0.001
 
-kfold: True
+kfold: False
 kfold_params:
   n_splits: 3
   n_repeats: 1
@@ -63,7 +63,7 @@ bootstrap_params:
   n_size: 1.0
   weight_seed: [97, 39, 22]
 
-ensemble: True
+ensemble: False
 ensemble_params:
   n_ens: 3
   weight_seed: [97, 39, 22]

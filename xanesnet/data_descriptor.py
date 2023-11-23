@@ -27,7 +27,7 @@ def encode_train(xyz_path, xanes_path, descriptor):
 
     for path in (xyz_path, xanes_path):
         if not path.exists():
-            err_str = f"path to X/Y data ({path}) doesn't exist"
+            err_str = f"path to data ({path}) doesn't exist"
             raise FileNotFoundError(err_str)
 
     if xyz_path.is_dir() and xanes_path.is_dir():
@@ -40,9 +40,9 @@ def encode_train(xyz_path, xanes_path, descriptor):
         n_y_features = linecount(xanes_path / f"{index[0]}.txt") - 2
 
         xyz_data = np.full((n_samples, n_x_features), np.nan)
-        print(">> preallocated {}x{} array for X data...".format(*xyz_data.shape))
+        print(">> preallocated {}x{} array for XYZ data...".format(*xyz_data.shape))
         xanes_data = np.full((n_samples, n_y_features), np.nan)
-        print(">> preallocated {}x{} array for Y data...".format(*xanes_data.shape))
+        print(">> preallocated {}x{} array for XANES data...".format(*xanes_data.shape))
 
         print(">> loading data into array(s)...")
         for i, id_ in enumerate(tqdm.tqdm(index)):
@@ -58,15 +58,15 @@ def encode_train(xyz_path, xanes_path, descriptor):
 
         with open(xyz_path, "rb") as f:
             xyz_data = np.load(f)["x"]
-        print(">> ...loaded {}x{} array of X data".format(*xyz_data.shape))
+        print(">> ...loaded {}x{} array of XYZ data".format(*xyz_data.shape))
         with open(xanes_path, "rb") as f:
             xanes_data = np.load(f)["y"]
             e = np.load(f)["e"]
-        print(">> ...loaded {}x{} array of Y data".format(*xanes_data.shape))
+        print(">> ...loaded {}x{} array of XANES data".format(*xanes_data.shape))
 
     else:
         err_str = (
-            "paths to X/Y data are expected to be either a) both "
+            "paths to data are expected to be either a) both "
             "files (.npz archives), or b) both directories"
         )
         raise TypeError(err_str)
@@ -85,6 +85,8 @@ def encode_predict(xyz_path, xanes_path, descriptor, mode, pred_eval):
     elif mode == "predict_xanes" and not pred_eval:
         xyz_path = Path(xyz_path)
         index = list(set(list_filestems(xyz_path)))
+    else:
+        raise ValueError("Unsupported prediction mode")
 
     index.sort()
     n_samples = len(index)
@@ -96,8 +98,8 @@ def encode_predict(xyz_path, xanes_path, descriptor, mode, pred_eval):
         n_y_features = linecount(xanes_path / f"{index[0]}.txt") - 2
         xanes_data = np.full((n_samples, n_y_features), np.nan)
         xyz_data = np.full((n_samples, n_x_features), np.nan)
-        print(">> preallocated {}x{} array for X data...".format(*xyz_data.shape))
-        print(">> preallocated {}y{} array for Y data...".format(*xanes_data.shape))
+        print(">> preallocated {}x{} array for XYZ data...".format(*xyz_data.shape))
+        print(">> preallocated {}y{} array for XANES data...".format(*xanes_data.shape))
 
         print(">> loading data into array(s)...")
         for i, id_ in enumerate(tqdm.tqdm(index)):
@@ -112,25 +114,27 @@ def encode_predict(xyz_path, xanes_path, descriptor, mode, pred_eval):
         # Load xanes data
         n_y_features = linecount(xanes_path / f"{index[0]}.txt") - 2
         xanes_data = np.full((n_samples, n_y_features), np.nan)
-        print(">> preallocated {}y{} array for Y data...".format(*xanes_data.shape))
+        print(">> preallocated {}y{} array for XANES data...".format(*xanes_data.shape))
 
         for i, id_ in enumerate(tqdm.tqdm(index)):
             with open(xanes_path / f"{id_}.txt", "r") as f:
                 xanes = load_xanes(f)
             e, xanes_data[i, :] = xanes.spectrum
-            xyz_data = None
+        xyz_data = None
 
-    elif mode == "predict_xane" and not pred_eval:
+    elif mode == "predict_xanes" and not pred_eval:
         # Load xyz data
         n_x_features = descriptor.get_number_of_features()
         xyz_data = np.full((n_samples, n_x_features), np.nan)
-        print(">> preallocated {}x{} array for X data...".format(*xyz_data.shape))
+        print(">> preallocated {}x{} array for XYZ data...".format(*xyz_data.shape))
 
         for i, id_ in enumerate(tqdm.tqdm(index)):
             with open(xyz_path / f"{id_}.xyz", "r") as f:
                 atoms = load_xyz(f)
             xyz_data[i, :] = descriptor.process(atoms)
-            xanes_data = None
-            e = None
+        xanes_data = None
+        e = None
+    else:
+        raise ValueError("Unsupported prediction mode")
 
     return xyz_data, xanes_data, index, e

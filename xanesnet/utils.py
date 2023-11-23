@@ -20,13 +20,13 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import torch
 import yaml
+import tqdm as tqdm
 import numpy as np
 import pickle as pickle
 
 from pathlib import Path
 from ase import Atoms
 from typing import TextIO
-from tqdm import tqdm
 
 from xanesnet.spectrum.xanes import XANES
 
@@ -103,7 +103,7 @@ def print_nested_dict(dict_: dict, nested_level: int = 0):
 def save_model(path, model, descriptor, data_compress, metadata):
     Path(path).mkdir(parents=True, exist_ok=True)
 
-    model_dir = unique_path(Path(path), "model")
+    model_dir = unique_path(Path(path), "model_" + metadata["model_type"])
     model_dir.mkdir()
 
     with open(model_dir / "descriptor.pickle", "wb") as f:
@@ -124,23 +124,84 @@ def save_model(path, model, descriptor, data_compress, metadata):
         yaml.dump_all([metadata], f)
 
 
-def save_models(path, models, descriptor, data_compress, metadata):
+def save_model_list(path, models, descriptor, data_compress, metadata, config):
+    model_dir_list = []
+
+    Path(path).mkdir(parents=True, exist_ok=True)
+    if config["bootstrap"]:
+        save_path = unique_path(Path(path), "bootstrap_" + metadata["model_type"])
+    elif config["ensemble"]:
+        save_path = unique_path(Path(path), "ensemble_" + metadata["model_type"])
+    else:
+        raise ValueError("Unsupported mode name")
+
+    save_path.mkdir()
+
+    with open(save_path / "descriptor.pickle", "wb") as f:
+        pickle.dump(descriptor, f)
+    with open(save_path / "dataset.npz", "wb") as f:
+        np.savez_compressed(
+            f,
+            ids=data_compress["ids"],
+            x=data_compress["x"],
+            y=data_compress["y"],
+        )
+
     for model in models:
-        save_model(path, model, descriptor, data_compress, metadata)
+        model_dir = unique_path(Path(save_path), "model")
+        model_dir.mkdir()
+        model_dir_list.append(model_dir)
+
+        torch.save(model, model_dir / f"model.pt")
+        print(f"saved model to disk: {model_dir}")
+
+    metadata["model_dir"] = str(save_path)
+    with open(save_path / "metadata.yaml", "w") as f:
+        yaml.dump_all([metadata], f)
 
 
-def save_prediction(save_path, mode, pred_data, index, e):
-    if e is None:
-        e = np.arange(pred_data.shape[1])
-    if mode == "predict_xanes":
-        for id_, y_predict_ in tqdm.tqdm(zip(index, pred_data)):
+def save_prediction(save_path, mode, xyz_pred, xanes_pred, index, e):
+    if mode == "predict_xanes" or mode == "predict_all":
+        if e is None:
+            e = np.arange(xanes_pred.shape[1])
+        for id_, y_predict_ in tqdm.tqdm(zip(index, xanes_pred)):
             with open(save_path / f"{id_}.txt", "w") as f:
                 save_xanes(f, XANES(e, y_predict_.detach().numpy()))
 
-    elif mode == "predict_xyz":
-        for id_, y_predict_ in tqdm.tqdm(zip(index, pred_data)):
+    elif mode == "predict_xyz" or mode == "predict_all":
+        for id_, y_predict_ in tqdm.tqdm(zip(index, xyz_pred)):
             with open(save_path / f"{id_}.txt", "w") as f:
                 f.write("\n".join(map(str, y_predict_.detach().numpy())))
+
+    print(f"Saved prediction result to disk {save_path}")
+
+
+def mkdir_output(save_path: str):
+    save_path = save_path.replace("models/", "")
+    save_path = Path(save_path)
+    save_path.mkdir(parents=True, exist_ok=True)
+
+    return save_path
+
+
+def save_prediction_mul(
+    save_path, mode, xyz_mean, xyz_std, xanes_mean, xanes_std, index, e
+):
+    if mode == "predict_xyz" or mode == "predict_all":
+        for id_, mean_y_predict_, std_y_predict_ in tqdm.tqdm(
+            zip(index, xyz_mean, xyz_std)
+        ):
+            with open(save_path / f"{id_}.txt", "w") as f:
+                save_xyz_mean(f, mean_y_predict_, std_y_predict_)
+
+    elif mode == "predict_xanes" or mode == "predict_all":
+        for id_, mean_y_predict_, std_y_predict_ in tqdm.tqdm(
+            zip(index, xanes_mean, xanes_std)
+        ):
+            with open(save_path / f"{id_}.txt", "w") as f:
+                save_xanes_mean(f, XANES(e, mean_y_predict_), std_y_predict_)
+
+    print(f"Saved prediction result to disk {save_path}")
 
 
 def load_xyz(xyz_f: TextIO) -> Atoms:

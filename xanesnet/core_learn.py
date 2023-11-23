@@ -18,7 +18,7 @@ from numpy.random import RandomState
 from sklearn.utils import shuffle
 
 from xanesnet.data_descriptor import encode_train
-from xanesnet.utils import save_models, save_model
+from xanesnet.utils import save_model_list, save_model
 from xanesnet.creator import (
     create_descriptor,
     create_learn_scheme,
@@ -99,31 +99,35 @@ def train_model(config, args):
     # Train the model using selected training strategy
     print(">> Training model...")
     if config["bootstrap"]:
+        train_scheme = "bootstrap"
         model_list = scheme.train_bootstrap()
-        save_path = "bootstrap/"
     elif config["ensemble"]:
+        train_scheme = "ensemble"
         model_list = scheme.train_ensemble()
-        save_path = "ensemble/"
     else:
+        train_scheme = "nn"
         if config["kfold"]:
             model = scheme.train_kfold()
         else:
             model = scheme.train_std()
-        save_path = "models/"
 
     # Save model to file if specified
+    save_path = "models/"
     if args.save:
         metadata = {
             "mode": args.mode,
-            "model_mode": config["model"]["type"],
+            "model_type": config["model"]["type"],
             "descriptor_type": config["descriptor"]["type"],
             "descriptor_param": config["descriptor"]["params"],
             "hyperparams": config["hyperparams"],
             "lr_scheduler": config["scheduler_params"],
+            "scheme": train_scheme,
         }
 
         data_compress = {"ids": index, "x": xyz, "y": xanes}
         if config["bootstrap"] or config["ensemble"]:
-            save_models(save_path, model_list, descriptor, data_compress, metadata)
+            save_model_list(
+                save_path, model_list, descriptor, data_compress, metadata, config
+            )
         else:
             save_model(save_path, model, descriptor, data_compress, metadata)

@@ -1,10 +1,9 @@
 
 xyz_path: data/datasets/fe/preconv/xyz_test
-# y_path: null
 xanes_path: data/datasets/fe/preconv/xanes_test
+# xyz_path: null
+#xanes_path: null
 
-eval: True
-plot_save: False
-bootstrap: False
-ensemble: False
+plot_save: True
+result_save: True
 
