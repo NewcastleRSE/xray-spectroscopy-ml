@@ -15,13 +15,23 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import numpy as np
 import torch
+
 from sklearn.metrics import mean_squared_error
+from dataclasses import dataclass
 
 from xanesnet.scheme.base_predict import Predict
 from xanesnet.data_transform import (
     fourier_transform_data,
     inverse_fourier_transform_data,
 )
+
+
+@dataclass
+class Result:
+    xyz_pred: torch.Tensor
+    xanes_pred: torch.Tensor
+    xyz_recon: torch.Tensor
+    xanes_recon: torch.Tensor
 
 
 class AEGANPredict(Predict):
@@ -114,7 +124,7 @@ class AEGANPredict(Predict):
                 xanes_pred.detach().numpy(),
             )
 
-        return xyz_pred, xanes_pred, xyz_recon, xanes_recon
+        return Result(xyz_pred, xanes_pred, xyz_recon, xanes_recon)
 
     def predict_bootstrap(self, model_list):
         xyz_pred_score = []
@@ -122,45 +132,66 @@ class AEGANPredict(Predict):
         xanes_pred_score = []
         xanes_recon_score = []
 
-        result_xyz = []
-        result_xanes = []
+        xyz_pred_list = []
+        xanes_pred_list = []
+        xyz_recon_list = []
+        xanes_recon_list = []
 
-        for model in model_list:
+        for i, model in enumerate(model_list, start=1):
+            print(f">> Predict model {i}")
             if self.pred_mode == "predict_xyz":
-                xyz_pred, _, _, xanes_recon = self.predict(model)
-                mse = mean_squared_error(self.xanes_data, xanes_recon.detach().numpy())
+                result = self.predict(model)
+                mse = mean_squared_error(
+                    self.xanes_data, result.xanes_recon.detach().numpy()
+                )
                 xanes_recon_score.append(mse)
                 if self.pred_eval:
-                    mse = mean_squared_error(self.xyz_data, xyz_pred.detach().numpy())
+                    mse = mean_squared_error(
+                        self.xyz_data, result.xyz_pred.detach().numpy()
+                    )
                     xyz_pred_score.append(mse)
 
-                result_xyz.append(xyz_pred.detach().numpy())
+                xyz_pred_list.append(result.xyz_pred.detach().numpy())
+                xanes_recon_list.append(result.xanes_recon.detach().numpy())
 
             elif self.pred_mode == "predict_xanes":
-                _, xanes_pred, xyz_recon, _ = self.predict(model)
-                mse = mean_squared_error(self.xyz_data, xyz_recon.detach().numpy())
+                result = self.predict(model)
+                mse = mean_squared_error(
+                    self.xyz_data, result.xyz_recon.detach().numpy()
+                )
                 xyz_recon_score.append(mse)
                 if self.pred_eval:
                     mse = mean_squared_error(
-                        self.xanes_data, xanes_pred.detach().numpy()
+                        self.xanes_data, result.xanes_pred.detach().numpy()
                     )
                     xanes_pred_score.append(mse)
 
-                result_xanes.append(xanes_pred.detach().numpy())
+                xanes_pred_list.append(result.xanes_pred.detach().numpy())
+                xyz_recon_list.append(result.xyz_recon.detach().numpy())
 
             elif self.pred_mode == "predict_all":
-                xyz_pred, xanes_pred, xyz_recon, xanes_recon = self.predict(model)
-                mse = mean_squared_error(self.xyz_data, xyz_recon.detach().numpy())
+                result = self.predict(model)
+                mse = mean_squared_error(
+                    self.xyz_data, result.xyz_recon.detach().numpy()
+                )
                 xyz_recon_score.append(mse)
-                mse = mean_squared_error(self.xyz_data, xyz_pred.detach().numpy())
+                mse = mean_squared_error(
+                    self.xyz_data, result.xyz_pred.detach().numpy()
+                )
                 xyz_pred_score.append(mse)
-                mse = mean_squared_error(self.xanes_data, xanes_recon.detach().numpy())
+                mse = mean_squared_error(
+                    self.xanes_data, result.xanes_recon.detach().numpy()
+                )
                 xanes_recon_score.append(mse)
-                mse = mean_squared_error(self.xanes_data, xanes_pred.detach().numpy())
+                mse = mean_squared_error(
+                    self.xanes_data, result.xanes_pred.detach().numpy()
+                )
                 xanes_pred_score.append(mse)
 
-                result_xyz.append(xyz_pred.detach().numpy())
-                result_xanes.append(xanes_pred.detach().numpy())
+                xyz_pred_list.append(result.xyz_pred.detach().numpy())
+                xanes_pred_list.append(result.xanes_pred.detach().numpy())
+                xyz_recon_list.append(result.xyz_recon.detach().numpy())
+                xanes_recon_list.append(result.xanes_recon.detach().numpy())
 
         if len(xyz_pred_score) > 0:
             xyz_pred_mean = torch.mean(torch.tensor(xyz_pred_score))
@@ -190,15 +221,19 @@ class AEGANPredict(Predict):
                 f"Mean score xanes reconstruction: {xanes_recon_mean:.4f}, Std: {xanes_recon_std:.4f}"
             )
 
-        result_xyz = np.asarray(result_xyz)
-        result_xyz_mean = np.mean(result_xyz, axis=0)
-        result_xyz_std = np.std(result_xyz, axis=0)
+        xyz_pred_list = torch.tensor(np.asarray(xyz_pred_list)).float()
+        xyz_pred = torch.mean(xyz_pred_list, dim=0)
 
-        result_xanes = np.asarray(result_xanes)
-        result_xanes_mean = np.mean(result_xanes, axis=0)
-        result_xanes_std = np.std(result_xanes, axis=0)
+        xanes_pred_list = torch.tensor(np.asarray(xanes_pred_list)).float()
+        xanes_pred = torch.mean(xanes_pred_list, dim=0)
 
-        return result_xyz_mean, result_xyz_std, result_xanes_mean, result_xanes_std
+        xyz_recon_list = torch.tensor(np.asarray(xyz_recon_list)).float()
+        xyz_recon = torch.mean(xyz_recon_list, dim=0)
+
+        xanes_recon_list = torch.tensor(np.asarray(xanes_recon_list)).float()
+        xanes_recon = torch.mean(xanes_recon_list, dim=0)
+
+        return Result(xyz_pred, xanes_pred, xyz_recon, xanes_recon)
 
     def predict_ensemble(self, model_list):
         xyz_pred_list = []
@@ -206,51 +241,58 @@ class AEGANPredict(Predict):
         xanes_pred_list = []
         xanes_recon_list = []
 
-        for model in model_list:
+        for i, model in enumerate(model_list, start=1):
+            print(f">> Predict model {i}")
             if self.pred_mode == "predict_xyz":
-                xyz_pred, _, _, xanes_recon = self.predict(model)
-                xyz_pred_list.append(xyz_pred.detach().numpy())
-                xanes_recon_list.append(xanes_recon.detach().numpy())
+                result = self.predict(model)
+                xyz_pred_list.append(result.xyz_pred.detach().numpy())
+                xanes_recon_list.append(result.xanes_recon.detach().numpy())
 
             elif self.pred_mode == "predict_xanes":
-                _, xanes_pred, xyz_recon, _ = self.predict(model)
-                xanes_pred_list.append(xanes_pred.detach().numpy())
-                xyz_recon_list.append(xyz_recon.detach().numpy())
+                result = self.predict(model)
+                xanes_pred_list.append(result.xanes_pred.detach().numpy())
+                xyz_recon_list.append(result.xyz_recon.detach().numpy())
 
             elif self.pred_mode == "predict_all":
-                xyz_pred, xanes_pred, xyz_recon, xanes_recon = self.predict(model)
-                xyz_pred_list.append(xyz_pred.detach().numpy())
-                xanes_recon_list.append(xanes_recon.detach().numpy())
-                xanes_pred_list.append(xanes_pred.detach().numpy())
-                xyz_recon_list.append(xyz_recon.detach().numpy())
+                result = self.predict(model)
+                xyz_pred_list.append(result.xyz_pred.detach().numpy())
+                xanes_recon_list.append(result.xanes_recon.detach().numpy())
+                xanes_pred_list.append(result.xanes_pred.detach().numpy())
+                xyz_recon_list.append(result.xyz_recon.detach().numpy())
 
-        if len(xyz_pred_list) > 0:
-            xyz_pred_list = sum(xyz_pred_list) / len(xyz_pred_list)
+        print(f"{'='*30}Summary{'='*30}")
+        if self.pred_mode == "predict_xyz" or self.pred_mode == "predict_all":
+            xanes_recon = sum(xanes_recon_list) / len(xanes_recon_list)
+            Predict.print_mse(
+                "Ensemble xanes", "xanes reconstruction", self.xanes_data, xanes_recon
+            )
             if self.pred_eval:
-                Predict.print_mse("xyz", "xyz_prediction", self.xyz_data, xyz_pred_list)
+                xyz_pred = sum(xyz_pred_list) / len(xyz_pred_list)
+                Predict.print_mse(
+                    "Ensemble xyz", "xyz_prediction", self.xyz_data, xyz_pred
+                )
+        elif self.pred_mode == "predict_xanes" or self.pred_mode == "predict_all":
+            if len(xyz_recon_list) > 0:
+                xyz_recon = sum(xyz_recon_list) / len(xyz_recon_list)
+                Predict.print_mse(
+                    "Ensemble xyz", "xyz reconstruction", self.xyz_data, xyz_recon
+                )
+            if self.pred_eval:
+                xanes_pred = sum(xanes_pred_list) / len(xanes_pred_list)
+                Predict.print_mse(
+                    "Ensemble xanes", "xanes_prediction", self.xanes_data, xanes_pred
+                )
 
-        if len(xanes_pred_list) > 0:
-            xanes_pred_list = sum(xanes_pred_list) / len(xanes_pred_list)
-            Predict.print_mse(
-                "xanes", "xanes_prediction", self.xanes_data, xanes_pred_list
-            )
-        if len(xyz_recon_list) > 0:
-            xyz_recon_list = sum(xyz_recon_list) / len(xyz_recon_list)
-            Predict.print_mse(
-                "xyz", "xyz reconstruction", self.xyz_data, xyz_recon_list
-            )
-        if len(xanes_recon_list) > 0:
-            xanes_recon_list = sum(xanes_recon_list) / len(xanes_recon_list)
-            Predict.print_mse(
-                "xanes", "xanes reconstruction", self.xanes_data, xanes_recon_list
-            )
+        xyz_pred_list = torch.tensor(np.asarray(xyz_pred_list)).float()
+        xyz_pred = torch.mean(xyz_pred_list, dim=0)
 
-        result_xyz = torch.tensor(np.asarray(xyz_pred_list)).float()
-        result_xyz_mean = torch.mean(result_xyz, dim=0)
-        result_xyz_std = torch.std(result_xyz, dim=0)
+        xanes_pred_list = torch.tensor(np.asarray(xanes_pred_list)).float()
+        xanes_pred = torch.mean(xanes_pred_list, dim=0)
 
-        result_xanes = torch.tensor(np.asarray(xanes_pred_list)).float()
-        result_xanes_mean = torch.mean(result_xanes, dim=0)
-        result_xanes_std = torch.std(result_xanes, dim=0)
+        xyz_recon_list = torch.tensor(np.asarray(xyz_recon_list)).float()
+        xyz_recon = torch.mean(xyz_recon_list, dim=0)
 
-        return result_xyz_mean, result_xyz_std, result_xanes_mean, result_xanes_std
+        xanes_recon_list = torch.tensor(np.asarray(xanes_recon_list)).float()
+        xanes_recon = torch.mean(xanes_recon_list, dim=0)
+
+        return Result(xyz_pred, xanes_pred, xyz_recon, xanes_recon)

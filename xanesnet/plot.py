@@ -25,7 +25,7 @@ from xanesnet.utils import save_xanes
 from xanesnet.spectrum.xanes import XANES
 
 
-def plot_nn_predict(ids, y, y_predict, predict_dir, mode):
+def plot_predict(ids, y, y_predict, predict_dir):
     total_y = []
     total_y_pred = []
     if y is not None:
@@ -94,7 +94,7 @@ def plot_nn_predict(ids, y, y_predict, predict_dir, mode):
     plt.show()
 
 
-def plot_ae_predict(ids, y, y_predict, x, x_recon, e, predict_dir, mode):
+def plot_ae_predict(ids, y, y_predict, x, x_recon, predict_dir):
     total_y = []
     total_y_pred = []
     total_x = []
@@ -222,42 +222,6 @@ def plot_ae_predict(ids, y, y_predict, x, x_recon, e, predict_dir, mode):
     plt.savefig(predict_dir / "avg_plot.pdf")
 
     plt.show()
-    fig.clf()
-    plt.close(fig)
-
-
-def plot_running_aegan(losses, model_dir):
-    print(">> Plotting running losses...")
-
-    sns.set()
-    cycle = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-
-    fig, (ax1, ax2, ax3) = plt.subplots(3, figsize=(10, 10))
-
-    ax1.plot(losses["train_loss"], label="Total training loss", color=cycle[0])
-    ax1.legend(loc="upper right")
-
-    ax2.plot(
-        losses["loss_x_recon"],
-        label="Training Structure Reconstruction",
-        color=cycle[1],
-    )
-    ax2.plot(
-        losses["loss_x_pred"], label="Training Structure Prediction", color=cycle[2]
-    )
-    ax2.legend(loc="upper right")
-
-    ax3.plot(
-        losses["loss_y_recon"], label="Training Spectrum Reconstruction", color=cycle[3]
-    )
-    ax3.plot(
-        losses["loss_y_pred"], label="Training Spectrum Prediction", color=cycle[4]
-    )
-    ax3.legend(loc="upper right")
-
-    # # with open(predict_dir / f'{id_}.txt', 'w') as f:
-    #     # save_xanes(f, XANES(e, y_predict_.detach().numpy()))
-    plt.savefig(f"{model_dir}/training-mse-loss.pdf")
     fig.clf()
     plt.close(fig)
 

@@ -75,7 +75,7 @@ pip install -r requirements.txt
 ### TRAINING 
 
 To train a model, the following command is used:  
-```python3 -m xanesnet.cli --mode MODE --inp_f inputs/in_{MODEL_MODE}.yaml```
+```python3 -m xanesnet.cli --mode MODE --in_file inputs/in_{MODEL_MODE}.yaml```
 
 The implemented training MODE include:  
 - `train_xanes`: The xanes spectra are used the input data and the featurised structures are the target of the model   
@@ -96,12 +96,12 @@ Input files for training should be given in yaml format. Example of commented in
 ### INFERENCE
 
 To perform inference, the following command is used:  
-```python3 -m xanesnet.cli --mode predict_xyz --mdl model/model_dir --inp_f inputs/in_predict.yaml```
+```python3 -m xanesnet.cli --mode predict_xyz --in_model model/model_dir --in_file inputs/in_predict.yaml```
 
 ### PREDICTION
 
 To use a model previously developed model for predictions, the following command is used:  
-```python3 -m xanesnet.cli --mode MODE --mdl model/model_dir --inp_f inputs/in_predict.yaml```
+```python3 -m xanesnet.cli --mode MODE --in_model model/model_dir --in_file inputs/in_predict.yaml```
 
 The implemented prediction modes include:  
 - `predict_xyz`: The featurised structure is predicted from an input xanes spectrum   
