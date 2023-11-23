@@ -69,7 +69,7 @@ Now you're good to go!
 The code has been designed to support python 3. The dependencies and version requirements are installed using:
 
 ```
-pip install -r requirements.txt
+python -m pip install .
 ```
 
 ### TRAINING 
