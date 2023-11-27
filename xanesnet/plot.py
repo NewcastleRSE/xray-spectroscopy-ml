@@ -33,8 +33,8 @@ def plot_predict(ids, y, y_predict, predict_dir):
         for id_, y_predict_, y_ in tqdm.tqdm(zip(ids, y_predict, y)):
             sns.set()
             fig = plt.figure()
-            fig.plot(y_predict_.detach().numpy(), label="prediction")
-            fig.plot(y_, label="target")
+            plt.plot(y_predict_.detach().numpy(), label="prediction", figure = fig)
+            plt.plot(y_, label="target", figure = fig)
             fig.legend(loc="upper right")
             total_y.append(y_)
             total_y_pred.append(y_predict_.detach().numpy())

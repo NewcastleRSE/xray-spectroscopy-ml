@@ -113,7 +113,7 @@ def predict_data(config, args):
     if config["plot_save"]:
         save_path = mkdir_output("outputs/" + args.in_model + "/plot")
         if model_name.startswith("ae"):
-            plot_aegan_predict(
+            plot = plot_aegan_predict(
                 index,
                 xyz,
                 xanes,
@@ -126,11 +126,11 @@ def predict_data(config, args):
             )
         else:
             if mode == "predict_xyz":
-                plot_predict(index, xyz, result.xyz_pred, save_path)
+                plot = plot_predict(index, xyz, result.xyz_pred, save_path)
             elif mode == "predict_xanes":
-                plot_predict(index, xanes, result.xanes_pred, save_path)
+                plot = plot_predict(index, xanes, result.xanes_pred, save_path)
 
-    return result
+    return result, plot
 
 def load_model_list(model_dir):
     model_list = []
