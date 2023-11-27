@@ -28,18 +28,21 @@ from xanesnet.spectrum.xanes import XANES
 def plot_predict(ids, y, y_predict, predict_dir):
     total_y = []
     total_y_pred = []
-    if y is not None:
+    figures = []
+    if y is not None:  
         for id_, y_predict_, y_ in tqdm.tqdm(zip(ids, y_predict, y)):
             sns.set()
             fig = plt.figure()
-            plt.plot(y_predict_.detach().numpy(), label="prediction", figure = fig)
-            plt.plot(y_, label="target", figure = fig)
+            fig.plot(y_predict_.detach().numpy(), label="prediction")
+            fig.plot(y_, label="target")
             fig.legend(loc="upper right")
             total_y.append(y_)
             total_y_pred.append(y_predict_.detach().numpy())
 
-            plt.savefig(predict_dir / f"{id_}.pdf", figure = fig)
+            fig.savefig(predict_dir / f"{id_}.pdf")
             plt.close()
+            figures.append(fig)
+
     else:
         for (
             id_,
@@ -47,12 +50,13 @@ def plot_predict(ids, y, y_predict, predict_dir):
         ) in tqdm.tqdm(zip(ids, y_predict)):
             sns.set()
             fig = plt.figure()
-            plt.plot(y_predict_.detach().numpy(), label="prediction", figure = fig)
-            fig.legend(loc="upper right", figure = fig)
+            fig.plot(y_predict_.detach().numpy(), label="prediction")
+            fig.legend(loc="upper right")
             total_y_pred.append(y_predict_.detach().numpy())
 
-            plt.savefig(predict_dir / f"{id_}.pdf", figure = fig)
+            fig.savefig(predict_dir / f"{id_}.pdf")
             plt.close()
+            figures.append(fig)
 
     print(">> saving Y data predictions...")
 
@@ -66,36 +70,33 @@ def plot_predict(ids, y, y_predict, predict_dir):
     if y is not None:
         mean_y = np.mean(total_y, axis=0)
         stddev_y = np.std(total_y, axis=0)
-        plt.plot(mean_y, label="target", figure = fig)
+        fig.plot(mean_y, label="target")
 
-        plt.fill_between(
+        fig.fill_between(
             np.arange(mean_y.shape[0]),
             mean_y + stddev_y,
             mean_y - stddev_y,
             alpha=0.4,
-            linewidth=0,
-            figure = fig
+            linewidth=0
         )
 
     mean_y_pred = np.mean(total_y_pred, axis=0)
     stddev_y_pred = np.std(total_y_pred, axis=0)
-    plt.plot(mean_y_pred, label="prediction", figure = fig)
-    plt.fill_between(
+    fig.plot(mean_y_pred, label="prediction")
+    fig.fill_between(
         np.arange(mean_y_pred.shape[0]),
         mean_y_pred + stddev_y_pred,
         mean_y_pred - stddev_y_pred,
         alpha=0.4,
-        linewidth=0,
-        figure = fig
+        linewidth=0
     )
 
     fig.legend()
-    plt.grid(figure = fig)
-    plt.savefig(predict_dir / "avg_plot.pdf", figure = fig)
+    fig.grid(f)
+    fig.savefig(predict_dir / "avg_plot.pdf")
 
     plt.show()
-
-    return fig
+    figures.append(fig)
 
 
 def plot_ae_predict(ids, y, y_predict, x, x_recon, predict_dir):
@@ -103,6 +104,7 @@ def plot_ae_predict(ids, y, y_predict, x, x_recon, predict_dir):
     total_y_pred = []
     total_x = []
     total_x_recon = []
+    figures = []
 
     if y is not None:
         for id_, y_predict_, y_, x_recon_, x_ in tqdm.tqdm(
@@ -132,7 +134,7 @@ def plot_ae_predict(ids, y, y_predict, x, x_recon, predict_dir):
 
             fig.clf()
             plt.close(fig)
-            return(fig)
+            figures.append(fig)
         
     else:
         for id_, y_predict_, x_recon_, x_ in tqdm.tqdm(zip(ids, y_predict, x_recon, x)):
@@ -158,7 +160,7 @@ def plot_ae_predict(ids, y, y_predict, x, x_recon, predict_dir):
 
             fig.clf()
             plt.close(fig)
-            return(fig)
+            figures.append(fig)
 
     print(">> saving Y data predictions...")
 
@@ -231,7 +233,7 @@ def plot_ae_predict(ids, y, y_predict, x, x_recon, predict_dir):
     plt.show()
     fig.clf()
     plt.close(fig)
-    return(fig)
+    figures.append(fig)
 
 
 def plot_aegan_predict(ids, x, y, x_recon, y_recon, x_pred, y_pred, predict_dir, mode):
@@ -240,6 +242,7 @@ def plot_aegan_predict(ids, x, y, x_recon, y_recon, x_pred, y_pred, predict_dir,
 
     x_pred = x_pred.detach().numpy() if x_pred is not None else None
     y_pred = y_pred.detach().numpy() if y_pred is not None else None
+    figures = []
 
     if mode == "predict_xyz":
         if x is None and y is not None:
@@ -259,7 +262,7 @@ def plot_aegan_predict(ids, x, y, x_recon, y_recon, x_pred, y_pred, predict_dir,
                 plt.savefig(predict_dir / f"{id_}.pdf")
                 fig.clf()
                 plt.close(fig)
-                return(fig)
+                figures.append(fig)
 
         elif x is not None and y is not None:
             for id_, y_, x_, y_recon_, x_pred_ in tqdm.tqdm(
@@ -281,7 +284,7 @@ def plot_aegan_predict(ids, x, y, x_recon, y_recon, x_pred, y_pred, predict_dir,
                 plt.savefig(predict_dir / f"{id_}.pdf")
                 fig.clf()
                 plt.close(fig)
-                return(fig)
+                figures.append(fig)
 
     elif mode == "predict_xanes":
         if x is not None and y is None:
@@ -301,7 +304,7 @@ def plot_aegan_predict(ids, x, y, x_recon, y_recon, x_pred, y_pred, predict_dir,
                 plt.savefig(predict_dir / f"{id_}.pdf")
                 fig.clf()
                 plt.close(fig)
-                return(fig)
+                figures.append(fig)
 
         elif x is not None and y is not None:
             for id_, x_, y_, x_recon_, y_pred_ in tqdm.tqdm(
@@ -323,7 +326,7 @@ def plot_aegan_predict(ids, x, y, x_recon, y_recon, x_pred, y_pred, predict_dir,
                 plt.savefig(predict_dir / f"{id_}.pdf")
                 fig.clf()
                 plt.close(fig)
-                return(fig)
+                figures.append(fig)
 
     elif mode == "predict_all":
         if x is not None and y is not None:
@@ -356,10 +359,11 @@ def plot_aegan_predict(ids, x, y, x_recon, y_recon, x_pred, y_pred, predict_dir,
                 plt.savefig(predict_dir / f"{id_}.pdf")
                 fig.clf()
                 plt.close(fig)
-                return(fig)
+                figures.append(fig)
 
 
 def plot_aegan_spectrum(ids, x, x_recon, y_pred, plots_dir):
+    figures = []
     for id_, x_, x_recon_, y_pred_ in tqdm.tqdm(zip(ids, x, x_recon, y_pred)):
         sns.set()
         fig, (ax1, ax2) = plt.subplots(2, figsize=(20, 20))
@@ -376,10 +380,11 @@ def plot_aegan_spectrum(ids, x, x_recon, y_pred, plots_dir):
         plt.savefig(plots_dir / f"{id_}.pdf")
         fig.clf()
         plt.close(fig)
-        return(fig)
+        figures.append(fig)
 
 
 def plot_aegan_structure(ids, y, y_recon, x_pred, plots_dir):
+    figures = []
     for id_, y_, y_recon_, x_pred_ in tqdm.tqdm(zip(ids, y, y_recon, x_pred)):
         sns.set()
         fig, (ax1, ax2) = plt.subplots(2, figsize=(20, 20))
@@ -396,7 +401,7 @@ def plot_aegan_structure(ids, y, y_recon, x_pred, plots_dir):
         plt.savefig(plots_dir / f"{id_}.pdf")
         fig.clf()
         plt.close(fig)
-        return(fig)
+        figures.append(fig)
 
 
 def plot_cosine_similarity(x, y, x_recon, y_recon, x_pred, y_pred, analysis_dir):
