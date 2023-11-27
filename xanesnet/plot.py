@@ -100,6 +100,8 @@ def plot_predict(ids, y, y_predict, predict_dir):
     plt.show()
     figures.append(fig)
 
+    return(figures)
+
 
 def plot_ae_predict(ids, y, y_predict, x, x_recon, predict_dir):
     total_y = []
@@ -236,6 +238,7 @@ def plot_ae_predict(ids, y, y_predict, x, x_recon, predict_dir):
     fig.clf()
     plt.close(fig)
     figures.append(fig)
+    return(figures)
 
 
 def plot_aegan_predict(ids, x, y, x_recon, y_recon, x_pred, y_pred, predict_dir, mode):
@@ -362,6 +365,7 @@ def plot_aegan_predict(ids, x, y, x_recon, y_recon, x_pred, y_pred, predict_dir,
                 fig.clf()
                 plt.close(fig)
                 figures.append(fig)
+                return(figures)
 
 
 def plot_aegan_spectrum(ids, x, x_recon, y_pred, plots_dir):
@@ -383,6 +387,7 @@ def plot_aegan_spectrum(ids, x, x_recon, y_pred, plots_dir):
         fig.clf()
         plt.close(fig)
         figures.append(fig)
+        return(figures)
 
 
 def plot_aegan_structure(ids, y, y_recon, x_pred, plots_dir):
@@ -404,6 +409,7 @@ def plot_aegan_structure(ids, y, y_recon, x_pred, plots_dir):
         fig.clf()
         plt.close(fig)
         figures.append(fig)
+        return(figures)
 
 
 def plot_cosine_similarity(x, y, x_recon, y_recon, x_pred, y_pred, analysis_dir):
