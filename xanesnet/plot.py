@@ -50,7 +50,7 @@ def plot_predict(ids, y, y_predict, predict_dir):
         ) in tqdm.tqdm(zip(ids, y_predict)):
             sns.set()
             fig = plt.figure()
-            fig.plot(y_predict_.detach().numpy(), label="prediction")
+            plt.plot(y_predict_.detach().numpy(), label="prediction", figure = fig)
             fig.legend(loc="upper right")
             total_y_pred.append(y_predict_.detach().numpy())
 
@@ -70,29 +70,31 @@ def plot_predict(ids, y, y_predict, predict_dir):
     if y is not None:
         mean_y = np.mean(total_y, axis=0)
         stddev_y = np.std(total_y, axis=0)
-        fig.plot(mean_y, label="target")
+        plt.plot(mean_y, label="target", figure = fig)
 
-        fig.fill_between(
+        plt.fill_between(
             np.arange(mean_y.shape[0]),
             mean_y + stddev_y,
             mean_y - stddev_y,
             alpha=0.4,
-            linewidth=0
+            linewidth=0,
+            figure = fig
         )
 
     mean_y_pred = np.mean(total_y_pred, axis=0)
     stddev_y_pred = np.std(total_y_pred, axis=0)
-    fig.plot(mean_y_pred, label="prediction")
-    fig.fill_between(
+    plt.plot(mean_y_pred, label="prediction", figure = fig)
+    plt.fill_between(
         np.arange(mean_y_pred.shape[0]),
         mean_y_pred + stddev_y_pred,
         mean_y_pred - stddev_y_pred,
         alpha=0.4,
-        linewidth=0
+        linewidth=0,
+        figure = fig
     )
 
     fig.legend()
-    fig.grid(f)
+    plt.grid(figure = fig)
     fig.savefig(predict_dir / "avg_plot.pdf")
 
     plt.show()
@@ -438,16 +440,17 @@ def plot_mc_predict(ids, y, y_predict, prob_mean, prob_var, e, predict_dir, mode
         ):
             sns.set()
             fig = plt.figure()
-            fig.plot(y_predict_.detach().numpy(), label="prediction")
-            fig.plot(y_, label="target")
-            fig.plot(prob_mean_, label="monte_carlo")
+            plt.plot(y_predict_.detach().numpy(), label="prediction", figure = fig)
+            plt.plot(y_, label="target", figure = fig)
+            plt.plot(prob_mean_, label="monte_carlo", figure = fig)
 
-            fig.fill_between(
+            plt.fill_between(
                 np.arange(prob_mean_.shape[0]),
                 prob_mean_ + prob_var_,
                 prob_mean_ - prob_var_,
                 alpha=0.4,
                 linewidth=0,
+                figure = fig
             )
             fig.legend(loc="upper right")
             total_y.append(y_)
@@ -471,15 +474,16 @@ def plot_mc_predict(ids, y, y_predict, prob_mean, prob_var, e, predict_dir, mode
         ):
             sns.set()
             fig = plt.figure()
-            fig.plot(y_predict_.detach().numpy(), label="prediction")
-            fig.plot(prob_mean_, label="monte_carlo")
+            plt.plot(y_predict_.detach().numpy(), label="prediction", figure = fig)
+            plt.plot(prob_mean_, label="monte_carlo", figure = fig)
 
-            fig.fill_between(
+            plt.fill_between(
                 np.arange(prob_mean_.shape[0]),
                 prob_mean_ + prob_var_,
                 prob_mean_ - prob_var_,
                 alpha=0.4,
                 linewidth=0,
+                figure = fig
             )
             fig.legend(loc="upper right")
             total_y_pred.append(y_predict_.detach().numpy())
@@ -509,29 +513,31 @@ def plot_mc_predict(ids, y, y_predict, prob_mean, prob_var, e, predict_dir, mode
     if y is not None:
         mean_y = np.mean(total_y, axis=0)
         stddev_y = np.std(total_y, axis=0)
-        fig.plot(mean_y, label="target")
+        plt.plot(mean_y, label="target")
 
-        fig.fill_between(
+        plt.fill_between(
             np.arange(mean_y.shape[0]),
             mean_y + stddev_y,
             mean_y - stddev_y,
             alpha=0.4,
             linewidth=0,
+            figure = fig
         )
 
     mean_y_pred = np.mean(total_y_pred, axis=0)
     stddev_y_pred = np.std(total_y_pred, axis=0)
-    fig.plot(mean_y_pred, label="prediction")
-    fig.fill_between(
+    plt.plot(mean_y_pred, label="prediction", figure = fig)
+    plt.fill_between(
         np.arange(mean_y_pred.shape[0]),
         mean_y_pred + stddev_y_pred,
         mean_y_pred - stddev_y_pred,
         alpha=0.4,
         linewidth=0,
+        figure = fig
     )
 
     fig.legend(loc="best")
-    fig.grid()
+    plt.grid(figure = fig)
     fig.savefig(predict_dir / "avg_plot.pdf")
 
     plt.show()
