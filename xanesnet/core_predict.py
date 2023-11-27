@@ -130,6 +130,7 @@ def predict_data(config, args):
             elif mode == "predict_xanes":
                 plot_predict(index, xanes, result.xanes_pred, save_path)
 
+    return result
 
 def load_model_list(model_dir):
     model_list = []
