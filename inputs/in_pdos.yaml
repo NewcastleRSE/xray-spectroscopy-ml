@@ -1,0 +1,89 @@
+xyz_path:  /home/tom/test/10000-set/xyz/
+xanes_path: /home/tom/test/10000-set/xanes/
+
+descriptor:
+  type: pdos
+  params:
+    basis: 3-21G
+    init_guess: minao
+    orb_type: p
+    max_scf_cycles: 0
+    num_points: 80
+    e_min: -10.0
+    e_max: 30.0
+    sigma: 0.8
+    use_wacsf: True
+    r_min: 0.5
+    r_max: 6.5
+    n_g2: 22
+    n_g4: 10
+
+model:
+  type: mlp
+  params:
+    hidden_size: 512
+    dropout: 0.2
+    num_hidden_layers: 5
+    shrink_rate: 0.5
+    activation: prelu
+
+hyperparams:
+  batch_size: 64
+  lr: 0.0001
+  epochs: 100
+  optim_fn: Adam
+  kernel_init: xavier_uniform
+  bias_init: zeros
+  model_eval : True
+  seed: 2021
+  weight_seed: 2023
+  loss:
+    loss_fn: mse
+    loss_args: null
+    loss_reg_type: L2 # null, L1, L2
+    loss_reg_param: 0.001
+
+kfold: False
+kfold_params:
+  n_splits: 3
+  n_repeats: 1
+  seed: 2021
+
+lr_scheduler: True
+scheduler_params:
+  type: step
+  step_size: 50
+  gamma: 0.1
+
+data_augment: True
+augment_params:
+  type: random_noise
+  # augment_type: random_combination
+  augment_mult: 5
+  # for random noise
+  normal_mean: 0
+  normal_sd: 0.1
+  # for random combination
+  # augment_mult: 5
+
+bootstrap: False
+bootstrap_params:
+  n_boot: 3
+  n_size: 1.0
+  weight_seed: [97, 39, 22]
+
+ensemble: False
+ensemble_params:
+  n_ens: 3
+  weight_seed: [97, 39, 22]
+
+optuna: False
+optuna_params:
+  n_trials: 3
+  tune_optim_fn: True
+  tune_batch_size: True
+  tune_activation: True
+  tune_loss_fn: True
+  tune_lr: True
+  tune_dropout: True
+  tune_mlp: True
