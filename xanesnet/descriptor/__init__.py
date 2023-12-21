@@ -6,3 +6,4 @@ from .wacsf import WACSF
 from .msr import MSR
 from .armsr import ARMSR
 from .pdos import PDOS 
+from .direct import DIRECT
