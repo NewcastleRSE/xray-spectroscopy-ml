@@ -28,6 +28,7 @@ setup(
         'dscribe==1.2.2',
         'optuna==3.1.1',
         'sphinx',
-        'sphinx_rtd_theme'
+        'sphinx_rtd_theme',
+        'pyscf'
     ]
 )
