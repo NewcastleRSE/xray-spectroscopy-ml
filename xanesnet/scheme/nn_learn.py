@@ -49,6 +49,8 @@ class NNLearn(Learn):
         scheduler_params,
         optuna,
         optuna_params,
+        freeze,
+        freeze_params,
     ):
         # Call the constructor of the parent class
         super().__init__(
@@ -64,6 +66,8 @@ class NNLearn(Learn):
             scheduler_params,
             optuna,
             optuna_params,
+            freeze,
+            freeze_params,
         )
 
         # loss parameter set

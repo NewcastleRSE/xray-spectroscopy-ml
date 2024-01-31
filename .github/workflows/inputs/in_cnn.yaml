@@ -82,3 +82,9 @@ optuna_params:
   tune_lr: True
   tune_dropout: True
   tune_cnn: True
+
+freeze: False
+freeze_params:
+  model_path: ./models/model_cnn_001
+  n_conv: 4
+  n_dense: 1

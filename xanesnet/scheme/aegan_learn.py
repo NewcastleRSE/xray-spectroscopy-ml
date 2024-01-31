@@ -25,7 +25,7 @@ from sklearn.model_selection import RepeatedKFold
 from torch.utils.tensorboard import SummaryWriter
 from torchinfo import summary
 
-from xanesnet.param_optuna import ParamOptuna
+from xanesnet.optuna import ParamOptuna
 from xanesnet.scheme.base_learn import Learn
 from xanesnet.utils_model import LRScheduler, LossSwitch, loss_reg_fn, OptimSwitch
 from xanesnet.creator import create_eval_scheme
@@ -46,6 +46,8 @@ class AEGANLearn(Learn):
         scheduler_params,
         optuna,
         optuna_params,
+        freeze,
+        freeze_params,
     ):
         # Call the constructor of the parent class
         super().__init__(
@@ -61,6 +63,8 @@ class AEGANLearn(Learn):
             scheduler_params,
             optuna,
             optuna_params,
+            freeze,
+            freeze_params,
         )
 
         # Regularisation of gen loss function

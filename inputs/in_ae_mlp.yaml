@@ -78,3 +78,10 @@ optuna_params:
   tune_lr: True
   tune_dropout: True
   tune_mlp: True
+
+freeze: False
+freeze_params:
+  model_path: ./models/model_ae_mlp_001
+  n_encoder: 2
+  n_decoder: 2
+  n_dense: 1

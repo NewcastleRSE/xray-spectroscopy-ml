@@ -13,7 +13,7 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
+import numpy as np
 import torch
 from torch import nn
 
@@ -22,19 +22,48 @@ from xanesnet.utils_model import get_conv_layers_output_size, ActivationSwitch
 
 
 class CNN(Model):
+    """
+    A class for constructing a customisable CNN (Convolutional Neural Network) model.
+    The model consists of a set of convolutional layers and two dense layers.
+    Each convolutional layer comprises a 1D convolution, batch normalisation,
+    an activation function, a dropout layer.
+
+    The Number of output channels in the convolutional layers (out_channels) is increased
+    multiplicatively at each layer, and it's controlled by a multiplication factor (channel_mul).
+    """
+
     def __init__(
         self,
-        hidden_size,
-        dropout,
-        num_conv_layers,
-        activation,
-        out_channel,
-        channel_mul,
-        kernel_size,
-        stride,
-        x_data,
-        y_data,
+        hidden_size: int,
+        dropout: float,
+        num_conv_layers: int,
+        activation: str,
+        out_channel: int,
+        channel_mul: int,
+        kernel_size: int,
+        stride: int,
+        x_data: np.ndarray,
+        y_data: np.ndarray,
     ):
+        """
+        Args:
+            hidden_size (integer): Size of hidden layers
+                in the dense (fully connected) layers.
+            dropout (float): Dropout rate applied to
+                convolutional layers for regularization.
+            num_conv_layers (integer): Number of convolutional layers
+            activation (string): Name of activation function
+                for convolutional and dense layers.
+            out_channel (integer): Number of output channels
+                in the convolutional layers.
+            channel_mul (integer): Channel multiplication factor
+                for increasing output channels in subsequent
+                convolutional layers.
+            kernel_size (integer): Size of the convolutional kernel (filter).
+            stride (integer): Stride of the convolution operation.
+            x_data (NumPy array): Input data for the network
+            y_data (Numpy array): Output data for the network
+        """
         super().__init__()
 
         self.nn_flag = 1
@@ -50,10 +79,11 @@ class CNN(Model):
         self.input_size = x_data.shape[1]
         self.output_size = y_data[0].size
 
+        # Instantiate ActivationSwitch for dynamic activation selection
         activation_switch = ActivationSwitch()
         act_fn = activation_switch.fn(activation)
 
-        # Convolutional layers output size
+        # Get the output size of convolutional layers
         out_conv_block_size = get_conv_layers_output_size(
             self.input_size,
             self.num_conv_layers,
@@ -64,14 +94,10 @@ class CNN(Model):
             include_pooling=False,
         )
 
-        # Convolutional Layers
+        # Construct convolutional Layers
         conv_layers = []
-        dense_layers = []
-
         in_channel = 1
-
         for layer in range(num_conv_layers):
-            # Collect layers
             conv_layer = nn.Sequential(
                 nn.Conv1d(
                     in_channels=in_channel,
@@ -92,8 +118,8 @@ class CNN(Model):
 
         self.conv_layers = nn.Sequential(*conv_layers)
 
-        # Fully Connected Layers
-
+        # Construct dense layers
+        dense_layers = []
         dense_layer1 = nn.Sequential(
             nn.Linear(
                 out_conv_block_size,
@@ -102,17 +128,21 @@ class CNN(Model):
             act_fn(),
         )
 
+        # Construct the dense layers as a sequential module by
+        # combining all the individual layers created earlier
         dense_layer2 = nn.Sequential(nn.Linear(self.hidden_size, self.output_size))
-
         dense_layers.append(dense_layer1)
         dense_layers.append(dense_layer2)
 
         self.dense_layers = nn.Sequential(*dense_layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # Forward pass through convolutional layers
         x = x.unsqueeze(0)
         x = x.permute(1, 0, 2)
         x = self.conv_layers(x)
+
+        # Forward pass through dense layers
         x = x.view(x.size(0), -1)
         out = self.dense_layers(x)
 

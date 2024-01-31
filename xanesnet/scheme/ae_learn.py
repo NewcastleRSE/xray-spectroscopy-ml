@@ -24,7 +24,7 @@ import numpy as np
 from sklearn.model_selection import RepeatedKFold
 from torchinfo import summary
 
-from xanesnet.param_optuna import ParamOptuna
+from xanesnet.optuna import ParamOptuna
 from xanesnet.scheme.base_learn import Learn
 from xanesnet.creator import create_eval_scheme
 from xanesnet.utils_model import OptimSwitch, LossSwitch
@@ -45,6 +45,8 @@ class AELearn(Learn):
         scheduler_params,
         optuna,
         optuna_params,
+        freeze,
+        freeze_params,
     ):
         # Call the constructor of the parent class
         super().__init__(
@@ -60,6 +62,8 @@ class AELearn(Learn):
             scheduler_params,
             optuna,
             optuna_params,
+            freeze,
+            freeze_params,
         )
 
         # hyperparameter set

@@ -21,12 +21,10 @@ import torch
 import torch.optim.lr_scheduler as lr_scheduler
 
 from torch import optim
-from pathlib import Path
 from torch import nn
 
 # Suppress non-significant warning for shap and WCCLoss function
 warnings.filterwarnings("ignore")
-import shap
 
 
 # Select activation function from hyperparams inputs

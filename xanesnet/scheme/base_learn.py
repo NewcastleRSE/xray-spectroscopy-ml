@@ -14,6 +14,7 @@ You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import copy
+from pathlib import Path
 
 import mlflow
 import optuna
@@ -26,12 +27,15 @@ import random
 
 from abc import ABC, abstractmethod
 from datetime import datetime
+
+import yaml
 from sklearn.model_selection import train_test_split
 from torch.utils.tensorboard import SummaryWriter
 
 from xanesnet.creator import create_model
+from xanesnet.freeze import Freeze
 from xanesnet.utils_model import LRScheduler, WeightInitSwitch, weight_bias_init
-from xanesnet.param_optuna import ParamOptuna
+from xanesnet.optuna import ParamOptuna
 
 
 class Learn(ABC):
@@ -51,6 +55,8 @@ class Learn(ABC):
         scheduler_params,
         optuna,
         optuna_params,
+        freeze,
+        freeze_params,
     ):
         self.x_data = x_data
         self.y_data = y_data
@@ -61,6 +67,8 @@ class Learn(ABC):
         self.model_params = model_params["params"]
         self.optuna = optuna
         self.optuna_params = optuna_params
+        self.freeze = freeze
+        self.freeze_params = freeze_params
 
         # kfold parameter set
         self.n_splits = kfold_params["n_splits"]
@@ -142,10 +150,27 @@ class Learn(ABC):
         return writer
 
     def setup_model(self, x_data, y_data):
-        self.model_params["x_data"] = x_data
-        self.model_params["y_data"] = y_data
+        if self.freeze:
+            # Load existing model from the specified path
+            model_path = self.freeze_params["model_path"]
+            metadata_path = Path(f"{model_path}/metadata.yaml")
+            print(f"Loading model from {model_path}")
 
-        model = create_model(self.model_name, **self.model_params)
+            with open(metadata_path, "r") as file:
+                metadata = yaml.safe_load(file)
+            model_name = metadata["model_type"]
+
+            # Get model with frozen layers
+            fz = Freeze(model_path)
+            model = fz.get_fn(model_name, self.freeze_params)
+
+        else:
+            # Setup model with specified parameters
+            self.model_params["x_data"] = x_data
+            self.model_params["y_data"] = y_data
+
+            model = create_model(self.model_name, **self.model_params)
+
         model.to(self.device)
 
         return model

@@ -78,3 +78,8 @@ optuna_params:
   tune_lr: True
   tune_dropout: True
   tune_mlp: True
+
+freeze: False
+freeze_params:
+  model_path: ./models/model_mlp_001
+  n_dense: 2

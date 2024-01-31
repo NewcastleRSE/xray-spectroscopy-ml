@@ -18,6 +18,17 @@ from torch import nn
 
 
 class Model(nn.Module):
+    """
+    A base class for constructing neural network model
+    with flags indicating different model types.
+
+    Attributes:
+        nn_flag (int): if nn_flag = 1, the model is configured as a classic type of Neural Network.
+        ae_flag (int): if ae_flag = 1, the model is configured as Autoencoder network.
+        aegan_flag (int): if aegan_flag = 1, the model is configured as an
+            Autoencoder-Generative Adversarial Network
+    """
+
     def __init__(self):
         super().__init__()
 

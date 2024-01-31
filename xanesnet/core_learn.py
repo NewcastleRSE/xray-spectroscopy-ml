@@ -94,6 +94,8 @@ def train_model(config, args):
         config["scheduler_params"],
         config["optuna"],
         config["optuna_params"],
+        config["freeze"],
+        config["freeze_params"],
     )
 
     # Train the model using selected training strategy
