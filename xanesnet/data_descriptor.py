@@ -118,7 +118,7 @@ def encode_predict(xyz_path, xanes_path, descriptor, mode, pred_eval):
         for i, id_ in enumerate(tqdm.tqdm(index)):
             with open(xyz_path / f"{id_}.xyz", "r") as f:
                 atoms = load_xyz(f)
-            xyz_data[i, :] = descriptor.process(atoms)
+            xyz_data[i, :] = descriptor.transform(atoms)
             with open(xanes_path / f"{id_}.txt", "r") as f:
                 xanes = load_xanes(f)
             e, xanes_data[i, :] = xanes.spectrum
