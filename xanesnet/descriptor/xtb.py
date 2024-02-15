@@ -18,19 +18,17 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 ############################### LIBRARY IMPORTS ###############################
 ###############################################################################
 
-import numpy as np
 from ase import Atoms
-
 from tblite.interface import Calculator
+from xanesnet.descriptor.base_descriptor import BaseDescriptor
 
-from xanesnet.descriptor.vector_descriptor import VectorDescriptor
 
 ###############################################################################
 ################################## CLASSES ####################################
 ###############################################################################
 
 
-class XTB:
+class XTB(BaseDescriptor):
     def __init__(
         self,
         method: str = "GFN2-xTB",
@@ -56,7 +54,7 @@ class XTB:
                 Defaults to 0 (False).
             temperature (float): Electronic temperature for filling.
                 Defaults to 9.500e-4.
-            verbosity (float): Set verbosity of printout
+            verbosity (int): Set verbosity of printout
                 Defaults to 1
         """
         self.method = method
@@ -71,6 +69,8 @@ class XTB:
     def transform(self, system: Atoms):
         numbers = system.get_atomic_numbers()
         positions = system.get_positions()
+        # Convert atomic unit to bohr
+        positions = positions * 1.8897259886
 
         calc = Calculator(self.method, numbers, positions)
 
@@ -80,6 +80,7 @@ class XTB:
         calc.set("max-iter", self.max_iter)
         calc.set("mixer-damping", self.mixer_damping)
         calc.set("temperature", self.temperature)
+        calc.set("verbosity", self.verbosity)
 
         # calc = Calculator(
         #     method="GFN2-xTB",

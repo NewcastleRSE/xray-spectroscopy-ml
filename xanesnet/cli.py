@@ -22,7 +22,7 @@ import sys
 import yaml
 
 from argparse import ArgumentParser
-
+from tblite.interface import Calculator
 from xanesnet.core_learn import train_model
 from xanesnet.core_predict import predict_data
 
