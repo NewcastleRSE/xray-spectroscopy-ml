@@ -4,10 +4,9 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Autoencoder Generative Adversarial Network &mdash; XANESNET  documentation</title>
+  <title>Autoencoder Generative Adversarial Network &mdash; xanesnet 0.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
-      <link rel="stylesheet" type="text/css" href="_static/css/custom.css" />
 
   
   <!--[if lt IE 9]>
@@ -16,7 +15,7 @@
   
         <script src="_static/jquery.js?v=5d32c60e"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=b3ba4146"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=e031e9a9"></script>
         <script src="_static/doctools.js?v=888ff710"></script>
         <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     <script src="_static/js/theme.js"></script>
@@ -35,7 +34,7 @@
           
           
           <a href="index.html" class="icon icon-home">
-            XANESNET
+            xanesnet
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -79,7 +78,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">XANESNET</a>
+          <a href="index.html">xanesnet</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -102,7 +101,7 @@
 <h1>Autoencoder Generative Adversarial Network<a class="headerlink" href="#autoencoder-generative-adversarial-network" title="Permalink to this heading"></a></h1>
 <p>The <code class="docutils literal notranslate"><span class="pre">aegan_mlp</span></code> model trains both structure and spectra at the same time using two autoencoders or generators that have shared parameters and two discriminators. The discriminators are used to encourage better performance from the generators, whilst the generators try to fool the discriminators. This structure allows different paths through the model for either data type. It can be used to reconstruct the input data or predict the output data for either structure or spectra without changing the model. All constituent parts of the model are multilayer perceptron networks. Aside from input and output shape, the dimension of the linear layers is currently fixed by the value <code class="docutils literal notranslate"><span class="pre">hidden_size</span></code>. The generative and discriminative parts of the model can have different loss functions, learning rates and optimisers specified using the options <code class="docutils literal notranslate"><span class="pre">loss_gen</span></code>, <code class="docutils literal notranslate"><span class="pre">loss_dis</span></code> and <code class="docutils literal notranslate"><span class="pre">lr_gen</span></code>, <code class="docutils literal notranslate"><span class="pre">lr_dis</span></code> and <code class="docutils literal notranslate"><span class="pre">optim_fn_gen</span></code>, <code class="docutils literal notranslate"><span class="pre">optim_fn_dis</span></code>, respectively.</p>
 <p><strong>Network Diagram:</strong></p>
-<img alt="_images/model_aegan_diagram.png" class="align-center" src="_images/model_aegan_diagram.png" />
+<img alt="images/model_aegan_diagram.png" class="align-center" src="images/model_aegan_diagram.png" />
 <p><strong>Network Architecture:</strong></p>
 <blockquote>
 <div><ul>
@@ -181,7 +180,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright .</p>
+    <p>&#169; Copyright 2022, Newcastle University.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
