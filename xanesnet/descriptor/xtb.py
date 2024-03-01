@@ -60,6 +60,8 @@ class XTB(WACSF):
         g4_parameterisation: str = "centred",
         use_charge=False,
         use_spin=False,
+        use_quad=False,
+        use_occupied=False,
     ):
         """
         Args:
@@ -95,6 +97,8 @@ class XTB(WACSF):
         self.use_wacsf = use_wacsf
         self.use_spin = use_spin
         self.use_charge = use_charge
+        self.use_quad = use_quad
+        self.use_occupied = use_occupied
         self.method = method
         self.max_iter = max_iter
         self.verbosity = verbosity
@@ -159,15 +163,46 @@ class XTB(WACSF):
         
         orbe = np.multiply(res.get("orbital-energies"), 27.211324570273)
         orbo = res.get("orbital-occupations")
-        lumo = np.where(orbo < 0.001)[0][0]
-        unoccupied_pdos = p_dos[lumo:]
-        unoccupied_orbital_energies = orbe[lumo:]
+        if self.use_occupied:
+            unoccupied_pdos = p_dos * np.abs(orbo)
+        else:
+            unoccupied_pdos = p_dos * np.abs((orbo - 2))
+        unoccupied_orbital_energies = orbe
 
         # Generate a grid and broaden pDOS
         x = np.linspace(self.e_min, self.e_max, num=self.num_points, endpoint=True)
         sigma = self.sigma
         pdos_gauss = spectrum(unoccupied_orbital_energies, unoccupied_pdos, sigma, x)
-        pdos_gauss = np.multiply(pdos_gauss,100)
+        pdos_gauss = np.multiply(pdos_gauss,10)
+
+        if self.use_quad:
+            if (numbers[0] >= 21) and (numbers[0] <= 29):
+                d_dos = np.array([np.sum(coeff[0:4, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+            elif (numbers[0] >= 39) and (numbers[0] <= 47):
+                d_dos = np.array([np.sum(coeff[0:4, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+            elif (numbers[0] >= 57) and (numbers[0] <= 79):
+                p_dos = np.array([np.sum(coeff[0:4, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+            elif (numbers[0] >= 89) and (numbers[0] <= 112):
+                d_dos = np.array([np.sum(coeff[0:4, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+            else:
+                err_str = ("d-orbitals are not considered for these atoms.")
+                raise ValueError(err_str)
+    
+            orbe = np.multiply(res.get("orbital-energies"), 27.211324570273)
+            orbo = res.get("orbital-occupations")
+            if self.use_occupied:
+                unoccupied_pdos = p_dos * np.abs(orbo)
+            else:
+                unoccupied_pdos = p_dos * np.abs((orbo - 2))
+            unoccupied_orbital_energies = orbe
+    
+            # Generate a grid and broaden dDOS
+            x = np.linspace(self.e_min, self.e_max, num=self.num_points, endpoint=True)
+            sigma = self.sigma
+            ddos_gauss = spectrum(unoccupied_orbital_energies, unoccupied_ddos, sigma, x)
+            ddos_gauss = np.multiply(ddos_gauss,10)
+
+        pdos_gauss = np.append(pdos_gauss,ddos_gauss)
 
         if self.use_wacsf:
             pdos_gauss = np.append(pdos_gauss, super().transform(system))
@@ -176,14 +211,26 @@ class XTB(WACSF):
 
     def get_number_of_features(self):
         if self.use_wacsf:
-            return int(
-                self.num_points
-                + 1
-                + self.n_g2
-                + self.n_g4
-            )
+            if self.use_quad:
+                return int(
+                    self.num_points
+                    + self.num_points
+                    + 1
+                    + self.n_g2
+                    + self.n_g4
+                )
+            else:
+                return int(
+                    self.num_points
+                    + 1
+                    + self.n_g2
+                    + self.n_g4
+                )
         else:
-            return int(self.num_points)
+            if self.use_quad:
+               return int(self.num_points + self.num_points)
+            else:
+               return int(self.num_points)
 
 def spectrum(E, osc, sigma, x):
     # This Gaussian broadens the partial density of states over a defined
