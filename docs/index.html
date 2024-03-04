@@ -4,10 +4,9 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>X A N E S N E T &mdash; XANESNET  documentation</title>
+  <title>X A N E S N E T &mdash; xanesnet 0.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
-      <link rel="stylesheet" type="text/css" href="_static/css/custom.css" />
 
   
   <!--[if lt IE 9]>
@@ -16,13 +15,13 @@
   
         <script src="_static/jquery.js?v=5d32c60e"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=b3ba4146"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=e031e9a9"></script>
         <script src="_static/doctools.js?v=888ff710"></script>
         <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Getting Started" href="install.html" /> 
+    <link rel="next" title="Introduction" href="intro.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -34,7 +33,7 @@
           
           
           <a href="#" class="icon icon-home">
-            XANESNET
+            xanesnet
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -46,10 +45,13 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Documentation</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="install.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="running.html">Running the Code</a></li>
-<li class="toctree-l1"><a class="reference internal" href="models.html">Model Modes and Hyperparameters</a></li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installing XANESNET</a></li>
+<li class="toctree-l1"><a class="reference internal" href="running.html">Running XANESNET</a></li>
+<li class="toctree-l1"><a class="reference internal" href="input.html">Input File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="descriptor.html">Library of Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">Library of Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Model Evaluation</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Project Links</span></p>
 <ul>
@@ -66,7 +68,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="#">XANESNET</a>
+          <a href="#">xanesnet</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -90,88 +92,88 @@
 <div class="line-block">
 <div class="line"><br /></div>
 </div>
-<p>XANESNET is an open source project developed through the <a class="reference external" href="http://penfoldgroup.co.uk">Penfold Group</a> &#64; <a class="reference external" href="https://ncl.ac.uk">Newcastle University</a> which provides machine learning tools and techniques for the fast and automated analysis and prediction of X-ray spectroscopy data. This documentation provides a guide to interacting with and contributing to XANESNET.</p>
+<p>XANESNET is an open-source toolbox for the rapid and
+automated analysis and prediction of X-ray spectroscopy data.
+The software is collaboratively developed by the
+<a class="reference external" href="http://penfoldgroup.co.uk">Penfold Group</a> and
+the <a class="reference external" href="https://rse.ncldata.dev/">Research Software Engineering (RSE) team</a>
+at <a class="reference external" href="https://ncl.ac.uk">Newcastle University</a>.</p>
+<p>This documentation provides a guide to interacting with and contributing to XANESNET.</p>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Documentation</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="install.html">Getting Started</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="install.html#setup">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#xanesnet-overview">XANESNET Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#xanesnet-features">XANESNET features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#xanesnet-development-team">XANESNET development team</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#publications">Publications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#citing-xanesnet">Citing XANESNET</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="running.html">Running the Code</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="running.html#training-a-model">Training a Model</a></li>
-<li class="toctree-l2"><a class="reference internal" href="running.html#addtional-command-line-options">Addtional Command Line Options</a></li>
-<li class="toctree-l2"><a class="reference internal" href="running.html#experiment-tracking-logging-results">Experiment Tracking &amp; Logging Results</a></li>
-<li class="toctree-l2"><a class="reference internal" href="running.html#inference-and-prediction">Inference and Prediction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installing XANESNET</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="install.html#download">Download</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install.html#installation">Installation</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="models.html">Model Modes and Hyperparameters</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="models.html#general-model-hyperparameters">General Model Hyperparameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="models.html#specific-model-parameters">Specific Model Parameters</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="model_mlp.html">Multilayer Perceptron Network</a></li>
-<li class="toctree-l3"><a class="reference internal" href="model_cnn.html">Convolutional Neural Network</a></li>
-<li class="toctree-l3"><a class="reference internal" href="model_ae_mlp.html">Autoencoder Multilayer Perceptron Network</a></li>
-<li class="toctree-l3"><a class="reference internal" href="model_ae_cnn.html">Autoencoder Convolutional Neural Network</a></li>
-<li class="toctree-l3"><a class="reference internal" href="model_aegan_mlp.html">Autoencoder Generative Adversarial Network</a></li>
-<li class="toctree-l3"><a class="reference internal" href="model_lstm.html">Long Short Term Memory Network</a></li>
+<li class="toctree-l1"><a class="reference internal" href="running.html">Running XANESNET</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="running.html#training-a-model">Training a model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="running.html#prediction">Prediction</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="input.html">Input File</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="input.html#path">path</a></li>
+<li class="toctree-l2"><a class="reference internal" href="input.html#descriptor">descriptor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="input.html#model">model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="input.html#hyperparameters">hyperparameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="input.html#fourier-transform">fourier_transform</a></li>
+<li class="toctree-l2"><a class="reference internal" href="input.html#lr-scheduler">lr_scheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="input.html#data-augment">data_augment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="input.html#kfold">kfold</a></li>
+<li class="toctree-l2"><a class="reference internal" href="input.html#bootstrap">bootstrap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="input.html#ensemble">ensemble</a></li>
+<li class="toctree-l2"><a class="reference internal" href="input.html#optuna">optuna</a></li>
+<li class="toctree-l2"><a class="reference internal" href="input.html#freeze">freeze</a></li>
+<li class="toctree-l2"><a class="reference internal" href="input.html#shap">shap</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html#documentation">Documentation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html#code">Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="descriptor.html">Library of Descriptors</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="descriptor.html#wacsf">wACSF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="descriptor.html#soap">SOAP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="descriptor.html#rdc">RDC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="descriptor.html#mbtr">MBTR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="descriptor.html#lmbtr">LMBTR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="descriptor.html#msr">MSR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="descriptor.html#armsr">ARMSR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="descriptor.html#pdos">pDOS</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">Library of Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="model.html#mlp">MLP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="model.html#cnn">CNN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="model.html#lstm">LSTM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="model.html#ae-mlp">AE-MLP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="model.html#ae-cnn">AE-CNN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="model.html#aegan-mlp">AEGAN-MLP</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Model Evaluation</a></li>
 </ul>
 </div>
 <div class="toctree-wrapper compound">
 </div>
-<section id="publications">
-<h2>Publications<a class="headerlink" href="#publications" title="Permalink to this heading"></a></h2>
-<section id="xanesnet-code">
-<h3>XANESNET Code:<a class="headerlink" href="#xanesnet-code" title="Permalink to this heading"></a></h3>
-<p><a class="reference external" href="https://doi.org/10.1021/acs.jpca.0c03723">A Deep Neural Network for the Rapid Prediction of X-ray Absorption Spectra</a> - C. D. Rankine, M. M. M. Madkhali, and T. J. Penfold, <em>J. Phys. Chem. A</em>, 2020, <strong>124</strong>, 4263-4270.</p>
-<p><a class="reference external" href="https://doi.org/10.1063/5.0087255">Accurate, affordable, and generalizable machine learning simulations of transition metal x-ray absorption spectra using the XANESNET deep neural network</a> - C. D. Rankine, and T. J. Penfold, <em>J. Chem. Phys.</em>, 2022, <strong>156</strong>, 164102.</p>
-</section>
-<section id="extension-to-x-ray-emission">
-<h3>Extension to X-ray Emission:<a class="headerlink" href="#extension-to-x-ray-emission" title="Permalink to this heading"></a></h3>
-<p><a class="reference external" href="https://doi.org/10.1080/00268976.2022.2123406">A deep neural network for valence-to-core X-ray emission spectroscopy</a> - T. J. Penfold, and C. D. Rankine, <em>Mol. Phys.</em>, 2022, e2123406.</p>
-</section>
-<section id="the-applications">
-<h3>The Applications:<a class="headerlink" href="#the-applications" title="Permalink to this heading"></a></h3>
-<p><a class="reference external" href="https://doi.org/10.1016/j.cplett.2021.138893">On the Analysis of X-ray Absorption Spectra for Polyoxometallates</a> - E. Falbo, C. D. Rankine, and T. J. Penfold, <em>Chem. Phys. Lett.</em>, 2021, <strong>780</strong>, 138893.</p>
-<p><a class="reference external" href="https://doi.org/10.1039/D0CP06244H">Enhancing the Anaysis of Disorder in X-ray Absorption Spectra: Application of Deep Neural Networks to T-Jump-X-ray Probe Experiments</a> - M. M. M. Madkhali, C. D. Rankine, and T. J. Penfold, <em>Phys. Chem. Chem. Phys.</em>, 2021, <strong>23</strong>, 9259-9269.</p>
-</section>
-<section id="miscellaneous">
-<h3>Miscellaneous:<a class="headerlink" href="#miscellaneous" title="Permalink to this heading"></a></h3>
-<p><a class="reference external" href="https://doi.org/10.3390/molecules25112715">The Role of Structural Representation in the Performance of a Deep Neural Network for X-ray Spectroscopy</a> - M. M. M. Madkhali, C. D. Rankine, and T. J. Penfold, <em>Molecules</em>, 2020, <strong>25</strong>, 2715.</p>
-</section>
-</section>
-<section id="citing-xanesnet">
-<h2>Citing XANESNET<a class="headerlink" href="#citing-xanesnet" title="Permalink to this heading"></a></h2>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@software</span><span class="p">{</span><span class="n">xanesnet</span><span class="p">,</span>
-  <span class="n">author</span> <span class="o">=</span> <span class="p">{</span><span class="n">Penfold</span> <span class="n">Group</span><span class="p">,</span> <span class="n">Newcastle</span> <span class="n">University</span><span class="p">},</span>
-  <span class="n">title</span> <span class="o">=</span> <span class="p">{</span><span class="n">XANESNET</span><span class="p">},</span>
-  <span class="n">url</span> <span class="o">=</span> <span class="p">{</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">gitlab</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">team</span><span class="o">-</span><span class="n">xnet</span><span class="o">/</span><span class="n">xanesnet</span><span class="p">},</span>
-  <span class="n">date</span> <span class="o">=</span> <span class="p">{</span><span class="mi">2023</span><span class="p">},</span>
-<span class="p">}</span>
-</pre></div>
-</div>
-</section>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="install.html" class="btn btn-neutral float-right" title="Getting Started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="intro.html" class="btn btn-neutral float-right" title="Introduction" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright .</p>
+    <p>&#169; Copyright 2022, Newcastle University.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

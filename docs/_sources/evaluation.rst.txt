@@ -1,6 +1,6 @@
-==========================
-Evaluating a Trained Model
-==========================
+===================
+Model Evaluation
+===================
 
 Model performance can be evaluated using some simple invariance testing by setting ``model_eval: True`` in the training input YAML file. The input data is split into three partitions; training (75%), validation (15%) and testing (10%). The training set is used to train the model, the validation set is used to report model performance during training. The test set is held out until the model is trained to perform model evaluation.
 
