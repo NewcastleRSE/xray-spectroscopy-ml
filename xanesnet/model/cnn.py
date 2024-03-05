@@ -55,7 +55,7 @@ class CNN(Model):
             activation (string): Name of activation function
                 for convolutional and dense layers.
             out_channel (integer): Number of output channels
-                in the convolutional layers.
+                for the initial convolutional layer.
             channel_mul (integer): Channel multiplication factor
                 for increasing output channels in subsequent
                 convolutional layers.

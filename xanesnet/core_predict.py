@@ -52,8 +52,7 @@ def predict_data(config, args):
         print(f"Prediction mode: {mode}")
         model_name = metadata["model_type"]
     else:
-        mode = args.mode
-        model_name = args.model_type
+        raise ValueError(f"Cannot find metadata file.")
 
     # Load descriptor
     with open(model_dir / "descriptor.pickle", "rb") as f:
@@ -80,7 +79,7 @@ def predict_data(config, args):
         mode,
         index,
         pred_eval,
-        args.fourier_transform,
+        config["fourier_transform"],
     )
 
     # Predict with loaded models and scheme

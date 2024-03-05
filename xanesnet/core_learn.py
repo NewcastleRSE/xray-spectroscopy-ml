@@ -49,7 +49,7 @@ def train_model(config, args):
     )
 
     # Apply Fourier's transformation to spectra dataset if specified
-    if args.fourier_transform:
+    if config["fourier_transform"]:
         from .data_transform import fourier_transform_data
 
         print(">> Transforming training data using Fourier transform...")
@@ -115,7 +115,7 @@ def train_model(config, args):
 
     # Save model to file if specified
     save_path = "models/"
-    if args.save:
+    if args.save == "yes":
         metadata = {
             "mode": args.mode,
             "model_type": config["model"]["type"],

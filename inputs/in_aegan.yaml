@@ -1,5 +1,5 @@
-xyz_path:  data/datasets/fe/preconv/xyz_train
-xanes_path:  data/datasets/fe/preconv/xanes_train
+xyz_path:  .github/workflows/data/datasets/fe/preconv/xyz_train
+xanes_path:  .github/workflows/data/datasets/fe/preconv/xanes_train
 
 descriptor:
     type: wacsf
@@ -87,10 +87,12 @@ freeze: False
 freeze_params:
   model_path: ./models/model_aegan_mlp_001
   n_encoder1: 1
-  n__encoder2: 1
+  n_encoder2: 1
   n_decoder1: 1
   n_decoder2: 1
   n_shared_encoder: 1
   n_shared_decoder: 1
   n_discrim1: 1
   n_discrim2: 1
+
+fourier_transform: False

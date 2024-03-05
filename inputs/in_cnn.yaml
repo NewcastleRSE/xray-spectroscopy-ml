@@ -1,5 +1,5 @@
-xyz_path:  data/datasets/fe/preconv/xyz_train
-xanes_path:  data/datasets/fe/preconv/xanes_train
+xyz_path:  .github/workflows/data/datasets/fe/preconv/xyz_train
+xanes_path:  .github/workflows/data/datasets/fe/preconv/xanes_train
 
 descriptor:
     type: wacsf
@@ -88,3 +88,5 @@ freeze_params:
   model_path: ./models/model_cnn_001
   n_conv: 4
   n_dense: 1
+
+fourier_transform: False

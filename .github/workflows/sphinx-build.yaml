@@ -20,14 +20,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install sphinx sphinx-rtd-theme
       - name: Sphinx Build
-        working-directory: ./sphinx
+        working-directory: ./docs
         run: | 
           make html
-          touch _build/html/.nojekyll
-      - name: Deploy to GitHub Pages
+          touch build/html/.nojekyll
+      - name: Deploy to GitHub Page
         uses: JamesIves/github-pages-deploy-action@v4.4.1
         with:
           branch: gh-pages
-          folder: sphinx/_build/html
+          folder: docs/build/html
           target-folder: docs
           clean: true

@@ -144,7 +144,7 @@ def encode_predict(xyz_path, xanes_path, descriptor, mode, pred_eval):
         for i, id_ in enumerate(tqdm.tqdm(index)):
             with open(xyz_path / f"{id_}.xyz", "r") as f:
                 atoms = load_xyz(f)
-            xyz_data[i, :] = descriptor.process(atoms)
+            xyz_data[i, :] = descriptor.transform(atoms)
         xanes_data = None
         e = None
     else:

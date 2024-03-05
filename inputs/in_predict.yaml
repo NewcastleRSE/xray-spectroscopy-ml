@@ -1,11 +1,13 @@
 
-xyz_path: data/datasets/fe/preconv/xyz_test
-xanes_path: data/datasets/fe/preconv/xanes_test
+xyz_path:  .github/workflows/data/datasets/fe/preconv/xyz_test
+xanes_path:  .github/workflows/data/datasets/fe/preconv/xanes_test
 # xyz_path: null
 #xanes_path: null
 
 plot_save: True
 result_save: True
+
+fourier_transform: False
 
 shap: False
 shap_params:

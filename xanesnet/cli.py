@@ -58,30 +58,10 @@ def parse_args(args: list):
         required=True,
     )
     parser.add_argument(
-        "--no-save",
-        dest="save",
-        action="store_false",
-        help="toggles model directory creation and population to <off>",
-    )
-    parser.add_argument(
-        "--fourier_transform",
-        action="store_true",
-        help="Train using Fourier transformed xanes spectra or Predict using model trained on Fourier transformed xanes spectra",
-    )
-
-    parser.add_argument(
-        "--run_shap",
-        type=bool,
-        help="SHAP analysis for prediction",
-        required=False,
-        default=False,
-    )
-    parser.add_argument(
-        "--shap_nsamples",
-        type=int,
-        help="Number of background samples for SHAP analysis for prediction",
-        required=False,
-        default=50,
+        "--save",
+        type=str,
+        default="yes",
+        help="toggles model directory creation and population to <on>",
     )
 
     args = parser.parse_args()

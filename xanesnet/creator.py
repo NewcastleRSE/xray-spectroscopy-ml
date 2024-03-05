@@ -51,7 +51,6 @@ def create_descriptor(name, **kwargs):
         ARMSR,
         PDOS,
         DIRECT,
-        XTB,
     )
 
     descriptors = {
@@ -64,7 +63,6 @@ def create_descriptor(name, **kwargs):
         "armsr": ARMSR,
         "pdos": PDOS,
         "direct": DIRECT,
-        "xtb": XTB,
     }
 
     if name in descriptors:
