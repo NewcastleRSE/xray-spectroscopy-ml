@@ -45,7 +45,11 @@ def train_model(config, args):
 
     # Shuffle the encoded data for randomness
     xyz, xanes = shuffle(
-        xyz, xanes, random_state=RandomState(seed=config["hyperparams"]["seed"])
+        xyz, xanes, random_state=RandomState(seed=config["hyperparams"]["seed"]), n_samples=config["hyperparams"].get("max_samples", None)
+    )
+    print(
+        ">> Shuffled training dataset and limited to n_samples = %s"
+        % config["hyperparams"].get("max_samples", None),
     )
 
     # Apply Fourier's transformation to spectra dataset if specified
