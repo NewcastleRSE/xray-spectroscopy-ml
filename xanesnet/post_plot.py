@@ -44,11 +44,11 @@ def plot_predict(save_path, mode, result, index, xyz, xanes):
         for id_, y_predict_, y_ in tqdm.tqdm(zip(index, predict, data)):
             sns.set()
             plt.figure()
-            plt.plot(y_predict_.detach().numpy(), label="prediction")
+            plt.plot(y_predict_, label="prediction")
             plt.plot(y_, label="target")
             plt.legend(loc="upper right")
             total_y.append(y_)
-            total_y_pred.append(y_predict_.detach().numpy())
+            total_y_pred.append(y_predict_)
 
             plt.savefig(save_path / f"{id_}.pdf")
             plt.close()
@@ -59,9 +59,9 @@ def plot_predict(save_path, mode, result, index, xyz, xanes):
         ) in tqdm.tqdm(zip(index, predict)):
             sns.set()
             plt.figure()
-            plt.plot(y_predict_.detach().numpy(), label="prediction")
+            plt.plot(y_predict_, label="prediction")
             plt.legend(loc="upper right")
-            total_y_pred.append(y_predict_.detach().numpy())
+            total_y_pred.append(y_predict_)
 
             plt.savefig(save_path / f"{id_}.pdf")
             plt.close()
@@ -245,12 +245,6 @@ def plot_aegan_predict(save_path, mode, result, ids, x, y):
     y_recon = result.xanes_recon[0]
     x_pred = result.xyz_pred[0]
     y_pred = result.xanes_pred[0]
-
-    x_recon = x_recon.detach().numpy() if x_recon is not None else None
-    y_recon = y_recon.detach().numpy() if y_recon is not None else None
-
-    x_pred = x_pred.detach().numpy() if x_pred is not None else None
-    y_pred = y_pred.detach().numpy() if y_pred is not None else None
 
     if mode == "predict_xyz":
         if x is None and y is not None:

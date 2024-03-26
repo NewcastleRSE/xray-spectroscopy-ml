@@ -35,7 +35,7 @@ model:
 
 hyperparams:
   batch_size: 64
-  epochs: 10
+  epochs: 100
   kernel_init: xavier_uniform
   bias_init: zeros
   model_eval: True
@@ -94,3 +94,9 @@ freeze_params:
   n_shared_decoder: 1
   n_discrim1: 1
   n_discrim2: 1
+
+fourier_transform: False
+fourier_params:
+  concat: True
+
+standardscaler: False

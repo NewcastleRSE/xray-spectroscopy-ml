@@ -79,7 +79,9 @@ def predict_data(config, args):
         mode,
         index,
         pred_eval,
-        config["fourier_transform"],
+        metadata["standardscaler"],
+        metadata["fourier_transform"],
+        metadata["fourier_param"],
     )
 
     # Predict with loaded models and scheme
@@ -97,9 +99,9 @@ def predict_data(config, args):
         model_list = load_model_list(model_dir)
         result = scheme.predict_ensemble(model_list)
 
-    elif predict_scheme == "nn":
+    elif predict_scheme == "std":
         model = torch.load(model_dir / "model.pt", map_location=torch.device("cpu"))
-        result = scheme.predict(model)
+        result = scheme.predict_std(model)
 
     else:
         raise ValueError("Unsupported prediction scheme.")

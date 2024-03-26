@@ -48,12 +48,15 @@ def train_model(config, args):
         xyz, xanes, random_state=RandomState(seed=config["hyperparams"]["seed"])
     )
 
-    # Apply Fourier's transformation to spectra dataset if specified
+    # Apply FFT to spectra training dataset if specified
     if config["fourier_transform"]:
-        from .data_transform import fourier_transform_data
+        if args.mode == "train_xyz":
+            raise ValueError(f"Cannot apply Fourier transform to XYZ training dataset.")
+
+        from .data_transform import fourier_transform
 
         print(">> Transforming training data using Fourier transform...")
-        xanes = fourier_transform_data(xanes)
+        xanes = fourier_transform(xanes, config["fourier_params"]["concat"])
 
     # Apply data augmentation if specified
     if config["data_augment"]:
@@ -96,6 +99,7 @@ def train_model(config, args):
         config["optuna_params"],
         config["freeze"],
         config["freeze_params"],
+        config["standardscaler"],
     )
 
     # Train the model using selected training strategy
@@ -106,12 +110,12 @@ def train_model(config, args):
     elif config["ensemble"]:
         train_scheme = "ensemble"
         model_list = scheme.train_ensemble()
+    elif config["kfold"]:
+        train_scheme = "std"
+        model = scheme.train_kfold()
     else:
-        train_scheme = "nn"
-        if config["kfold"]:
-            model = scheme.train_kfold()
-        else:
-            model = scheme.train_std()
+        train_scheme = "std"
+        model = scheme.train_std()
 
     # Save model to file if specified
     save_path = "models/"
@@ -123,6 +127,9 @@ def train_model(config, args):
             "descriptor_param": config["descriptor"]["params"],
             "hyperparams": config["hyperparams"],
             "lr_scheduler": config["scheduler_params"],
+            "standardscaler": config["standardscaler"],
+            "fourier_transform": config["fourier_transform"],
+            "fourier_param": config["fourier_params"],
             "scheme": train_scheme,
         }
 

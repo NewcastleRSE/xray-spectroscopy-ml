@@ -51,6 +51,7 @@ class NNLearn(Learn):
         optuna_params,
         freeze,
         freeze_params,
+        scaler,
     ):
         # Call the constructor of the parent class
         super().__init__(
@@ -68,6 +69,7 @@ class NNLearn(Learn):
             optuna_params,
             freeze,
             freeze_params,
+            scaler,
         )
 
         # loss parameter set
@@ -88,6 +90,19 @@ class NNLearn(Learn):
     def train(self, model, x_data, y_data):
         device = self.device
         writer = self.writer
+
+        # Apply standardscaler to training dataset
+        if self.scaler:
+            print(">> Applying standardscaler to training dataset...")
+            x_data = self.setup_scaler(x_data)
+
+        # ########################TEST#############################
+        # import matplotlib.pyplot as plt
+        # print("test code at nn_learn.py")
+        # plt.title('FFT + Standardscaler Xanes')
+        # plt.plot(x_data[0])
+        # plt.show()
+        # ########################TEST#############################
 
         # initialise dataloader
         train_loader, valid_loader, eval_loader = self.setup_dataloader(x_data, y_data)

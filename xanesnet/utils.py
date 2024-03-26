@@ -161,53 +161,52 @@ def save_model_list(path, models, descriptor, data_compress, metadata, config):
 
 
 def save_predict(save_path, mode, result, index, e):
+    # Save mean and std prediction result to file
+
     if mode == "predict_xanes" or mode == "predict_all":
-        save_path = mkdir_output(save_path + "/xanes_pred")
+        path = mkdir_output(save_path + "/xanes_pred")
         if e is None:
             e = np.arange(result.xanes_pred[0].shape[1])
-        # save mean result to file
+
         for id_, predict_, std_ in tqdm.tqdm(
             zip(index, result.xanes_pred[0], result.xanes_pred[1])
         ):
-            with open(save_path / f"{id_}.txt", "w") as f:
-                save_xanes_mean(
-                    f, XANES(e, predict_.detach().numpy()), std_.detach().numpy()
-                )
+            with open(path / f"{id_}.txt", "w") as f:
+                save_xanes_mean(f, XANES(e, predict_), std_)
 
     if mode == "predict_xyz" or mode == "predict_all":
-        save_path = mkdir_output(save_path + "/xyz_pred")
+        path = mkdir_output(save_path + "/xyz_pred")
         for id_, predict_, std_ in tqdm.tqdm(
             zip(index, result.xyz_pred[0], result.xyz_pred[1])
         ):
-            with open(save_path / f"{id_}.txt", "w") as f:
-                save_xyz_mean(f, predict_.detach().numpy(), std_.detach().numpy())
+            with open(path / f"{id_}.txt", "w") as f:
+                save_xyz_mean(f, predict_, std_)
 
-    print(f"Saved prediction result to disk {save_path}")
+    print(f"Saved prediction result to disk {path}")
 
 
-def save_recon(model_type, mode, result, index, e):
-    prefix = "outputs/" + model_type
+def save_recon(save_path, mode, result, index, e):
+    # Save mean and std reconstruction result to file
+
     if mode == "predict_xanes" or mode == "predict_all":
-        save_path = mkdir_output(prefix + "/xyz_recon")
+        path = mkdir_output(save_path + "/xyz_recon")
         for id_, recon_, std_ in tqdm.tqdm(
             zip(index, result.xyz_recon[0], result.xyz_recon[1])
         ):
-            with open(save_path / f"{id_}.txt", "w") as f:
-                save_xyz_mean(f, recon_.detach().numpy(), std_.detach().numpy())
+            with open(path / f"{id_}.txt", "w") as f:
+                save_xyz_mean(f, recon_, std_)
 
     if mode == "predict_xyz" or mode == "predict_all":
         if e is None:
             e = np.arange(result.xanes_recon[0].shape[1])
-        save_path = mkdir_output(prefix + "/xanes_recon")
+        path = mkdir_output(save_path + "/xanes_recon")
         for id_, recon_, std_ in tqdm.tqdm(
             zip(index, result.xanes_recon[0], result.xanes_recon[1])
         ):
-            with open(save_path / f"{id_}.txt", "w") as f:
-                save_xanes_mean(
-                    f, XANES(e, recon_.detach().numpy()), std_.detach().numpy()
-                )
+            with open(path / f"{id_}.txt", "w") as f:
+                save_xanes_mean(f, XANES(e, recon_), std_)
 
-    print(f"Saved reconstruct result to disk {save_path}")
+    print(f"Saved reconstruct result to disk {path}")
 
 
 def mkdir_output(save_path: str):

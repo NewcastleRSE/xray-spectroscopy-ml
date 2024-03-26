@@ -25,7 +25,7 @@ model:
 hyperparams:
   batch_size: 16
   lr: 0.0001
-  epochs: 10
+  epochs: 100
   optim_fn: Adam
   kernel_init: xavier_uniform
   bias_init: zeros
@@ -90,3 +90,7 @@ freeze_params:
   n_dense: 1
 
 fourier_transform: False
+fourier_params:
+  concat: True
+
+standardscaler: False

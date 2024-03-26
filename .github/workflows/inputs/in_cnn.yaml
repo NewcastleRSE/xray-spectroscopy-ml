@@ -90,3 +90,7 @@ freeze_params:
   n_dense: 1
 
 fourier_transform: False
+fourier_params:
+  concat: True
+
+standardscaler: False

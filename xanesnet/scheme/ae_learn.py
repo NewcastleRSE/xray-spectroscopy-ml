@@ -47,6 +47,7 @@ class AELearn(Learn):
         optuna_params,
         freeze,
         freeze_params,
+        scaler,
     ):
         # Call the constructor of the parent class
         super().__init__(
@@ -64,6 +65,7 @@ class AELearn(Learn):
             optuna_params,
             freeze,
             freeze_params,
+            scaler,
         )
 
         # hyperparameter set
@@ -87,6 +89,11 @@ class AELearn(Learn):
     def train(self, model, x_data, y_data):
         device = self.device
         writer = self.writer
+
+        # Apply standardscaler to training dataset
+        if self.scaler:
+            print(">> Applying standardscaler to training dataset...")
+            x_data = self.setup_scaler(x_data)
 
         # initialise dataloader
         train_loader, valid_loader, eval_loader = self.setup_dataloader(x_data, y_data)

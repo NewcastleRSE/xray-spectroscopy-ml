@@ -86,6 +86,7 @@ def create_learn_scheme(
     optuna_params,
     freeze,
     freeze_params,
+    scaler,
 ):
     from xanesnet.scheme import NNLearn, AELearn, AEGANLearn
 
@@ -116,6 +117,7 @@ def create_learn_scheme(
             optuna_params,
             freeze,
             freeze_params,
+            scaler,
         )
     else:
         raise ValueError(f"Unsupported learn scheme name: {name}")
@@ -149,7 +151,7 @@ def create_eval_scheme(
 
 
 def create_predict_scheme(
-    name, xyz_data, xanes_data, pred_mode, index, pred_eval, fourier
+    name, xyz_data, xanes_data, pred_mode, index, pred_eval, scaler, fourier, fourier_param
 ):
     from xanesnet.scheme import NNPredict, AEPredict, AEGANPredict
 
@@ -163,6 +165,8 @@ def create_predict_scheme(
     }
 
     if name in scheme:
-        return scheme[name](xyz_data, xanes_data, pred_mode, pred_eval, index, fourier)
+        return scheme[name](
+            xyz_data, xanes_data, pred_mode, index, pred_eval, scaler, fourier, fourier_param
+        )
     else:
         raise ValueError(f"Unsupported prediction scheme name: {name}")

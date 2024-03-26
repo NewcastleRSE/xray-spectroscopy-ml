@@ -48,6 +48,7 @@ class AEGANLearn(Learn):
         optuna_params,
         freeze,
         freeze_params,
+        scaler,
     ):
         # Call the constructor of the parent class
         super().__init__(
@@ -65,6 +66,7 @@ class AEGANLearn(Learn):
             optuna_params,
             freeze,
             freeze_params,
+            scaler,
         )
 
         # Regularisation of gen loss function
@@ -108,6 +110,12 @@ class AEGANLearn(Learn):
     def train(self, model, x_data, y_data):
         device = self.device
         writer = self.writer
+
+        # Apply standardscaler to training dataset
+        if self.scaler:
+            print(">> Applying standardscaler to training dataset...")
+            x_data = self.setup_scaler(x_data)
+            y_data = self.setup_scaler(y_data)
 
         # initialise dataloader
         train_loader, valid_loader, eval_loader = self.setup_dataloader(x_data, y_data)

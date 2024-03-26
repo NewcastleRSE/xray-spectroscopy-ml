@@ -13,7 +13,6 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import copy
 from pathlib import Path
 
 import mlflow
@@ -23,7 +22,6 @@ import time
 import os
 import pickle
 import tempfile
-import random
 
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -31,6 +29,7 @@ from datetime import datetime
 import yaml
 from sklearn.model_selection import train_test_split
 from torch.utils.tensorboard import SummaryWriter
+from sklearn.preprocessing import StandardScaler
 
 from xanesnet.creator import create_model
 from xanesnet.freeze import Freeze
@@ -57,6 +56,7 @@ class Learn(ABC):
         optuna_params,
         freeze,
         freeze_params,
+        scaler,
     ):
         self.x_data = x_data
         self.y_data = y_data
@@ -69,6 +69,7 @@ class Learn(ABC):
         self.optuna_params = optuna_params
         self.freeze = freeze
         self.freeze_params = freeze_params
+        self.scaler = scaler
 
         # kfold parameter set
         self.n_splits = kfold_params["n_splits"]
@@ -248,6 +249,12 @@ class Learn(ABC):
             )
         )
         return model
+
+    def setup_scaler(self, x_data):
+        scaler = StandardScaler()
+        x_data = scaler.fit_transform(x_data)
+
+        return x_data
 
     def log_scalar(self, writer, name, value, epoch):
         """Log a scalar value to both MLflow and TensorBoard"""

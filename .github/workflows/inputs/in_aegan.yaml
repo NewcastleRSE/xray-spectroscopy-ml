@@ -96,3 +96,7 @@ freeze_params:
   n_discrim2: 1
 
 fourier_transform: False
+fourier_params:
+  concat: True
+
+standardscaler: False

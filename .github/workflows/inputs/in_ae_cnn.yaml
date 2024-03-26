@@ -92,3 +92,7 @@ freeze_params:
   n_conv: 4
 
 fourier_transform: False
+fourier_params:
+  concat: True
+
+standardscaler: False
