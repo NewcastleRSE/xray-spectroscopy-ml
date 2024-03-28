@@ -55,6 +55,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#model">model</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#hyperparameters">hyperparameters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#fourier-transform">fourier_transform</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#standardscaler">standardscaler</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#lr-scheduler">lr_scheduler</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#data-augment">data_augment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#kfold">kfold</a></li>
@@ -204,9 +205,32 @@ The transformation converts the XANES spectra data into the frequency domain
 that emphasise its frequency components.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">fourier_transform</span></code> (bool): Flag for toggling Fourier transformation on or off</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fourier_params</span></code>:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">concat</span></code> (bool): Flag for concatenating the transformation result with the original spectra data</p></li>
+</ul>
+</li>
 </ul>
 <dl>
 <dt>Example:</dt><dd><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fourier_transform</span><span class="p">:</span> <span class="kc">True</span>
+<span class="n">fourier_params</span><span class="p">:</span>
+    <span class="n">concat</span><span class="p">:</span> <span class="kc">True</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</section>
+<section id="standardscaler">
+<h2>standardscaler<a class="headerlink" href="#standardscaler" title="Permalink to this heading"></a></h2>
+<p>The standardscaler section specifies whether standard scaling will be applied to the
+XANES spectra data. The function rescales the data the have a mean of 0 and a
+standard deviation of 1. Note that in XANESNET, the standardscaler applies to both
+training and testing spectra data to give the network a tighter focus.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">standardscaler</span></code> (bool): Flag for toggling StandardScaler on or off</p></li>
+</ul>
+<dl>
+<dt>Example:</dt><dd><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">standardscaler</span><span class="p">:</span> <span class="kc">True</span>
 </pre></div>
 </div>
 </dd>

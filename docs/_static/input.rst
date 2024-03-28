@@ -106,11 +106,32 @@ The transformation converts the XANES spectra data into the frequency domain
 that emphasise its frequency components.
 
 * ``fourier_transform`` (bool): Flag for toggling Fourier transformation on or off
+* ``fourier_params``:
+
+  * ``concat`` (bool): Flag for concatenating the transformation result with the original spectra data
 
 Example:
     .. code-block::
 
         fourier_transform: True
+        fourier_params:
+            concat: True
+
+=================
+standardscaler
+=================
+
+The standardscaler section specifies whether standard scaling will be applied to the
+XANES spectra data. The function rescales the data the have a mean of 0 and a
+standard deviation of 1. Note that in XANESNET, the standardscaler applies to both
+training and testing spectra data to give the network a tighter focus.
+
+* ``standardscaler`` (bool): Flag for toggling StandardScaler on or off
+
+Example:
+    .. code-block::
+
+        standardscaler: True
 
 ==============
 lr_scheduler
