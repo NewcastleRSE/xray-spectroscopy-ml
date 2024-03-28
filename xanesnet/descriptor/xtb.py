@@ -122,7 +122,6 @@ class XTB(WACSF):
             raise NotImplementedError(err_str)
 
         else:
-
             if self.use_spin and self.use_charge:
                 charge = system.info["q"]
                 spin = system.info["s"]
@@ -146,48 +145,22 @@ class XTB(WACSF):
         calc.set("verbosity", self.verbosity)
         calc.set("max-iter", self.max_iter)
 
-        res = calc.singlepoint()
-        res.get("energy") 
-        coeff = res.get("orbital-coefficients")
-        coeff = np.square(coeff)
-        if (numbers[0] >= 21) and (numbers[0] <= 29): 
-            p_dos = np.array([np.sum(coeff[6:8, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
-        elif (numbers[0] >= 39) and (numbers[0] <= 47):
-            p_dos = np.array([np.sum(coeff[6:8, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
-        elif (numbers[0] >= 57) and (numbers[0] <= 79):
-            p_dos = np.array([np.sum(coeff[6:8, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
-        elif (numbers[0] >= 89) and (numbers[0] <= 112):
-            p_dos = np.array([np.sum(coeff[6:8, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
-        else:
-            p_dos = np.array([np.sum(coeff[1:3, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
-        
-        orbe = np.multiply(res.get("orbital-energies"), 27.211324570273)
-        orbo = res.get("orbital-occupations")
-        if self.use_occupied:
-            unoccupied_pdos = p_dos * np.abs(orbo)
-        else:
-            unoccupied_pdos = p_dos * np.abs((orbo - 2))
-        unoccupied_orbital_energies = orbe
-
-        # Generate a grid and broaden pDOS
-        x = np.linspace(self.e_min, self.e_max, num=self.num_points, endpoint=True)
-        sigma = self.sigma
-        pdos_gauss = spectrum(unoccupied_orbital_energies, unoccupied_pdos, sigma, x)
-        pdos_gauss = np.multiply(pdos_gauss,10)
-
-        if self.use_quad:
-            if (numbers[0] >= 21) and (numbers[0] <= 29):
-                d_dos = np.array([np.sum(coeff[0:4, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+        try:
+            res = calc.singlepoint()
+            res.get("energy") 
+            coeff = res.get("orbital-coefficients")
+            coeff = np.square(coeff)
+            if (numbers[0] >= 21) and (numbers[0] <= 29): 
+                p_dos = np.array([np.sum(coeff[6:8, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
             elif (numbers[0] >= 39) and (numbers[0] <= 47):
-                d_dos = np.array([np.sum(coeff[0:4, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+                p_dos = np.array([np.sum(coeff[6:8, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
             elif (numbers[0] >= 57) and (numbers[0] <= 79):
-                p_dos = np.array([np.sum(coeff[0:4, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+                p_dos = np.array([np.sum(coeff[6:8, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
             elif (numbers[0] >= 89) and (numbers[0] <= 112):
-                d_dos = np.array([np.sum(coeff[0:4, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+                p_dos = np.array([np.sum(coeff[6:8, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
             else:
-                err_str = ("d-orbitals are not considered for these atoms.")
-                raise ValueError(err_str)
-    
+                p_dos = np.array([np.sum(coeff[1:3, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+            
             orbe = np.multiply(res.get("orbital-energies"), 27.211324570273)
             orbo = res.get("orbital-occupations")
             if self.use_occupied:
@@ -195,14 +168,47 @@ class XTB(WACSF):
             else:
                 unoccupied_pdos = p_dos * np.abs((orbo - 2))
             unoccupied_orbital_energies = orbe
-    
-            # Generate a grid and broaden dDOS
+          
+            # Generate a grid and broaden pDOS
             x = np.linspace(self.e_min, self.e_max, num=self.num_points, endpoint=True)
             sigma = self.sigma
-            ddos_gauss = spectrum(unoccupied_orbital_energies, unoccupied_ddos, sigma, x)
-            ddos_gauss = np.multiply(ddos_gauss,10)
+            pdos_gauss = spectrum(unoccupied_orbital_energies, unoccupied_pdos, sigma, x)
+            pdos_gauss = np.multiply(pdos_gauss,10)
+          
+            if self.use_quad:
+                if (numbers[0] >= 21) and (numbers[0] <= 29):
+                    d_dos = np.array([np.sum(coeff[0:4, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+                elif (numbers[0] >= 39) and (numbers[0] <= 47):
+                    d_dos = np.array([np.sum(coeff[0:4, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+                elif (numbers[0] >= 57) and (numbers[0] <= 79):
+                    p_dos = np.array([np.sum(coeff[0:4, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+                elif (numbers[0] >= 89) and (numbers[0] <= 112):
+                    d_dos = np.array([np.sum(coeff[0:4, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+                else:
+                    err_str = ("d-orbitals are not considered for these atoms.")
+                    raise ValueError(err_str)
+          
+                orbe = np.multiply(res.get("orbital-energies"), 27.211324570273)
+                orbo = res.get("orbital-occupations")
+                if self.use_occupied:
+                    unoccupied_ddos = d_dos * np.abs(orbo)
+                else:
+                    unoccupied_ddos = d_dos * np.abs((orbo - 2))
+                unoccupied_orbital_energies = orbe
+          
+                # Generate a grid and broaden dDOS
+                x = np.linspace(self.e_min, self.e_max, num=self.num_points, endpoint=True)
+                sigma = self.sigma
+                ddos_gauss = spectrum(unoccupied_orbital_energies, unoccupied_ddos, sigma, x)
+                ddos_gauss = np.multiply(ddos_gauss,10)
+          
+                pdos_gauss = np.append(pdos_gauss,ddos_gauss)
 
-        pdos_gauss = np.append(pdos_gauss,ddos_gauss)
+        except Exception as e:
+            if self.use_quad:
+                pdos_gauss = np.full(self.num_points*2, np.nan)
+            else:
+                pdos_gauss = np.full(self.num_points, np.nan)
 
         if self.use_wacsf:
             pdos_gauss = np.append(pdos_gauss, super().transform(system))
