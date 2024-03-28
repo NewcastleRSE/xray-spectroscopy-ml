@@ -22,7 +22,7 @@ from dataclasses import dataclass
 from sklearn.preprocessing import StandardScaler
 
 from xanesnet.scheme.base_predict import Predict
-from xanesnet.data_transform import fourier_transform
+from xanesnet.data_transform import fourier_transform, inverse_fourier_transform
 
 
 @dataclass
@@ -70,6 +70,9 @@ class NNPredict(Predict):
             xyz = torch.from_numpy(xyz).float()
             xanes_pred = model(xyz)
             xanes_pred = xanes_pred.detach().numpy()
+
+            if self.fourier:
+                xanes_pred = inverse_fourier_transform(xanes_pred, self.fourier_concat)
 
             # Print MSE if evaluation data is provided
             if self.pred_eval:

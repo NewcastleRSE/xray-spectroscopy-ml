@@ -121,6 +121,10 @@ class AEGANPredict(Predict):
             if self.scaler:
                 xanes_recon = self.setup_scaler(scaler, xanes_recon, True)
 
+            # Fourier inverse transform
+            if self.fourier:
+                xanes_pred = inverse_fourier_transform(xanes_pred, self.fourier_concat)
+
             # print MSE
             Predict.print_mse("xyz", "xyz reconstruction", self.xyz_data, xyz_recon)
             if self.pred_eval:

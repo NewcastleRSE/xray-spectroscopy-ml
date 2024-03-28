@@ -9,7 +9,7 @@ mlruns/
 ensemble/
 bootstrap/
 model/*
-!xanesnet/model/*
+xanesnet/model/__pycache__/
 *.egg-info
 build/
 models/

@@ -38,10 +38,25 @@ class Result:
 
 class AEPredict(Predict):
     def __init__(
-        self, xyz_data, xanes_data, pred_mode, pred_eval, index, scaler, fourier, fourier_param
+        self,
+        xyz_data,
+        xanes_data,
+        pred_mode,
+        pred_eval,
+        index,
+        scaler,
+        fourier,
+        fourier_param,
     ):
         super().__init__(
-            xyz_data, xanes_data, pred_mode, pred_eval, index, scaler, fourier, fourier_param
+            xyz_data,
+            xanes_data,
+            pred_mode,
+            pred_eval,
+            index,
+            scaler,
+            fourier,
+            fourier_param,
         )
         self.recon_flag = 1
 
@@ -78,7 +93,9 @@ class AEPredict(Predict):
 
             # Fourier inverse transform
             if self.fourier:
-                xanes_recon = inverse_fourier_transform(xanes_recon, self.fourier_concat)
+                xanes_recon = inverse_fourier_transform(
+                    xanes_recon, self.fourier_concat
+                )
 
             # Print MSE
             Predict.print_mse(
@@ -105,6 +122,10 @@ class AEPredict(Predict):
             # Standardscaler inverse transform
             if self.scaler:
                 xyz_recon = self.setup_scaler(scaler, xyz_recon, True)
+
+            # Fourier inverse transform
+            if self.fourier:
+                xanes_pred = inverse_fourier_transform(xanes_pred, self.fourier_concat)
 
             # print MSE
             Predict.print_mse("xyz", "xyz reconstruction", self.xyz_data, xyz_recon)

@@ -50,12 +50,9 @@ def train_model(config, args):
 
     # Apply FFT to spectra training dataset if specified
     if config["fourier_transform"]:
-        if args.mode == "train_xyz":
-            raise ValueError(f"Cannot apply Fourier transform to XYZ training dataset.")
-
         from .data_transform import fourier_transform
 
-        print(">> Transforming training data using Fourier transform...")
+        print(">> Transforming spectra data using Fourier transform...")
         xanes = fourier_transform(xanes, config["fourier_params"]["concat"])
 
     # Apply data augmentation if specified
