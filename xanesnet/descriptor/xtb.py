@@ -151,15 +151,15 @@ class XTB(WACSF):
             coeff = res.get("orbital-coefficients")
             coeff = np.square(coeff)
             if (numbers[0] >= 21) and (numbers[0] <= 29): 
-                p_dos = np.array([np.sum(coeff[6:8, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+                p_dos = np.array([np.sum(coeff[i, 6:8]) / np.sum(coeff[i, :]) for i in range(len(coeff))])
             elif (numbers[0] >= 39) and (numbers[0] <= 47):
-                p_dos = np.array([np.sum(coeff[6:8, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+                p_dos = np.array([np.sum(coeff[i, 6:8]) / np.sum(coeff[i, :]) for i in range(len(coeff))])
             elif (numbers[0] >= 57) and (numbers[0] <= 79):
-                p_dos = np.array([np.sum(coeff[6:8, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+                p_dos = np.array([np.sum(coeff[i, 6:8]) / np.sum(coeff[i, :]) for i in range(len(coeff))])
             elif (numbers[0] >= 89) and (numbers[0] <= 112):
-                p_dos = np.array([np.sum(coeff[6:8, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+                p_dos = np.array([np.sum(coeff[i, 6:8]) / np.sum(coeff[i, :]) for i in range(len(coeff))])
             else:
-                p_dos = np.array([np.sum(coeff[1:3, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+                p_dos = np.array([np.sum(coeff[i, 1:3]) / np.sum(coeff[i, :]) for i in range(len(coeff))])
             
             orbe = np.multiply(res.get("orbital-energies"), 27.211324570273)
             orbo = res.get("orbital-occupations")
@@ -173,17 +173,16 @@ class XTB(WACSF):
             x = np.linspace(self.e_min, self.e_max, num=self.num_points, endpoint=True)
             sigma = self.sigma
             pdos_gauss = spectrum(unoccupied_orbital_energies, unoccupied_pdos, sigma, x)
-            pdos_gauss = np.multiply(pdos_gauss,10)
           
             if self.use_quad:
                 if (numbers[0] >= 21) and (numbers[0] <= 29):
-                    d_dos = np.array([np.sum(coeff[0:4, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+                    d_dos = np.array([np.sum(coeff[i, 0:4]) / np.sum(coeff[i, :]) for i in range(len(coeff))])
                 elif (numbers[0] >= 39) and (numbers[0] <= 47):
-                    d_dos = np.array([np.sum(coeff[0:4, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+                    d_dos = np.array([np.sum(coeff[i, 0:4]) / np.sum(coeff[i, :]) for i in range(len(coeff))])
                 elif (numbers[0] >= 57) and (numbers[0] <= 79):
-                    p_dos = np.array([np.sum(coeff[0:4, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+                    d_dos = np.array([np.sum(coeff[i, 0:4]) / np.sum(coeff[i, :]) for i in range(len(coeff))])
                 elif (numbers[0] >= 89) and (numbers[0] <= 112):
-                    d_dos = np.array([np.sum(coeff[0:4, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+                    d_dos = np.array([np.sum(coeff[i, 0:4]) / np.sum(coeff[i, :]) for i in range(len(coeff))])
                 else:
                     err_str = ("d-orbitals are not considered for these atoms.")
                     raise ValueError(err_str)
@@ -200,7 +199,6 @@ class XTB(WACSF):
                 x = np.linspace(self.e_min, self.e_max, num=self.num_points, endpoint=True)
                 sigma = self.sigma
                 ddos_gauss = spectrum(unoccupied_orbital_energies, unoccupied_ddos, sigma, x)
-                ddos_gauss = np.multiply(ddos_gauss,10)
           
                 pdos_gauss = np.append(pdos_gauss,ddos_gauss)
 
