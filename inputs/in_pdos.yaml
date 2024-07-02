@@ -1,22 +1,22 @@
 xyz_path:  data/datasets/10000-set/xyz
 xanes_path:  data/datasets/10000-set/xanes
 
-descriptor:
-  type: pdos
-  params:
-    basis: 3-21G
-    init_guess: minao
-    orb_type: p
-    max_scf_cycles: 0
-    num_points: 80
-    e_min: -10.0
-    e_max: 30.0
-    sigma: 0.8
-    use_wacsf: True
-    r_min: 0.5
-    r_max: 6.5
-    n_g2: 22
-    n_g4: 10
+descriptors:
+  - type: pdos
+    params:
+      basis: 3-21G
+      init_guess: minao
+      orb_type: p
+      max_scf_cycles: 0
+      num_points: 80
+      e_min: -10.0
+      e_max: 30.0
+      sigma: 0.8
+      use_wacsf: True
+      r_min: 0.5
+      r_max: 6.5
+      n_g2: 22
+      n_g4: 10
 
 model:
   type: mlp

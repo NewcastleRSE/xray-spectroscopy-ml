@@ -4,3 +4,4 @@ from .lstm import LSTM
 from .ae_cnn import AE_CNN
 from .ae_mlp import AE_MLP
 from .aegan_mlp import AEGAN_MLP
+from .gnn import GNN

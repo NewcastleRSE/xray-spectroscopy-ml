@@ -33,9 +33,11 @@ setup(
         "mlflow==2.1.1",
         "dscribe==1.2.2",
         "optuna==3.1.1",
+        "torch_geometric",
         "sphinx",
         "sphinx_rtd_theme",
         "pyscf",
         "tblite",
+        "mendeleev",
     ],
 )

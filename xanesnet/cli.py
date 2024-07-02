@@ -22,8 +22,7 @@ import sys
 import yaml
 
 from argparse import ArgumentParser
-from tblite.interface import Calculator
-from xanesnet.core_learn import train_model
+from xanesnet.core_learn import train_model, train_model_gnn
 from xanesnet.core_predict import predict_data
 
 
@@ -86,7 +85,10 @@ def main(args: list):
         config = yaml.safe_load(f)
 
     if "train" in args.mode:
-        train_model(config, args)
+        if config["model"]["type"] == "gnn":
+            train_model_gnn(config, args)
+        else:
+            train_model(config, args)
 
     elif "predict" in args.mode:
         predict_data(config, args)

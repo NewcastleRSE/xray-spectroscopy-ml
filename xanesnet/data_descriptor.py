@@ -18,6 +18,7 @@ import tqdm as tqdm
 
 from pathlib import Path
 
+from xanesnet.data_graph import GraphDataset
 from xanesnet.utils import (
     load_xyz,
     load_xanes,
@@ -37,6 +38,7 @@ def encode_train(xyz_path, xanes_path, descriptor):
             raise FileNotFoundError(err_str)
 
     if xyz_path.is_dir() and xanes_path.is_dir():
+        # Find the command elements in xyz and xanes
         index = list(set(list_filestems(xyz_path)) & set(list_filestems(xanes_path)))
         index.sort()
 
@@ -46,6 +48,7 @@ def encode_train(xyz_path, xanes_path, descriptor):
             n_x_features = linecount(xyz_path / f"{index[0]}.dsc")
         else:
             n_x_features = descriptor.get_number_of_features()
+
         n_y_features = linecount(xanes_path / f"{index[0]}.txt") - 2
 
         xyz_data = np.full((n_samples, n_x_features), np.nan)
@@ -88,6 +91,47 @@ def encode_train(xyz_path, xanes_path, descriptor):
         raise TypeError(err_str)
 
     return xyz_data, xanes_data, index, n_x_features, n_y_features
+
+
+def encode_train_gnn(xyz_path, xanes_path, node_descriptors, edge_descriptors):
+    xyz_path = Path(xyz_path)
+    xanes_path = Path(xanes_path)
+
+    for path in (xyz_path, xanes_path):
+        if not path.exists():
+            err_str = f"path to data ({path}) doesn't exist"
+            raise FileNotFoundError(err_str)
+
+    if xyz_path.is_dir() and xanes_path.is_dir():
+        # Find the command elements in xyz and xanes
+        index = list(set(list_filestems(xyz_path)) & set(list_filestems(xanes_path)))
+        index.sort()
+
+        n_samples = len(index)
+        n_y_features = linecount(xanes_path / f"{index[0]}.txt") - 2
+
+        xanes_data = np.full((n_samples, n_y_features), np.nan)
+        print(">> preallocated {}x{} array for XANES data...".format(*xanes_data.shape))
+
+        print(">> loading data into array(s)...")
+        for i, id_ in enumerate(tqdm.tqdm(index)):
+            with open(xanes_path / f"{id_}.txt", "r") as f:
+                xanes = load_xanes(f)
+            e, xanes_data[i, :] = xanes.spectrum
+
+        print(f"Converting {len(index)} data files from XYZ format to graph format...")
+        graph_dataset = GraphDataset(
+            root=str(xyz_path),
+            index=index,
+            xanes_data=xanes_data,
+            node_descriptors=node_descriptors,
+            edge_descriptors=edge_descriptors,
+        )
+    else:
+        err_str = "paths to data are expected to be directories"
+        raise TypeError(err_str)
+
+    return graph_dataset
 
 
 def encode_predict(xyz_path, xanes_path, descriptor, mode, pred_eval):

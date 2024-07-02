@@ -1,7 +1,25 @@
-xyz_path:  .github/workflows/data/datasets/fe/preconv/xyz_train
-xanes_path:  .github/workflows/data/datasets/fe/preconv/xanes_train
+xyz_path:  data/datasets/10000-set/xyz
+xanes_path:  data/datasets/10000-set/xanes
+#xyz_path:  data/datasets/graph-set/xyz
+#xanes_path:  data/datasets/graph-set/xanes
 
 descriptors:
+  - type: pdos
+    params:
+      basis: 3-21G
+      init_guess: minao
+      orb_type: p
+      max_scf_cycles: 0
+      num_points: 80
+      e_min: -10.0
+      e_max: 30.0
+      sigma: 0.8
+      use_wacsf: False
+      r_min: 0.5
+      r_max: 6.5
+      n_g2: 22
+      n_g4: 10
+
   - type: wacsf
     params:
       r_min: 1.0
@@ -9,23 +27,21 @@ descriptors:
       n_g2: 16
       n_g4: 32
 
-#CNN
 model:
-   type: ae_cnn
-   params:
-      hidden_size: 64
-      dropout: 0.2
-      num_conv_layers: 3
-      activation: prelu
-      out_channel: 32
-      channel_mul: 2
-      kernel_size: 3
-      stride: 1
+  type: gnn
+  node_descriptors: [pdos, wacsf]
+  edge_descriptors: [wacsf]
+  params:
+    hidden_size: 512
+    dropout: 0.2
+    num_hidden_layers: 5
+    activation: prelu
+    layer_name: GAT #GAT, GCN, GraphConv
 
 hyperparams:
-  batch_size: 16
+  batch_size: 1
   lr: 0.0001
-  epochs: 10
+  epochs: 100
   optim_fn: Adam
   kernel_init: xavier_uniform
   bias_init: zeros
@@ -35,20 +51,20 @@ hyperparams:
   loss:
     loss_fn: mse
     loss_args: null
-    loss_reg_type: L2 # null, L1, L2
+    loss_reg_type: null # null, L1, L2
     loss_reg_param: 0.001
 
 kfold: False
 kfold_params:
-  n_splits: 5
+  n_splits: 3
   n_repeats: 1
-  seed: 2022
+  seed: 2021
 
 lr_scheduler: True
 scheduler_params:
   type: step
-  step_size: 50
-  gamma: 0.1
+  step_size: 100
+  gamma: 0.5
 
 data_augment: False
 augment_params:
@@ -59,7 +75,7 @@ augment_params:
   normal_mean: 0
   normal_sd: 0.1
   # for random combination
-  # augment_params : {}
+  # augment_mult: 5
 
 bootstrap: False
 bootstrap_params:
@@ -81,15 +97,12 @@ optuna_params:
   tune_loss_fn: True
   tune_lr: True
   tune_dropout: True
-  tune_cnn: True
+  tune_mlp: True
 
 freeze: False
 freeze_params:
-  model_path: ./models/model_ae_cnn_001
-  n_encoder: 2
-  n_decoder: 2
-  n_dense: 1
-  n_conv: 4
+  model_path: ./models/model_mlp_001
+  n_dense: 2
 
 fourier_transform: False
 fourier_params:

@@ -31,48 +31,15 @@ from xanesnet.utils_model import OptimSwitch, LossSwitch
 
 
 class AELearn(Learn):
-    def __init__(
-        self,
-        x_data,
-        y_data,
-        model_params,
-        hyper_params,
-        kfold,
-        kfold_params,
-        bootstrap_params,
-        ensemble_params,
-        schedular,
-        scheduler_params,
-        optuna,
-        optuna_params,
-        freeze,
-        freeze_params,
-        scaler,
-    ):
+    def __init__(self, x_data, y_data, **kwargs):
         # Call the constructor of the parent class
-        super().__init__(
-            x_data,
-            y_data,
-            model_params,
-            hyper_params,
-            kfold,
-            kfold_params,
-            bootstrap_params,
-            ensemble_params,
-            schedular,
-            scheduler_params,
-            optuna,
-            optuna_params,
-            freeze,
-            freeze_params,
-            scaler,
-        )
+        super().__init__(x_data, y_data, **kwargs)
 
         # hyperparameter set
-        self.lr = hyper_params["lr"]
-        self.optim_fn = hyper_params["optim_fn"]
-        self.loss_fn = hyper_params["loss"]["loss_fn"]
-        self.loss_args = hyper_params["loss"]["loss_args"]
+        self.lr = self.hyper_params["lr"]
+        self.optim_fn = self.hyper_params["optim_fn"]
+        self.loss_fn = self.hyper_params["loss"]["loss_fn"]
+        self.loss_args = self.hyper_params["loss"]["loss_args"]
 
         layout = {
             "Multi": {

@@ -1,8 +1,8 @@
 xyz_path:  .github/workflows/data/datasets/fe/preconv/xyz_train
 xanes_path:  .github/workflows/data/datasets/fe/preconv/xanes_train
 
-descriptor:
-    type: wacsf
+descriptors:
+  - type: wacsf
     params:
       r_min: 1.0
       r_max: 6.0

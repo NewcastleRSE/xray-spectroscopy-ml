@@ -3,13 +3,13 @@ xanes_path:  .github/workflows/data/datasets/fe/preconv/xanes_train
 #xyz_path:  data/datasets/10000-set/xyz
 #xanes_path:  data/datasets/10000-set/xanes
 
-descriptor:
-  type: wacsf
-  params:
-    r_min: 1.0
-    r_max: 6.0
-    n_g2: 16
-    n_g4: 32
+descriptors:
+  - type: wacsf
+    params:
+      r_min: 1.0
+      r_max: 6.0
+      n_g2: 16
+      n_g4: 32
 
 model:
   type: mlp
@@ -36,7 +36,7 @@ hyperparams:
     loss_reg_type: L2 # null, L1, L2
     loss_reg_param: 0.001
 
-kfold: False
+kfold: True
 kfold_params:
   n_splits: 3
   n_repeats: 1

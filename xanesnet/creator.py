@@ -23,12 +23,13 @@ the __init__.py file in the /scheme, /descriptor, or /model directory
 
 
 def create_model(name, **kwargs):
-    from xanesnet.model import MLP, CNN, LSTM, AE_CNN, AE_MLP, AEGAN_MLP
+    from xanesnet.model import MLP, CNN, LSTM, AE_CNN, AE_MLP, AEGAN_MLP, GNN
 
     models = {
         "mlp": MLP,
         "cnn": CNN,
         "lstm": LSTM,
+        "gnn": GNN,
         "ae_mlp": AE_MLP,
         "ae_cnn": AE_CNN,
         "aegan_mlp": AEGAN_MLP,
@@ -71,24 +72,8 @@ def create_descriptor(name, **kwargs):
         raise ValueError(f"Unsupported descriptor name: {name}")
 
 
-def create_learn_scheme(
-    x_data,
-    y_data,
-    model_params,
-    hyperparams,
-    kfold,
-    kfold_params,
-    bootstrap_params,
-    ensemble_params,
-    scheduler,
-    schedular_param,
-    optuna,
-    optuna_params,
-    freeze,
-    freeze_params,
-    scaler,
-):
-    from xanesnet.scheme import NNLearn, AELearn, AEGANLearn
+def create_learn_scheme(x_data, y_data, **kwargs):
+    from xanesnet.scheme import NNLearn, AELearn, AEGANLearn, GNNLearn
 
     scheme = {
         "mlp": NNLearn,
@@ -97,28 +82,14 @@ def create_learn_scheme(
         "ae_mlp": AELearn,
         "ae_cnn": AELearn,
         "aegan_mlp": AEGANLearn,
+        "gnn": GNNLearn,
     }
 
+    model_params = kwargs.get('model')
     name = model_params["type"]
 
     if name in scheme:
-        return scheme[name](
-            x_data,
-            y_data,
-            model_params,
-            hyperparams,
-            kfold,
-            kfold_params,
-            bootstrap_params,
-            ensemble_params,
-            scheduler,
-            schedular_param,
-            optuna,
-            optuna_params,
-            freeze,
-            freeze_params,
-            scaler,
-        )
+        return scheme[name](x_data, y_data, **kwargs)
     else:
         raise ValueError(f"Unsupported learn scheme name: {name}")
 
@@ -151,7 +122,15 @@ def create_eval_scheme(
 
 
 def create_predict_scheme(
-    name, xyz_data, xanes_data, pred_mode, index, pred_eval, scaler, fourier, fourier_param
+    name,
+    xyz_data,
+    xanes_data,
+    pred_mode,
+    index,
+    pred_eval,
+    scaler,
+    fourier,
+    fourier_param,
 ):
     from xanesnet.scheme import NNPredict, AEPredict, AEGANPredict
 
@@ -166,7 +145,14 @@ def create_predict_scheme(
 
     if name in scheme:
         return scheme[name](
-            xyz_data, xanes_data, pred_mode, index, pred_eval, scaler, fourier, fourier_param
+            xyz_data,
+            xanes_data,
+            pred_mode,
+            index,
+            pred_eval,
+            scaler,
+            fourier,
+            fourier_param,
         )
     else:
         raise ValueError(f"Unsupported prediction scheme name: {name}")

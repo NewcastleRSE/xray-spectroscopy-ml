@@ -32,52 +32,19 @@ from xanesnet.creator import create_eval_scheme
 
 
 class AEGANLearn(Learn):
-    def __init__(
-        self,
-        x_data,
-        y_data,
-        model_params,
-        hyper_params,
-        kfold,
-        kfold_params,
-        bootstrap_params,
-        ensemble_params,
-        schedular,
-        scheduler_params,
-        optuna,
-        optuna_params,
-        freeze,
-        freeze_params,
-        scaler,
-    ):
+    def __init__(self, x_data, y_data, **kwargs):
         # Call the constructor of the parent class
-        super().__init__(
-            x_data,
-            y_data,
-            model_params,
-            hyper_params,
-            kfold,
-            kfold_params,
-            bootstrap_params,
-            ensemble_params,
-            schedular,
-            scheduler_params,
-            optuna,
-            optuna_params,
-            freeze,
-            freeze_params,
-            scaler,
-        )
+        super().__init__(x_data, y_data, **kwargs)
 
         # Regularisation of gen loss function
-        self.loss_fn = model_params["params"]["loss_gen"]["loss_fn"]
-        self.loss_args = model_params["params"]["loss_gen"]["loss_args"]
-        self.loss_gen_reg_type = model_params["params"]["loss_gen"]["loss_reg_type"]
-        self.lambda_gen_reg = model_params["params"]["loss_gen"]["loss_reg_param"]
+        self.loss_fn = self.model_params["params"]["loss_gen"]["loss_fn"]
+        self.loss_args = self.model_params["params"]["loss_gen"]["loss_args"]
+        self.loss_gen_reg_type = self.model_params["params"]["loss_gen"]["loss_reg_type"]
+        self.lambda_gen_reg = self.model_params["params"]["loss_gen"]["loss_reg_param"]
 
         # Regularisation of dis loss function
-        self.loss_dis_reg_type = model_params["params"]["loss_dis"]["loss_reg_type"]
-        self.lambda_dis_reg = model_params["params"]["loss_dis"]["loss_reg_param"]
+        self.loss_dis_reg_type = self.model_params["params"]["loss_dis"]["loss_reg_type"]
+        self.lambda_dis_reg = self.model_params["params"]["loss_dis"]["loss_reg_param"]
 
         layout = {
             "Multi": {

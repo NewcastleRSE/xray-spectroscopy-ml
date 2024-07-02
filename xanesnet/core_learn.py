@@ -17,7 +17,7 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 from numpy.random import RandomState
 from sklearn.utils import shuffle
 
-from xanesnet.data_descriptor import encode_train
+from xanesnet.data_descriptor import encode_train, encode_train_gnn
 from xanesnet.utils import save_model_list, save_model
 from xanesnet.creator import (
     create_descriptor,
@@ -29,23 +29,28 @@ def train_model(config, args):
     """
     Train ML model based on the provided configuration and arguments
     """
-    # Encode training dataset with specified descriptor type
+
+    if len(config["descriptors"]) > 1:
+        raise ValueError("Non-GNN model can only have one descriptor.")
+
+    # Encode training dataset with specified descriptor types
     print(
         ">> Encoding training dataset with %s descriptor"
-        % config["descriptor"]["type"],
+        % config["descriptors"][0]["type"],
     )
-
     descriptor = create_descriptor(
-        config["descriptor"]["type"], **config["descriptor"]["params"]
+        config["descriptors"][0]["type"], **config["descriptors"][0]["params"]
     )
-
     xyz, xanes, index, n_x_features, n_y_features = encode_train(
         config["xyz_path"], config["xanes_path"], descriptor
     )
 
     # Shuffle the encoded data for randomness
     xyz, xanes = shuffle(
-        xyz, xanes, random_state=RandomState(seed=config["hyperparams"]["seed"]), n_samples=config["hyperparams"].get("max_samples", None)
+        xyz,
+        xanes,
+        random_state=RandomState(seed=config["hyperparams"]["seed"]),
+        n_samples=config["hyperparams"].get("max_samples", None),
     )
     print(
         ">> Shuffled training dataset and limited to n_samples = %s"
@@ -85,22 +90,26 @@ def train_model(config, args):
 
     # Initialise learn scheme
     print(">> Initialising learn scheme...")
+    kwargs = {
+        "model": config["model"],
+        "hyper_params": config["hyperparams"],
+        "kfold": config["kfold"],
+        "kfold_params": config["kfold_params"],
+        "bootstrap_params": config["bootstrap_params"],
+        "ensemble_params": config["ensemble_params"],
+        "scheduler": config["lr_scheduler"],
+        "scheduler_params": config["scheduler_params"],
+        "optuna": config["optuna"],
+        "optuna_params": config["optuna_params"],
+        "freeze": config["freeze"],
+        "freeze_params": config["freeze_params"],
+        "scaler": config["standardscaler"]
+    }
+
     scheme = create_learn_scheme(
         x_data,
         y_data,
-        config["model"],
-        config["hyperparams"],
-        config["kfold"],
-        config["kfold_params"],
-        config["bootstrap_params"],
-        config["ensemble_params"],
-        config["lr_scheduler"],
-        config["scheduler_params"],
-        config["optuna"],
-        config["optuna_params"],
-        config["freeze"],
-        config["freeze_params"],
-        config["standardscaler"],
+        **kwargs,
     )
 
     # Train the model using selected training strategy
@@ -124,8 +133,8 @@ def train_model(config, args):
         metadata = {
             "mode": args.mode,
             "model_type": config["model"]["type"],
-            "descriptor_type": config["descriptor"]["type"],
-            "descriptor_param": config["descriptor"]["params"],
+            "descriptor_type": config["descriptors"][0]["type"],
+            "descriptor_param": config["descriptors"][0]["params"],
             "hyperparams": config["hyperparams"],
             "lr_scheduler": config["scheduler_params"],
             "standardscaler": config["standardscaler"],
@@ -141,3 +150,75 @@ def train_model(config, args):
             )
         else:
             save_model(save_path, model, descriptor, data_compress, metadata)
+
+
+def train_model_gnn(config, args):
+    node_descriptors = []
+    edge_descriptors = []
+
+    node_dtypes = config["model"]["node_descriptors"]
+    edge_dtypes = config["model"]["edge_descriptors"]
+
+    print(
+        ">> Initialising GNN node and edge feature descriptors (node feat:",
+        node_dtypes,
+        "edge feat:",
+        edge_dtypes,
+        ")...",
+    )
+    # Assign descriptors to the corresponding list
+    for desc in config["descriptors"]:
+        descriptor = create_descriptor(desc["type"], **desc["params"])
+        if desc["type"] in node_dtypes:
+            node_descriptors.append(descriptor)
+        if desc["type"] in edge_dtypes:
+            edge_descriptors.append(descriptor)
+
+    graph_dataset = encode_train_gnn(
+        config["xyz_path"],
+        config["xanes_path"],
+        node_descriptors,
+        edge_descriptors,
+    )
+
+    if args.mode != "train_xyz":
+        raise ValueError(f"Unsupported mode name for GNN: {args.mode}")
+
+    # Initialise learn scheme
+    print(">> Initialising learn scheme...")
+    kwargs = {
+        "model": config["model"],
+        "hyper_params": config["hyperparams"],
+        "kfold": config["kfold"],
+        "kfold_params": config["kfold_params"],
+        "bootstrap_params": config["bootstrap_params"],
+        "ensemble_params": config["ensemble_params"],
+        "scheduler": config["lr_scheduler"],
+        "scheduler_params": config["scheduler_params"],
+        "optuna": config["optuna"],
+        "optuna_params": config["optuna_params"],
+        "freeze": config["freeze"],
+        "freeze_params": config["freeze_params"],
+        "scaler": config["standardscaler"]
+    }
+
+    scheme = create_learn_scheme(
+        graph_dataset,
+        None,
+        **kwargs
+    )
+
+    # Train the model using selected training strategy
+    print(">> Training %s model..." % config["model"]["type"])
+    if config["bootstrap"]:
+        train_scheme = "bootstrap"
+        model_list = scheme.train_bootstrap()
+    elif config["ensemble"]:
+        train_scheme = "ensemble"
+        model_list = scheme.train_ensemble()
+    elif config["kfold"]:
+        train_scheme = "std"
+        model = scheme.train_kfold()
+    else:
+        train_scheme = "std"
+        model = scheme.train_std()

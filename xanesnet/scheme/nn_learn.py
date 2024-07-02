@@ -35,50 +35,17 @@ from xanesnet.utils_model import (
 
 
 class NNLearn(Learn):
-    def __init__(
-        self,
-        x_data,
-        y_data,
-        model_params,
-        hyper_params,
-        kfold,
-        kfold_params,
-        bootstrap_params,
-        ensemble_params,
-        scheduler,
-        scheduler_params,
-        optuna,
-        optuna_params,
-        freeze,
-        freeze_params,
-        scaler,
-    ):
+    def __init__(self, x_data, y_data, **kwargs):
         # Call the constructor of the parent class
-        super().__init__(
-            x_data,
-            y_data,
-            model_params,
-            hyper_params,
-            kfold,
-            kfold_params,
-            bootstrap_params,
-            ensemble_params,
-            scheduler,
-            scheduler_params,
-            optuna,
-            optuna_params,
-            freeze,
-            freeze_params,
-            scaler,
-        )
+        super().__init__(x_data, y_data, **kwargs)
 
         # loss parameter set
-        self.lr = hyper_params["lr"]
-        self.optim_fn = hyper_params["optim_fn"]
-        self.loss_fn = hyper_params["loss"]["loss_fn"]
-        self.loss_args = hyper_params["loss"]["loss_args"]
-        self.loss_reg_type = hyper_params["loss"]["loss_reg_type"]
-        self.lambda_reg = hyper_params["loss"]["loss_reg_param"]
+        self.lr = self.hyper_params["lr"]
+        self.optim_fn = self.hyper_params["optim_fn"]
+        self.loss_fn = self.hyper_params["loss"]["loss_fn"]
+        self.loss_args = self.hyper_params["loss"]["loss_args"]
+        self.loss_reg_type = self.hyper_params["loss"]["loss_reg_type"]
+        self.lambda_reg = self.hyper_params["loss"]["loss_reg_param"]
 
         layout = {
             "Multi": {
