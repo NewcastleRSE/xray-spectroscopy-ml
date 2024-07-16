@@ -59,20 +59,19 @@ class GraphDataset(Dataset):
 
     @property
     def processed_dir(self) -> str:
-        """The directory containing processed graph datasets
-        """
+        """The directory containing processed graph datasets"""
         return os.path.join(self.root, "graph")
 
     @property
     def raw_file_names(self):
-        """ If this file exists in raw_dir, the download is not triggered.
-            (The download func. is not implemented here)
+        """If this file exists in raw_dir, the download is not triggered.
+        (The download func. is not implemented here)
         """
         return [f"{i}.xyz" for i in list(self.index)]
 
     @property
     def processed_file_names(self):
-        """ If these files are found in raw_dir, processing is skipped"""
+        """If these files are found in raw_dir, processing is skipped"""
         file_names = []
         idx = 0
         for file_name in self.index:
@@ -143,14 +142,14 @@ class GraphDataset(Dataset):
         """
         all_edge_feats = []
 
-        for i in range(mg.edge_index.shape[1]):
-            edge_feats = []
+        for i in mg.edge_list:
+            edge_feats = [mg.bond_lengths[i]]
 
             # Append edge features to matrix (twice, per direction)
-            # edge_feats.append()
             all_edge_feats += [edge_feats, edge_feats]
 
         all_edge_feats = np.asarray(all_edge_feats)
+
         return torch.tensor(all_edge_feats, dtype=torch.float)
 
     def _get_labels(self, xanes_data):

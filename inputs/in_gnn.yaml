@@ -1,7 +1,7 @@
-xyz_path:  data/datasets/10000-set/xyz
-xanes_path:  data/datasets/10000-set/xanes
-#xyz_path:  data/datasets/graph-set/xyz
-#xanes_path:  data/datasets/graph-set/xanes
+#xyz_path:  data/datasets/10000-set/xyz
+#xanes_path:  data/datasets/10000-set/xanes
+xyz_path:  data/datasets/graph-set/xyz
+xanes_path:  data/datasets/graph-set/xanes
 
 descriptors:
   - type: pdos
@@ -29,8 +29,8 @@ descriptors:
 
 model:
   type: gnn
-  node_descriptors: [pdos, wacsf]
-  edge_descriptors: [wacsf]
+  node_descriptors: [pdos]
+  edge_descriptors: []
   params:
     hidden_size: 512
     dropout: 0.2

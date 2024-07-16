@@ -109,7 +109,7 @@ class MolGraph:
         "x",
         "y",
         "z",
-        "adj_list",
+        "edge_list",
         "edge_index",
         "atomic_radii",
         "bond_lengths",
@@ -121,7 +121,7 @@ class MolGraph:
         self.x = []
         self.y = []
         self.z = []
-        self.adj_list = {}
+        self.edge_list = []
         self.edge_index = []
         self.atomic_radii = []
         self.bond_lengths = {}
@@ -168,14 +168,11 @@ class MolGraph:
         )
 
         for i, j in zip(*np.nonzero(adj_matrix)):
-            self.adj_list.setdefault(i, set()).add(j)
-            self.adj_list.setdefault(j, set()).add(i)
-            self.bond_lengths[frozenset([i, j])] = round(distance_bond[i, j], 5)
-
-        edge_index_list = [(i, j) for i, j in zip(*np.nonzero(adj_matrix))]
+            self.edge_list.append((i, j))
+            self.bond_lengths[(i, j)] = round(distance_bond[i, j], 5)
 
         self.edge_index = (
-            torch.tensor(edge_index_list, dtype=torch.long).t().contiguous()
+            torch.tensor(self.edge_list, dtype=torch.long).t().contiguous()
         )
 
         self.adj_matrix = adj_matrix
