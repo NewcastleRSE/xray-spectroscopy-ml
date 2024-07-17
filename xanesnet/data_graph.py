@@ -145,11 +145,10 @@ class GraphDataset(Dataset):
         for i in mg.edge_list:
             edge_feats = [mg.bond_lengths[i]]
 
-            # Append edge features to matrix (twice, per direction)
-            all_edge_feats += [edge_feats, edge_feats]
+            # Append edge features to matrix
+            all_edge_feats += [edge_feats]
 
         all_edge_feats = np.asarray(all_edge_feats)
-
         return torch.tensor(all_edge_feats, dtype=torch.float)
 
     def _get_labels(self, xanes_data):

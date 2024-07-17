@@ -14,7 +14,7 @@ descriptors:
       e_min: -10.0
       e_max: 30.0
       sigma: 0.8
-      use_wacsf: False
+      use_wacsf: True
       r_min: 0.5
       r_max: 6.5
       n_g2: 22
@@ -34,13 +34,13 @@ model:
   params:
     hidden_size: 512
     dropout: 0.2
-    num_hidden_layers: 5
+    num_hidden_layers: 1
     activation: prelu
     layer_name: GAT #GAT, GCN, GraphConv
 
 hyperparams:
-  batch_size: 1
-  lr: 0.0001
+  batch_size: 5
+  lr: 0.001
   epochs: 100
   optim_fn: Adam
   kernel_init: xavier_uniform
@@ -49,8 +49,8 @@ hyperparams:
   seed: 2021
   weight_seed: 2023
   loss:
-    loss_fn: mse
-    loss_args: null
+    loss_fn: bce
+    loss_args: sgd_momentum
     loss_reg_type: null # null, L1, L2
     loss_reg_param: 0.001
 

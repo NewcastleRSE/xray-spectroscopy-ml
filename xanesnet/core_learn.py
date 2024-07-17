@@ -178,7 +178,7 @@ def train_model_gnn(config, args):
         config["xyz_path"],
         config["xanes_path"],
         node_descriptors,
-        edge_descriptors,
+        edge_descriptors
     )
 
     if args.mode != "train_xyz":

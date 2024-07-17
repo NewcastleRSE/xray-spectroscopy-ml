@@ -37,14 +37,14 @@ class AEGANLearn(Learn):
         super().__init__(x_data, y_data, **kwargs)
 
         # Regularisation of gen loss function
-        self.loss_fn = self.model_params["params"]["loss_gen"]["loss_fn"]
-        self.loss_args = self.model_params["params"]["loss_gen"]["loss_args"]
-        self.loss_gen_reg_type = self.model_params["params"]["loss_gen"]["loss_reg_type"]
-        self.lambda_gen_reg = self.model_params["params"]["loss_gen"]["loss_reg_param"]
+        self.loss_fn = self.model_params["loss_gen"]["loss_fn"]
+        self.loss_args = self.model_params["loss_gen"]["loss_args"]
+        self.loss_gen_reg_type = self.model_params["loss_gen"]["loss_reg_type"]
+        self.lambda_gen_reg = self.model_params["loss_gen"]["loss_reg_param"]
 
         # Regularisation of dis loss function
-        self.loss_dis_reg_type = self.model_params["params"]["loss_dis"]["loss_reg_type"]
-        self.lambda_dis_reg = self.model_params["params"]["loss_dis"]["loss_reg_param"]
+        self.loss_dis_reg_type = self.model_params["loss_dis"]["loss_reg_type"]
+        self.lambda_dis_reg = self.model_params["loss_dis"]["loss_reg_param"]
 
         layout = {
             "Multi": {
