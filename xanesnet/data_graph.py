@@ -130,7 +130,7 @@ class GraphDataset(Dataset):
             all_node_feats[0].extend(descriptor_feature)
             # Extend the rest of rows
             for row in all_node_feats[1:]:
-                row.extend([0] * (i.get_number_of_features()))
+                row.extend([0] * (i.get_nfeatures()))
 
         all_node_feats = np.asarray(all_node_feats)
         return torch.tensor(all_node_feats, dtype=torch.float)

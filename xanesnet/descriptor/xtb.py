@@ -113,7 +113,9 @@ class XTB(WACSF):
         positions = system.get_positions()
         positions = positions * 1.8897259886
 
-        if (self.use_spin and not self.use_charge) or (not self.use_spin and self.use_charge):
+        if (self.use_spin and not self.use_charge) or (
+            not self.use_spin and self.use_charge
+        ):
             err_str = (
                 "For the p-DOS descriptor, it is not a good idea to only"
                 "consider overall charge or spin state. Both should be"
@@ -125,21 +127,21 @@ class XTB(WACSF):
             if self.use_spin and self.use_charge:
                 charge = system.info["q"]
                 spin = system.info["s"]
-                if (((nelectron - charge) % 2) == 1) and (spin  % 2) == 0:
-                   err_str = (
-                       "The number of electrons is inconsistent with the spin"
-                       "state you have defined."
-                   )
-                   raise ValueError(err_str)
-                elif (((nelectron - charge) % 2) == 0) and (spin  % 2) == 1:
-                   err_str = (
-                       "The number of electrons is inconsistent with the spin"
-                       "state you have defined."
-                   )
-                   raise ValueError(err_str)
+                if (((nelectron - charge) % 2) == 1) and (spin % 2) == 0:
+                    err_str = (
+                        "The number of electrons is inconsistent with the spin"
+                        "state you have defined."
+                    )
+                    raise ValueError(err_str)
+                elif (((nelectron - charge) % 2) == 0) and (spin % 2) == 1:
+                    err_str = (
+                        "The number of electrons is inconsistent with the spin"
+                        "state you have defined."
+                    )
+                    raise ValueError(err_str)
             else:
-                charge  = 0
-                spin    = 0
+                charge = 0
+                spin = 0
 
         calc = Calculator(self.method, numbers, positions, charge, spin)
         calc.set("verbosity", self.verbosity)
@@ -147,20 +149,45 @@ class XTB(WACSF):
 
         try:
             res = calc.singlepoint()
-            res.get("energy") 
+            res.get("energy")
             coeff = res.get("orbital-coefficients")
             coeff = np.square(coeff)
-            if (numbers[0] >= 21) and (numbers[0] <= 29): 
-                p_dos = np.array([np.sum(coeff[6:8, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+            if (numbers[0] >= 21) and (numbers[0] <= 29):
+                p_dos = np.array(
+                    [
+                        np.sum(coeff[6:8, i]) / np.sum(coeff[:, i])
+                        for i in range(len(coeff))
+                    ]
+                )
             elif (numbers[0] >= 39) and (numbers[0] <= 47):
-                p_dos = np.array([np.sum(coeff[6:8, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+                p_dos = np.array(
+                    [
+                        np.sum(coeff[6:8, i]) / np.sum(coeff[:, i])
+                        for i in range(len(coeff))
+                    ]
+                )
             elif (numbers[0] >= 57) and (numbers[0] <= 79):
-                p_dos = np.array([np.sum(coeff[6:8, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+                p_dos = np.array(
+                    [
+                        np.sum(coeff[6:8, i]) / np.sum(coeff[:, i])
+                        for i in range(len(coeff))
+                    ]
+                )
             elif (numbers[0] >= 89) and (numbers[0] <= 112):
-                p_dos = np.array([np.sum(coeff[6:8, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+                p_dos = np.array(
+                    [
+                        np.sum(coeff[6:8, i]) / np.sum(coeff[:, i])
+                        for i in range(len(coeff))
+                    ]
+                )
             else:
-                p_dos = np.array([np.sum(coeff[1:3, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
-            
+                p_dos = np.array(
+                    [
+                        np.sum(coeff[1:3, i]) / np.sum(coeff[:, i])
+                        for i in range(len(coeff))
+                    ]
+                )
+
             orbe = np.multiply(res.get("orbital-energies"), 27.211324570273)
             orbo = res.get("orbital-occupations")
             if self.use_occupied:
@@ -168,26 +195,48 @@ class XTB(WACSF):
             else:
                 unoccupied_pdos = p_dos * np.abs((orbo - 2))
             unoccupied_orbital_energies = orbe
-          
+
             # Generate a grid and broaden pDOS
             x = np.linspace(self.e_min, self.e_max, num=self.num_points, endpoint=True)
             sigma = self.sigma
-            pdos_gauss = spectrum(unoccupied_orbital_energies, unoccupied_pdos, sigma, x)
-            pdos_gauss = np.multiply(pdos_gauss,10)
-          
+            pdos_gauss = spectrum(
+                unoccupied_orbital_energies, unoccupied_pdos, sigma, x
+            )
+            pdos_gauss = np.multiply(pdos_gauss, 10)
+
             if self.use_quad:
                 if (numbers[0] >= 21) and (numbers[0] <= 29):
-                    d_dos = np.array([np.sum(coeff[0:4, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+                    d_dos = np.array(
+                        [
+                            np.sum(coeff[0:4, i]) / np.sum(coeff[:, i])
+                            for i in range(len(coeff))
+                        ]
+                    )
                 elif (numbers[0] >= 39) and (numbers[0] <= 47):
-                    d_dos = np.array([np.sum(coeff[0:4, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+                    d_dos = np.array(
+                        [
+                            np.sum(coeff[0:4, i]) / np.sum(coeff[:, i])
+                            for i in range(len(coeff))
+                        ]
+                    )
                 elif (numbers[0] >= 57) and (numbers[0] <= 79):
-                    p_dos = np.array([np.sum(coeff[0:4, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+                    p_dos = np.array(
+                        [
+                            np.sum(coeff[0:4, i]) / np.sum(coeff[:, i])
+                            for i in range(len(coeff))
+                        ]
+                    )
                 elif (numbers[0] >= 89) and (numbers[0] <= 112):
-                    d_dos = np.array([np.sum(coeff[0:4, i]) / np.sum(coeff[:, i]) for i in range(len(coeff))])
+                    d_dos = np.array(
+                        [
+                            np.sum(coeff[0:4, i]) / np.sum(coeff[:, i])
+                            for i in range(len(coeff))
+                        ]
+                    )
                 else:
-                    err_str = ("d-orbitals are not considered for these atoms.")
+                    err_str = "d-orbitals are not considered for these atoms."
                     raise ValueError(err_str)
-          
+
                 orbe = np.multiply(res.get("orbital-energies"), 27.211324570273)
                 orbo = res.get("orbital-occupations")
                 if self.use_occupied:
@@ -195,18 +244,22 @@ class XTB(WACSF):
                 else:
                     unoccupied_ddos = d_dos * np.abs((orbo - 2))
                 unoccupied_orbital_energies = orbe
-          
+
                 # Generate a grid and broaden dDOS
-                x = np.linspace(self.e_min, self.e_max, num=self.num_points, endpoint=True)
+                x = np.linspace(
+                    self.e_min, self.e_max, num=self.num_points, endpoint=True
+                )
                 sigma = self.sigma
-                ddos_gauss = spectrum(unoccupied_orbital_energies, unoccupied_ddos, sigma, x)
-                ddos_gauss = np.multiply(ddos_gauss,10)
-          
-                pdos_gauss = np.append(pdos_gauss,ddos_gauss)
+                ddos_gauss = spectrum(
+                    unoccupied_orbital_energies, unoccupied_ddos, sigma, x
+                )
+                ddos_gauss = np.multiply(ddos_gauss, 10)
+
+                pdos_gauss = np.append(pdos_gauss, ddos_gauss)
 
         except Exception as e:
             if self.use_quad:
-                pdos_gauss = np.full(self.num_points*2, np.nan)
+                pdos_gauss = np.full(self.num_points * 2, np.nan)
             else:
                 pdos_gauss = np.full(self.num_points, np.nan)
 
@@ -215,28 +268,23 @@ class XTB(WACSF):
 
         return pdos_gauss
 
-    def get_number_of_features(self):
+    def get_nfeatures(self):
         if self.use_wacsf:
             if self.use_quad:
                 return int(
-                    self.num_points
-                    + self.num_points
-                    + 1
-                    + self.n_g2
-                    + self.n_g4
+                    self.num_points + self.num_points + 1 + self.n_g2 + self.n_g4
                 )
             else:
-                return int(
-                    self.num_points
-                    + 1
-                    + self.n_g2
-                    + self.n_g4
-                )
+                return int(self.num_points + 1 + self.n_g2 + self.n_g4)
         else:
             if self.use_quad:
-               return int(self.num_points + self.num_points)
+                return int(self.num_points + self.num_points)
             else:
-               return int(self.num_points)
+                return int(self.num_points)
+
+    def get_type(self) -> str:
+        return "xtb"
+
 
 def spectrum(E, osc, sigma, x):
     # This Gaussian broadens the partial density of states over a defined

@@ -325,11 +325,14 @@ class PDOS(WACSF):
 
         return pdos_gauss
 
-    def get_number_of_features(self) -> int:
+    def get_nfeatures(self) -> int:
         if self.use_wacsf:
             return int(self.num_points + 1 + self.n_g2 + self.n_g4)
         else:
             return int(self.num_points)
+
+    def get_type(self) -> str:
+        return "pdos"
 
 
 def atoms_to_pyscf(atoms):

@@ -510,7 +510,7 @@ class MBTR(Descriptor, BaseDescriptor):
 
         # Determine if the outputs have a fixed size
         if self.flatten:
-            static_size = [self.get_number_of_features()]
+            static_size = [self.get_nfeatures()]
         else:
             static_size = None
 
@@ -589,7 +589,7 @@ class MBTR(Descriptor, BaseDescriptor):
 
         return mbtr
 
-    def get_number_of_features(self):
+    def get_nfeatures(self):
         """Used to inquire the final number of features that this descriptor
         will have.
         Returns:
@@ -751,7 +751,7 @@ class MBTR(Descriptor, BaseDescriptor):
 
         k1_map = cmbtr.get_k1(
             system.get_atomic_numbers(),
-            geom_func_name.encode_train(),
+            geom_func_name.encode_learn(),
             b"unity",
             {},
             start,
@@ -858,7 +858,7 @@ class MBTR(Descriptor, BaseDescriptor):
             ext_system.get_atomic_numbers(),
             dmat_dense,
             adj_list,
-            geom_func_name.encode_train(),
+            geom_func_name.encode_learn(),
             weighting_function.encode(),
             parameters,
             start,
@@ -999,7 +999,7 @@ class MBTR(Descriptor, BaseDescriptor):
             ext_system.get_atomic_numbers(),
             dmat_dense,
             adj_list,
-            geom_func_name.encode_train(),
+            geom_func_name.encode_learn(),
             weighting_function.encode(),
             parameters,
             start,
@@ -1066,3 +1066,6 @@ class MBTR(Descriptor, BaseDescriptor):
 
     def transform(self, atoms: Atoms):
         return self.create(atoms)
+
+    def get_type(self) -> str:
+        return "mbtr"

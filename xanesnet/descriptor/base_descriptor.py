@@ -45,10 +45,19 @@ class BaseDescriptor(ABC):
         pass
 
     @abstractmethod
-    def get_number_of_features(self) -> int:
+    def get_nfeatures(self) -> int:
         """
-        Returns:
+        Return:
             int: Number of features for this descriptor.
+        """
+
+        pass
+
+    @abstractmethod
+    def get_type(self) -> str:
+        """
+        Return:
+            str: descriptor type
         """
 
         pass

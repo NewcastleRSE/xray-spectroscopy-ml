@@ -28,49 +28,74 @@ from xanesnet.utils import (
 )
 
 
-def encode_train(xyz_path, xanes_path, descriptor):
-    xyz_path = Path(xyz_path)
-    xanes_path = Path(xanes_path)
-
-    for path in (xyz_path, xanes_path):
-        if not path.exists():
-            err_str = f"path to data ({path}) doesn't exist"
-            raise FileNotFoundError(err_str)
-
-    if xyz_path.is_dir() and xanes_path.is_dir():
-        # Find the command elements in xyz and xanes
-        index = list(set(list_filestems(xyz_path)) & set(list_filestems(xanes_path)))
-        index.sort()
-
-        n_samples = len(index)
-
-        if descriptor.__class__.__name__ == "DIRECT":
-            n_x_features = linecount(xyz_path / f"{index[0]}.dsc")
+def encode_xyz(xyz_path: Path, index: list, descriptor_list: list) -> np.ndarray:
+    n_samples = len(index)
+    # Feature length
+    n_x_features = 0
+    for descriptor in descriptor_list:
+        if descriptor.get_type() == "direct":
+            n_x_features += linecount(xyz_path / f"{index[0]}.dsc")
         else:
-            n_x_features = descriptor.get_number_of_features()
+            n_x_features += descriptor.get_nfeatures()
 
-        n_y_features = linecount(xanes_path / f"{index[0]}.txt") - 2
-
-        xyz_data = np.full((n_samples, n_x_features), np.nan)
-        print(">> preallocated {}x{} array for XYZ data...".format(*xyz_data.shape))
-        xanes_data = np.full((n_samples, n_y_features), np.nan)
-        print(">> preallocated {}x{} array for XANES data...".format(*xanes_data.shape))
-
-        print(">> loading data into array(s)...")
-        for i, id_ in enumerate(tqdm.tqdm(index)):
-            if descriptor.__class__.__name__ == "DIRECT":
+    # Feature array pre-allocation
+    xyz_data = np.full((n_samples, n_x_features), np.nan)
+    print(">> preallocated {}x{} array for XYZ data...".format(*xyz_data.shape))
+    print(">> loading encoded data into array(s)...")
+    for i, id_ in enumerate(tqdm.tqdm(index)):
+        s = 0
+        for descriptor in descriptor_list:
+            l = descriptor.get_nfeatures()
+            if descriptor.get_type() == "direct":
                 with open(xyz_path / f"{id_}.dsc", "r") as f:
-                    xyz_data[i, :] = load_descriptor_direct(f)
+                    xyz_data[i, s : s + l] = load_descriptor_direct(f)
             else:
                 with open(xyz_path / f"{id_}.xyz", "r") as f:
                     atoms = load_xyz(f)
-                xyz_data[i, :] = descriptor.transform(atoms)
-                if np.any(np.isnan(xyz_data[i, :])):
-                    print(f"Warning issue arising with transformation of {id_}.")
-                    continue
-            with open(xanes_path / f"{id_}.txt", "r") as f:
-                xanes = load_xanes(f)
-            e, xanes_data[i, :] = xanes.spectrum
+                xyz_data[i, s : s + l] = descriptor.transform(atoms)
+            s += l
+        if np.any(np.isnan(xyz_data[i, :])):
+            print(f"Warning issue arising with transformation of {id_}.")
+            continue
+
+    return xyz_data
+
+
+def encode_xanes(xanes_path: Path, index: list) -> (np.ndarray, np.ndarray):
+    n_samples = len(index)
+    n_y_features = linecount(xanes_path / f"{index[0]}.txt") - 2
+    xanes_data = np.full((n_samples, n_y_features), np.nan)
+
+    print(">> preallocated {}x{} array for XANES data...".format(*xanes_data.shape))
+    print(">> loading data into array(s)...")
+    for i, id_ in enumerate(tqdm.tqdm(index)):
+        with open(xanes_path / f"{id_}.txt", "r") as f:
+            xanes = load_xanes(f)
+        e, xanes_data[i, :] = xanes.spectrum
+
+    return xanes_data, e
+
+
+def encode_learn(
+    xyz_path: str, xanes_path: str, descriptor_list: list
+) -> (np.ndarray, np.ndarray, list):
+    """
+    Process and encode data from given XYZ and xanes files using
+    one or more descriptors.
+    """
+    xyz_path = Path(xyz_path)
+    xanes_path = Path(xanes_path)
+
+    if not xyz_path.exists() or not xanes_path.exists():
+        raise FileNotFoundError("Path to data doesn't exist")
+
+    if xyz_path.is_dir() and xanes_path.is_dir():
+        # Dataset index by finding the common elements in XYZ and xanes files
+        index = list(set(list_filestems(xyz_path)) & set(list_filestems(xanes_path)))
+        index.sort()
+
+        xyz_data = encode_xyz(xyz_path, index, descriptor_list)
+        xanes_data, e = encode_xanes(xanes_path, index)
 
     elif xyz_path.is_file() and xanes_path.is_file():
         print(">> loading data from .npz archive(s)...\n")
@@ -82,6 +107,8 @@ def encode_train(xyz_path, xanes_path, descriptor):
             xanes_data = np.load(f)["y"]
             e = np.load(f)["e"]
         print(">> ...loaded {}x{} array of XANES data".format(*xanes_data.shape))
+        with open(xyz_path,"rb") as f:
+            index = np.load(f)["ids"]
 
     else:
         err_str = (
@@ -90,10 +117,10 @@ def encode_train(xyz_path, xanes_path, descriptor):
         )
         raise TypeError(err_str)
 
-    return xyz_data, xanes_data, index, n_x_features, n_y_features
+    return xyz_data, xanes_data, index
 
 
-def encode_train_gnn(xyz_path, xanes_path, node_descriptors, edge_descriptors):
+def encode_learn_gnn(xyz_path, xanes_path, node_descriptors, edge_descriptors):
     xyz_path = Path(xyz_path)
     xanes_path = Path(xanes_path)
 
@@ -103,21 +130,9 @@ def encode_train_gnn(xyz_path, xanes_path, node_descriptors, edge_descriptors):
             raise FileNotFoundError(err_str)
 
     if xyz_path.is_dir() and xanes_path.is_dir():
-        # Find the command elements in xyz and xanes
         index = list(set(list_filestems(xyz_path)) & set(list_filestems(xanes_path)))
         index.sort()
-
-        n_samples = len(index)
-        n_y_features = linecount(xanes_path / f"{index[0]}.txt") - 2
-
-        xanes_data = np.full((n_samples, n_y_features), np.nan)
-        print(">> preallocated {}x{} array for XANES data...".format(*xanes_data.shape))
-
-        print(">> loading data into array(s)...")
-        for i, id_ in enumerate(tqdm.tqdm(index)):
-            with open(xanes_path / f"{id_}.txt", "r") as f:
-                xanes = load_xanes(f)
-            e, xanes_data[i, :] = xanes.spectrum
+        xanes_data, e = encode_xanes(xanes_path, index)
 
         print(f"Converting {len(index)} data files from XYZ format to graph format...")
         graph_dataset = GraphDataset(
@@ -131,10 +146,12 @@ def encode_train_gnn(xyz_path, xanes_path, node_descriptors, edge_descriptors):
         err_str = "paths to data are expected to be directories"
         raise TypeError(err_str)
 
-    return graph_dataset
+    return graph_dataset, index
 
 
-def encode_predict(xyz_path, xanes_path, descriptor, mode, pred_eval):
+def encode_predict(
+    xyz_path: str, xanes_path: str, descriptor_list: list, mode: str, pred_eval: bool
+) -> (np.ndarray, np.ndarray, np.ndarray, list):
     if mode == "predict_all" or pred_eval:
         xyz_path = Path(xyz_path)
         xanes_path = Path(xanes_path)
@@ -149,52 +166,24 @@ def encode_predict(xyz_path, xanes_path, descriptor, mode, pred_eval):
         raise ValueError("Unsupported prediction mode")
 
     index.sort()
-    n_samples = len(index)
 
     print(">> loading data into array(s)...")
     if mode == "predict_all" or pred_eval:
         # Load both xyz and xanes data
-        n_x_features = descriptor.get_number_of_features()
-        n_y_features = linecount(xanes_path / f"{index[0]}.txt") - 2
-        xanes_data = np.full((n_samples, n_y_features), np.nan)
-        xyz_data = np.full((n_samples, n_x_features), np.nan)
-        print(">> preallocated {}x{} array for XYZ data...".format(*xyz_data.shape))
-        print(">> preallocated {}y{} array for XANES data...".format(*xanes_data.shape))
-
-        print(">> loading data into array(s)...")
-        for i, id_ in enumerate(tqdm.tqdm(index)):
-            with open(xyz_path / f"{id_}.xyz", "r") as f:
-                atoms = load_xyz(f)
-            xyz_data[i, :] = descriptor.transform(atoms)
-            with open(xanes_path / f"{id_}.txt", "r") as f:
-                xanes = load_xanes(f)
-            e, xanes_data[i, :] = xanes.spectrum
+        xyz_data = encode_xyz(xyz_path, index, descriptor_list)
+        xanes_data, e = encode_xanes(xanes_path, index)
 
     elif mode == "predict_xyz" and not pred_eval:
         # Load xanes data
-        n_y_features = linecount(xanes_path / f"{index[0]}.txt") - 2
-        xanes_data = np.full((n_samples, n_y_features), np.nan)
-        print(">> preallocated {}y{} array for XANES data...".format(*xanes_data.shape))
-
-        for i, id_ in enumerate(tqdm.tqdm(index)):
-            with open(xanes_path / f"{id_}.txt", "r") as f:
-                xanes = load_xanes(f)
-            e, xanes_data[i, :] = xanes.spectrum
+        xanes_data, e = encode_xanes(xanes_path, index)
         xyz_data = None
 
     elif mode == "predict_xanes" and not pred_eval:
         # Load xyz data
-        n_x_features = descriptor.get_number_of_features()
-        xyz_data = np.full((n_samples, n_x_features), np.nan)
-        print(">> preallocated {}x{} array for XYZ data...".format(*xyz_data.shape))
-
-        for i, id_ in enumerate(tqdm.tqdm(index)):
-            with open(xyz_path / f"{id_}.xyz", "r") as f:
-                atoms = load_xyz(f)
-            xyz_data[i, :] = descriptor.transform(atoms)
+        xyz_data = encode_xyz(xyz_path, index, descriptor_list)
         xanes_data = None
         e = None
     else:
         raise ValueError("Unsupported prediction mode")
 
-    return xyz_data, xanes_data, index, e
+    return xyz_data, xanes_data, e, index

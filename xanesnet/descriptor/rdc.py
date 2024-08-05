@@ -120,5 +120,8 @@ class RDC(VectorDescriptor):
 
         return rdc
 
-    def get_number_of_features(self) -> int:
+    def get_nfeatures(self) -> int:
         return len(self.r_aux) + self.use_charge + self.use_spin
+
+    def get_type(self) -> str:
+        return "rdc"

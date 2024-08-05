@@ -194,7 +194,6 @@ class GNNLearn(Learn):
 
         model = self.setup_model(x_data, y_data)
         model = self.setup_weight(model, self.weight_seed)
-
         model, _ = self.train(model, x_data, y_data)
 
         summary(model)

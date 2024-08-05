@@ -422,7 +422,7 @@ class SOAP(Descriptor, BaseDescriptor):
             inp = list(zip(system, positions))
 
         # Determine if the outputs have a fixed size
-        n_features = self.get_number_of_features()
+        n_features = self.get_nfeatures()
         static_size = None
         if self.average == "outer" or self.average == "inner":
             static_size = [n_features]
@@ -488,7 +488,7 @@ class SOAP(Descriptor, BaseDescriptor):
         n_species = self._atomic_numbers.shape[0]
         pos = system.get_positions()
         Z = system.get_atomic_numbers()
-        n_features = self.get_number_of_features()
+        n_features = self.get_nfeatures()
         n_atoms = Z.shape[0]
         soap_mat = self.init_descriptor_array(n_centers, n_features)
 
@@ -499,7 +499,7 @@ class SOAP(Descriptor, BaseDescriptor):
             betas = self._betas.flatten()
 
             # Determine shape
-            n_features = self.get_number_of_features()
+            n_features = self.get_nfeatures()
             soap_mat = self.init_descriptor_array(n_centers, n_features)
 
             # Calculate with extension
@@ -746,7 +746,7 @@ class SOAP(Descriptor, BaseDescriptor):
         # For the descriptor, the output size for each job depends on the exact arguments.
         # Here we precalculate the size for each job to preallocate memory and
         # make the process faster.
-        n_features = self.get_number_of_features()
+        n_features = self.get_nfeatures()
 
         def get_shapes(job):
             centers = job[1]
@@ -840,7 +840,7 @@ class SOAP(Descriptor, BaseDescriptor):
         n_indices = len(indices)
         n_atoms = len(system)
 
-        n_features = self.get_number_of_features()
+        n_features = self.get_nfeatures()
         if return_descriptor:
             c = self.init_descriptor_array(n_centers, n_features)
         else:
@@ -985,7 +985,7 @@ class SOAP(Descriptor, BaseDescriptor):
             self.index_to_atomic_number[i_atom] = atomic_number
         self.n_elements = len(self._atomic_numbers)
 
-    def get_number_of_features(self):
+    def get_nfeatures(self):
         """Used to inquire the final number of features that this descriptor
         will have.
         Returns:
@@ -1264,3 +1264,6 @@ class SOAP(Descriptor, BaseDescriptor):
 
     def transform(self, atoms: Atoms):
         return self.create_single(atoms, positions=[0])
+
+    def get_type(self) -> str:
+        return "soap"

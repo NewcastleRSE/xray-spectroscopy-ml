@@ -176,8 +176,11 @@ class WACSF(VectorDescriptor):
 
         return wacsf
 
-    def get_number_of_features(self) -> int:
+    def get_nfeatures(self) -> int:
         return int(1 + self.n_g2 + self.n_g4 + self.use_charge + self.use_spin)
+
+    def get_type(self) -> str:
+        return "wacsf"
 
 
 class SymmetryFunctionTransformer(ABC):

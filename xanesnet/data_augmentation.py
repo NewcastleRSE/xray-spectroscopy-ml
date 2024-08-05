@@ -19,8 +19,10 @@ import numpy as np
 
 
 # DATA AUGMENTATION
-def data_augment(data_params, xyz_data, xanes_data, index, n_x_features, n_y_features):
-    n_samples = len(index)
+def data_augment(data_params, xyz_data, xanes_data):
+    n_samples = xyz_data.shape[0]
+    n_x_features = xyz_data.shape[1]
+    n_y_features = xanes_data[0].size
     n_aug_samples = np.multiply(n_samples, data_params["augment_mult"]) - n_samples
 
     if data_params["type"].lower() == "random_noise":

@@ -13,6 +13,8 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with 
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import glob
+import os
 
 ###############################################################################
 ############################### LIBRARY IMPORTS ###############################
@@ -100,14 +102,17 @@ def print_nested_dict(dict_: dict, nested_level: int = 0):
     return 0
 
 
-def save_model(path, model, descriptor, data_compress, metadata):
+def save_model(path, model, descriptor_list, data_compress, metadata):
     Path(path).mkdir(parents=True, exist_ok=True)
 
     model_dir = unique_path(Path(path), "model_" + metadata["model_type"])
     model_dir.mkdir()
 
-    with open(model_dir / "descriptor.pickle", "wb") as f:
-        pickle.dump(descriptor, f)
+    for idx, descriptor in enumerate(descriptor_list):
+        name = "descriptor" + str(idx) + "_" + descriptor.get_type() + ".pickle"
+        with open(model_dir / name, "wb") as f:
+            pickle.dump(descriptor, f)
+
     with open(model_dir / "dataset.npz", "wb") as f:
         np.savez_compressed(
             f,
@@ -119,12 +124,12 @@ def save_model(path, model, descriptor, data_compress, metadata):
     torch.save(model, model_dir / f"model.pt")
     print(f"saved model to disk: {model_dir}")
 
-    metadata["mdl_dir"] = str(model_dir)
+    metadata["model_dir"] = str(model_dir)
     with open(model_dir / "metadata.yaml", "w") as f:
         yaml.dump_all([metadata], f)
 
 
-def save_model_list(path, models, descriptor, data_compress, metadata, config):
+def save_model_list(path, models, descriptor_list, data_compress, metadata, config):
     model_dir_list = []
 
     Path(path).mkdir(parents=True, exist_ok=True)
@@ -137,8 +142,11 @@ def save_model_list(path, models, descriptor, data_compress, metadata, config):
 
     save_path.mkdir()
 
-    with open(save_path / "descriptor.pickle", "wb") as f:
-        pickle.dump(descriptor, f)
+    for idx, descriptor in enumerate(descriptor_list):
+        name = "descriptor" + str(idx) + "_" + descriptor.get_type() + ".pickle"
+        with open(save_path / name, "wb") as f:
+            pickle.dump(descriptor, f)
+
     with open(save_path / "dataset.npz", "wb") as f:
         np.savez_compressed(
             f,
@@ -235,6 +243,33 @@ def save_prediction_mul(
                 save_xanes_mean(f, XANES(e, mean_y_predict_), std_y_predict_)
 
     print(f"Saved prediction result to disk {save_path}")
+
+
+def load_model_list(model_dir):
+    model_list = []
+    n_boot = len(next(os.walk(model_dir))[1])
+
+    for i in range(1, n_boot + 1):
+        n_dir = f"{model_dir}/model_{i:03d}/model.pt"
+        model = torch.load(n_dir, map_location=torch.device("cpu"))
+        model_list.append(model)
+
+    return model_list
+
+
+def load_descriptors(path: str):
+    descriptor_list = []
+
+    file_pattern = os.path.join(str(path), "descriptor*.pickle")
+    files = glob.glob(file_pattern)
+
+    for filename in files:
+        with open(filename, "rb") as f:
+            descriptor = pickle.load(f)
+            descriptor_list.append(descriptor)
+
+    # Return the list of loaded descriptors
+    return descriptor_list
 
 
 def load_xyz(xyz_f: TextIO) -> Atoms:

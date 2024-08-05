@@ -36,5 +36,8 @@ class DIRECT(BaseDescriptor):
     def transform(self, system: Atoms) -> int:
         return 0
 
-    def get_number_of_features(self) -> int:
+    def get_nfeatures(self) -> int:
         return 0
+
+    def get_type(self) -> str:
+        return "direct"

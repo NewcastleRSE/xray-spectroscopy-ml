@@ -17,7 +17,7 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 from numpy.random import RandomState
 from sklearn.utils import shuffle
 
-from xanesnet.data_descriptor import encode_train, encode_train_gnn
+from xanesnet.data_descriptor import encode_learn, encode_learn_gnn
 from xanesnet.utils import save_model_list, save_model
 from xanesnet.creator import (
     create_descriptor,
@@ -30,19 +30,15 @@ def train_model(config, args):
     Train ML model based on the provided configuration and arguments
     """
 
-    if len(config["descriptors"]) > 1:
-        raise ValueError("Non-GNN model can only have one descriptor.")
-
     # Encode training dataset with specified descriptor types
-    print(
-        ">> Encoding training dataset with %s descriptor"
-        % config["descriptors"][0]["type"],
-    )
-    descriptor = create_descriptor(
-        config["descriptors"][0]["type"], **config["descriptors"][0]["params"]
-    )
-    xyz, xanes, index, n_x_features, n_y_features = encode_train(
-        config["xyz_path"], config["xanes_path"], descriptor
+    descriptor_list = []
+    for dp in config["descriptors"]:
+        print(f">> Initialising {dp['type']} feature descriptor...")
+        descriptor = create_descriptor(dp["type"], **dp["params"])
+        descriptor_list.append(descriptor)
+
+    xyz, xanes, index = encode_learn(
+        config["xyz_path"], config["xanes_path"], descriptor_list
     )
 
     # Shuffle the encoded data for randomness
@@ -69,14 +65,7 @@ def train_model(config, args):
         from .data_augmentation import data_augment
 
         print(">> Applying data augmentation...")
-        xyz, xanes = data_augment(
-            config["augment_params"],
-            xyz,
-            xanes,
-            index,
-            n_x_features,
-            n_y_features,
-        )
+        xyz, xanes = data_augment(config["augment_params"], xyz, xanes)
 
     # assign descriptor and spectra datasets to X and Y based on train mode
     if args.mode == "train_xyz" or args.mode == "train_aegan":
@@ -103,7 +92,7 @@ def train_model(config, args):
         "optuna_params": config["optuna_params"],
         "freeze": config["freeze"],
         "freeze_params": config["freeze_params"],
-        "scaler": config["standardscaler"]
+        "scaler": config["standardscaler"],
     }
 
     scheme = create_learn_scheme(
@@ -127,14 +116,13 @@ def train_model(config, args):
         train_scheme = "std"
         model = scheme.train_std()
 
-    # Save model to file if specified
+    # Dump results
     save_path = "models/"
     if args.save == "yes":
         metadata = {
             "mode": args.mode,
             "model_type": config["model"]["type"],
-            "descriptor_type": config["descriptors"][0]["type"],
-            "descriptor_param": config["descriptors"][0]["params"],
+            "descriptors": config["descriptors"],
             "hyperparams": config["hyperparams"],
             "lr_scheduler": config["scheduler_params"],
             "standardscaler": config["standardscaler"],
@@ -146,13 +134,16 @@ def train_model(config, args):
         data_compress = {"ids": index, "x": xyz, "y": xanes}
         if config["bootstrap"] or config["ensemble"]:
             save_model_list(
-                save_path, model_list, descriptor, data_compress, metadata, config
+                save_path, model_list, descriptor_list, data_compress, metadata, config
             )
         else:
-            save_model(save_path, model, descriptor, data_compress, metadata)
+            save_model(save_path, model, descriptor_list, data_compress, metadata)
 
 
 def train_model_gnn(config, args):
+    if args.mode != "train_xyz":
+        raise ValueError(f"Unsupported mode name for GNN: {args.mode}")
+
     node_descriptors = []
     edge_descriptors = []
 
@@ -167,22 +158,16 @@ def train_model_gnn(config, args):
         ")...",
     )
     # Assign descriptors to the corresponding list
-    for desc in config["descriptors"]:
-        descriptor = create_descriptor(desc["type"], **desc["params"])
-        if desc["type"] in node_dtypes:
+    for dp in config["descriptors"]:
+        descriptor = create_descriptor(dp["type"], **dp["params"])
+        if dp["type"] in node_dtypes:
             node_descriptors.append(descriptor)
-        if desc["type"] in edge_dtypes:
+        if dp["type"] in edge_dtypes:
             edge_descriptors.append(descriptor)
 
-    graph_dataset = encode_train_gnn(
-        config["xyz_path"],
-        config["xanes_path"],
-        node_descriptors,
-        edge_descriptors
+    graph_dataset, index = encode_learn_gnn(
+        config["xyz_path"], config["xanes_path"], node_descriptors, edge_descriptors
     )
-
-    if args.mode != "train_xyz":
-        raise ValueError(f"Unsupported mode name for GNN: {args.mode}")
 
     # Initialise learn scheme
     print(">> Initialising learn scheme...")
@@ -199,14 +184,10 @@ def train_model_gnn(config, args):
         "optuna_params": config["optuna_params"],
         "freeze": config["freeze"],
         "freeze_params": config["freeze_params"],
-        "scaler": config["standardscaler"]
+        "scaler": config["standardscaler"],
     }
 
-    scheme = create_learn_scheme(
-        graph_dataset,
-        None,
-        **kwargs
-    )
+    scheme = create_learn_scheme(graph_dataset, None, **kwargs)
 
     # Train the model using selected training strategy
     print(">> Training %s model..." % config["model"]["type"])
@@ -222,3 +203,23 @@ def train_model_gnn(config, args):
     else:
         train_scheme = "std"
         model = scheme.train_std()
+
+    # Save model to file if specified
+    save_path = "models/"
+    if args.save == "yes":
+        metadata = {
+            "mode": args.mode,
+            "model_type": config["model"]["type"],
+            "descriptors": config["descriptors"],
+            "hyperparams": config["hyperparams"],
+            "lr_scheduler": config["scheduler_params"],
+            "standardscaler": config["standardscaler"],
+            "fourier_transform": config["fourier_transform"],
+            "fourier_param": config["fourier_params"],
+            "scheme": train_scheme,
+        }
+
+        if config["bootstrap"] or config["ensemble"]:
+            save_model_list(save_path, model_list, None, None, metadata, config)
+        else:
+            save_model(save_path, model, None, None, metadata)

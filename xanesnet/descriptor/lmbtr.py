@@ -454,6 +454,9 @@ class LMBTR(MBTR):
 
         return int(n_features)
 
+    def get_type(self) -> str:
+        return "lmbtr"
+
     def _make_new_klist_local(self, kx_list):
         new_kx_list = []
 
@@ -552,7 +555,7 @@ class LMBTR(MBTR):
             ext_system.get_atomic_numbers(),
             dmat_dense,
             adj_list,
-            geom_func_name.encode_train(),
+            geom_func_name.encode_learn(),
             weighting_function.encode(),
             parameters,
             start,
@@ -728,7 +731,7 @@ class LMBTR(MBTR):
             fin_system.get_atomic_numbers(),
             dmat_dense,
             adj_list,
-            geom_func_name.encode_train(),
+            geom_func_name.encode_learn(),
             weighting_function.encode(),
             parameters,
             start,

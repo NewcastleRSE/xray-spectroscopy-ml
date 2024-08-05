@@ -142,7 +142,7 @@ class ARMSR(VectorDescriptor):
 
         return armsr
 
-    def get_number_of_features(self) -> int:
+    def get_nfeatures(self) -> int:
         return int(self.n_s2 + (self.n_s3 * 18) + self.use_charge + self.use_spin)
 
 

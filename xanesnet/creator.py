@@ -14,6 +14,7 @@ You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+
 """
 Factory methods to create instance of model, descriptor or scheme based on
 the specified name and parameters. To register a new class, add the label and class
@@ -85,7 +86,7 @@ def create_learn_scheme(x_data, y_data, **kwargs):
         "gnn": GNNLearn,
     }
 
-    model_params = kwargs.get('model')
+    model_params = kwargs.get("model")
     name = model_params["type"]
 
     if name in scheme:

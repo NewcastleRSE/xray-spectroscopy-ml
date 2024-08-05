@@ -223,7 +223,7 @@ class MSR(VectorDescriptor):
 
         return msr
 
-    def get_number_of_features(self) -> int:
+    def get_nfeatures(self) -> int:
         return int(
             self.n_s2
             + self.n_s3
@@ -232,6 +232,9 @@ class MSR(VectorDescriptor):
             + self.use_charge
             + self.use_spin
         )
+
+    def get_type(self) -> str:
+        return "msr"
 
 
 class SymmetryFunctionTransformer(ABC):

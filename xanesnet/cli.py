@@ -34,10 +34,9 @@ from xanesnet.core_predict import predict_data
 def parse_args(args: list):
     parser = ArgumentParser()
 
-    # mode
-    # train_xanes, train_xyz, train_aegan, predict_xyz,
-    # predict_xanes, predict_aegan, predict_aegan_xanes, predict_aegan_xyz,
-    # eval_pred_xanes, eval_pred_xyz, eval_recon_xanes, eval_recon_xyz
+    # available modes:
+    # train: train_xanes, train_xyz, train_aegan
+    # predict: predict_xyz, predict_xanes, predict_all
     parser.add_argument(
         "--mode",
         type=str,
@@ -48,12 +47,12 @@ def parse_args(args: list):
     parser.add_argument(
         "--in_model",
         type=str,
-        help="path to populated model directory during prediction",
+        help="path to pre-trained model directory",
     )
     parser.add_argument(
         "--in_file",
         type=str,
-        help="path to .json input file w/ variable definitions",
+        help="path to .json input file",
         required=True,
     )
     parser.add_argument(
