@@ -751,7 +751,7 @@ class MBTR(Descriptor, BaseDescriptor):
 
         k1_map = cmbtr.get_k1(
             system.get_atomic_numbers(),
-            geom_func_name.encode_learn(),
+            geom_func_name.encode(),
             b"unity",
             {},
             start,
@@ -858,7 +858,7 @@ class MBTR(Descriptor, BaseDescriptor):
             ext_system.get_atomic_numbers(),
             dmat_dense,
             adj_list,
-            geom_func_name.encode_learn(),
+            geom_func_name.encode(),
             weighting_function.encode(),
             parameters,
             start,
@@ -999,7 +999,7 @@ class MBTR(Descriptor, BaseDescriptor):
             ext_system.get_atomic_numbers(),
             dmat_dense,
             adj_list,
-            geom_func_name.encode_learn(),
+            geom_func_name.encode(),
             weighting_function.encode(),
             parameters,
             start,
