@@ -133,7 +133,7 @@ def create_predict_scheme(
     fourier,
     fourier_param,
 ):
-    from xanesnet.scheme import NNPredict, AEPredict, AEGANPredict
+    from xanesnet.scheme import NNPredict, AEPredict, AEGANPredict, GNNPredict
 
     scheme = {
         "mlp": NNPredict,
@@ -142,6 +142,7 @@ def create_predict_scheme(
         "ae_mlp": AEPredict,
         "ae_cnn": AEPredict,
         "aegan_mlp": AEGANPredict,
+        "gnn": GNNPredict,
     }
 
     if name in scheme:
@@ -149,8 +150,8 @@ def create_predict_scheme(
             xyz_data,
             xanes_data,
             pred_mode,
-            index,
             pred_eval,
+            index,
             scaler,
             fourier,
             fourier_param,

@@ -26,12 +26,20 @@ class Predict(ABC):
     """
 
     def __init__(
-        self, xyz_data, xanes_data, pred_mode, pred_eval, index, scaler, fourier, fourier_param
+        self,
+        xyz_data,
+        xanes_data,
+        pred_mode,
+        pred_eval,
+        index,
+        scaler,
+        fourier,
+        fourier_param,
     ):
-        self.pred_mode = pred_mode
-        self.pred_eval = pred_eval
         self.xyz_data = xyz_data
         self.xanes_data = xanes_data
+        self.pred_mode = pred_mode
+        self.pred_eval = pred_eval
         self.ids = index
         self.scaler = scaler
         self.fourier = fourier

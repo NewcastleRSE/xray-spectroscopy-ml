@@ -98,7 +98,10 @@ class GraphDataset(Dataset):
             # Get adjacency info
             edge_index = mg.edge_index
             # Get graph-level labels info
-            label = self._get_labels(self.xanes_data[idx])
+            if self.xanes_data is not None:
+                label = self._get_labels(self.xanes_data[idx])
+            else:
+                label = None
 
             name = Path(raw_path).stem
             data = Data(

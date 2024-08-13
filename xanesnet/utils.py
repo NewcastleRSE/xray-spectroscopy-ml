@@ -108,18 +108,20 @@ def save_model(path, model, descriptor_list, data_compress, metadata):
     model_dir = unique_path(Path(path), "model_" + metadata["model_type"])
     model_dir.mkdir()
 
-    for idx, descriptor in enumerate(descriptor_list):
-        name = "descriptor" + str(idx) + "_" + descriptor.get_type() + ".pickle"
-        with open(model_dir / name, "wb") as f:
-            pickle.dump(descriptor, f)
+    if descriptor_list is not None:
+        for idx, descriptor in enumerate(descriptor_list):
+            name = "descriptor" + str(idx) + "_" + descriptor.get_type() + ".pickle"
+            with open(model_dir / name, "wb") as f:
+                pickle.dump(descriptor, f)
 
-    with open(model_dir / "dataset.npz", "wb") as f:
-        np.savez_compressed(
-            f,
-            ids=data_compress["ids"],
-            x=data_compress["x"],
-            y=data_compress["y"],
-        )
+    if data_compress is not None:
+        with open(model_dir / "dataset.npz", "wb") as f:
+            np.savez_compressed(
+                f,
+                ids=data_compress["ids"],
+                x=data_compress["x"],
+                y=data_compress["y"],
+            )
 
     torch.save(model, model_dir / f"model.pt")
     print(f"saved model to disk: {model_dir}")
@@ -142,18 +144,20 @@ def save_model_list(path, models, descriptor_list, data_compress, metadata, conf
 
     save_path.mkdir()
 
-    for idx, descriptor in enumerate(descriptor_list):
-        name = "descriptor" + str(idx) + "_" + descriptor.get_type() + ".pickle"
-        with open(save_path / name, "wb") as f:
-            pickle.dump(descriptor, f)
+    if descriptor_list is not None:
+        for idx, descriptor in enumerate(descriptor_list):
+            name = "descriptor" + str(idx) + "_" + descriptor.get_type() + ".pickle"
+            with open(save_path / name, "wb") as f:
+                pickle.dump(descriptor, f)
 
-    with open(save_path / "dataset.npz", "wb") as f:
-        np.savez_compressed(
-            f,
-            ids=data_compress["ids"],
-            x=data_compress["x"],
-            y=data_compress["y"],
-        )
+    if data_compress is not None:
+        with open(save_path / "dataset.npz", "wb") as f:
+            np.savez_compressed(
+                f,
+                ids=data_compress["ids"],
+                x=data_compress["x"],
+                y=data_compress["y"],
+            )
 
     for model in models:
         model_dir = unique_path(Path(save_path), "model")

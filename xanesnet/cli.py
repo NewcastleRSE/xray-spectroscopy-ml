@@ -13,17 +13,20 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import os
 
 ###############################################################################
 ############################### LIBRARY IMPORTS ###############################
 ###############################################################################
 
 import sys
+from pathlib import Path
+
 import yaml
 
 from argparse import ArgumentParser
 from xanesnet.core_learn import train_model, train_model_gnn
-from xanesnet.core_predict import predict_data
+from xanesnet.core_predict import predict_data, predict_data_gnn
 
 
 ###############################################################################
@@ -90,7 +93,17 @@ def main(args: list):
             train_model(config, args)
 
     elif "predict" in args.mode:
-        predict_data(config, args)
+        metadata_file = Path(f"{args.in_model}/metadata.yaml")
+        if os.path.isfile(metadata_file):
+            with open(metadata_file, "r") as f:
+                metadata = yaml.safe_load(f)
+        else:
+            raise ValueError(f"Cannot find metadata file.")
+
+        if metadata["model_type"] == "gnn":
+            predict_data_gnn(config, args, metadata)
+        else:
+            predict_data(config, args, metadata)
 
     else:
         print(">>> Incorrect mode. Please try again.")

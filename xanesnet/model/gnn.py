@@ -50,7 +50,6 @@ class GNN(Model):
         layers = []
         input_size = x_data[0].x.shape[1]
         output_size = x_data[0].y.shape[0]
-
         # Instantiate ActivationSwitch for dynamic activation selection
         activation_switch = ActivationSwitch()
         act_fn = activation_switch.fn(activation)

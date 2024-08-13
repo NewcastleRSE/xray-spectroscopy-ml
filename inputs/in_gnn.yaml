@@ -1,7 +1,7 @@
 #xyz_path:  data/datasets/10000-set/xyz
 #xanes_path:  data/datasets/10000-set/xanes
-xyz_path:  data/datasets/graph-set/xyz
-xanes_path:  data/datasets/graph-set/xanes
+xyz_path:  data/datasets/graph-set/xyz_train
+xanes_path:  data/datasets/graph-set/xanes_train
 
 descriptors:
   - type: pdos
@@ -32,17 +32,17 @@ model:
   node_descriptors: [pdos]
   edge_descriptors: []
   params:
-    hidden_size: 512
+    hidden_size: 256
     dropout: 0.2
-    num_hidden_layers: 1
+    num_hidden_layers: 5
     activation: prelu
     layer_name: GAT #GAT, GCN, GraphConv
 
 hyperparams:
-  batch_size: 5
-  lr: 0.001
+  batch_size: 1
+  lr: 0.01
   epochs: 100
-  optim_fn: Adam
+  optim_fn: sgd
   kernel_init: xavier_uniform
   bias_init: zeros
   model_eval : False
@@ -50,7 +50,7 @@ hyperparams:
   weight_seed: 2023
   loss:
     loss_fn: bce
-    loss_args: sgd_momentum
+    loss_args: null
     loss_reg_type: null # null, L1, L2
     loss_reg_param: 0.001
 

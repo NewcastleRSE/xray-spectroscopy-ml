@@ -17,7 +17,7 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 from numpy.random import RandomState
 from sklearn.utils import shuffle
 
-from xanesnet.data_descriptor import encode_learn, encode_learn_gnn
+from xanesnet.data_encoding import encode_learn, encode_learn_gnn
 from xanesnet.utils import save_model_list, save_model
 from xanesnet.creator import (
     create_descriptor,
@@ -210,6 +210,8 @@ def train_model_gnn(config, args):
         metadata = {
             "mode": args.mode,
             "model_type": config["model"]["type"],
+            "node_descriptors": config["model"]["node_descriptors"],
+            "edge_descriptors": config["model"]["edge_descriptors"],
             "descriptors": config["descriptors"],
             "hyperparams": config["hyperparams"],
             "lr_scheduler": config["scheduler_params"],

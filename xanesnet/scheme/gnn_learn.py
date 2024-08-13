@@ -16,6 +16,7 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import mlflow
 import mlflow.pytorch
+import torch
 from torch_geometric.data import DataLoader
 
 from torchinfo import summary
@@ -114,30 +115,27 @@ class GNNLearn(Learn):
         with mlflow.start_run(experiment_id=self.exp_id, run_name=self.exp_time):
             mlflow.log_params(self.hyper_params)
             mlflow.log_param("n_epoch", self.n_epoch)
-
             for epoch in range(self.n_epoch):
                 print(f">>> epoch = {epoch}")
                 model.train()
-
                 running_loss = 0
-
-                for _, batch in enumerate(train_loader):
+                for idx, batch in enumerate(train_loader):
+                    # Send data to device
                     batch.to(device)
-
+                    # Reset gradients
                     optimizer.zero_grad()
+                    # Passing the node features and the edge info
                     logps = model(
                         batch.x.float(),
                         batch.edge_attr.float(),
                         batch.edge_index,
                         batch.batch,
                     )
-
-                    logps = logps.view(-1)
-                    loss = criterion(logps, batch.y.float())
-
+                    # Calculating the loss and gradients
+                    loss = criterion(torch.squeeze(logps), batch.y.float())
                     loss.backward()
                     optimizer.step()
-
+                    # Update tracking
                     running_loss += loss.item()
 
                 valid_loss = 0
@@ -151,8 +149,7 @@ class GNNLearn(Learn):
                         batch.edge_index,
                         batch.batch,
                     )
-                    logps = logps.view(-1)
-                    loss = criterion(logps, batch.y.float())
+                    loss = criterion(torch.squeeze(logps), batch.y.float())
 
                     # Update tracking
                     valid_loss += loss.item()

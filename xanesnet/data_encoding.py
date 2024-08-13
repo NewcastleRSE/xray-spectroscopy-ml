@@ -28,7 +28,7 @@ from xanesnet.utils import (
 )
 
 
-def encode_xyz(xyz_path: Path, index: list, descriptor_list: list) -> np.ndarray:
+def encode_xyz(xyz_path: Path, index: list, descriptor_list: list):
     n_samples = len(index)
     # Feature length
     n_x_features = 0
@@ -61,7 +61,7 @@ def encode_xyz(xyz_path: Path, index: list, descriptor_list: list) -> np.ndarray
     return xyz_data
 
 
-def encode_xanes(xanes_path: Path, index: list) -> (np.ndarray, np.ndarray):
+def encode_xanes(xanes_path: Path, index: list):
     n_samples = len(index)
     n_y_features = linecount(xanes_path / f"{index[0]}.txt") - 2
     xanes_data = np.full((n_samples, n_y_features), np.nan)
@@ -76,9 +76,7 @@ def encode_xanes(xanes_path: Path, index: list) -> (np.ndarray, np.ndarray):
     return xanes_data, e
 
 
-def encode_learn(
-    xyz_path: str, xanes_path: str, descriptor_list: list
-) -> (np.ndarray, np.ndarray, list):
+def encode_learn(xyz_path: str, xanes_path: str, descriptor_list: list):
     """
     Process and encode data from given XYZ and xanes files using
     one or more descriptors.
@@ -107,7 +105,7 @@ def encode_learn(
             xanes_data = np.load(f)["y"]
             e = np.load(f)["e"]
         print(">> ...loaded {}x{} array of XANES data".format(*xanes_data.shape))
-        with open(xyz_path,"rb") as f:
+        with open(xyz_path, "rb") as f:
             index = np.load(f)["ids"]
 
     else:
@@ -120,7 +118,9 @@ def encode_learn(
     return xyz_data, xanes_data, index
 
 
-def encode_learn_gnn(xyz_path, xanes_path, node_descriptors, edge_descriptors):
+def encode_learn_gnn(
+    xyz_path: str, xanes_path: str, node_descriptors: list, edge_descriptors: list
+):
     xyz_path = Path(xyz_path)
     xanes_path = Path(xanes_path)
 
@@ -134,7 +134,7 @@ def encode_learn_gnn(xyz_path, xanes_path, node_descriptors, edge_descriptors):
         index.sort()
         xanes_data, e = encode_xanes(xanes_path, index)
 
-        print(f"Converting {len(index)} data files from XYZ format to graph format...")
+        print(f"Converting {len(index)} data files from XYZ format to graphs...")
         graph_dataset = GraphDataset(
             root=str(xyz_path),
             index=index,
@@ -151,7 +151,7 @@ def encode_learn_gnn(xyz_path, xanes_path, node_descriptors, edge_descriptors):
 
 def encode_predict(
     xyz_path: str, xanes_path: str, descriptor_list: list, mode: str, pred_eval: bool
-) -> (np.ndarray, np.ndarray, np.ndarray, list):
+):
     if mode == "predict_all" or pred_eval:
         xyz_path = Path(xyz_path)
         xanes_path = Path(xanes_path)
@@ -187,3 +187,35 @@ def encode_predict(
         raise ValueError("Unsupported prediction mode")
 
     return xyz_data, xanes_data, e, index
+
+
+def encode_predict_gnn(
+    xyz_path: str,
+    xanes_path: str,
+    node_descriptors: list,
+    edge_descriptors: list,
+    pred_eval: bool,
+):
+    xyz_path = Path(xyz_path)
+
+    if pred_eval:
+        xanes_path = Path(xanes_path)
+        index = list(set(list_filestems(xyz_path)) & set(list_filestems(xanes_path)))
+        index.sort()
+        xanes_data, e = encode_xanes(xanes_path, index)
+    else:
+        index = list(set(list_filestems(xyz_path)))
+        index.sort()
+        xanes_data = None
+        e = None
+
+    print(f"Converting {len(index)} data files from XYZ format to graph format...")
+    graph_dataset = GraphDataset(
+        root=str(xyz_path),
+        index=index,
+        xanes_data=None,
+        node_descriptors=node_descriptors,
+        edge_descriptors=edge_descriptors,
+    )
+
+    return graph_dataset, index, xanes_data, e
