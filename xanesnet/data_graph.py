@@ -116,7 +116,7 @@ class GraphDataset(Dataset):
         Return a 2d array of the shape [Number of Nodes, Node Feature size]
         """
         all_node_feats = []
-        # Generic node features
+        # Generic atomic features
         for e in mg.elements:
             node_feats = []
             e = element(e)
@@ -124,14 +124,19 @@ class GraphDataset(Dataset):
 
             all_node_feats.append(node_feats)
 
-        # Absorbing features from descriptors
+        # Descriptor features
         for i in self.node_descriptors:
             with open(raw_path, "r") as f:
                 atoms = load_xyz(f)
-            descriptor_feature = i.transform(atoms)
-            # Append to the first (absorbing) element
-            all_node_feats[0].extend(descriptor_feature)
-            # Extend the rest of rows
+            descriptor_feat = i.transform(atoms)
+            # Extends every node feature vector by adding
+            # the same set of descriptor feature
+            # for row in range(len(all_node_feat)):
+            #     all_node_feats[row].extend(descriptor_feat)
+
+            # Extends the first node feature vector with the descriptor feature
+            # For all other nodes, extends their feature vectors with zeros
+            all_node_feats[0].extend(descriptor_feat)
             for row in all_node_feats[1:]:
                 row.extend([0] * (i.get_nfeatures()))
 

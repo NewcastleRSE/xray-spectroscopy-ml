@@ -14,7 +14,7 @@ descriptors:
       e_min: -10.0
       e_max: 30.0
       sigma: 0.8
-      use_wacsf: True
+      use_wacsf: False
       r_min: 0.5
       r_max: 6.5
       n_g2: 22
@@ -29,7 +29,7 @@ descriptors:
 
 model:
   type: gnn
-  node_descriptors: [pdos]
+  node_descriptors: [pdos, wacsf]
   edge_descriptors: []
   params:
     hidden_size: 256
@@ -40,18 +40,18 @@ model:
 
 hyperparams:
   batch_size: 1
-  lr: 0.01
+  lr: 0.001
   epochs: 100
-  optim_fn: sgd
+  optim_fn: Adam
   kernel_init: xavier_uniform
   bias_init: zeros
-  model_eval : False
+  model_eval : True
   seed: 2021
   weight_seed: 2023
   loss:
-    loss_fn: bce
+    loss_fn: mse
     loss_args: null
-    loss_reg_type: null # null, L1, L2
+    loss_reg_type: L2 # null, L1, L2
     loss_reg_param: 0.001
 
 kfold: False
@@ -60,11 +60,11 @@ kfold_params:
   n_repeats: 1
   seed: 2021
 
-lr_scheduler: True
+lr_scheduler: False
 scheduler_params:
   type: step
-  step_size: 100
-  gamma: 0.5
+  step_size: 50
+  gamma: 0.1
 
 data_augment: False
 augment_params:
