@@ -125,14 +125,15 @@ class GNNLearn(Learn):
                     # Reset gradients
                     optimizer.zero_grad()
                     # Passing the node features and the edge info
-                    logps = model(
+                    pred = model(
                         batch.x.float(),
                         batch.edge_attr.float(),
                         batch.edge_index,
                         batch.batch,
                     )
+                    pred = torch.flatten(pred)
                     # Calculating the loss and gradients
-                    loss = criterion(torch.squeeze(logps), batch.y.float())
+                    loss = criterion(pred, batch.y.float())
                     loss.backward()
                     optimizer.step()
                     # Update tracking
@@ -143,13 +144,14 @@ class GNNLearn(Learn):
 
                 for batch in valid_loader:
                     batch.to(device)
-                    logps = model(
+                    pred = model(
                         batch.x.float(),
                         batch.edge_attr.float(),
                         batch.edge_index,
                         batch.batch,
                     )
-                    loss = criterion(torch.squeeze(logps), batch.y.float())
+                    pred = torch.flatten(pred)
+                    loss = criterion(pred, batch.y.float())
 
                     # Update tracking
                     valid_loss += loss.item()
