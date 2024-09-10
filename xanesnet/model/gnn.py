@@ -67,9 +67,39 @@ class GNN(Model):
         layers += [gnn_layer(in_channels=input_size, out_channels=hidden_size)]
         self.layers = nn.ModuleList(layers)
 
-        self.head = nn.Sequential(
-            nn.Dropout(dropout), nn.Linear(hidden_size, output_size)
+        # Construct final MLP layers
+        layers = []
+
+        num_hidden_layers = 3
+        for i in range(num_hidden_layers - 1):
+            if i == 0:
+                layer = nn.Sequential(
+                    nn.Linear(hidden_size, hidden_size*2),
+                    nn.Dropout(dropout),
+                    act_fn(),
+                )
+            else:
+                layer = nn.Sequential(
+                    nn.Linear(
+                        int(hidden_size * 2),
+                        int(hidden_size * 2),
+                    ),
+                    nn.Dropout(dropout),
+                    act_fn(),
+                )
+
+            layers.append(layer)
+
+        output_layer = nn.Sequential(
+            nn.Linear(hidden_size*2, output_size),
+            nn.Dropout(dropout),
+            act_fn(),
         )
+        layers.append(output_layer)
+
+        self.head = nn.Sequential(*layers)
+
+
 
     def forward(self, x: torch.Tensor, edge_attr, edge_idx, batch_idx) -> torch.Tensor:
         """
@@ -78,10 +108,9 @@ class GNN(Model):
             edge_index - List of edge index pairs
             batch_idx - Index of batch element for each node
         """
-
         for layer in self.layers:
             if isinstance(layer, geom_nn.MessagePassing):
-                x = layer(x, edge_idx)
+                x = layer(x, edge_idx, edge_attr)
             else:
                 x = layer(x)
 
