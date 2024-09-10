@@ -115,30 +115,38 @@ class GraphDataset(Dataset):
         """
         Return a 2d array of the shape [Number of Nodes, Node Feature size]
         """
-        all_node_feats = []
-        # Generic atomic features
-        for e in mg.elements:
-            node_feats = []
-            e = element(e)
-            node_feats.append(e.atomic_weight)
 
-            all_node_feats.append(node_feats)
+        atomic_numbers = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
 
-        # Descriptor features
-        for i in self.node_descriptors:
-            with open(raw_path, "r") as f:
-                atoms = load_xyz(f)
-            descriptor_feat = i.transform(atoms)
-            # Extends every node feature vector by adding
-            # the same set of descriptor feature
-            # for row in range(len(all_node_feat)):
-            #     all_node_feats[row].extend(descriptor_feat)
+        with open(raw_path) as file:
+            atoms = load_xyz(file)
+            mole_atomic_numbers = atoms.get_atomic_numbers() 
 
-            # Extends the first node feature vector with the descriptor feature
-            # For all other nodes, extends their feature vectors with zeros
-            all_node_feats[0].extend(descriptor_feat)
-            for row in all_node_feats[1:]:
-                row.extend([0] * (i.get_nfeatures()))
+        one_hot_encoding = np.zeros((len(mole_atomic_numbers), len(atomic_numbers)+1), dtype=int)
+        # Set one_hot_encoding for absorber
+        one_hot_encoding[0,0] = 1
+
+        # Set one_hot_encoding for atomic number 
+        for i, atomic_number in enumerate(mole_atomic_numbers):
+            if atomic_number in atomic_numbers:
+                index = atomic_numbers.index(atomic_number) 
+                one_hot_encoding[i, index] = 1 
+
+        all_node_feats = one_hot_encoding
+
+#       # Descriptor features
+#       for i in self.node_descriptors:
+#           descriptor_feat = i.transform(atoms)
+#           # Extends every node feature vector by adding
+#           # the same set of descriptor feature
+#           # for row in range(len(all_node_feat)):
+#           #     all_node_feats[row].extend(descriptor_feat)
+
+#           # Extends the first node feature vector with the descriptor feature
+#           # For all other nodes, extends their feature vectors with zeros
+#           all_node_feats[0].extend(descriptor_feat)
+#           for row in all_node_feats[1:]:
+#               row.extend([0] * (i.get_nfeatures()))
 
         all_node_feats = np.asarray(all_node_feats)
         return torch.tensor(all_node_feats, dtype=torch.float)
@@ -148,15 +156,26 @@ class GraphDataset(Dataset):
         This will return a matrix / 2d array of the shape
         [Number of edges, Edge Feature size]
         """
-        all_edge_feats = []
+        num_edges = len(mg.edge_list)
+        self.n = 16
+        self.r_min = 0.0
+        self.r_max = 4.0
 
-        for i in mg.edge_list:
-            edge_feats = [mg.bond_lengths[i]]
+        all_edge_feats = np.full((num_edges, self.n), np.nan)
 
-            # Append edge features to matrix
-            all_edge_feats += [edge_feats]
+        r_aux = np.linspace(self.r_min + 0.5, self.r_max - 0.5, self.n)
+        dr = np.diff(r_aux)[0]
+        width = np.array([1.0 / (2.0 * (dr**2)) for _ in r_aux])
+        grid = np.array([i for i in r_aux])
+        bond_lengths = np.array([mg.bond_lengths[i] for i in mg.edge_list])
+        cutoffs = (np.cos((np.pi * bond_lengths) / self.r_max) + 1.0) / 2.0
+
+        for i in range(num_edges):
+            g2 = gaussian(bond_lengths[i], width, grid)
+            all_edge_feats[i, :] = np.sum(g2 * cutoffs[i], axis=0)
 
         all_edge_feats = np.asarray(all_edge_feats)
+
         return torch.tensor(all_edge_feats, dtype=torch.float)
 
     def _get_labels(self, xanes_data):
@@ -173,3 +192,7 @@ class GraphDataset(Dataset):
                 path = os.path.join(self.processed_dir, name)
                 data = torch.load(path)
                 return data
+
+def gaussian(r: np.ndarray, h: float, m: float) -> np.ndarray:
+    """returns a gaussian-like function defined over `r`""" 
+    return np.exp(-1.0 * h * (r - m) ** 2)

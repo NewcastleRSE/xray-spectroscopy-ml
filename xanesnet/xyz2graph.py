@@ -1,6 +1,7 @@
 import re
 import numpy as np
 import torch
+from xanesnet.utils import load_xyz 
 
 from mendeleev import element
 
@@ -131,24 +132,12 @@ class MolGraph:
         """Reads an XYZ file, searches for elements and their cartesian coordinates
         and adds them to corresponding arrays."""
         with open(file_path) as file:
-            xyz_f_l = file.readlines()
-            # pop 1st and 2nd lines
-            n_ats = int(xyz_f_l.pop(0))
-            xyz_f_l.pop(0)
-            # pop the .xyz coordinate block
-            coord_block = [xyz_f_l.pop(0).split() for _ in range(n_ats)]
-
-            for l in coord_block:
-                if l[0].isdigit():
-                    elem = element(int(l[0]))
-                    symbol = elem.symbol
-                else:
-                    symbol = l[0]
-
-                self.elements.append(symbol)
-                self.x.append(float(l[1]))
-                self.y.append(float(l[2]))
-                self.z.append(float(l[3]))
+            atoms = load_xyz(file)
+            self.elements = atoms.get_chemical_symbols() 
+            coordinates = atoms.get_positions() 
+            self.x = [coord[0] for coord in coordinates]
+            self.y = [coord[1] for coord in coordinates]
+            self.z = [coord[2] for coord in coordinates]
 
         self.atomic_radii = [atomic_radii[element] for element in self.elements]
         self._generate_adjacency_list()
