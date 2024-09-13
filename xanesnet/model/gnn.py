@@ -23,6 +23,7 @@ from xanesnet.utils_model import ActivationSwitch
 gnn_layer_by_name = {
     "GCN": geom_nn.GCNConv,
     "GAT": geom_nn.GATConv,
+    "GATv2": geom_nn.GATv2Conv,
     "GraphConv": geom_nn.GraphConv,
 }
 
@@ -54,18 +55,21 @@ class GNN(Model):
         activation_switch = ActivationSwitch()
         act_fn = activation_switch.fn(activation)
 
-        # Construct hidden layers
+#       # Construct hidden layers
+        num_heads = 4
         for i in range(num_hidden_layers - 1):
             layers += [
-                gnn_layer(in_channels=input_size, out_channels=hidden_size),
+                gnn_layer(in_channels=input_size, out_channels=hidden_size, heads=num_heads, concat=True, edge_dim=16),
+                nn.BatchNorm1d(hidden_size * num_heads),  
                 act_fn(),
                 nn.Dropout(dropout),
             ]
-            input_size = hidden_size
+            input_size = hidden_size * num_heads  
 
         # Construct output layer
-        layers += [gnn_layer(in_channels=input_size, out_channels=hidden_size)]
+        layers += [gnn_layer(in_channels=input_size, out_channels=hidden_size, heads=num_heads, concat=True, edge_dim=16)]
         self.layers = nn.ModuleList(layers)
+
 
         # Construct final MLP layers
         layers = []
@@ -74,15 +78,15 @@ class GNN(Model):
         for i in range(num_hidden_layers - 1):
             if i == 0:
                 layer = nn.Sequential(
-                    nn.Linear(hidden_size, hidden_size*2),
+                    nn.Linear(hidden_size * num_heads, hidden_size * num_heads * 2),
                     nn.Dropout(dropout),
                     act_fn(),
                 )
             else:
                 layer = nn.Sequential(
                     nn.Linear(
-                        int(hidden_size * 2),
-                        int(hidden_size * 2),
+                        int(hidden_size * num_heads * 2),
+                        int(hidden_size * num_heads * 2),
                     ),
                     nn.Dropout(dropout),
                     act_fn(),
@@ -91,15 +95,13 @@ class GNN(Model):
             layers.append(layer)
 
         output_layer = nn.Sequential(
-            nn.Linear(hidden_size*2, output_size),
+            nn.Linear(hidden_size * num_heads * 2, output_size),
             nn.Dropout(dropout),
             act_fn(),
         )
         layers.append(output_layer)
 
         self.head = nn.Sequential(*layers)
-
-
 
     def forward(self, x: torch.Tensor, edge_attr, edge_idx, batch_idx) -> torch.Tensor:
         """
@@ -110,10 +112,17 @@ class GNN(Model):
         """
         for layer in self.layers:
             if isinstance(layer, geom_nn.MessagePassing):
-                x = layer(x, edge_idx, edge_attr)
+                if isinstance(layer, geom_nn.GATv2Conv) or (isinstance(layer, geom_nn.GATConv) and edge_attr is not None):
+                    x = layer(x, edge_idx, edge_attr)
+                else:
+                    x = layer(x, edge_idx)
             else:
                 x = layer(x)
 
+#       # Specific node
+#       node_idx = 0
+#       node_feature = x[node_idx]
+#       out = self.head(node_feature)
         # Average pooling
         x = geom_nn.global_mean_pool(x, batch_idx)
         out = self.head(x)
