@@ -1,5 +1,5 @@
-xyz_path:  data/datasets/10000-set/xyz
-xanes_path:  data/datasets/10000-set/xanes
+xyz_path:  data/datasets/graph-set/xyz_train
+xanes_path:  data/datasets/graph-set/xanes_train
 
 descriptors:
   - type: pdos
@@ -12,18 +12,13 @@ descriptors:
       e_min: -10.0
       e_max: 30.0
       sigma: 0.8
-      use_wacsf: False
+
+  - type: wacsf
+    params:
       r_min: 0.5
       r_max: 6.5
       n_g2: 22
       n_g4: 10
-
-  - type: wacsf
-    params:
-      r_min: 1.0
-      r_max: 6.0
-      n_g2: 16
-      n_g4: 32
 
 model:
   type: mlp

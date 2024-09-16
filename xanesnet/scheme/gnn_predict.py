@@ -40,8 +40,15 @@ class GNNPredict(Predict):
         dataloader = DataLoader(self.xyz_data, batch_size=1, shuffle=False)
         xanes_pred = []
         for data in dataloader:
+            # reshape concatenated graph_attr to [batch_size, feat_size]
+            nfeats = data[0].graph_attr.shape[0]
+            graph_attr = data.graph_attr.reshape(len(data), nfeats)
             out = model(
-                data.x.float(), data.edge_attr.float(), data.edge_index, data.batch
+                data.x.float(),
+                data.edge_attr.float(),
+                graph_attr.float(),
+                data.edge_index,
+                data.batch,
             )
             out = torch.squeeze(out)
             xanes_pred.append(out.detach().numpy())

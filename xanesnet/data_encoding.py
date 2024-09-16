@@ -13,6 +13,7 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 import numpy as np
 import tqdm as tqdm
 
@@ -119,7 +120,11 @@ def encode_learn(xyz_path: str, xanes_path: str, descriptor_list: list):
 
 
 def encode_learn_gnn(
-    xyz_path: str, xanes_path: str, node_descriptors: list, edge_descriptors: list
+    xyz_path: str,
+    xanes_path: str,
+    node_feats: dict,
+    edge_feats: dict,
+    descriptor_list: list,
 ):
     xyz_path = Path(xyz_path)
     xanes_path = Path(xanes_path)
@@ -138,9 +143,10 @@ def encode_learn_gnn(
         graph_dataset = GraphDataset(
             root=str(xyz_path),
             index=index,
+            node_feats=node_feats,
+            edge_feats=edge_feats,
+            descriptor_list=descriptor_list,
             xanes_data=xanes_data,
-            node_descriptors=node_descriptors,
-            edge_descriptors=edge_descriptors,
         )
     else:
         err_str = "paths to data are expected to be directories"
@@ -192,8 +198,9 @@ def encode_predict(
 def encode_predict_gnn(
     xyz_path: str,
     xanes_path: str,
-    node_descriptors: list,
-    edge_descriptors: list,
+    node_feats: dict,
+    edge_feats: dict,
+    descriptor_list:list,
     pred_eval: bool,
 ):
     xyz_path = Path(xyz_path)
@@ -213,9 +220,10 @@ def encode_predict_gnn(
     graph_dataset = GraphDataset(
         root=str(xyz_path),
         index=index,
-        xanes_data=None,
-        node_descriptors=node_descriptors,
-        edge_descriptors=edge_descriptors,
+        node_feats=node_feats,
+        edge_feats=edge_feats,
+        descriptor_list=descriptor_list,
+        xanes_data=xanes_data,
     )
 
     return graph_dataset, index, xanes_data, e

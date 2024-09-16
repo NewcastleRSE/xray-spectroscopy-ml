@@ -128,33 +128,16 @@ def predict_data_gnn(config, args, metadata):
     # Enable model evaluation if test data is present
     pred_eval = config["xanes_path"] is not None
 
-    node_descriptors = []
-    edge_descriptors = []
-
-    node_dtypes = metadata["node_descriptors"]
-    edge_dtypes = metadata["edge_descriptors"]
-
-    print(
-        ">> Initialising GNN node and edge feature descriptors (node feat:",
-        node_dtypes,
-        "edge feat:",
-        edge_dtypes,
-        ")...",
-    )
-    # Assign descriptors to the corresponding list
-    for dp in metadata["descriptors"]:
-        descriptor = create_descriptor(dp["type"], **dp["params"])
-        if dp["type"] in node_dtypes:
-            node_descriptors.append(descriptor)
-        if dp["type"] in edge_dtypes:
-            edge_descriptors.append(descriptor)
+    # Load descriptor list
+    descriptor_list = load_descriptors(model_dir)
 
     # Encode prediction dataset with saved descriptor
     graph_dataset, index, xanes_data, e = encode_predict_gnn(
         config["xyz_path"],
         config["xanes_path"],
-        node_descriptors,
-        edge_descriptors,
+        metadata["node_features"],
+        metadata["edge_features"],
+        descriptor_list,
         pred_eval,
     )
 

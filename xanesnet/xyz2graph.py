@@ -1,9 +1,8 @@
-import re
 import numpy as np
 import torch
-from xanesnet.utils import load_xyz 
+from ase import Atoms
+from xanesnet.utils import load_xyz
 
-from mendeleev import element
 
 atomic_radii = dict(
     Ac=1.88,
@@ -115,6 +114,7 @@ class MolGraph:
         "atomic_radii",
         "bond_lengths",
         "adj_matrix",
+        "atoms",
     ]
 
     def __init__(self):
@@ -127,14 +127,15 @@ class MolGraph:
         self.atomic_radii = []
         self.bond_lengths = {}
         self.adj_matrix = None
+        self.atoms = None
 
     def read_xyz(self, file_path: str) -> None:
         """Reads an XYZ file, searches for elements and their cartesian coordinates
         and adds them to corresponding arrays."""
         with open(file_path) as file:
-            atoms = load_xyz(file)
-            self.elements = atoms.get_chemical_symbols() 
-            coordinates = atoms.get_positions() 
+            self.atoms = load_xyz(file)
+            self.elements = self.atoms.get_chemical_symbols()
+            coordinates = self.atoms.get_positions()
             self.x = [coord[0] for coord in coordinates]
             self.y = [coord[1] for coord in coordinates]
             self.z = [coord[2] for coord in coordinates]

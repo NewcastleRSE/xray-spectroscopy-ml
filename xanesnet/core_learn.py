@@ -32,9 +32,9 @@ def train_model(config, args):
 
     # Encode training dataset with specified descriptor types
     descriptor_list = []
-    for dp in config["descriptors"]:
-        print(f">> Initialising {dp['type']} feature descriptor...")
-        descriptor = create_descriptor(dp["type"], **dp["params"])
+    for d in config["descriptors"]:
+        print(f">> Initialising {d['type']} feature descriptor...")
+        descriptor = create_descriptor(d["type"], **d["params"])
         descriptor_list.append(descriptor)
 
     xyz, xanes, index = encode_learn(
@@ -144,29 +144,19 @@ def train_model_gnn(config, args):
     if args.mode != "train_xyz":
         raise ValueError(f"Unsupported mode name for GNN: {args.mode}")
 
-    node_descriptors = []
-    edge_descriptors = []
-
-    node_dtypes = config["model"]["node_descriptors"]
-    edge_dtypes = config["model"]["edge_descriptors"]
-
-    print(
-        ">> Initialising GNN node and edge feature descriptors (node feat:",
-        node_dtypes,
-        "edge feat:",
-        edge_dtypes,
-        ")...",
-    )
-    # Assign descriptors to the corresponding list
-    for dp in config["descriptors"]:
-        descriptor = create_descriptor(dp["type"], **dp["params"])
-        if dp["type"] in node_dtypes:
-            node_descriptors.append(descriptor)
-        if dp["type"] in edge_dtypes:
-            edge_descriptors.append(descriptor)
+    # Encode training dataset with specified descriptor types
+    descriptor_list = []
+    for d in config["descriptors"]:
+        print(f">> Initialising {d['type']} feature descriptor...")
+        descriptor = create_descriptor(d["type"], **d["params"])
+        descriptor_list.append(descriptor)
 
     graph_dataset, index = encode_learn_gnn(
-        config["xyz_path"], config["xanes_path"], node_descriptors, edge_descriptors
+        config["xyz_path"],
+        config["xanes_path"],
+        config["model"]["node_features"],
+        config["model"]["edge_features"],
+        descriptor_list,
     )
 
     # Initialise learn scheme
@@ -210,8 +200,8 @@ def train_model_gnn(config, args):
         metadata = {
             "mode": args.mode,
             "model_type": config["model"]["type"],
-            "node_descriptors": config["model"]["node_descriptors"],
-            "edge_descriptors": config["model"]["edge_descriptors"],
+            "node_features": config["model"]["node_features"],
+            "edge_features": config["model"]["edge_features"],
             "descriptors": config["descriptors"],
             "hyperparams": config["hyperparams"],
             "lr_scheduler": config["scheduler_params"],
@@ -222,6 +212,6 @@ def train_model_gnn(config, args):
         }
 
         if config["bootstrap"] or config["ensemble"]:
-            save_model_list(save_path, model_list, None, None, metadata, config)
+            save_model_list(save_path, model_list, descriptor_list, None, metadata, config)
         else:
-            save_model(save_path, model, None, None, metadata)
+            save_model(save_path, model, descriptor_list, None, metadata)

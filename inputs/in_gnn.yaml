@@ -14,38 +14,34 @@ descriptors:
       e_min: -10.0
       e_max: 30.0
       sigma: 0.8
-      use_wacsf: False
-      r_min: 0.5
-      r_max: 6.5
-      n_g2: 22
-      n_g4: 10
-
-  - type: wacsf
-    params:
-      r_min: 1.0
-      r_max: 6.0
-      n_g2: 16
-      n_g4: 32
 
 model:
   type: gnn
-  node_descriptors: [pdos, wacsf]
-  edge_descriptors: []
+  node_features:
+  edge_features:
+    n: 16
+    r_min : 0.0
+    r_max: 4.0
   params:
-    hidden_size: 256
+    hidden_size: 512
+    mlp_feat_size: 80
     dropout: 0.2
     num_hidden_layers: 5
     activation: prelu
-    layer_name: GAT #GAT, GCN, GraphConv
+    layer_name: GATv2 #GAT, GATv2, GCN, GraphConv
+    layer_params:
+      heads: 2
+      concat: True
+      edge_dim: 16
 
 hyperparams:
-  batch_size: 1
+  batch_size: 3
   lr: 0.001
-  epochs: 100
+  epochs: 50
   optim_fn: Adam
   kernel_init: xavier_uniform
   bias_init: zeros
-  model_eval : True
+  model_eval : False
   seed: 2021
   weight_seed: 2023
   loss:

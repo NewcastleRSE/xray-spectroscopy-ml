@@ -22,18 +22,16 @@ import numpy as np
 from pyscf import scf, gto
 
 from ase import Atoms
-from abc import ABC
-from abc import abstractmethod
-from abc import abstractproperty
 
-from xanesnet.descriptor import WACSF
+from xanesnet.descriptor.vector_descriptor import VectorDescriptor
+
 
 ###############################################################################
 ################################## CLASSES ####################################
 ###############################################################################
 
 
-class PDOS(WACSF):
+class PDOS(VectorDescriptor):
     """
     A class for transforming a molecular system into a project density of
     states representation.
@@ -41,8 +39,6 @@ class PDOS(WACSF):
 
     def __init__(
         self,
-        r_min: float = 0.0,
-        r_max: float = 6.0,
         e_min: float = -20.0,
         e_max: float = 20.0,
         sigma: float = 0.7,
@@ -52,13 +48,6 @@ class PDOS(WACSF):
         basis: str = "3-21g",
         init_guess: str = "minao",
         max_scf_cycles: float = 0,
-        use_wacsf=False,
-        n_g2: int = 0,
-        n_g4: int = 0,
-        l: list = [1.0, -1.0],
-        z: list = [1.0],
-        g2_parameterisation: str = "shifted",
-        g4_parameterisation: str = "centred",
         use_charge=False,
         use_spin=False,
         use_quad=False,
@@ -66,18 +55,6 @@ class PDOS(WACSF):
     ):
         """
         Args:
-            r_min (float, optional): The minimum radial cutoff distance (in A)
-                around the absorption site; should be 0.0.
-                Defaults to 0.0.
-            r_max (float, optional): The maximum radial cutoff distance (in A)
-                around the absorption site.
-                Defaults to 8.0.
-            n_g2 (int, optional): The number of G2 symmetry functions to use
-                for encoding.
-                Defaults to 0.
-            n_g4 (int, optional): The number of G4 symmetry functions to use
-                for encoding.
-                Defaults to 0.
             l (list, optional): List of lambda values for G4 symmetry function
                 encoding. For details, see Marquetand et al.; J. Chem. Phys.,
                 2018, 148, 241709 (DOI: 10.1063/1.5019667).
@@ -86,16 +63,6 @@ class PDOS(WACSF):
                 encoding. For details, see Marquetand et al.; J. Chem. Phys.,
                 2018, 148, 241709 (DOI: 10.1063/1.5019667).
                 Defaults to [1.0].
-            g2_parameterisation (str, optional): The strategy to use for G2
-                symmetry function parameterisation; choices are 'shifted' or
-                'centred'. For details, see Marquetand et al.; J. Chem. Phys.,
-                2018, 148, 241709 (DOI: 10.1063/1.5019667).
-                Defaults to 'shifted'.
-            g4_parameterisation (str, optional): The strategy to use for G4
-                symmetry function parameterisation; choices are 'shifted' or
-                'centred'. For details, see Marquetand et al.; J. Chem. Phys.,
-                2018, 148, 241709 (DOI: 10.1063/1.5019667).
-                Defaults to 'centred'.
             e_min (float, optional): The minimum energy grid point for the pDOS (in eV)
                 Default: -20.0 eV.
             e_max (float, optional): The maximum energy grid point for the pDOS (in eV)
@@ -131,19 +98,8 @@ class PDOS(WACSF):
                 to account for quadrupole transitions.
                 Defaults to False.
         """
-        if use_wacsf:
-            super().__init__(
-                r_min,
-                r_max,
-                n_g2,
-                n_g4,
-                l,
-                z,
-                g2_parameterisation,
-                g4_parameterisation,
-                use_charge,
-                use_spin,
-            )
+
+        super().__init__(0.0, 6.0, use_charge, use_spin)
 
         self.e_min = e_min
         self.e_max = e_max
@@ -154,7 +110,6 @@ class PDOS(WACSF):
         self.init_guess = init_guess
         self.orb_type = orb_type
         self.quad_orb_type = quad_orb_type
-        self.use_wacsf = use_wacsf
         self.use_spin = use_spin
         self.use_charge = use_charge
         self.use_quad = use_quad
@@ -257,6 +212,10 @@ class PDOS(WACSF):
             beta_pdos[i] = p_contribution
 
         if self.use_quad:
+            # Setup occ arrays
+            alpha_ddos = np.zeros_like(alpha_occ)
+            beta_ddos = np.zeros_like(beta_occ)
+
             for i, alpha_coeff_percent in enumerate(alpha_coeff_percentage.T):
                 d_contribution = 0
                 for j, percent in enumerate(alpha_coeff_percent):
@@ -320,16 +279,10 @@ class PDOS(WACSF):
             ddos_gauss = gE
             pdos_gauss = np.append(pdos_gauss, ddos_gauss)
 
-        if self.use_wacsf:
-            pdos_gauss = np.append(pdos_gauss, super().transform(system))
-
         return pdos_gauss
 
     def get_nfeatures(self) -> int:
-        if self.use_wacsf:
-            return int(self.num_points + 1 + self.n_g2 + self.n_g4)
-        else:
-            return int(self.num_points)
+        return int(self.num_points)
 
     def get_type(self) -> str:
         return "pdos"

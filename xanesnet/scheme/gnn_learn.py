@@ -70,7 +70,6 @@ class GNNLearn(Learn):
             )
 
         train_dataset = x_data[train_idx]
-
         train_loader = DataLoader(
             train_dataset,
             batch_size=self.batch_size,
@@ -102,7 +101,6 @@ class GNNLearn(Learn):
 
         # initialise dataloader
         train_loader, valid_loader, eval_loader = self.setup_dataloader(x_data, y_data)
-
         # initialise optimizer
         optim_fn = OptimSwitch().fn(self.optim_fn)
         optimizer = optim_fn(model.parameters(), self.lr)
@@ -120,19 +118,21 @@ class GNNLearn(Learn):
                 model.train()
                 running_loss = 0
                 for idx, batch in enumerate(train_loader):
-                    # Send data to device
                     batch.to(device)
-                    # Reset gradients
                     optimizer.zero_grad()
-                    # Passing the node features and the edge info
+                    # reshape concatenated graph_attr to [batch_size, feat_size]
+                    nfeats = batch[0].graph_attr.shape[0]
+                    graph_attr = batch.graph_attr.reshape(len(batch), nfeats)
+                    # pass data to the model
                     pred = model(
                         batch.x.float(),
                         batch.edge_attr.float(),
+                        graph_attr.float(),
                         batch.edge_index,
                         batch.batch,
                     )
                     pred = torch.flatten(pred)
-                    # Calculating the loss and gradients
+                    # calculating the loss and gradients
                     loss = criterion(pred, batch.y.float())
                     loss.backward()
                     optimizer.step()
@@ -144,16 +144,17 @@ class GNNLearn(Learn):
 
                 for batch in valid_loader:
                     batch.to(device)
+                    nfeats = batch[0].graph_attr.shape[0]
+                    graph_attr = batch.graph_attr.reshape(len(batch), nfeats)
                     pred = model(
                         batch.x.float(),
                         batch.edge_attr.float(),
+                        graph_attr.float(),
                         batch.edge_index,
                         batch.batch,
                     )
                     pred = torch.flatten(pred)
                     loss = criterion(pred, batch.y.float())
-
-                    # Update tracking
                     valid_loss += loss.item()
 
                 if self.lr_scheduler:
@@ -179,7 +180,7 @@ class GNNLearn(Learn):
                     (valid_loss / len(valid_loader)),
                     epoch,
                 )
-
+            print(model)
             self.write_log(model)
 
         self.writer.close()
