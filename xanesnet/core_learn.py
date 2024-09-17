@@ -32,7 +32,12 @@ def train_model(config, args):
 
     # Encode training dataset with specified descriptor types
     descriptor_list = []
-    for d in config["descriptors"]:
+    descriptors = config.get("descriptors")
+
+    if descriptors is None:
+        raise ValueError("No descriptors found in the configuration file!")
+
+    for d in descriptors:
         print(f">> Initialising {d['type']} feature descriptor...")
         descriptor = create_descriptor(d["type"], **d["params"])
         descriptor_list.append(descriptor)
@@ -146,10 +151,11 @@ def train_model_gnn(config, args):
 
     # Encode training dataset with specified descriptor types
     descriptor_list = []
-    for d in config["descriptors"]:
-        print(f">> Initialising {d['type']} feature descriptor...")
-        descriptor = create_descriptor(d["type"], **d["params"])
-        descriptor_list.append(descriptor)
+    if config["descriptors"] is not None:
+        for d in config["descriptors"]:
+            print(f">> Initialising {d['type']} feature descriptor...")
+            descriptor = create_descriptor(d["type"], **d["params"])
+            descriptor_list.append(descriptor)
 
     graph_dataset, index = encode_learn_gnn(
         config["xyz_path"],
@@ -212,6 +218,8 @@ def train_model_gnn(config, args):
         }
 
         if config["bootstrap"] or config["ensemble"]:
-            save_model_list(save_path, model_list, descriptor_list, None, metadata, config)
+            save_model_list(
+                save_path, model_list, descriptor_list, None, metadata, config
+            )
         else:
             save_model(save_path, model, descriptor_list, None, metadata)
