@@ -16,6 +16,8 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
 import tqdm as tqdm
+from ase.io import read
+from mace.calculators import mace_mp
 
 from pathlib import Path
 
@@ -28,7 +30,6 @@ from xanesnet.utils import (
     load_descriptor_direct,
 )
 
-
 def encode_xyz(xyz_path: Path, index: list, descriptor_list: list):
     n_samples = len(index)
     # Feature length
@@ -36,6 +37,12 @@ def encode_xyz(xyz_path: Path, index: list, descriptor_list: list):
     for descriptor in descriptor_list:
         if descriptor.get_type() == "direct":
             n_x_features += linecount(xyz_path / f"{index[0]}.dsc")
+        elif descriptor.get_type() == "mace":
+            env = read(xyz_path / f"{index[0]}.xyz")
+            mace = mace_mp()
+            tmp = mace.get_descriptors(env, num_layers=2)
+            n_x_features += len(tmp[0,:])
+            print(n_x_features)
         else:
             n_x_features += descriptor.get_nfeatures()
 
@@ -46,11 +53,19 @@ def encode_xyz(xyz_path: Path, index: list, descriptor_list: list):
     for i, id_ in enumerate(tqdm.tqdm(index)):
         s = 0
         for descriptor in descriptor_list:
-            l = descriptor.get_nfeatures()
             if descriptor.get_type() == "direct":
+                l = linecount(xyz_path / f"{index[0]}.dsc") 
                 with open(xyz_path / f"{id_}.dsc", "r") as f:
                     xyz_data[i, s : s + l] = load_descriptor_direct(f)
+            elif descriptor.get_type() == "mace":
+                 env = read(xyz_path / f"{id_}.xyz")
+                 mace = mace_mp()
+                 tmp = mace.get_descriptors(env, num_layers=2)
+                 l = len(tmp[0,:])
+                 print(l)
+                 xyz_data[i, s : s + l] = tmp[0,:]
             else:
+                l = descriptor.get_nfeatures()
                 with open(xyz_path / f"{id_}.xyz", "r") as f:
                     atoms = load_xyz(f)
                 xyz_data[i, s : s + l] = descriptor.transform(atoms)
