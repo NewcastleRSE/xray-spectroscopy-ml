@@ -39,7 +39,10 @@ def train_model(config, args):
 
     for d in descriptors:
         print(f">> Initialising {d['type']} feature descriptor...")
-        descriptor = create_descriptor(d["type"], **d["params"])
+        if d["type"] == 'mace' or 'direct':
+            descriptor = create_descriptor(d["type"])
+        else:
+            descriptor = create_descriptor(d["type"], **d["params"])
         descriptor_list.append(descriptor)
 
     xyz, xanes, index = encode_learn(
