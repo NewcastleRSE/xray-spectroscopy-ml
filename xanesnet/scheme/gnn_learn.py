@@ -22,6 +22,7 @@ from torch_geometric.data import DataLoader
 from torchinfo import summary
 from sklearn.model_selection import train_test_split
 
+from xanesnet.creator import create_model
 from xanesnet.scheme.base_learn import Learn
 from xanesnet.utils_model import (
     OptimSwitch,
@@ -190,11 +191,14 @@ class GNNLearn(Learn):
 
     def train_std(self):
         x_data = self.x_data
-        y_data = None
 
-        model = self.setup_model(x_data, y_data)
+        self.model_params["x_data"] = x_data
+        self.model_params["mlp_feat_size"] = x_data[0].graph_attr.shape[0]
+
+        model = create_model(self.model_name, **self.model_params)
+        model.to(self.device)
         model = self.setup_weight(model, self.weight_seed)
-        model, _ = self.train(model, x_data, y_data)
+        model, _ = self.train(model, x_data, None)
 
         summary(model)
 

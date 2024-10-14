@@ -183,6 +183,7 @@ class GraphDataset(Dataset):
         for descriptor in self.descriptor_list:
             l = descriptor.get_nfeatures()
             all_graph_feats[s : s + l] = descriptor.transform(mg.atoms)
+            s += l
 
         return torch.tensor(all_graph_feats, dtype=torch.float)
 

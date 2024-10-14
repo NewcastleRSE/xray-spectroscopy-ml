@@ -37,7 +37,6 @@ class GNN(Model):
     def __init__(
         self,
         x_data: np.ndarray,
-        y_data: np.ndarray,
         layer_name: str,
         layer_params: dict,
         hidden_size: int,
@@ -49,7 +48,6 @@ class GNN(Model):
         """
         Args:
             x_data (NumPy array): Input data for the network
-            y_data (Numpy array): Output data for the network
             layer_name (string): Name of GNN layer (GAT, GATv2, GCN, GraphConv)
             layer_params (dict): parameters pass to GNN layers
             hidden_size (integer): Size of the hidden layer.
@@ -68,7 +66,6 @@ class GNN(Model):
         self.nn_flag = 1
         input_size = x_data[0].x.shape[1]
         output_size = x_data[0].y.shape[0]
-
         heads = 1
         if layer_params is None:
             layer_params = {}

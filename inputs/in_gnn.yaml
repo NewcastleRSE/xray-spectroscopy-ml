@@ -15,6 +15,13 @@ descriptors:
       e_max: 30.0
       sigma: 0.8
 
+  - type: wacsf
+    params:
+      r_min: 0.5
+      r_max: 6.5
+      n_g2: 22
+      n_g4: 10
+
 model:
   type: gnn
   node_features:
@@ -24,7 +31,6 @@ model:
     r_max: 4.0
   params:
     hidden_size: 512
-    mlp_feat_size: 80
     dropout: 0.2
     num_hidden_layers: 5
     activation: prelu
