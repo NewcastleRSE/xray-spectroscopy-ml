@@ -81,9 +81,7 @@ class GNN(Model):
         for i in range(num_hidden_layers - 1):
             layers += [
                 gnn_layer(
-                    in_channels=input_size,
-                    out_channels=hidden_size,
-                    **layer_params
+                    in_channels=input_size, out_channels=hidden_size, **layer_params
                 ),
                 nn.BatchNorm1d(hidden_size * heads),
                 act_fn(),
@@ -93,11 +91,7 @@ class GNN(Model):
 
         # Construct output layer
         layers += [
-            gnn_layer(
-                in_channels=input_size,
-                out_channels=hidden_size,
-                **layer_params
-            )
+            gnn_layer(in_channels=input_size, out_channels=hidden_size, **layer_params)
         ]
         self.layers = nn.ModuleList(layers)
 
@@ -106,6 +100,7 @@ class GNN(Model):
 
         num_hidden_layers = 3
         mlp_hidden_size = (hidden_size * heads) + mlp_feat_size
+
         for i in range(num_hidden_layers - 1):
             if i == 0:
                 layer = nn.Sequential(
