@@ -39,7 +39,7 @@ def train_model(config, args):
 
     for d in descriptors:
         print(f">> Initialising {d['type']} feature descriptor...")
-        if d["type"] == 'mace' or 'direct':
+        if d["type"] in ('mace', 'direct'):
             descriptor = create_descriptor(d["type"])
         else:
             descriptor = create_descriptor(d["type"], **d["params"])
