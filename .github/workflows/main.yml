@@ -90,5 +90,9 @@ jobs:
           python3 -m xanesnet.cli --mode train_aegan --in_file ./.github/workflows/inputs/in_aegan.yaml
           python3 -m xanesnet.cli --mode predict_all --in_model models/model_aegan_mlp_001 --in_file ./.github/workflows/inputs/in_predict.yaml
 
-
+      - name: GNN
+        run: |
+          rm -rf models/model_gnn_001
+          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_gnn.yaml
+          python3 -m xanesnet.cli --mode predict_xanes --in_model models/model_gnn_001 --in_file ./.github/workflows/inputs/in_predict_gnn.yaml
 

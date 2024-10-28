@@ -4,8 +4,6 @@ xanes_path:  .github/workflows/data/datasets/fe/preconv/xanes_test
 plot_save: False
 result_save: False
 
-fourier_transform: False
-
 shap: False
 shap_params:
   nsamples: 5

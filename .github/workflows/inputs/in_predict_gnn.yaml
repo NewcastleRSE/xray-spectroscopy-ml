@@ -1,0 +1,9 @@
+xyz_path:  .github/workflows/data/datasets/graph-set/xyz_test
+xanes_path:  .github/workflows/data/datasets/graph-set/xanes_test
+
+plot_save: False
+result_save: False
+
+shap: False
+shap_params:
+  nsamples: 5
