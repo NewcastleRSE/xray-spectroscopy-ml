@@ -38,6 +38,6 @@ setup(
         "sphinx_rtd_theme",
         "pyscf",
         "tblite",
-        "mendeleev",
+        "mace-torch"
     ],
 )
