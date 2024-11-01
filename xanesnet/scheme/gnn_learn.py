@@ -29,6 +29,10 @@ from xanesnet.utils_model import (
     LossSwitch,
 )
 
+import time
+from sklearn.model_selection import RepeatedKFold
+import numpy as np
+
 
 class GNNLearn(Learn):
     def __init__(self, x_data, y_data, **kwargs):
@@ -205,10 +209,124 @@ class GNNLearn(Learn):
         return model
 
     def train_kfold(self, x_data=None, y_data=None):
-        pass
+        # K-fold Cross Validation model evaluation
+        device = self.device
+
+        if x_data is None:
+            x_data = self.x_data
+
+        prev_score = 1e6
+        fit_time = []
+        train_score = []
+        test_score = []
+
+        kfold_spooler = RepeatedKFold(
+            n_splits=self.n_splits,
+            n_repeats=self.n_repeats,
+            random_state=self.seed_kfold,
+        )
+
+        criterion = LossSwitch().fn(self.loss_fn, self.loss_args)
+
+        # Generate indices for k-fold splits
+        indices = list(range(len(x_data)))
+
+        for fold, (train_index, test_index) in enumerate(kfold_spooler.split(indices)):
+            start = time.time()
+            
+            # Training
+            train_data = x_data[train_index]
+            self.model_params["x_data"] = train_data
+            self.model_params["mlp_feat_size"] = train_data[0].graph_attr.shape[0]
+            
+            model = create_model(self.model_name, **self.model_params)
+            model.to(device)
+            model = self.setup_weight(model, self.weight_seed)
+            model, score = self.train(model, train_data, None)
+
+            train_score.append(score)
+            fit_time.append(time.time() - start)
+
+            # Testing
+            model.eval()
+            test_data = x_data[test_index]
+            test_loader = DataLoader(
+                test_data,
+                batch_size=self.batch_size,
+                shuffle=False,
+            )
+
+            test_loss = 0
+            for batch in test_loader:
+                batch.to(device)
+                nfeats = batch[0].graph_attr.shape[0]
+                graph_attr = batch.graph_attr.reshape(len(batch), nfeats)
+                pred = model(
+                    batch.x.float(),
+                    batch.edge_attr.float(),
+                    graph_attr.float(),
+                    batch.edge_index,
+                    batch.batch,
+                )
+                pred = torch.flatten(pred)
+                loss = criterion(pred, batch.y.float())
+                test_loss += loss.item()
+
+            test_score.append(test_loss / len(test_loader))
+
+            if test_loss < prev_score:
+                best_model = model
+            prev_score = test_loss
+
+        result = {
+            "fit_time": fit_time,
+            "train_score": train_score,
+            "test_score": test_score,
+        }
+
+        self._print_kfold_result(result)
+        summary(best_model)
+
+        return best_model
 
     def train_bootstrap(self):
         pass
 
     def train_ensemble(self):
         pass
+
+    def _print_kfold_result(self, scores: dict):
+        # prints a summary table of the scores from k-fold cross validation;
+        # summarises the elapsed time and train/test metric scores for each k-fold
+        # with overall k-fold cross validation statistics (mean and std. dev.)
+        # using the `scores` dictionary returned from `cross_validate`
+
+        print("")
+        print(">> summarising scores from k-fold cross validation...")
+        print("")
+
+        print("*" * 16 * 3)
+        fmt = "{:<10s}{:>6s}{:>16s}{:>16s}"
+        print(fmt.format("k-fold", "time", "train", "test"))
+        print("*" * 16 * 3)
+
+        fmt = "{:<10.0f}{:>5.1f}s{:>16.8f}{:>16.8f}"
+        for kf, (t, train, test) in enumerate(
+            zip(scores["fit_time"], scores["train_score"], scores["test_score"])
+        ):
+            print(fmt.format(kf, t, np.absolute(train), np.absolute(test)))
+
+        print("*" * 16 * 3)
+        fmt = "{:<10s}{:>5.1f}s{:>16.8f}{:>16.8f}"
+        means_ = (
+            np.mean(np.absolute(scores[score]))
+            for score in ("fit_time", "train_score", "test_score")
+        )
+        print(fmt.format("mean", *means_))
+        stdevs_ = (
+            np.std(np.absolute(scores[score]))
+            for score in ("fit_time", "train_score", "test_score")
+        )
+        print(fmt.format("std. dev.", *stdevs_))
+        print("*" * 16 * 3)
+        print("")
