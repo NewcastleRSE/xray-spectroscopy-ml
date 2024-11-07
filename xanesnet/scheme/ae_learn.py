@@ -294,15 +294,12 @@ class AELearn(Learn):
             boot_x = np.asarray(boot_x)
             boot_y = np.asarray(boot_y)
 
-            if self.kfold:
-                model = self.train_kfold(boot_x, boot_y)
-            else:
-                if self.optuna:
-                    self.proc_optuna(x_data, y_data, weight_seed)
+            if self.optuna:
+                self.proc_optuna(x_data, y_data, weight_seed)
 
-                model = self.setup_model(boot_x, boot_y)
-                model = self.setup_weight(model, weight_seed)
-                model, _ = self.train(model, boot_x, boot_y)
+            model = self.setup_model(boot_x, boot_y)
+            model = self.setup_weight(model, weight_seed)
+            model, _ = self.train(model, boot_x, boot_y)
 
             model_list.append(model)
 
@@ -314,16 +311,13 @@ class AELearn(Learn):
         y_data = self.y_data
 
         for i in range(self.n_ens):
-            if self.kfold:
-                model = self.train_kfold()
-            else:
-                weight_seed = self.weight_seed_ens[i]
+            weight_seed = self.weight_seed_ens[i]
 
-                if self.optuna:
-                    self.proc_optuna(x_data, y_data, weight_seed)
-                model = self.setup_model(x_data, y_data)
-                model = self.setup_weight(model, weight_seed)
-                model, _ = self.train(model, x_data, y_data)
+            if self.optuna:
+                self.proc_optuna(x_data, y_data, weight_seed)
+            model = self.setup_model(x_data, y_data)
+            model = self.setup_weight(model, weight_seed)
+            model, _ = self.train(model, x_data, y_data)
 
             model_list.append(model)
 

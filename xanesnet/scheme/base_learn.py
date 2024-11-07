@@ -44,20 +44,20 @@ class Learn(ABC):
         self.x_data = x_data
         self.y_data = y_data
 
-        self.model = kwargs.get('model')
-        self.model_params = kwargs.get('model')['params']
-        self.hyper_params = kwargs.get('hyper_params')
-        self.kfold = kwargs.get('kfold')
-        self.kfold_params = kwargs.get('kfold_params')
-        self.bootstrap_params = kwargs.get('bootstrap_params')
-        self.ensemble_params = kwargs.get('ensemble_params')
-        self.lr_scheduler = kwargs.get('scheduler')
-        self.scheduler_params = kwargs.get('scheduler_params')
-        self.optuna = kwargs.get('optuna')
-        self.optuna_params = kwargs.get('optuna_params')
-        self.freeze = kwargs.get('freeze')
-        self.freeze_params = kwargs.get('freeze_params')
-        self.scaler = kwargs.get('scaler')
+        self.model = kwargs.get("model")
+        self.model_params = kwargs.get("model")["params"]
+        self.hyper_params = kwargs.get("hyper_params")
+        self.kfold = kwargs.get("kfold")
+        self.kfold_params = kwargs.get("kfold_params")
+        self.bootstrap_params = kwargs.get("bootstrap_params")
+        self.ensemble_params = kwargs.get("ensemble_params")
+        self.lr_scheduler = kwargs.get("scheduler")
+        self.scheduler_params = kwargs.get("scheduler_params")
+        self.optuna = kwargs.get("optuna")
+        self.optuna_params = kwargs.get("optuna_params")
+        self.freeze = kwargs.get("freeze")
+        self.freeze_params = kwargs.get("freeze_params")
+        self.scaler = kwargs.get("scaler")
 
         # kfold parameter set
         self.n_splits = self.kfold_params["n_splits"]
@@ -104,7 +104,7 @@ class Learn(ABC):
         pass
 
     @abstractmethod
-    def train_kfold(self, x_data=None, y_data=None):
+    def train_kfold(self):
         pass
 
     @abstractmethod
@@ -177,6 +177,7 @@ class Learn(ABC):
         # split dataset and setup train/valid/test dataloader
         x_data = torch.from_numpy(x_data)
         y_data = torch.from_numpy(y_data)
+        eval_loader = None
 
         if self.model_eval:
             # Data split: train/valid/test
@@ -192,6 +193,7 @@ class Learn(ABC):
                 x_test, y_test, test_size=eval_ratio / (eval_ratio + test_ratio)
             )
         else:
+            # Data split: train/valid
             x_train, x_test, y_train, y_test = train_test_split(
                 x_data, y_data, test_size=0.2, random_state=42
             )
@@ -217,8 +219,6 @@ class Learn(ABC):
                 batch_size=self.batch_size,
                 shuffle=False,
             )
-        else:
-            eval_loader = None
 
         return [train_loader, valid_loader, eval_loader]
 

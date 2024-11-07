@@ -104,13 +104,14 @@ class GNNLearn(Learn):
         device = self.device
         writer = self.writer
 
-        # initialise dataloader
+        # initialise dataloaders
         train_loader, valid_loader, eval_loader = self.setup_dataloader(x_data, y_data)
         # initialise optimizer
         optim_fn = OptimSwitch().fn(self.optim_fn)
+        # initialise optimizer
         optimizer = optim_fn(model.parameters(), self.lr)
+        # initialise loss criterion
         criterion = LossSwitch().fn(self.loss_fn, self.loss_args)
-
         # initialise schedular
         if self.lr_scheduler:
             scheduler = self.setup_scheduler(optimizer)
@@ -137,16 +138,18 @@ class GNNLearn(Learn):
                         batch.batch,
                     )
                     pred = torch.flatten(pred)
-                    # calculating the loss and gradients
+                    # calculate loss
                     loss = criterion(pred, batch.y.float())
+                    # Backpropagation
                     loss.backward()
+                    # Update model parameters
                     optimizer.step()
                     # Update tracking
                     running_loss += loss.item()
 
+                # Model validation
                 valid_loss = 0
                 model.eval()
-
                 for batch in valid_loader:
                     batch.to(device)
                     nfeats = batch[0].graph_attr.shape[0]
@@ -170,22 +173,15 @@ class GNNLearn(Learn):
                         "Epoch %d: Adam lr %.5f -> %.5f" % (epoch, before_lr, after_lr)
                     )
 
-                print("Training loss:", running_loss / len(train_loader))
-                print("Validation loss:", valid_loss / len(valid_loader))
+                train_loss = running_loss / len(train_loader)
+                valid_loss = valid_loss / len(valid_loader)
+                # Print to screen
+                print("Training loss:", train_loss)
+                print("Validation loss:", valid_loss)
+                # Save to log
+                self.log_scalar(writer, "loss/train", train_loss, epoch)
+                self.log_scalar(writer, "loss/validation", valid_loss, epoch)
 
-                self.log_scalar(
-                    writer,
-                    "loss/train",
-                    (running_loss / len(train_loader)),
-                    epoch,
-                )
-                self.log_scalar(
-                    writer,
-                    "loss/validation",
-                    (valid_loss / len(valid_loader)),
-                    epoch,
-                )
-            print(model)
             self.write_log(model)
 
         self.writer.close()
@@ -208,12 +204,10 @@ class GNNLearn(Learn):
 
         return model
 
-    def train_kfold(self, x_data=None, y_data=None):
+    def train_kfold(self):
         # K-fold Cross Validation model evaluation
         device = self.device
-
-        if x_data is None:
-            x_data = self.x_data
+        x_data = self.x_data
 
         prev_score = 1e6
         fit_time = []
@@ -233,12 +227,12 @@ class GNNLearn(Learn):
 
         for fold, (train_index, test_index) in enumerate(kfold_spooler.split(indices)):
             start = time.time()
-            
+
             # Training
             train_data = x_data[train_index]
             self.model_params["x_data"] = train_data
             self.model_params["mlp_feat_size"] = train_data[0].graph_attr.shape[0]
-            
+
             model = create_model(self.model_name, **self.model_params)
             model.to(device)
             model = self.setup_weight(model, self.weight_seed)
@@ -256,7 +250,7 @@ class GNNLearn(Learn):
                 shuffle=False,
             )
 
-            test_loss = 0
+            score = 0
             for batch in test_loader:
                 batch.to(device)
                 nfeats = batch[0].graph_attr.shape[0]
@@ -270,13 +264,13 @@ class GNNLearn(Learn):
                 )
                 pred = torch.flatten(pred)
                 loss = criterion(pred, batch.y.float())
-                test_loss += loss.item()
+                score += loss.item()
 
-            test_score.append(test_loss / len(test_loader))
+            test_score.append(score / len(test_loader))
 
-            if test_loss < prev_score:
+            if score < prev_score:
                 best_model = model
-            prev_score = test_loss
+            prev_score = score
 
         result = {
             "fit_time": fit_time,

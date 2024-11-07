@@ -413,14 +413,11 @@ class AEGANLearn(Learn):
             boot_x = np.asarray(boot_x)
             boot_y = np.asarray(boot_y)
 
-            if self.kfold:
-                model = self.train_kfold(boot_x, boot_y)
-            else:
-                if self.optuna:
-                    self.proc_optuna(x_data, y_data, weight_seed)
-                model = self.setup_model(boot_x, boot_y)
-                model = self.setup_weight(model, weight_seed)
-                model, _ = self.train(model, boot_x, boot_y)
+            if self.optuna:
+                self.proc_optuna(x_data, y_data, weight_seed)
+            model = self.setup_model(boot_x, boot_y)
+            model = self.setup_weight(model, weight_seed)
+            model, _ = self.train(model, boot_x, boot_y)
 
             model_list.append(model)
 
@@ -433,14 +430,12 @@ class AEGANLearn(Learn):
 
         for i in range(self.n_ens):
             weight_seed = self.weight_seed_ens[i]
-            if self.kfold:
-                model = self.train_kfold()
-            else:
-                if self.optuna:
-                    self.proc_optuna(x_data, y_data, weight_seed)
-                model = self.setup_model(x_data, y_data)
-                model = self.setup_weight(model, weight_seed)
-                model, _ = self.train(model, x_data, y_data)
+
+            if self.optuna:
+                self.proc_optuna(x_data, y_data, weight_seed)
+            model = self.setup_model(x_data, y_data)
+            model = self.setup_weight(model, weight_seed)
+            model, _ = self.train(model, x_data, y_data)
 
             model_list.append(model)
 

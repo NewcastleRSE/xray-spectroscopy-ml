@@ -36,7 +36,6 @@ from xanesnet.utils_model import (
 
 class NNLearn(Learn):
     def __init__(self, x_data, y_data, **kwargs):
-        # Call the constructor of the parent class
         super().__init__(x_data, y_data, **kwargs)
 
         # loss parameter set
@@ -71,14 +70,13 @@ class NNLearn(Learn):
         # plt.show()
         # ########################TEST#############################
 
-        # initialise dataloader
+        # initialise dataloaders
         train_loader, valid_loader, eval_loader = self.setup_dataloader(x_data, y_data)
-
         # initialise optimizer
         optim_fn = OptimSwitch().fn(self.optim_fn)
         optimizer = optim_fn(model.parameters(), self.lr)
+        # initialise loss criterion
         criterion = LossSwitch().fn(self.loss_fn, self.loss_args)
-
         # initialise schedular
         if self.lr_scheduler:
             scheduler = self.setup_scheduler(optimizer)
@@ -86,43 +84,42 @@ class NNLearn(Learn):
         with mlflow.start_run(experiment_id=self.exp_id, run_name=self.exp_time):
             mlflow.log_params(self.hyper_params)
             mlflow.log_param("n_epoch", self.n_epoch)
-
             for epoch in range(self.n_epoch):
                 print(f">>> epoch = {epoch}")
+                # Train the model
                 model.train()
-
                 running_loss = 0
-
                 for inputs, labels in train_loader:
                     inputs, labels = inputs.to(device), labels.to(device)
                     inputs, labels = inputs.float(), labels.float()
-
                     optimizer.zero_grad()
-                    logps = model(inputs)
-
-                    loss = criterion(logps, labels)
-
+                    # Pass input data through model to get predictions
+                    pred = model(inputs)
+                    # calculate loss
+                    loss = criterion(pred, labels)
+                    # Apply loss regularisation if enabled
                     if self.loss_reg_type is not None:
                         l_reg = loss_reg_fn(model, self.loss_reg_type, device)
                         loss += self.lambda_reg * l_reg
-
+                    # Backpropagation
                     loss.mean().backward()
+                    # Update model parameters
                     optimizer.step()
-
+                    # Update tracking
                     running_loss += loss.item()
 
+                # Model validation
                 valid_loss = 0
                 model.eval()
-
                 for inputs, labels in valid_loader:
                     inputs, labels = inputs.to(device), labels.to(device)
                     inputs, labels = inputs.float(), labels.float()
 
-                    target = model(inputs)
-
-                    loss = criterion(target, labels)
+                    pred = model(inputs)
+                    loss = criterion(pred, labels)
                     valid_loss += loss.item()
 
+                # Adjust learning rate if enabled
                 if self.lr_scheduler:
                     before_lr = optimizer.param_groups[0]["lr"]
                     scheduler.step()
@@ -131,25 +128,18 @@ class NNLearn(Learn):
                         "Epoch %d: Adam lr %.5f -> %.5f" % (epoch, before_lr, after_lr)
                     )
 
-                print("Training loss:", running_loss / len(train_loader))
-                print("Validation loss:", valid_loss / len(valid_loader))
-
-                self.log_scalar(
-                    writer,
-                    "loss/train",
-                    (running_loss / len(train_loader)),
-                    epoch,
-                )
-                self.log_scalar(
-                    writer,
-                    "loss/validation",
-                    (valid_loss / len(valid_loader)),
-                    epoch,
-                )
+                train_loss = running_loss / len(train_loader)
+                valid_loss = valid_loss / len(valid_loader)
+                # Print to screen
+                print("Training loss:", train_loss)
+                print("Validation loss:", valid_loss)
+                # Save to log
+                self.log_scalar(writer, "loss/train", train_loss, epoch)
+                self.log_scalar(writer, "loss/validation", valid_loss, epoch)
 
             self.write_log(model)
 
-            # Perform model evaluation using invariance tests
+            # Model evaluation using invariance tests if enabled
             if self.model_eval:
                 eval_test = create_eval_scheme(
                     self.model_name,
@@ -161,7 +151,6 @@ class NNLearn(Learn):
                     y_data[0].size,
                 )
                 eval_results = eval_test.eval()
-
                 # Log results
                 for k, v in eval_results.items():
                     mlflow.log_dict(v, f"{k}.yaml")
@@ -175,84 +164,85 @@ class NNLearn(Learn):
         x_data = self.x_data
         y_data = self.y_data
 
+        # Optuna optimisation if enabled
         if self.optuna:
             self.proc_optuna(x_data, y_data, self.weight_seed)
 
+        # Train the model
         model = self.setup_model(x_data, y_data)
         model = self.setup_weight(model, self.weight_seed)
         model, _ = self.train(model, x_data, y_data)
 
+        # Display the model summary
         summary(model, (1, x_data.shape[1]))
 
         return model
 
-    def train_kfold(self, x_data=None, y_data=None):
-        # K-fold Cross Validation model evaluation
+    def train_kfold(self):
+        # Perform K-fold Repeated Cross Validation
         device = self.device
-
-        if x_data is None:
-            x_data = self.x_data
-        if y_data is None:
-            y_data = self.y_data
+        x_data = self.x_data
+        y_data = self.y_data
 
         prev_score = 1e6
         fit_time = []
         train_score = []
         test_score = []
 
+        # Initialise K-fold splitter
         kfold_spooler = RepeatedKFold(
             n_splits=self.n_splits,
             n_repeats=self.n_repeats,
-            random_state=RandomState(seed=self.seed_kfold),
+            random_state=self.seed_kfold,
         )
-
+        # Initialise loss criterion
         criterion = LossSwitch().fn(self.loss_fn, self.loss_args)
 
         for fold, (train_index, test_index) in enumerate(kfold_spooler.split(x_data)):
             start = time.time()
-            # Training
+            # Train the model
             model = self.setup_model(x_data[train_index], y_data[train_index])
             model = self.setup_weight(model, self.weight_seed)
             model, score = self.train(model, x_data[train_index], y_data[train_index])
 
             train_score.append(score)
             fit_time.append(time.time() - start)
-            # Testing
+            # Model evaluation on the test dataset
             model.eval()
             x_test = torch.from_numpy(x_data[test_index]).float().to(device)
-            pred_xanes = model(x_test)
-            pred_score = criterion(
-                torch.tensor(y_data[test_index]).to(device), pred_xanes
-            ).item()
-            test_score.append(pred_score)
+            pred = model(x_test)
+            score = criterion(torch.tensor(y_data[test_index]).to(device), pred).item()
+            test_score.append(score)
 
-            if pred_score < prev_score:
+            if score < prev_score:
                 best_model = model
-            prev_score = pred_score
+            prev_score = score
 
         result = {
             "fit_time": fit_time,
             "train_score": train_score,
             "test_score": test_score,
         }
-
+        # Print results to screen
         self._print_kfold_result(result)
         summary(best_model, (1, x_data.shape[1]))
 
         return best_model
 
     def train_bootstrap(self):
+        # Train multiple models using bootstrap resampling
         model_list = []
         x_data = self.x_data
         y_data = self.y_data
 
         for i in range(self.n_boot):
+            boot_x = []
+            boot_y = []
+            # Set a unique seed for each bootstrap iteration
             weight_seed = self.weight_seed_boot[i]
             random.seed(weight_seed)
 
-            boot_x = []
-            boot_y = []
-
+            # Generate bootstrap sample of size n_size x original dataset size
             for _ in range(int(x_data.shape[0] * self.n_size)):
                 idx = random.randint(0, x_data.shape[0] - 1)
                 boot_x.append(x_data[idx])
@@ -261,35 +251,32 @@ class NNLearn(Learn):
             boot_x = np.asarray(boot_x)
             boot_y = np.asarray(boot_y)
 
-            if self.kfold:
-                model = self.train_kfold(boot_x, boot_y)
-            else:
-                if self.optuna:
-                    self.proc_optuna(x_data, y_data, weight_seed)
+            # Optuna optimisation if enabled
+            if self.optuna:
+                self.proc_optuna(x_data, y_data, weight_seed)
 
-                model = self.setup_model(boot_x, boot_y)
-                model = self.setup_weight(model, weight_seed)
-                model, _ = self.train(model, boot_x, boot_y)
+            # Train the model on the bootstrap sample
+            model = self.setup_model(boot_x, boot_y)
+            model = self.setup_weight(model, weight_seed)
+            model, _ = self.train(model, boot_x, boot_y)
 
             model_list.append(model)
 
         return model_list
 
     def train_ensemble(self):
+        # Train multiple models using ensemble learning
         model_list = []
         x_data = self.x_data
         y_data = self.y_data
 
         for i in range(self.n_ens):
-            if self.kfold:
-                model = self.train_kfold()
-            else:
-                if self.optuna:
-                    self.proc_optuna(x_data, y_data, self.weight_seed_ens[i])
-
-                model = self.setup_model(x_data, y_data)
-                model = self.setup_weight(model, self.weight_seed_ens[i])
-                model, _ = self.train(model, x_data, y_data)
+            if self.optuna:
+                self.proc_optuna(x_data, y_data, self.weight_seed_ens[i])
+            # Train the model on the bootstrap sample
+            model = self.setup_model(x_data, y_data)
+            model = self.setup_weight(model, self.weight_seed_ens[i])
+            model, _ = self.train(model, x_data, y_data)
 
             model_list.append(model)
 
@@ -302,7 +289,7 @@ class NNLearn(Learn):
         # using the `scores` dictionary returned from `cross_validate`
 
         print("")
-        print(">> summarising scores from k-fold cross validation...")
+        print(">> Summarising scores from k-fold cross validation...")
         print("")
 
         print("*" * 16 * 3)
