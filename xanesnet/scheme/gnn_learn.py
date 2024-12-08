@@ -32,6 +32,7 @@ from xanesnet.utils_model import (
 import time
 from sklearn.model_selection import RepeatedKFold
 import numpy as np
+import random
 
 
 class GNNLearn(Learn):
@@ -284,7 +285,35 @@ class GNNLearn(Learn):
         return best_model
 
     def train_bootstrap(self):
-        pass
+        model_list = []
+        x_data = self.x_data
+
+        for i in range(self.n_boot):
+            boot_indices = []
+            # Set a unique seed for each bootstrap iteration
+            weight_seed = self.weight_seed_boot[i]
+            random.seed(weight_seed)
+
+            # Generate bootstrap sample of size n_size x original dataset size
+            for _ in range(int(len(x_data) * self.n_size)):
+                idx = random.randint(0, len(x_data) - 1)
+                boot_indices.append(idx)
+
+            # Index the dataset with integer indices
+            boot_x = x_data.index_select(boot_indices)
+
+            # Train the model on the bootstrap sample
+            self.model_params["x_data"] = boot_x
+            self.model_params["mlp_feat_size"] = boot_x[0].graph_attr.shape[0]
+
+            model = create_model(self.model_name, **self.model_params)
+            model.to(self.device)
+            model = self.setup_weight(model, weight_seed)
+            model, _ = self.train(model, boot_x, None)
+
+            model_list.append(model)
+
+        return model_list
 
     def train_ensemble(self):
         pass
