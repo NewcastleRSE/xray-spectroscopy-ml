@@ -300,7 +300,7 @@ class GNNLearn(Learn):
                 boot_indices.append(idx)
 
             # Index the dataset with integer indices
-            boot_x = x_data.index_select(boot_indices)
+            boot_x = x_data[boot_indices]
 
             # Train the model on the bootstrap sample
             self.model_params["x_data"] = boot_x
