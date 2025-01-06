@@ -316,7 +316,24 @@ class GNNLearn(Learn):
         return model_list
 
     def train_ensemble(self):
-        pass
+        model_list = []
+        x_data = self.x_data
+
+        for i in range(self.n_ens):
+            weight_seed = self.weight_seed_ens[i]
+
+            # Train the model
+            self.model_params["x_data"] = x_data
+            self.model_params["mlp_feat_size"] = x_data[0].graph_attr.shape[0]
+
+            model = create_model(self.model_name, **self.model_params)
+            model.to(self.device)
+            model = self.setup_weight(model, weight_seed)
+            model, _ = self.train(model, x_data, None)
+
+            model_list.append(model)
+
+        return model_list
 
     def _print_kfold_result(self, scores: dict):
         # prints a summary table of the scores from k-fold cross validation;
