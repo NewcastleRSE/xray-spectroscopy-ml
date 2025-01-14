@@ -31,7 +31,6 @@ class Predict(ABC):
         xanes_data,
         pred_mode,
         pred_eval,
-        index,
         scaler,
         fourier,
         fourier_param,
@@ -40,7 +39,6 @@ class Predict(ABC):
         self.xanes_data = xanes_data
         self.pred_mode = pred_mode
         self.pred_eval = pred_eval
-        self.ids = index
         self.scaler = scaler
         self.fourier = fourier
         self.fourier_concat = fourier_param["concat"]

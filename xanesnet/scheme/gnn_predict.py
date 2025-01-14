@@ -16,14 +16,11 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
 import torch
-from sklearn.metrics import mean_squared_error
 from dataclasses import dataclass
 from torch_geometric.data import DataLoader
 
-from sklearn.preprocessing import StandardScaler
-
 from xanesnet.scheme.base_predict import Predict
-from xanesnet.data_transform import fourier_transform, inverse_fourier_transform
+from xanesnet.data_transform import inverse_fourier_transform
 
 
 @dataclass
@@ -53,6 +50,8 @@ class GNNPredict(Predict):
             out = torch.squeeze(out)
             xanes_pred.append(out.detach().numpy())
 
+        xanes_pred = np.array(xanes_pred)
+
         if self.fourier:
             xanes_pred = inverse_fourier_transform(xanes_pred, self.fourier_concat)
 
@@ -65,7 +64,6 @@ class GNNPredict(Predict):
     def predict_std(self, model):
         print(f">> Predicting ...")
         xanes_pred = self.predict(model)
-
         # Create dummy STD
         xanes_std = np.zeros_like(xanes_pred)
 

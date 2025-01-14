@@ -109,7 +109,6 @@ class GNNLearn(Learn):
         train_loader, valid_loader, eval_loader = self.setup_dataloader(x_data, y_data)
         # initialise optimizer
         optim_fn = OptimSwitch().fn(self.optim_fn)
-        # initialise optimizer
         optimizer = optim_fn(model.parameters(), self.lr)
         # initialise loss criterion
         criterion = LossSwitch().fn(self.loss_fn, self.loss_args)
@@ -124,7 +123,7 @@ class GNNLearn(Learn):
                 print(f">>> epoch = {epoch}")
                 model.train()
                 running_loss = 0
-                for idx, batch in enumerate(train_loader):
+                for batch in train_loader:
                     batch.to(device)
                     optimizer.zero_grad()
                     # reshape concatenated graph_attr to [batch_size, feat_size]

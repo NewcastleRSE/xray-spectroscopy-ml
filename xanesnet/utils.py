@@ -13,6 +13,7 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with 
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 import glob
 import os
 
@@ -29,7 +30,9 @@ import pickle as pickle
 from pathlib import Path
 from ase import Atoms
 from typing import TextIO
+from dataclasses import dataclass
 
+from xanesnet.model.base_model import Model
 from xanesnet.spectrum.xanes import XANES
 
 ###############################################################################
@@ -102,158 +105,109 @@ def print_nested_dict(dict_: dict, nested_level: int = 0):
     return 0
 
 
-def save_model(path, model, descriptor_list, data_compress, metadata):
-    Path(path).mkdir(parents=True, exist_ok=True)
+def mkdir_output(path: Path | str, name: str):
+    path = Path(path)
+    save_path = path / name
+    save_path.mkdir(parents=True, exist_ok=True)
 
-    model_dir = unique_path(Path(path), "model_" + metadata["model_type"])
-    model_dir.mkdir()
-
-    if descriptor_list is not None:
-        for idx, descriptor in enumerate(descriptor_list):
-            name = "descriptor" + str(idx) + "_" + descriptor.get_type() + ".pickle"
-            with open(model_dir / name, "wb") as f:
-                pickle.dump(descriptor, f)
-
-    if data_compress is not None:
-        with open(model_dir / "dataset.npz", "wb") as f:
-            np.savez_compressed(
-                f,
-                ids=data_compress["ids"],
-                x=data_compress["x"],
-                y=data_compress["y"],
-            )
-
-    torch.save(model, model_dir / f"model.pt")
-    print(f"saved model to disk: {model_dir}")
-
-    metadata["model_dir"] = str(model_dir)
-    with open(model_dir / "metadata.yaml", "w") as f:
-        yaml.dump_all([metadata], f)
+    return save_path
 
 
-def save_model_list(path, models, descriptor_list, data_compress, metadata, config):
-    model_dir_list = []
-
-    Path(path).mkdir(parents=True, exist_ok=True)
-    if config["bootstrap"]:
-        save_path = unique_path(Path(path), "bootstrap_" + metadata["model_type"])
-    elif config["ensemble"]:
-        save_path = unique_path(Path(path), "ensemble_" + metadata["model_type"])
-    else:
-        raise ValueError("Unsupported mode name")
-
+def save_models(
+    path: Path,
+    models: list,
+    descriptors: list,
+    metadata: dict,
+    dataset: dict = None,
+):
+    path.mkdir(parents=True, exist_ok=True)
+    save_path = unique_path(path, metadata["model_type"] + "_" + metadata["scheme"])
     save_path.mkdir()
 
-    if descriptor_list is not None:
-        for idx, descriptor in enumerate(descriptor_list):
-            name = "descriptor" + str(idx) + "_" + descriptor.get_type() + ".pickle"
-            with open(save_path / name, "wb") as f:
-                pickle.dump(descriptor, f)
+    for idx, descriptor in enumerate(descriptors):
+        name = "descriptor" + str(idx) + "_" + descriptor.get_type() + ".pickle"
+        with open(save_path / name, "wb") as f:
+            pickle.dump(descriptor, f)
 
-    if data_compress is not None:
+    if dataset is not None:
         with open(save_path / "dataset.npz", "wb") as f:
             np.savez_compressed(
                 f,
-                ids=data_compress["ids"],
-                x=data_compress["x"],
-                y=data_compress["y"],
+                ids=dataset["ids"],
+                x=dataset["x"],
+                y=dataset["y"],
             )
 
-    for model in models:
-        model_dir = unique_path(Path(save_path), "model")
-        model_dir.mkdir()
-        model_dir_list.append(model_dir)
+    if len(models) == 1:
+        # Save single model
+        torch.save(models[0], save_path / f"model.pt")
+        print(f"saved model to disk: {save_path}")
+    else:
+        # Save multiple models
+        for model in models:
+            model_dir = unique_path(save_path, "model")
+            model_dir.mkdir()
 
-        torch.save(model, model_dir / f"model.pt")
-        print(f"saved model to disk: {model_dir}")
+            torch.save(model, model_dir / f"model.pt")
+            print(f"saved model to disk: {model_dir}")
 
     metadata["model_dir"] = str(save_path)
     with open(save_path / "metadata.yaml", "w") as f:
         yaml.dump_all([metadata], f)
 
 
-def save_predict(save_path, mode, result, index, e):
-    # Save mean and std prediction result to file
-
+def save_predict(
+    path: Path, mode: str, result: dataclass, index: list, e: list, recon_flag: bool
+):
     if mode == "predict_xanes" or mode == "predict_all":
-        path = mkdir_output(save_path + "/xanes_pred")
+        # Save xanes prediction result to disk
+        save_path = mkdir_output(path, "xanes_pred")
         if e is None:
             e = np.arange(result.xanes_pred[0].shape[1])
 
         for id_, predict_, std_ in tqdm.tqdm(
             zip(index, result.xanes_pred[0], result.xanes_pred[1])
         ):
-            with open(path / f"{id_}.txt", "w") as f:
+            with open(save_path / f"{id_}.txt", "w") as f:
                 save_xanes_mean(f, XANES(e, predict_), std_)
 
+        # Save xyz reconstruction result to disk
+        if recon_flag:
+            save_path = mkdir_output(path, "xyz_recon")
+            for id_, recon_, std_ in tqdm.tqdm(
+                zip(index, result.xyz_recon[0], result.xyz_recon[1])
+            ):
+                with open(save_path / f"{id_}.txt", "w") as f:
+                    save_xyz_mean(f, recon_, std_)
+
     if mode == "predict_xyz" or mode == "predict_all":
-        path = mkdir_output(save_path + "/xyz_pred")
+        # Save xyz prediction result to disk
+        save_path = mkdir_output(path, "xyz_pred")
         for id_, predict_, std_ in tqdm.tqdm(
             zip(index, result.xyz_pred[0], result.xyz_pred[1])
         ):
-            with open(path / f"{id_}.txt", "w") as f:
+            with open(save_path / f"{id_}.txt", "w") as f:
                 save_xyz_mean(f, predict_, std_)
+
+        # Save xanes reconstruction result to disk
+        if recon_flag:
+            if e is None:
+                e = np.arange(result.xanes_recon[0].shape[1])
+            save_path = mkdir_output(path, "xanes_recon")
+            for id_, recon_, std_ in tqdm.tqdm(
+                zip(index, result.xanes_recon[0], result.xanes_recon[1])
+            ):
+                with open(save_path / f"{id_}.txt", "w") as f:
+                    save_xanes_mean(f, XANES(e, recon_), std_)
 
     print(f"Saved prediction result to disk {path}")
 
 
-def save_recon(save_path, mode, result, index, e):
-    # Save mean and std reconstruction result to file
-
-    if mode == "predict_xanes" or mode == "predict_all":
-        path = mkdir_output(save_path + "/xyz_recon")
-        for id_, recon_, std_ in tqdm.tqdm(
-            zip(index, result.xyz_recon[0], result.xyz_recon[1])
-        ):
-            with open(path / f"{id_}.txt", "w") as f:
-                save_xyz_mean(f, recon_, std_)
-
-    if mode == "predict_xyz" or mode == "predict_all":
-        if e is None:
-            e = np.arange(result.xanes_recon[0].shape[1])
-        path = mkdir_output(save_path + "/xanes_recon")
-        for id_, recon_, std_ in tqdm.tqdm(
-            zip(index, result.xanes_recon[0], result.xanes_recon[1])
-        ):
-            with open(path / f"{id_}.txt", "w") as f:
-                save_xanes_mean(f, XANES(e, recon_), std_)
-
-    print(f"Saved reconstruct result to disk {path}")
-
-
-def mkdir_output(save_path: str):
-    save_path = save_path.replace("models/", "")
-    save_path = Path(save_path)
-    save_path.mkdir(parents=True, exist_ok=True)
-
-    return save_path
-
-
-def save_prediction_mul(
-    save_path, mode, xyz_mean, xyz_std, xanes_mean, xanes_std, index, e
-):
-    if mode == "predict_xyz" or mode == "predict_all":
-        for id_, mean_y_predict_, std_y_predict_ in tqdm.tqdm(
-            zip(index, xyz_mean, xyz_std)
-        ):
-            with open(save_path / f"{id_}.txt", "w") as f:
-                save_xyz_mean(f, mean_y_predict_, std_y_predict_)
-
-    if mode == "predict_xanes" or mode == "predict_all":
-        for id_, mean_y_predict_, std_y_predict_ in tqdm.tqdm(
-            zip(index, xanes_mean, xanes_std)
-        ):
-            with open(save_path / f"{id_}.txt", "w") as f:
-                save_xanes_mean(f, XANES(e, mean_y_predict_), std_y_predict_)
-
-    print(f"Saved prediction result to disk {save_path}")
-
-
-def load_model_list(model_dir):
+def load_model_list(model_dir: str):
     model_list = []
-    n_boot = len(next(os.walk(model_dir))[1])
+    n_models = len(next(os.walk(model_dir))[1])
 
-    for i in range(1, n_boot + 1):
+    for i in range(1, n_models + 1):
         n_dir = f"{model_dir}/model_{i:03d}/model.pt"
         model = torch.load(n_dir, map_location=torch.device("cpu"))
         model_list.append(model)
@@ -264,7 +218,7 @@ def load_model_list(model_dir):
 def load_descriptors(path: str):
     descriptor_list = []
 
-    file_pattern = os.path.join(str(path), "descriptor*.pickle")
+    file_pattern = os.path.join(path, "descriptor*.pickle")
     files = glob.glob(file_pattern)
 
     for filename in files:

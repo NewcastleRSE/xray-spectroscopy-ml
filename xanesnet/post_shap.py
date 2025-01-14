@@ -23,9 +23,8 @@ from pathlib import Path
 from xanesnet.utils import mkdir_output
 
 
-def shap_analysis(save_path, mode, model, index, xyz, xanes, n_samples):
-    save_path = mkdir_output(save_path + "/shap")
-
+def shap_analysis(path, mode, model, index, xyz, xanes, n_samples):
+    save_path = mkdir_output(path, "shap")
     if model.nn_flag:
         if mode == "predict_xyz":
             print(">> Performing SHAP analysis on predicted xyz data...")

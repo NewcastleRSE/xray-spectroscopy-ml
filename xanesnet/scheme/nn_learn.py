@@ -273,7 +273,7 @@ class NNLearn(Learn):
         for i in range(self.n_ens):
             if self.optuna:
                 self.proc_optuna(x_data, y_data, self.weight_seed_ens[i])
-            # Train the model on the bootstrap sample
+            # Train the model
             model = self.setup_model(x_data, y_data)
             model = self.setup_weight(model, self.weight_seed_ens[i])
             model, _ = self.train(model, x_data, y_data)

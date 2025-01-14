@@ -13,6 +13,7 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 import os
 
 import numpy as np
@@ -197,10 +198,12 @@ class GraphDataset(Dataset):
         """Load a file with specified prefix from the processed directory."""
         file_list = os.listdir(self.processed_dir)
         for name in file_list:
-            if name.startswith(str(idx)):
+            if name.startswith(f"{idx}_"):
                 path = os.path.join(self.processed_dir, name)
                 data = torch.load(path)
                 return data
+        # Raise an error if no matching file is found
+        raise FileNotFoundError(f"File not found: index={idx}")
 
 
 def gaussian(r: np.ndarray, h: float, m: float) -> np.ndarray:

@@ -14,7 +14,6 @@ You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import random
 import warnings
 import numpy as np
 import torch
@@ -30,10 +29,14 @@ warnings.filterwarnings("ignore")
 # Select activation function from hyperparams inputs
 class ActivationSwitch:
     def fn(self, activation):
-        default = nn.PReLU()
-        return getattr(
-            self, f"activation_function_{activation.lower()}", lambda: default
-        )()
+        fn_name = f"activation_function_{activation.lower()}"
+        fn = getattr(self, fn_name, None)
+        if fn is None:
+            print(
+                f"Cannot find specified activation function '{activation}', using default PReLU."
+            )
+            return nn.PReLU
+        return fn()
 
     def activation_function_relu(self):
         return nn.ReLU
@@ -60,8 +63,14 @@ class ActivationSwitch:
 # Select loss function from hyperparams inputs
 class LossSwitch:
     def fn(self, loss_fn, *args):
-        default = nn.MSELoss()
-        return getattr(self, f"loss_function_{loss_fn.lower()}", lambda: default)(*args)
+        fn = f"loss_function_{loss_fn.lower()}"
+        func = getattr(self, fn, None)
+        if func is None:
+            print(
+                f"Cannot find specified loss function '{loss_fn}', using default MSE loss."
+            )
+            return nn.MSELoss()
+        return func(*args)
 
     def loss_function_mse(self, *args):
         return nn.MSELoss(*args)
@@ -82,96 +91,6 @@ class LossSwitch:
         return WCCLoss(*args)
 
 
-class WeightInitSwitch:
-    def fn(self, weight_init_fn):
-        default = nn.init.xavier_uniform_
-        return getattr(
-            self, f"weight_init_function_{weight_init_fn.lower()}", lambda: default
-        )()
-
-    # uniform
-    def weight_init_function_uniform(self):
-        return nn.init.uniform_
-
-    # normal
-    def weight_init_function_normal(self):
-        return nn.init.normal_
-
-    # xavier_uniform
-    def weight_init_function_xavier_uniform(self):
-        return nn.init.xavier_uniform_
-
-    # xavier_normal
-    def weight_init_function_xavier_normal_(self):
-        return nn.init.xavier_normal_
-
-    # kaiming_uniform
-    def weight_init_function_kaiming_uniform(self):
-        return nn.init.kaiming_uniform_
-
-    # kaiming_normal
-    def weight_init_function_kaiming_normal(self):
-        return nn.init.kaiming_normal_
-
-    # zeros
-    def weight_init_function_zeros(self):
-        return nn.init.zeros_
-
-    # ones
-    def weight_init_function_ones(self):
-        return nn.init.ones_
-
-
-def weight_bias_init(m, kernel_init_fn, bias_init_fn):
-    if isinstance(m, (nn.Linear, nn.Conv1d, nn.ConvTranspose1d)):
-        kernel_init_fn(m.weight)
-        bias_init_fn(m.bias)
-
-
-class LRScheduler:
-    """
-    Initialise the learning rate scheduler
-    """
-
-    def __init__(self, optimizer, scheduler_type, params=None):
-        self.optimizer = optimizer
-        scheduler_type = scheduler_type.lower()
-
-        if scheduler_type == "step":
-            self.scheduler = lr_scheduler.StepLR(optimizer, **params)
-        elif scheduler_type == "multistep":
-            self.scheduler = lr_scheduler.MultiStepLR(optimizer, **params)
-        elif scheduler_type == "exponential":
-            self.scheduler = lr_scheduler.ExponentialLR(optimizer, **params)
-        elif scheduler_type == "linear":
-            self.scheduler = lr_scheduler.LinearLR(optimizer, **params)
-        elif scheduler_type == "constant":
-            self.scheduler = lr_scheduler.ConstantLR(optimizer, **params)
-        else:
-            raise ValueError(f"Invalid scheduler type: {scheduler_type}")
-
-    def step(self):
-        self.scheduler.step()
-
-
-class OptimSwitch:
-    def fn(self, opt_fn):
-        default = optim.Adam
-        return getattr(self, f"optim_function_{opt_fn.lower()}", lambda: default)()
-
-    # Adam
-    def optim_function_adam(self):
-        return optim.Adam
-
-    # Stochastic Gradient Descent
-    def optim_function_sgd(self):
-        return optim.SGD
-
-    # RMSprop
-    def optim_function_rmsprop(self):
-        return optim.RMSprop
-
-
 class EMDLoss(nn.Module):
     """
     Computes the Earth Mover or Wasserstein distance
@@ -185,19 +104,6 @@ class EMDLoss(nn.Module):
             torch.square(torch.cumsum(y_true, dim=-1) - torch.cumsum(y_pred, dim=-1)),
             dim=-1,
         ).sum()
-        return loss
-
-
-class CosineSimilarityLoss(nn.Module):
-    """
-    Implements Cosine Similarity as loss function
-    """
-
-    def __init__(self):
-        super().__init__()
-
-    def forward(self, y_true, y_pred):
-        loss = torch.mean(nn.CosineSimilarity()(y_pred, y_true))
         return loss
 
 
@@ -268,111 +174,6 @@ class WCCLoss(nn.Module):
         return loss
 
 
-def model_mode_error(
-    model: object,
-    mode: object,
-    model_mode: object,
-    xyz_shape: object,
-    xanes_shape: object,
-) -> object:
-    for child in model.modules():
-        if type(child).__name__ == "Linear":
-            output_size = child.weight.shape[0]
-
-    if mode == "predict_xyz":
-        input_data = xanes_shape
-        output_data = xyz_shape
-    elif mode == "predict_xanes":
-        input_data = xyz_shape
-        output_data = xanes_shape
-
-    if mode == "predict_xyz" or mode == "predict_xanes":
-        if model_mode == "mlp" or model_mode == "cnn" or model_mode == "ae_cnn":
-            assert (
-                output_size == output_data
-            ), "the model was not train for this, please swap your predict mode"
-        if model_mode == "ae_mlp":
-            assert (
-                output_size == input_data
-            ), "the model was not train for this, please swap your predict mode"
-
-    parent_model_dir, predict_dir = make_output_dir()
-    return parent_model_dir, predict_dir
-
-
-def make_output_dir():
-    from pathlib import Path
-
-    from xanesnet.utils import unique_path
-
-    parent_model_dir = "outputs/"
-    Path(parent_model_dir).mkdir(parents=True, exist_ok=True)
-
-    predict_dir = unique_path(Path(parent_model_dir), "predictions")
-    predict_dir.mkdir()
-
-    return predict_dir
-
-
-def json_check(inp):
-    # assert isinstance(
-    #     inp["hyperparams"]["loss"], str
-    # ), "wrong type for loss param in json"
-    assert isinstance(
-        inp["hyperparams"]["activation"], str
-    ), "wrong type for activation param in json"
-
-
-# def json_cnn_check(inp, model):
-#     assert isinstance(
-#         inp["hyperparams"]["loss"], str
-#     ), "wrong type for loss param in json"
-#     assert isinstance(
-#         inp["hyperparams"]["activation"], str
-#     ), "wrong type for activation param in json"
-
-
-def montecarlo_dropout(model, input_data, n_mc):
-    model.train()
-
-    prob_output = []
-
-    input_data = torch.from_numpy(input_data)
-    input_data = input_data.float()
-
-    for t in range(n_mc):
-        output = model(input_data)
-        prob_output.append(output)
-
-    prob_mean = torch.mean(torch.stack(prob_output), dim=0)
-    prob_var = torch.std(torch.stack(prob_output), dim=0)
-
-    return prob_mean, prob_var
-
-
-def montecarlo_dropout_ae(model, input_data, n_mc):
-    model.train()
-
-    prob_output = []
-    prob_recon = []
-
-    input_data = torch.from_numpy(input_data)
-    input_data = input_data.float()
-
-    for t in range(n_mc):
-        recon, output = model(input_data)
-        prob_output.append(output)
-        prob_recon.append(recon)
-
-    mean_output = torch.mean(torch.stack(prob_output), dim=0)
-    var_output = torch.std(torch.stack(prob_output), dim=0)
-
-    mean_recon = torch.mean(torch.stack(prob_recon), dim=0)
-    var_recon = torch.std(torch.stack(prob_recon), dim=0)
-
-    return mean_output, var_output, mean_recon, var_recon
-
-
 def loss_reg_fn(model, loss_reg_type, device):
     """Computes L1 or L2 norm of model parameters for use in regularisation of loss function
 
@@ -391,6 +192,104 @@ def loss_reg_fn(model, loss_reg_type, device):
             l_reg += torch.norm(param)
 
     return l_reg
+
+
+class WeightInitSwitch:
+    def fn(self, weight_init_fn):
+        fn_name = f"weight_init_function_{weight_init_fn.lower()}"
+        fn = getattr(self, fn_name, None)
+        if fn is None:
+            print(
+                f"Cannot find specified weight function '{weight_init_fn}', using default xavier_uniform."
+            )
+            return nn.init.xavier_uniform_
+        return fn()
+
+    # uniform
+    def weight_init_function_uniform(self):
+        return nn.init.uniform_
+
+    # normal
+    def weight_init_function_normal(self):
+        return nn.init.normal_
+
+    # xavier_uniform
+    def weight_init_function_xavier_uniform(self):
+        return nn.init.xavier_uniform_
+
+    # xavier_normal
+    def weight_init_function_xavier_normal_(self):
+        return nn.init.xavier_normal_
+
+    # kaiming_uniform
+    def weight_init_function_kaiming_uniform(self):
+        return nn.init.kaiming_uniform_
+
+    # kaiming_normal
+    def weight_init_function_kaiming_normal(self):
+        return nn.init.kaiming_normal_
+
+    # zeros
+    def weight_init_function_zeros(self):
+        return nn.init.zeros_
+
+    # ones
+    def weight_init_function_ones(self):
+        return nn.init.ones_
+
+
+def weight_bias_init(m, kernel_init_fn, bias_init_fn):
+    if isinstance(m, (nn.Linear, nn.Conv1d, nn.ConvTranspose1d)):
+        kernel_init_fn(m.weight)
+        bias_init_fn(m.bias)
+
+
+class LRScheduler:
+    """
+    Initialise the learning rate scheduler
+    """
+
+    def __init__(self, optimizer, scheduler_type, params=None):
+        self.optimizer = optimizer
+        scheduler_type = scheduler_type.lower()
+
+        if scheduler_type == "step":
+            self.scheduler = lr_scheduler.StepLR(optimizer, **params)
+        elif scheduler_type == "multistep":
+            self.scheduler = lr_scheduler.MultiStepLR(optimizer, **params)
+        elif scheduler_type == "exponential":
+            self.scheduler = lr_scheduler.ExponentialLR(optimizer, **params)
+        elif scheduler_type == "linear":
+            self.scheduler = lr_scheduler.LinearLR(optimizer, **params)
+        elif scheduler_type == "constant":
+            self.scheduler = lr_scheduler.ConstantLR(optimizer, **params)
+        else:
+            raise ValueError(f"Invalid scheduler type: {scheduler_type}")
+
+    def step(self):
+        self.scheduler.step()
+
+
+class OptimSwitch:
+    def fn(self, opt_fn):
+        opt_name = f"optim_function_{opt_fn.lower()}"
+        fn = getattr(self, opt_name, None)
+        if fn is None:
+            print(f"Cannot find specified optimizer '{opt_fn}', using default Adam.")
+            return optim.Adam
+        return fn()
+
+    # Adam
+    def optim_function_adam(self):
+        return optim.Adam
+
+    # Stochastic Gradient Descent
+    def optim_function_sgd(self):
+        return optim.SGD
+
+    # RMSprop
+    def optim_function_rmsprop(self):
+        return optim.RMSprop
 
 
 def get_conv_layers_output_size(

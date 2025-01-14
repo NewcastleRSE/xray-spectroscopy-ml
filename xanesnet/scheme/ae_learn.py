@@ -85,7 +85,6 @@ class AELearn(Learn):
                 running_loss = 0
                 loss_r = 0
                 loss_p = 0
-                total_step_train = 0
 
                 for inputs, labels in train_loader:
                     inputs, labels = inputs.to(device), labels.to(device)
@@ -106,12 +105,9 @@ class AELearn(Learn):
                     loss_r += loss_recon.item()
                     loss_p += loss_pred.item()
 
-                    total_step_train += 1
-
                 valid_loss = 0
                 valid_loss_r = 0
                 valid_loss_p = 0
-                total_step_valid = 0
 
                 model.eval()
 
@@ -129,8 +125,6 @@ class AELearn(Learn):
                     valid_loss = loss.item()
                     valid_loss_r += loss_recon.item()
                     valid_loss_p += loss_pred.item()
-
-                    total_step_valid += 1
 
                 if self.lr_scheduler:
                     before_lr = optimizer.param_groups[0]["lr"]

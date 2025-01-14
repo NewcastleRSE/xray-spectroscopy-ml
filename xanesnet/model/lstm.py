@@ -13,6 +13,7 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 import numpy as np
 import torch
 from torch import nn
@@ -78,7 +79,7 @@ class LSTM(Model):
         )
 
         # Define the dense layers
-        self.fc = nn.Sequential(
+        self.dense_layers = nn.Sequential(
             nn.Linear(2 * hidden_size, hidden_out_size),
             act_fn(),
             nn.Dropout(p=dropout),
@@ -89,6 +90,6 @@ class LSTM(Model):
         # Forward pass of the LSTM layer.
         x, _ = self.lstm(x)
         # Forward pass through dense layers
-        out = self.fc(x)
+        out = self.dense_layers(x)
 
         return out

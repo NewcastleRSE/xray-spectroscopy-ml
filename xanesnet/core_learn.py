@@ -14,11 +14,13 @@ You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+from pathlib import Path
+
 from numpy.random import RandomState
 from sklearn.utils import shuffle
 
-from xanesnet.data_encoding import encode_learn, encode_learn_gnn
-from xanesnet.utils import save_model_list, save_model
+from xanesnet.data_encoding import data_learn, data_gnn_learn
+from xanesnet.utils import save_models
 from xanesnet.creator import (
     create_descriptor,
     create_learn_scheme,
@@ -39,13 +41,13 @@ def train_model(config, args):
 
     for d in descriptors:
         print(f">> Initialising {d['type']} feature descriptor...")
-        if d["type"] in ('mace', 'direct'):
+        if d["type"] in ("mace", "direct"):
             descriptor = create_descriptor(d["type"])
         else:
             descriptor = create_descriptor(d["type"], **d["params"])
         descriptor_list.append(descriptor)
 
-    xyz, xanes, index = encode_learn(
+    xyz, xanes, index = data_learn(
         config["xyz_path"], config["xanes_path"], descriptor_list
     )
 
@@ -109,23 +111,23 @@ def train_model(config, args):
         **kwargs,
     )
 
+    models = []
     # Train the model using selected training strategy
     print(">> Training %s model..." % config["model"]["type"])
     if config["bootstrap"]:
         train_scheme = "bootstrap"
-        model_list = scheme.train_bootstrap()
+        models = scheme.train_bootstrap()
     elif config["ensemble"]:
         train_scheme = "ensemble"
-        model_list = scheme.train_ensemble()
+        models = scheme.train_ensemble()
     elif config["kfold"]:
-        train_scheme = "std"
-        model = scheme.train_kfold()
+        train_scheme = "kfold"
+        models.append(scheme.train_kfold())
     else:
         train_scheme = "std"
-        model = scheme.train_std()
+        models.append(scheme.train_std())
 
-    # Dump results
-    save_path = "models/"
+    # Save trained model, metadata, compressed dataset, and descriptors to disk
     if args.save == "yes":
         metadata = {
             "mode": args.mode,
@@ -139,13 +141,8 @@ def train_model(config, args):
             "scheme": train_scheme,
         }
 
-        data_compress = {"ids": index, "x": xyz, "y": xanes}
-        if config["bootstrap"] or config["ensemble"]:
-            save_model_list(
-                save_path, model_list, descriptor_list, data_compress, metadata, config
-            )
-        else:
-            save_model(save_path, model, descriptor_list, data_compress, metadata)
+        dataset = {"ids": index, "x": xyz, "y": xanes}
+        save_models(Path("models"), models, descriptor_list, metadata, dataset=dataset)
 
 
 def train_model_gnn(config, args):
@@ -160,7 +157,7 @@ def train_model_gnn(config, args):
             descriptor = create_descriptor(d["type"], **d["params"])
             descriptor_list.append(descriptor)
 
-    graph_dataset, index = encode_learn_gnn(
+    graph_dataset = data_gnn_learn(
         config["xyz_path"],
         config["xanes_path"],
         config["model"]["node_features"],
@@ -186,25 +183,24 @@ def train_model_gnn(config, args):
         "scaler": config["standardscaler"],
     }
 
+    models = []
     scheme = create_learn_scheme(graph_dataset, None, **kwargs)
-
     # Train the model using selected training strategy
     print(">> Training %s model..." % config["model"]["type"])
     if config["bootstrap"]:
         train_scheme = "bootstrap"
-        model_list = scheme.train_bootstrap()
+        models = scheme.train_bootstrap()
     elif config["ensemble"]:
         train_scheme = "ensemble"
-        model_list = scheme.train_ensemble()
+        models = scheme.train_ensemble()
     elif config["kfold"]:
-        train_scheme = "std"
-        model = scheme.train_kfold()
+        train_scheme = "kfold"
+        models.append(scheme.train_kfold())
     else:
         train_scheme = "std"
-        model = scheme.train_std()
+        models.append(scheme.train_std())
 
-    # Save model to file if specified
-    save_path = "models/"
+    # Save trained model, metadata, and descriptors to disk
     if args.save == "yes":
         metadata = {
             "mode": args.mode,
@@ -220,9 +216,4 @@ def train_model_gnn(config, args):
             "scheme": train_scheme,
         }
 
-        if config["bootstrap"] or config["ensemble"]:
-            save_model_list(
-                save_path, model_list, descriptor_list, None, metadata, config
-            )
-        else:
-            save_model(save_path, model, descriptor_list, None, metadata)
+        save_models(Path("models"), models, descriptor_list, metadata)

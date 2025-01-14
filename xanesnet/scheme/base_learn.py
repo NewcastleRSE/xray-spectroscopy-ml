@@ -13,6 +13,7 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 from pathlib import Path
 
 import mlflow
@@ -227,9 +228,10 @@ class Learn(ABC):
         kernel_init = WeightInitSwitch().fn(self.kernel)
         bias_init = WeightInitSwitch().fn(self.bias)
         # set seed
-        torch.cuda.manual_seed(
-            weight_seed
-        ) if torch.cuda.is_available() else torch.manual_seed(weight_seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed(weight_seed)
+        else:
+            torch.manual_seed(weight_seed)
 
         model.apply(
             lambda m: weight_bias_init(

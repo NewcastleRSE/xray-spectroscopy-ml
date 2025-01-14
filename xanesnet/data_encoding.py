@@ -30,6 +30,7 @@ from xanesnet.utils import (
     load_descriptor_direct,
 )
 
+
 def encode_xyz(xyz_path: Path, index: list, descriptor_list: list):
     n_samples = len(index)
     # Feature length
@@ -41,8 +42,7 @@ def encode_xyz(xyz_path: Path, index: list, descriptor_list: list):
             env = read(xyz_path / f"{index[0]}.xyz")
             mace = mace_mp()
             tmp = mace.get_descriptors(env, num_layers=2)
-            n_x_features += len(tmp[0,:])
-            print(n_x_features)
+            n_x_features += len(tmp[0, :])
         else:
             n_x_features += descriptor.get_nfeatures()
 
@@ -54,16 +54,15 @@ def encode_xyz(xyz_path: Path, index: list, descriptor_list: list):
         s = 0
         for descriptor in descriptor_list:
             if descriptor.get_type() == "direct":
-                l = linecount(xyz_path / f"{index[0]}.dsc") 
+                l = linecount(xyz_path / f"{index[0]}.dsc")
                 with open(xyz_path / f"{id_}.dsc", "r") as f:
                     xyz_data[i, s : s + l] = load_descriptor_direct(f)
             elif descriptor.get_type() == "mace":
-                 env = read(xyz_path / f"{id_}.xyz")
-                 mace = mace_mp()
-                 tmp = mace.get_descriptors(env, num_layers=2)
-                 l = len(tmp[0,:])
-                 print(l)
-                 xyz_data[i, s : s + l] = tmp[0,:]
+                env = read(xyz_path / f"{id_}.xyz")
+                mace = mace_mp()
+                tmp = mace.get_descriptors(env, num_layers=2)
+                l = len(tmp[0, :])
+                xyz_data[i, s : s + l] = tmp[0, :]
             else:
                 l = descriptor.get_nfeatures()
                 with open(xyz_path / f"{id_}.xyz", "r") as f:
@@ -92,7 +91,7 @@ def encode_xanes(xanes_path: Path, index: list):
     return xanes_data, e
 
 
-def encode_learn(xyz_path: str, xanes_path: str, descriptor_list: list):
+def data_learn(xyz_path: str, xanes_path: str, descriptor_list: list):
     """
     Process and encode data from given XYZ and xanes files using
     one or more descriptors.
@@ -119,7 +118,6 @@ def encode_learn(xyz_path: str, xanes_path: str, descriptor_list: list):
         print(">> ...loaded {}x{} array of XYZ data".format(*xyz_data.shape))
         with open(xanes_path, "rb") as f:
             xanes_data = np.load(f)["y"]
-            e = np.load(f)["e"]
         print(">> ...loaded {}x{} array of XANES data".format(*xanes_data.shape))
         with open(xyz_path, "rb") as f:
             index = np.load(f)["ids"]
@@ -134,7 +132,58 @@ def encode_learn(xyz_path: str, xanes_path: str, descriptor_list: list):
     return xyz_data, xanes_data, index
 
 
-def encode_learn_gnn(
+def data_predict(
+    xyz_path: str | None,
+    xanes_path: str | None,
+    descriptor_list: list,
+    mode: str,
+    pred_eval: bool,
+):
+    print(">> loading xanes data into array(s)...")
+    if mode == "predict_all" or pred_eval:
+        xyz_path = Path(xyz_path)
+        xanes_path = Path(xanes_path)
+
+        if not xyz_path.exists() or not xanes_path.exists():
+            raise FileNotFoundError("Path to data doesn't exist")
+
+        index = list(set(list_filestems(xyz_path)) & set(list_filestems(xanes_path)))
+        index.sort()
+        # Load both xyz and xanes data
+        xyz_data = encode_xyz(xyz_path, index, descriptor_list)
+        xanes_data, e = encode_xanes(xanes_path, index)
+
+    elif mode == "predict_xyz":
+        xanes_path = Path(xanes_path)
+
+        if not xanes_path.exists():
+            raise FileNotFoundError("Path to data doesn't exist")
+
+        index = list(set(list_filestems(xanes_path)))
+        index.sort()
+        # Load xanes data
+        xanes_data, e = encode_xanes(xanes_path, index)
+        xyz_data = None
+
+    elif mode == "predict_xanes":
+        xyz_path = Path(xyz_path)
+
+        if not xyz_path.exists():
+            raise FileNotFoundError("Path to data doesn't exist")
+
+        index = list(set(list_filestems(xyz_path)))
+        index.sort()
+        # Load xyz data
+        xyz_data = encode_xyz(xyz_path, index, descriptor_list)
+        xanes_data = None
+        e = None
+    else:
+        raise ValueError("Unsupported prediction mode")
+
+    return xyz_data, xanes_data, e, index
+
+
+def data_gnn_learn(
     xyz_path: str,
     xanes_path: str,
     node_feats: dict,
@@ -144,16 +193,13 @@ def encode_learn_gnn(
     xyz_path = Path(xyz_path)
     xanes_path = Path(xanes_path)
 
-    for path in (xyz_path, xanes_path):
-        if not path.exists():
-            err_str = f"path to data ({path}) doesn't exist"
-            raise FileNotFoundError(err_str)
+    if not xyz_path.exists() or not xanes_path.exists():
+        raise FileNotFoundError("Path to data doesn't exist")
 
     if xyz_path.is_dir() and xanes_path.is_dir():
         index = list(set(list_filestems(xyz_path)) & set(list_filestems(xanes_path)))
         index.sort()
-        xanes_data, e = encode_xanes(xanes_path, index)
-
+        xanes_data, _ = encode_xanes(xanes_path, index)
         print(f"Converting {len(index)} data files from XYZ format to graphs...")
         graph_dataset = GraphDataset(
             root=str(xyz_path),
@@ -167,61 +213,25 @@ def encode_learn_gnn(
         err_str = "paths to data are expected to be directories"
         raise TypeError(err_str)
 
-    return graph_dataset, index
+    return graph_dataset
 
 
-def encode_predict(
-    xyz_path: str, xanes_path: str, descriptor_list: list, mode: str, pred_eval: bool
-):
-    if mode == "predict_all" or pred_eval:
-        xyz_path = Path(xyz_path)
-        xanes_path = Path(xanes_path)
-        index = list(set(list_filestems(xyz_path)) & set(list_filestems(xanes_path)))
-    elif mode == "predict_xyz" and not pred_eval:
-        xanes_path = Path(xanes_path)
-        index = list(set(list_filestems(xanes_path)))
-    elif mode == "predict_xanes" and not pred_eval:
-        xyz_path = Path(xyz_path)
-        index = list(set(list_filestems(xyz_path)))
-    else:
-        raise ValueError("Unsupported prediction mode")
-
-    index.sort()
-
-    print(">> loading data into array(s)...")
-    if mode == "predict_all" or pred_eval:
-        # Load both xyz and xanes data
-        xyz_data = encode_xyz(xyz_path, index, descriptor_list)
-        xanes_data, e = encode_xanes(xanes_path, index)
-
-    elif mode == "predict_xyz" and not pred_eval:
-        # Load xanes data
-        xanes_data, e = encode_xanes(xanes_path, index)
-        xyz_data = None
-
-    elif mode == "predict_xanes" and not pred_eval:
-        # Load xyz data
-        xyz_data = encode_xyz(xyz_path, index, descriptor_list)
-        xanes_data = None
-        e = None
-    else:
-        raise ValueError("Unsupported prediction mode")
-
-    return xyz_data, xanes_data, e, index
-
-
-def encode_predict_gnn(
-    xyz_path: str,
-    xanes_path: str,
+def data_gnn_predict(
+    xyz_path: str | Path,
+    xanes_path: str | Path,
     node_feats: dict,
     edge_feats: dict,
-    descriptor_list:list,
+    descriptor_list: list,
     pred_eval: bool,
 ):
     xyz_path = Path(xyz_path)
+    if not xyz_path.exists():
+        raise FileNotFoundError("Path to data doesn't exist")
 
     if pred_eval:
         xanes_path = Path(xanes_path)
+        if not xanes_path.exists():
+            raise FileNotFoundError("Path to data doesn't exist")
         index = list(set(list_filestems(xyz_path)) & set(list_filestems(xanes_path)))
         index.sort()
         xanes_data, e = encode_xanes(xanes_path, index)

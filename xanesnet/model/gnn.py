@@ -13,6 +13,7 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 import numpy as np
 import torch
 from torch import nn
@@ -87,6 +88,7 @@ class GNN(Model):
                 act_fn(),
                 nn.Dropout(dropout),
             ]
+
             input_size = hidden_size * heads
 
         # Construct output layer
