@@ -105,8 +105,7 @@ def print_nested_dict(dict_: dict, nested_level: int = 0):
     return 0
 
 
-def mkdir_output(path: Path | str, name: str):
-    path = Path(path)
+def mkdir_output(path: Path, name: str):
     save_path = path / name
     save_path.mkdir(parents=True, exist_ok=True)
 
@@ -203,23 +202,23 @@ def save_predict(
     print(f"Saved prediction result to disk {path}")
 
 
-def load_model_list(model_dir: str):
+def load_models(path: Path):
     model_list = []
-    n_models = len(next(os.walk(model_dir))[1])
+    n_models = len(next(os.walk(path))[1])
 
     for i in range(1, n_models + 1):
-        n_dir = f"{model_dir}/model_{i:03d}/model.pt"
+        n_dir = f"{path}/model_{i:03d}/model.pt"
         model = torch.load(n_dir, map_location=torch.device("cpu"))
         model_list.append(model)
 
     return model_list
 
 
-def load_descriptors(path: str):
+def load_descriptors(path: Path):
     descriptor_list = []
 
-    file_pattern = os.path.join(path, "descriptor*.pickle")
-    files = glob.glob(file_pattern)
+    file_pattern = path / "descriptor*.pickle"
+    files = glob.glob(str(file_pattern))
 
     for filename in files:
         with open(filename, "rb") as f:

@@ -86,7 +86,7 @@ def init_scheme(config, xyz, xanes):
 
 
 class TestNNLearn:
-    with open("inputs/in_mlp.yaml", "r") as f:
+    with open("tests/inputs/in_mlp.yaml", "r") as f:
         config = yaml.safe_load(f)
 
     @pytest.fixture(scope="class")
@@ -147,7 +147,7 @@ class TestNNLearn:
 
 
 class TestAELearn:
-    with open("inputs/in_ae_mlp.yaml", "r") as f:
+    with open("tests/inputs/in_ae_mlp.yaml", "r") as f:
         config = yaml.safe_load(f)
 
     @pytest.fixture(scope="class")
@@ -208,7 +208,7 @@ class TestAELearn:
 
 
 class TestAEGANLearn:
-    with open("inputs/in_aegan_mlp.yaml", "r") as f:
+    with open("tests/inputs/in_aegan_mlp.yaml", "r") as f:
         config = yaml.safe_load(f)
 
     @pytest.fixture(scope="class")
@@ -269,7 +269,7 @@ class TestAEGANLearn:
 
 
 class TestGNNLearn:
-    with open("inputs/in_gnn.yaml", "r") as f:
+    with open("tests/inputs/in_gnn.yaml", "r") as f:
         config = yaml.safe_load(f)
 
     @pytest.fixture(scope="class")

@@ -73,8 +73,8 @@ def init_model_gnn(config, dataset):
 class TestModelMLP:
     # input config
     config_mlp = {
-        "xyz_path": "data/xyz",
-        "xanes_path": "data/xanes",
+        "xyz_path": "tests/data/xyz",
+        "xanes_path": "tests/data/xanes",
         "descriptors": [
             {
                 "type": "wacsf",
@@ -138,8 +138,8 @@ class TestModelMLP:
 class TestModelCNN:
     # input config
     config_cnn = {
-        "xyz_path": "data/xyz",
-        "xanes_path": "data/xanes",
+        "xyz_path": "tests/data/xyz",
+        "xanes_path": "tests/data/xanes",
         "descriptors": [
             {
                 "type": "wacsf",
@@ -210,8 +210,8 @@ class TestModelCNN:
 class TestModelLSTM:
     # input config
     config_lstm = {
-        "xyz_path": "data/xyz",
-        "xanes_path": "data/xanes",
+        "xyz_path": "tests/data/xyz",
+        "xanes_path": "tests/data/xanes",
         "descriptors": [
             {
                 "type": "wacsf",
@@ -270,8 +270,8 @@ class TestModelLSTM:
 
 class TestModelGNN:
     config_gnn = {
-        "xyz_path": "data/xyz",
-        "xanes_path": "data/xanes",
+        "xyz_path": "tests/data/xyz",
+        "xanes_path": "tests/data/xanes",
         "descriptors": [
             {
                 "type": "wacsf",
@@ -332,8 +332,8 @@ class TestModelGNN:
 class TestModelAEMLP:
     # input config
     config_aemlp = {
-        "xyz_path": "data/xyz",
-        "xanes_path": "data/xanes",
+        "xyz_path": "tests/data/xyz",
+        "xanes_path": "tests/data/xanes",
         "descriptors": [
             {
                 "type": "wacsf",
@@ -406,8 +406,8 @@ class TestModelAEMLP:
 class TestModelAECNN:
     # input config
     config_aecnn = {
-        "xyz_path": "data/xyz",
-        "xanes_path": "data/xanes",
+        "xyz_path": "tests/data/xyz",
+        "xanes_path": "tests/data/xanes",
         "descriptors": [
             {
                 "type": "wacsf",

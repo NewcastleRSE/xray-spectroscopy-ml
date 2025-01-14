@@ -14,10 +14,11 @@ from xanesnet.data_encoding import (
 )
 from xanesnet.creator import create_descriptor
 
+xyz_path = "tests/data/xyz"
+xanes_path = "tests/data/xanes"
+
 # input config
 config_descriptors = {
-    "xyz_path": "data/xyz",
-    "xanes_path": "data/xanes",
     "descriptors": [
         {
             "type": "wacsf",
@@ -46,8 +47,6 @@ config_gnn = {
     },
 }
 
-graph_path = os.path.join(config_descriptors["xyz_path"], "graph")
-
 
 @pytest.fixture(scope="module")
 def descriptors():
@@ -63,8 +62,8 @@ class TestDataLearn:
     @pytest.fixture(scope="class")
     def dataset(self, descriptors):
         xyz, xanes, index = data_learn(
-            config_descriptors["xyz_path"],
-            config_descriptors["xanes_path"],
+            xyz_path,
+            xanes_path,
             descriptors,
         )
 
@@ -91,8 +90,8 @@ class TestDataLearn:
 class TestDataPredict:
     def test_case_all(self, descriptors):
         xyz, xanes, e, index = data_predict(
-            config_descriptors["xyz_path"],
-            config_descriptors["xanes_path"],
+            xyz_path,
+            xanes_path,
             descriptors,
             "predict_all",
             False,
@@ -105,8 +104,8 @@ class TestDataPredict:
 
     def test_case_xyz(self, descriptors):
         xyz, xanes, e, index = data_predict(
-            config_descriptors["xyz_path"],
-            config_descriptors["xanes_path"],
+            xyz_path,
+            xanes_path,
             descriptors,
             "predict_xyz",
             False,
@@ -119,8 +118,8 @@ class TestDataPredict:
 
     def test_case_xanes(self, descriptors):
         xyz, xanes, e, index = data_predict(
-            config_descriptors["xyz_path"],
-            config_descriptors["xanes_path"],
+            xyz_path,
+            xanes_path,
             descriptors,
             "predict_xanes",
             False,
@@ -144,8 +143,8 @@ class TestDataPredict:
 
     def test_case_eval(self, descriptors):
         xyz, xanes, e, index = data_predict(
-            config_descriptors["xyz_path"],
-            config_descriptors["xanes_path"],
+            xyz_path,
+            xanes_path,
             descriptors,
             "",
             True,
@@ -160,13 +159,9 @@ class TestDataPredict:
 class TestDataGNNLearn:
     @pytest.fixture(scope="class")
     def dataset(self, descriptors):
-        # Remove existing graph data
-        if os.path.exists(graph_path):
-            shutil.rmtree(graph_path)
-
         graphs = data_gnn_learn(
-            config_descriptors["xyz_path"],
-            config_descriptors["xanes_path"],
+            xyz_path,
+            xanes_path,
             config_gnn["model"]["node_features"],
             config_gnn["model"]["edge_features"],
             descriptors,
@@ -224,16 +219,18 @@ class TestDataGNNLearn:
         assert dataset.get(0).x.shape == (11, 20)
         assert dataset.get(7).x.shape == (14, 20)
 
-
-class TestDataGNNPredict:
-    def test_case_no_eval(self, descriptors):
-        # Remove existing graph data
+    def test_cleanup(self):
+        # Remove graph dataset
+        graph_path = os.path.join(xyz_path, "graph")
         if os.path.exists(graph_path):
             shutil.rmtree(graph_path)
 
+
+class TestDataGNNPredict:
+    def test_case_no_eval(self, descriptors):
         graphs, index, xanes, e = data_gnn_predict(
-            config_descriptors["xyz_path"],
-            config_descriptors["xanes_path"],
+            xyz_path,
+            xanes_path,
             config_gnn["model"]["node_features"],
             config_gnn["model"]["edge_features"],
             descriptors,
@@ -246,12 +243,9 @@ class TestDataGNNPredict:
         assert e is None
 
     def test_case_eval(self, descriptors):
-        if os.path.exists(graph_path):
-            shutil.rmtree(graph_path)
-
         graphs, index, xanes, e = data_gnn_predict(
-            config_descriptors["xyz_path"],
-            config_descriptors["xanes_path"],
+            xyz_path,
+            xanes_path,
             config_gnn["model"]["node_features"],
             config_gnn["model"]["edge_features"],
             descriptors,
@@ -262,3 +256,9 @@ class TestDataGNNPredict:
         assert len(index) == 8
         assert xanes.shape == (8, 400)
         assert len(e) == 400
+
+    def test_cleanup(self):
+        # Remove graph dataset
+        graph_path = os.path.join(xyz_path, "graph")
+        if os.path.exists(graph_path):
+            shutil.rmtree(graph_path)

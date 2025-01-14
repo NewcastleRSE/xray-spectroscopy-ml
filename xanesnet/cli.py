@@ -13,6 +13,7 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 import os
 
 ###############################################################################
@@ -62,7 +63,14 @@ def parse_args(args: list):
         "--save",
         type=str,
         default="yes",
-        help="toggles model directory creation and population to <on>",
+        help="save result to disk",
+    )
+
+    parser.add_argument(
+        "--mlflow",
+        type=str,
+        default="no",
+        help="toggle mlflow on and save logs to disk",
     )
 
     args = parser.parse_args()

@@ -25,74 +25,77 @@ jobs:
 
       - name: MLP XYZ --> Xanes
         run: |
-          rm -rf models/model_mlp_001
+          rm -rf models/mlp_std_001
           python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_mlp.yaml
-          python3 -m xanesnet.cli --mode predict_xanes --in_model models/model_mlp_001 --in_file ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode predict_xanes --in_model models/mlp_std_001 --in_file ./.github/workflows/inputs/in_predict.yaml
 
 
       - name: MLP Xanes --> XYZ
         run: |
-          rm -rf models/model_mlp_001
+          rm -rf models/mlp_std_001
           python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_mlp.yaml
-          python3 -m xanesnet.cli --mode predict_xyz --in_model models/model_mlp_001 --in_file ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode predict_xyz --in_model models/mlp_std_001 --in_file ./.github/workflows/inputs/in_predict.yaml
           
       - name: CNN XYZ --> Xanes
         run: |
-          rm -rf models/model_cnn_001
+          rm -rf models/cnn_std_001
           python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_cnn.yaml
-          python3 -m xanesnet.cli --mode predict_xanes --in_model models/model_cnn_001 --in_file ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode predict_xanes --in_model models/cnn_std_001 --in_file ./.github/workflows/inputs/in_predict.yaml
 
       - name: LSTM XYZ --> Xanes
         run: |
-          rm -rf models/model_001
+          rm -rf models/lstm_std_001
           python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_lstm.yaml
-          python3 -m xanesnet.cli --mode predict_xanes --in_model models/model_lstm_001 --in_file ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode predict_xanes --in_model models/lstm_std_001 --in_file ./.github/workflows/inputs/in_predict.yaml
 
       - name: LSTM XANES --> XYZ
         run: |
-          rm -rf models/model_lstm_001
+          rm -rf models/lstm_std_001
           python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_lstm.yaml
-          python3 -m xanesnet.cli --mode predict_xyz --in_model models/model_lstm_001 --in_file ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode predict_xyz --in_model models/lstm_std_001 --in_file ./.github/workflows/inputs/in_predict.yaml
 
       - name: CNN Xanes --> XYZ
         run: |
-          rm -rf models/model_cnn_001
+          rm -rf models/cnn_std_001
           python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_cnn.yaml
-          python3 -m xanesnet.cli --mode predict_xyz --in_model models/model_cnn_001 --in_file ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode predict_xyz --in_model models/cnn_std_001 --in_file ./.github/workflows/inputs/in_predict.yaml
 
       - name: AE_MLP XYZ -> Xanes
         run: |
-          rm -rf models/model_ae_mlp_001
+          rm -rf models/ae_mlp_std_001
           python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_ae_mlp.yaml
-          python3 -m xanesnet.cli --mode predict_xanes --in_model models/model_ae_mlp_001 --in_file ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode predict_xanes --in_model models/ae_mlp_std_001 --in_file ./.github/workflows/inputs/in_predict.yaml
 
       - name: AE_MLP Xanes --> XYZ
         run: |
-          rm -rf models/model_ae_mlp_001
+          rm -rf models/ae_mlp_std_001
           python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_ae_mlp.yaml
-          python3 -m xanesnet.cli --mode predict_xyz --in_model models/model_ae_mlp_001 --in_file ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode predict_xyz --in_model models/ae_mlp_std_001 --in_file ./.github/workflows/inputs/in_predict.yaml
 
       - name: AE_CNN XYZ --> Xanes
         run: |
-          rm -rf models/model_ae_cnn_001
+          rm -rf models/ae_cnn_std_001
           python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_ae_cnn.yaml
-          python3 -m xanesnet.cli --mode predict_xanes --in_model models/model_ae_cnn_001 --in_file ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode predict_xanes --in_model models/ae_cnn_std_001 --in_file ./.github/workflows/inputs/in_predict.yaml
 
       - name: AE_CNN Xanes --> XYZ
         run: |
-          rm -rf models/model_ae_cnn_001
+          rm -rf models/ae_cnn_std_001
           python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_ae_cnn.yaml
-          python3 -m xanesnet.cli --mode predict_xyz --in_model models/model_ae_cnn_001 --in_file ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode predict_xyz --in_model models/ae_cnn_std_001 --in_file ./.github/workflows/inputs/in_predict.yaml
 
       - name: AEGAN
         run: |
-          rm -rf models/model_aegan_mlp_001
+          rm -rf models/aegan_mlp_std_001
           python3 -m xanesnet.cli --mode train_aegan --in_file ./.github/workflows/inputs/in_aegan.yaml
-          python3 -m xanesnet.cli --mode predict_all --in_model models/model_aegan_mlp_001 --in_file ./.github/workflows/inputs/in_predict.yaml
+          python3 -m xanesnet.cli --mode predict_all --in_model models/aegan_mlp_std_001 --in_file ./.github/workflows/inputs/in_predict.yaml
 
       - name: GNN
         run: |
-          rm -rf models/model_gnn_001
+          rm -rf models/gnn_std_001
           python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_gnn.yaml
-          python3 -m xanesnet.cli --mode predict_xanes --in_model models/model_gnn_001 --in_file ./.github/workflows/inputs/in_predict_gnn.yaml
+          python3 -m xanesnet.cli --mode predict_xanes --in_model models/gnn_std_001 --in_file ./.github/workflows/inputs/in_predict_gnn.yaml
 
+      # Step 4: Run unit tests
+      - name: Run unit tests
+        run: pytest

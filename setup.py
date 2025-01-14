@@ -33,11 +33,12 @@ setup(
         "mlflow==2.1.1",
         "dscribe==1.2.2",
         "optuna==3.1.1",
-        "torch_geometric",
-        "sphinx",
-        "sphinx_rtd_theme",
-        "pyscf",
-        "tblite",
-        "mace-torch"
+        "torch_geometric==2.5.3",
+        "sphinx==7.2.5",
+        "sphinx_rtd_theme==1.3.0",
+        "pyscf==2.4.0",
+        "tblite==0.3.0",
+        "mace-torch==0.3.6",
+        "pytest==8.3.3",
     ],
 )

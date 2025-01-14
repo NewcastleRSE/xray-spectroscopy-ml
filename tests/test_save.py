@@ -66,10 +66,10 @@ def init_scheme(config, xyz, xanes):
 
 
 class TestSaveModels:
-    with open("inputs/in_mlp2.yaml", "r") as f:
+    with open("tests/inputs/in_mlp2.yaml", "r") as f:
         config = yaml.safe_load(f)
 
-    path = Path("save")
+    path = Path("tests/save")
 
     @pytest.fixture(scope="class")
     def descriptors(self):
@@ -93,7 +93,7 @@ class TestSaveModels:
         save_models(self.path, models, descriptors, metadata)
 
         # Check directory
-        save_dir = Path("save/mlp_std_001")
+        save_dir = Path("tests/save/mlp_std_001")
         assert save_dir.exists()
 
         # Check files
@@ -117,13 +117,13 @@ class TestSaveModels:
         save_models(self.path, models, descriptors, metadata)
 
         # Check directory
-        save_dir = Path("save/mlp_ensemble_001")
+        save_dir = Path("tests/save/mlp_ensemble_001")
         assert save_dir.exists()
-        model1_dir = Path("save/mlp_ensemble_001/model_001")
+        model1_dir = Path("tests/save/mlp_ensemble_001/model_001")
         assert model1_dir.exists()
-        model2_dir = Path("save/mlp_ensemble_001/model_002")
+        model2_dir = Path("tests/save/mlp_ensemble_001/model_002")
         assert model2_dir.exists()
-        model3_dir = Path("save/mlp_ensemble_001/model_003")
+        model3_dir = Path("tests/save/mlp_ensemble_001/model_003")
         assert model3_dir.exists()
 
         # Check files
@@ -143,8 +143,8 @@ class TestSaveModels:
 
 
 config = {
-    "xyz_path": "data/xyz_predict",
-    "xanes_path": "data/xanes_predict",
+    "xyz_path": "tests/data/xyz_predict",
+    "xanes_path": "tests/data/xanes_predict",
 }
 
 
@@ -177,22 +177,22 @@ def init_predict_scheme(model_dir, mode):
     return scheme, index, e
 
 
-def load_model(model_dir):
-    return torch.load(Path(model_dir) / "model.pt", map_location=torch.device("cpu"))
+def load_model(model_dir: Path):
+    return torch.load(model_dir / "model.pt", map_location=torch.device("cpu"))
 
 
 class TestSavePredict:
-    path = Path("outputs")
+    path = Path("tests/outputs")
 
     def test_save_xanes(self):
-        model_dir = "models/model_mlp_xyz"
+        model_dir = Path("tests/models/model_mlp_xyz")
         mode = "predict_xanes"
         scheme, index, e = init_predict_scheme(model_dir, mode)
         model = load_model(model_dir)
         result = scheme.predict_std(model)
         save_predict(self.path, mode, result, index, e, scheme.recon_flag)
         # Check directory
-        save_dir = Path("outputs/xanes_pred")
+        save_dir = Path("tests/outputs/xanes_pred")
         assert save_dir.exists()
 
         # Check files
@@ -224,14 +224,14 @@ class TestSavePredict:
         shutil.rmtree(self.path)
 
     def test_save_xyz(self):
-        model_dir = "models/model_mlp_xanes"
+        model_dir = Path("tests/models/model_mlp_xanes")
         mode = "predict_xyz"
         scheme, index, e = init_predict_scheme(model_dir, mode)
         model = load_model(model_dir)
         result = scheme.predict_std(model)
         save_predict(self.path, mode, result, index, e, scheme.recon_flag)
         # Check directory
-        save_dir = Path("outputs/xyz_pred")
+        save_dir = Path("tests/outputs/xyz_pred")
         assert save_dir.exists()
 
         # Check files
@@ -261,20 +261,20 @@ class TestSavePredict:
         shutil.rmtree(self.path)
 
     def test_save_all(self):
-        model_dir = "models/model_aegan"
+        model_dir = Path("tests/models/model_aegan")
         mode = "predict_all"
         scheme, index, e = init_predict_scheme(model_dir, mode)
         model = load_model(model_dir)
         result = scheme.predict_std(model)
         save_predict(self.path, mode, result, index, e, scheme.recon_flag)
         # Check directory
-        xanes_pred_dir = Path("outputs/xanes_pred")
+        xanes_pred_dir = Path("tests/outputs/xanes_pred")
         assert xanes_pred_dir.exists()
-        xanes_recon_dir = Path("outputs/xanes_recon")
+        xanes_recon_dir = Path("tests/outputs/xanes_recon")
         assert xanes_recon_dir.exists()
-        xyz_pred_dir = Path("outputs/xyz_pred")
+        xyz_pred_dir = Path("tests/outputs/xyz_pred")
         assert xyz_pred_dir.exists()
-        xyz_recon_dir = Path("outputs/xyz_recon")
+        xyz_recon_dir = Path("tests/outputs/xyz_recon")
         assert xyz_recon_dir.exists()
 
         # Check files

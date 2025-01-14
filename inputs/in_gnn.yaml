@@ -79,7 +79,7 @@ augment_params:
   # for random combination
   # augment_mult: 5
 
-bootstrap: True
+bootstrap: False
 bootstrap_params:
   n_boot: 3
   n_size: 1.0

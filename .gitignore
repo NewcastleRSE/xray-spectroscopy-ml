@@ -16,3 +16,4 @@ models/
 outputs/
 data/datasets/graph-set/xyz_train/graph/
 data/datasets/graph-set/xyz_test/graph/
+!tests/models/

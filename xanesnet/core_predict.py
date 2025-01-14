@@ -14,21 +14,18 @@ You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import os
-
 import torch
 
 from pathlib import Path
-
-from xanesnet.creator import create_predict_scheme, create_descriptor
+from xanesnet.creator import create_predict_scheme
 from xanesnet.data_encoding import data_predict, data_gnn_predict
 from xanesnet.post_plot import plot_predict, plot_recon_predict
 from xanesnet.post_shap import shap_analysis
-from xanesnet.utils import save_predict, load_descriptors, load_model_list
+from xanesnet.utils import save_predict, load_descriptors, load_models
 
 
 def predict_data(config, args, metadata):
-    model_dir = args.in_model
+    model_dir = Path(args.in_model)
     # Mode consistency check in metadata and args
     meta_mode = metadata["mode"]
     mode = args.mode
@@ -61,19 +58,17 @@ def predict_data(config, args, metadata):
         if "bootstrap" not in model_dir:
             raise ValueError("Invalid bootstrap directory")
 
-        model_list = load_model_list(model_dir)
+        model_list = load_models(model_dir)
         result = scheme.predict_bootstrap(model_list)
 
     elif predict_scheme == "ensemble":
         if "ensemble" not in model_dir:
             raise ValueError("Invalid ensemble directory")
-        model_list = load_model_list(model_dir)
+        model_list = load_models(model_dir)
         result = scheme.predict_ensemble(model_list)
 
     elif predict_scheme == "std":
-        model = torch.load(
-            os.path.join(model_dir, "model.pt"), map_location=torch.device("cpu")
-        )
+        model = torch.load(model_dir / "model.pt", map_location=torch.device("cpu"))
         result = scheme.predict_std(model)
 
     else:
@@ -100,7 +95,7 @@ def predict_data(config, args, metadata):
 
 
 def predict_data_gnn(config, args, metadata):
-    model_dir = args.in_model
+    model_dir = Path(args.in_model)
     if args.mode != "predict_xanes":
         raise ValueError(f"Unsupported prediction mode for GNN: {args.mode}")
     mode = args.mode

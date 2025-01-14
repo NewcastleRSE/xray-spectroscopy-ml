@@ -1,5 +1,5 @@
-xyz_path:  data/xyz
-xanes_path:  data/xanes
+xyz_path:  tests/data/xyz
+xanes_path:  tests/data/xanes
 
 descriptors:
   - type: pdos
