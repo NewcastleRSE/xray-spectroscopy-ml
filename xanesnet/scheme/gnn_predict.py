@@ -16,6 +16,7 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
 import torch
+from sklearn.metrics import mean_squared_error
 from dataclasses import dataclass
 from torch_geometric.data import DataLoader
 
@@ -70,7 +71,31 @@ class GNNPredict(Predict):
         return Result(xyz_pred=(None, None), xanes_pred=(xanes_pred, xanes_std))
 
     def predict_bootstrap(self, model_list):
-        pass
+        predict_score = []
+        xanes_pred_list = []
+
+        # Iterate over models to perform predicting
+        for i, model in enumerate(model_list, start=1):
+            print(f">> Predicting with model {i}...")
+            xanes_pred = self.predict(model)
+            
+            if self.pred_eval:
+                mse = mean_squared_error(self.xanes_data, xanes_pred)
+                predict_score.append(mse)
+                
+            xanes_pred_list.append(xanes_pred)
+
+        # Print MSE if evaluation data is provided
+        if self.pred_eval and len(predict_score) > 0:
+            mean_score = np.mean(predict_score)
+            std_score = np.std(predict_score)
+            print(f"Mean score prediction: {mean_score:.4f}, Std: {std_score:.4f}")
+
+        # Calculate mean and standard deviation across all predictions
+        xanes_mean = np.mean(xanes_pred_list, axis=0)
+        xanes_std = np.std(xanes_pred_list, axis=0)
+
+        return Result(xyz_pred=(None, None), xanes_pred=(xanes_mean, xanes_std))
 
     def predict_ensemble(self, model_list):
         pass

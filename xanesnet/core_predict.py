@@ -129,7 +129,14 @@ def predict_data_gnn(config, args, metadata):
 
     # Predict with loaded models and scheme
     predict_scheme = metadata["scheme"]
-    if predict_scheme == "std":
+    if predict_scheme == "bootstrap":
+        if "bootstrap" not in str(model_dir):
+            raise ValueError("Invalid bootstrap directory")
+
+        model_list = load_models(model_dir)
+        result = scheme.predict_bootstrap(model_list)
+        
+    elif predict_scheme == "std":
         model = torch.load(model_dir / "model.pt", map_location=torch.device("cpu"))
         result = scheme.predict_std(model)
 
