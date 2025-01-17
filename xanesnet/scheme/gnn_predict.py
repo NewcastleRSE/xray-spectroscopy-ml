@@ -98,4 +98,20 @@ class GNNPredict(Predict):
         return Result(xyz_pred=(None, None), xanes_pred=(xanes_mean, xanes_std))
 
     def predict_ensemble(self, model_list):
-        pass
+        xanes_pred_list = []
+
+        # Iterate over models to perform predicting
+        for i, model in enumerate(model_list, start=1):
+            print(f">> Predicting with model {i}...")
+            xanes_pred = self.predict(model)    
+            xanes_pred_list.append(xanes_pred)
+
+        # Print MSE summary
+        print(f"{'='*30}Ensemble Prediction Summary{'='*30}")
+        xanes_pred = sum(xanes_pred_list) / len(xanes_pred_list)
+        Predict.print_mse("xanes", "xanes prediction", self.xanes_data, xanes_pred)
+
+        xanes_mean = np.mean(xanes_pred_list, axis=0)
+        xanes_std = np.std(xanes_pred_list, axis=0)
+
+        return Result(xyz_pred=(None, None), xanes_pred=(xanes_mean, xanes_std))
