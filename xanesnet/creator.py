@@ -52,6 +52,7 @@ def create_descriptor(name, **kwargs):
         MSR,
         ARMSR,
         PDOS,
+        XTB,
         DIRECT,
         MACE,
     )
@@ -65,6 +66,7 @@ def create_descriptor(name, **kwargs):
         "msr": MSR,
         "armsr": ARMSR,
         "pdos": PDOS,
+        "xtb": XTB,
         "direct": DIRECT,
         "mace": MACE,
     }

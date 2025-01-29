@@ -187,7 +187,6 @@ class XTB(WACSF):
                         for i in range(len(coeff))
                     ]
                 )
-
             orbe = np.multiply(res.get("orbital-energies"), 27.211324570273)
             orbo = res.get("orbital-occupations")
             if self.use_occupied:
