@@ -146,6 +146,7 @@ def train_model(config, args):
 
 
 def train_model_gnn(config, args):
+    print(f">>> config: {config}")
     if args.mode != "train_xyz":
         raise ValueError(f"Unsupported mode name for GNN: {args.mode}")
 
