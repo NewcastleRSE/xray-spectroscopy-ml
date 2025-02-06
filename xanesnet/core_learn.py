@@ -146,7 +146,6 @@ def train_model(config, args):
 
 
 def train_model_gnn(config, args):
-    print(f">>> config: {config}")
     if args.mode != "train_xyz":
         raise ValueError(f"Unsupported mode name for GNN: {args.mode}")
 
@@ -202,8 +201,6 @@ def train_model_gnn(config, args):
     else:
         train_scheme = "std"
         models.append(scheme.train_std())
-
-    print(f">>> models[0]: {models[0]}")
 
     # Save trained model, metadata, and descriptors to disk
     if args.save == "yes":
