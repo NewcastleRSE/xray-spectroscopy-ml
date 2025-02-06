@@ -160,6 +160,8 @@ def train_model_gnn(config, args):
     graph_dataset = data_gnn_learn(
         config["xyz_path"],
         config["xanes_path"],
+        config["fourier_transform"],
+        config["fourier_params"],
         config["model"]["node_features"],
         config["model"]["edge_features"],
         descriptor_list,
@@ -199,6 +201,8 @@ def train_model_gnn(config, args):
     else:
         train_scheme = "std"
         models.append(scheme.train_std())
+
+    print(f">>> models[0]: {models[0]}")
 
     # Save trained model, metadata, and descriptors to disk
     if args.save == "yes":

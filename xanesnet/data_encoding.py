@@ -186,6 +186,8 @@ def data_predict(
 def data_gnn_learn(
     xyz_path: str,
     xanes_path: str,
+    apply_fourier_transform: bool,
+    fourier_params: dict,
     node_feats: dict,
     edge_feats: dict,
     descriptor_list: list,
@@ -200,6 +202,14 @@ def data_gnn_learn(
         index = list(set(list_filestems(xyz_path)) & set(list_filestems(xanes_path)))
         index.sort()
         xanes_data, _ = encode_xanes(xanes_path, index)
+        
+        # Apply FFT to spectra training dataset if specified
+        if apply_fourier_transform:
+            from .data_transform import fourier_transform
+
+            print(">> Transforming spectra data using Fourier transform...")
+            xanes_data = fourier_transform(xanes_data, fourier_params["concat"])
+
         print(f"Converting {len(index)} data files from XYZ format to graphs...")
         graph_dataset = GraphDataset(
             root=str(xyz_path),
