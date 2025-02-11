@@ -104,7 +104,7 @@ def train_model(config, args):
         "freeze_params": config["freeze_params"],
         "scaler": config["standardscaler"],
     }
-
+    print(kwargs)
     scheme = create_learn_scheme(
         x_data,
         y_data,

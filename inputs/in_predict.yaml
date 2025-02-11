@@ -1,7 +1,7 @@
-#xyz_path:  .github/workflows/data/datasets/fe/preconv/xyz_test
-#xanes_path:  .github/workflows/data/datasets/fe/preconv/xanes_test
-xyz_path:  ./data/datasets/graph-set/xyz_test
-xanes_path:  ./data/datasets/graph-set/xanes_test
+xyz_path:  data/fe/xyz_test
+xanes_path:  data/fe/xanes_test
+#xyz_path:  data/graph-set/xyz_test
+#xanes_path:  data/graph-set/xanes_test
 #xyz_path: null
 #xanes_path: null
 

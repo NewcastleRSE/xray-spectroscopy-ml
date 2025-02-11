@@ -14,6 +14,10 @@ You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import numpy as np
+
+from xanesnet.model.base_model import Model
+from torch.utils.data import DataLoader
 
 """
 Factory methods to create instance of model, descriptor or scheme based on
@@ -23,7 +27,7 @@ the __init__.py file in the /scheme, /descriptor, or /model directory
 """
 
 
-def create_model(name, **kwargs):
+def create_model(name: str, **kwargs):
     from xanesnet.model import MLP, CNN, LSTM, AE_CNN, AE_MLP, AEGAN_MLP, GNN
 
     models = {
@@ -42,7 +46,7 @@ def create_model(name, **kwargs):
         raise ValueError(f"Unsupported module name: {name}")
 
 
-def create_descriptor(name, **kwargs):
+def create_descriptor(name: str, **kwargs):
     from xanesnet.descriptor import (
         RDC,
         WACSF,
@@ -77,7 +81,7 @@ def create_descriptor(name, **kwargs):
         raise ValueError(f"Unsupported descriptor name: {name}")
 
 
-def create_learn_scheme(x_data, y_data, **kwargs):
+def create_learn_scheme(x_data: np.ndarray, y_data: np.ndarray, **kwargs):
     from xanesnet.scheme import NNLearn, AELearn, AEGANLearn, GNNLearn
 
     scheme = {
@@ -100,7 +104,13 @@ def create_learn_scheme(x_data, y_data, **kwargs):
 
 
 def create_eval_scheme(
-    name, model, train_loader, valid_loader, eval_loader, input_size, output_size
+    name: str,
+    model: Model,
+    train_loader: DataLoader,
+    valid_loader: DataLoader,
+    eval_loader: DataLoader,
+    input_size: int,
+    output_size: int,
 ):
     from xanesnet.scheme import NNEval, AEEval, AEGANEval
 
@@ -127,14 +137,14 @@ def create_eval_scheme(
 
 
 def create_predict_scheme(
-    name,
-    xyz_data,
-    xanes_data,
-    pred_mode,
-    pred_eval,
-    scaler,
-    fourier,
-    fourier_param,
+    name: str,
+    xyz_data: np.ndarray,
+    xanes_data: np.ndarray,
+    pred_mode: str,
+    pred_eval: bool,
+    scaler: bool,
+    fourier: bool,
+    fourier_param: dict,
 ):
     from xanesnet.scheme import NNPredict, AEPredict, AEGANPredict, GNNPredict
 

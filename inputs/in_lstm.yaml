@@ -1,5 +1,5 @@
-xyz_path:  .github/workflows/data/datasets/fe/preconv/xyz_train
-xanes_path:  .github/workflows/data/datasets/fe/preconv/xanes_train
+xyz_path:  data/fe/xyz_train
+xanes_path:  data/fe/xanes_train
 
 descriptor:
   - type: wacsf

@@ -1,5 +1,5 @@
-xyz_path:  data/datasets/graph-set/xyz_train
-xanes_path:  data/datasets/graph-set/xanes_train
+xyz_path:  data/fe/xyz_train
+xanes_path:  data/fe/xanes_train
 
 descriptors:
   - type: pdos
