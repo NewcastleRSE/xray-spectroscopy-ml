@@ -1,0 +1,214 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Introduction &mdash; xanesnet 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=e031e9a9"></script>
+      <script src="_static/doctools.js?v=888ff710"></script>
+      <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installing XANESNET" href="install.html" />
+    <link rel="prev" title="X A N E S N E T" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            xanesnet
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#xanesnet-overview">XANESNET Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#xanesnet-features">XANESNET features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#xanesnet-development-team">XANESNET development team</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#publications">Publications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#citing-xanesnet">Citing XANESNET</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installing XANESNET</a></li>
+<li class="toctree-l1"><a class="reference internal" href="running.html">Running XANESNET</a></li>
+<li class="toctree-l1"><a class="reference internal" href="input.html">Input File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="descriptor.html">Library of Descriptors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">Library of Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Model Evaluation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Project Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/NewcastleRSE/xray-spectroscopy-ml">XANESNET GitHub Repository</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://gitlab.com/team-xnet/xanesnet">XANESNET GitLab Repostiory</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://gitlab.com/team-xnet/training-sets">XANESNET Training Datasets</a></li>
+<li class="toctree-l1"><a class="reference external" href="http://penfoldgroup.co.uk">Penfold Group</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://gitlab.com/team-xnet/xanesnet_keras">Original Keras Implementation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">xanesnet</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Introduction</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/intro.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h1>
+<section id="xanesnet-overview">
+<h2>XANESNET Overview<a class="headerlink" href="#xanesnet-overview" title="Permalink to this heading"></a></h2>
+<p>XANESNET is an open-source toolbox for the rapid and
+automated analysis and prediction of X-ray spectroscopy data.
+The toolbox provides solution for both forward and reverse mapping problems,
+linking material properties or structures with their corresponding
+X-ray Absorption Near Edge Structure (XANES) spectra.</p>
+<p>The forward mapping approach is similar to the approach used by
+computational researchers in the sense that an input structure is used to generate a spectral observable.
+In this area the objective of XANESNET is to supplement and support analysis provided by first principles
+quantum mechanical simulations. The reverse mapping problem, on the other hand,
+focuses on interpreting the material property from XANES spectra.
+This is perhaps the more natural of the two,
+as it has a clear connection to the problem that X-ray spectroscopists face day-to-day in their work:
+how can a measurement/observable be interpreted?</p>
+<p>XANESNET approaches this problem by employing machine learning models,
+including a variety of deep neural network architectures to perform inverse analysis.
+By training these models on large datasets,
+XANESNET can accurately predict the characteristics of unknown samples.
+The choice of neural network architectures enables users to select the most
+appropriate model based on their specific requirements.</p>
+</section>
+<section id="xanesnet-features">
+<h2>XANESNET features<a class="headerlink" href="#xanesnet-features" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p>GPLv3 licensed open-source distribution</p></li>
+<li><p>Automated data processing: data augmentation, Fourier transform</p></li>
+<li><p>Feature extraction: wACSF, SOAP, MBTR, LMBTR, RDC, LMBTR, pDOS, MSR</p></li>
+<li><p>Neural network architecture: MLP, CNN, LSTM, Autoencoder, Autoencoder-GAN</p></li>
+<li><p>Learning scheme: K-fold, ensemble, bootstrap</p></li>
+<li><p>Hyperparameter optimisation</p></li>
+<li><p>Learning rate scheduler</p></li>
+<li><p>Layer freezing</p></li>
+<li><p>Run from an input file</p></li>
+<li><p>Easy to extend with new model and descriptor</p></li>
+<li><p>Web interface</p></li>
+</ul>
+</section>
+<section id="xanesnet-development-team">
+<h2>XANESNET development team<a class="headerlink" href="#xanesnet-development-team" title="Permalink to this heading"></a></h2>
+<p>XANESNET is developed by the
+<a class="reference external" href="http://penfoldgroup.co.uk">Penfold Group</a> and
+the <a class="reference external" href="https://rse.ncldata.dev/">Research Software Engineering (RSE) team</a>
+at <a class="reference external" href="https://ncl.ac.uk">Newcastle University</a>.</p>
+<div class="line-block">
+<div class="line">Project team:</div>
+<div class="line"><a class="reference external" href="https://www.ncl.ac.uk/nes/people/profile/tompenfold.html">Prof. Thomas Penfold</a> (<a class="reference external" href="mailto:tom&#46;penfold&#37;&#52;&#48;newcastle&#46;ac&#46;uk">tom<span>&#46;</span>penfold<span>&#64;</span>newcastle<span>&#46;</span>ac<span>&#46;</span>uk</a>)</div>
+<div class="line"><a class="reference external" href="https://www.york.ac.uk/chemistry/people/conor-rankine/">Dr. Conor Rankine</a> (<a class="reference external" href="mailto:conor&#46;rankine&#37;&#52;&#48;york&#46;ac&#46;uk">conor<span>&#46;</span>rankine<span>&#64;</span>york<span>&#46;</span>ac<span>&#46;</span>uk</a>)</div>
+</div>
+<div class="line-block">
+<div class="line">RSE team:</div>
+<div class="line"><a class="reference external" href="https://rse.ncldata.dev/team/bowen-li">Dr. Bowen Li</a> (<a class="reference external" href="mailto:bowen&#46;li2&#37;&#52;&#48;newcastle&#46;ac&#46;uk">bowen<span>&#46;</span>li2<span>&#64;</span>newcastle<span>&#46;</span>ac<span>&#46;</span>uk</a>)</div>
+<div class="line"><a class="reference external" href="https://rse.ncldata.dev/team/alex-surtees">Alex Surtee</a> (<a class="reference external" href="mailto:alex&#46;surtees&#37;&#52;&#48;newcastle&#46;ac&#46;uk">alex<span>&#46;</span>surtees<span>&#64;</span>newcastle<span>&#46;</span>ac<span>&#46;</span>uk</a>)</div>
+</div>
+<div class="line-block">
+<div class="line">Former RSEs:</div>
+<div class="line">Dr. Nik Khadijah Nik Aznan</div>
+<div class="line">Dr. Kathryn Garside</div>
+</div>
+</section>
+<section id="publications">
+<h2>Publications<a class="headerlink" href="#publications" title="Permalink to this heading"></a></h2>
+<p><strong>XANESNET Code</strong>:</p>
+<p><a class="reference external" href="https://doi.org/10.1021/acs.jpca.0c03723">A Deep Neural Network for the Rapid Prediction of X-ray Absorption Spectra</a> - C. D. Rankine, M. M. M. Madkhali, and T. J. Penfold, <em>J. Phys. Chem. A</em>, 2020, <strong>124</strong>, 4263-4270.</p>
+<p><a class="reference external" href="https://doi.org/10.1063/5.0087255">Accurate, affordable, and generalizable machine learning simulations of transition metal x-ray absorption spectra using the XANESNET deep neural network</a> - C. D. Rankine, and T. J. Penfold, <em>J. Chem. Phys.</em>, 2022, <strong>156</strong>, 164102.</p>
+<p><strong>Extension to X-ray Emission</strong>:</p>
+<p><a class="reference external" href="https://doi.org/10.1080/00268976.2022.2123406">A deep neural network for valence-to-core X-ray emission spectroscopy</a> - T. J. Penfold, and C. D. Rankine, <em>Mol. Phys.</em>, 2022, e2123406.</p>
+<p><strong>The Applications</strong>:</p>
+<p><a class="reference external" href="https://doi.org/10.1016/j.cplett.2021.138893">On the Analysis of X-ray Absorption Spectra for Polyoxometallates</a> - E. Falbo, C. D. Rankine, and T. J. Penfold, <em>Chem. Phys. Lett.</em>, 2021, <strong>780</strong>, 138893.</p>
+<p><a class="reference external" href="https://doi.org/10.1039/D0CP06244H">Enhancing the Anaysis of Disorder in X-ray Absorption Spectra: Application of Deep Neural Networks to T-Jump-X-ray Probe Experiments</a> - M. M. M. Madkhali, C. D. Rankine, and T. J. Penfold, <em>Phys. Chem. Chem. Phys.</em>, 2021, <strong>23</strong>, 9259-9269.</p>
+<p><strong>Miscellaneous</strong>:</p>
+<p><a class="reference external" href="https://doi.org/10.3390/molecules25112715">The Role of Structural Representation in the Performance of a Deep Neural Network for X-ray Spectroscopy</a> - M. M. M. Madkhali, C. D. Rankine, and T. J. Penfold, <em>Molecules</em>, 2020, <strong>25</strong>, 2715.</p>
+</section>
+<section id="citing-xanesnet">
+<h2>Citing XANESNET<a class="headerlink" href="#citing-xanesnet" title="Permalink to this heading"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@software</span><span class="p">{</span><span class="n">xanesnet</span><span class="p">,</span>
+  <span class="n">author</span> <span class="o">=</span> <span class="p">{</span><span class="n">Penfold</span> <span class="n">Group</span><span class="p">,</span> <span class="n">Newcastle</span> <span class="n">University</span><span class="p">},</span>
+  <span class="n">title</span> <span class="o">=</span> <span class="p">{</span><span class="n">XANESNET</span><span class="p">},</span>
+  <span class="n">url</span> <span class="o">=</span> <span class="p">{</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">gitlab</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">team</span><span class="o">-</span><span class="n">xnet</span><span class="o">/</span><span class="n">xanesnet</span><span class="p">},</span>
+  <span class="n">date</span> <span class="o">=</span> <span class="p">{</span><span class="mi">2023</span><span class="p">},</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="X A N E S N E T" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="install.html" class="btn btn-neutral float-right" title="Installing XANESNET" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Newcastle University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
