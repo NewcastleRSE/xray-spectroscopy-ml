@@ -14,13 +14,12 @@ You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from typing import Tuple
-
 import numpy as np
 import tqdm as tqdm
+
+from typing import Tuple
 from ase.io import read
 from mace.calculators import mace_mp
-
 from pathlib import Path
 
 from xanesnet.data_graph import GraphDataset
@@ -40,6 +39,7 @@ def encode_xyz(xyz_path: Path, index: list, descriptor_list: list) -> np.ndarray
     """
     n_samples = len(index)
     n_x_features = 0
+
     # Get total feature length
     for descriptor in descriptor_list:
         if descriptor.get_type() == "direct":
@@ -78,6 +78,7 @@ def encode_xyz(xyz_path: Path, index: list, descriptor_list: list) -> np.ndarray
                     atoms = load_xyz(f)
                 xyz_data[i, s : s + l] = descriptor.transform(atoms)
             s += l
+
         # Check for any NaN values in the encoded data
         if np.any(np.isnan(xyz_data[i, :])):
             print(f"Warning issue arising with transformation of {id_}.")
@@ -92,6 +93,7 @@ def encode_xanes(xanes_path: Path, index: list) -> Tuple[np.ndarray, np.ndarray]
     """
     n_samples = len(index)
     n_y_features = linecount(xanes_path / f"{index[0]}.txt") - 2
+
     # Feature array pre-allocation
     xanes_data = np.full((n_samples, n_y_features), np.nan)
 
@@ -218,6 +220,8 @@ def data_gnn_learn(
     node_feats: dict,
     edge_feats: dict,
     descriptor_list: list,
+    apply_fourier_transform: bool,
+    fourier_params: dict,
 ) -> GraphDataset:
     """
     Process and convert XYZ data into a graph-based dataset
@@ -236,6 +240,14 @@ def data_gnn_learn(
 
         xanes_data, _ = encode_xanes(xanes_path, index)
         print(f"Converting {len(index)} data files from XYZ format to graphs...")
+
+        # Apply FFT to spectra training dataset if specified
+        if apply_fourier_transform:
+            from .data_transform import fourier_transform
+
+            print(">> Transforming spectra data using Fourier transform...")
+            xanes_data = fourier_transform(xanes_data, fourier_params["concat"])
+
         graph_dataset = GraphDataset(
             root=str(xyz_path),
             index=index,

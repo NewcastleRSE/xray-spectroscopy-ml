@@ -163,6 +163,8 @@ def train_model_gnn(config, args):
         config["model"]["node_features"],
         config["model"]["edge_features"],
         descriptor_list,
+        config["fourier_transform"],
+        config["fourier_params"],
     )
 
     # Initialise learn scheme

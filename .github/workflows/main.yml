@@ -176,6 +176,5 @@ jobs:
           # disable ensemble
           sed -i 's/ensemble: True/ensemble: False/' ./.github/workflows/inputs/in_gnn.yaml
 
-      # Step 4: Run unit tests
       - name: Run unit tests
         run: pytest

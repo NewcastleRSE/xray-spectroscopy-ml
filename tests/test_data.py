@@ -45,6 +45,8 @@ config_gnn = {
             "layer_params": {"heads": 2, "concat": True, "edge_dim": 16},
         },
     },
+    "fourier_transform": False,
+    "fourier_params": {"concat": True},
 }
 
 
@@ -165,6 +167,8 @@ class TestDataGNNLearn:
             config_gnn["model"]["node_features"],
             config_gnn["model"]["edge_features"],
             descriptors,
+            config_gnn["fourier_transform"],
+            config_gnn["fourier_params"],
         )
 
         return graphs

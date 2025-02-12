@@ -58,6 +58,8 @@ def init_dataset_gnn(config):
         config["model"]["node_features"],
         config["model"]["edge_features"],
         descriptor_list,
+        config["fourier_transform"],
+        config["fourier_params"],
     )
     return dataset
 
@@ -291,6 +293,8 @@ class TestModelGNN:
                 "layer_params": {"heads": 2, "concat": True, "edge_dim": 16},
             },
         },
+        "fourier_transform": False,
+        "fourier_params": {"concat": True},
     }
 
     def test_arch_xyz(self):
