@@ -148,3 +148,15 @@ class ParamOptuna:
         self.model_params["hidden_size"] = self.trial.suggest_categorical(
             "hidden_size", hidden_size
         )
+
+    def tune_gnn(self):
+        n_hl_min = 2
+        n_hl_max = 5
+        hidden_size = [64, 128, 256, 512]
+
+        self.model_params["num_hidden_layers"] = self.trial.suggest_int(
+            "num_hidden_layers", n_hl_min, n_hl_max
+        )
+        self.model_params["hidden_size"] = self.trial.suggest_categorical(
+            "hidden_size", hidden_size
+        )

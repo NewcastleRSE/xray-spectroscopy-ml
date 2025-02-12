@@ -127,8 +127,8 @@ class Learn(ABC):
         model = self.setup_weight(model, seed)
         _, score = self.train(model, x_data, y_data)
 
-        if len(score) > 1:
-            score = sum([v[-1] for k, v in score.items()])
+        # if len(score) > 1:
+        #    score = sum([v[-1] for k, v in score.items()])
 
         return score
 
