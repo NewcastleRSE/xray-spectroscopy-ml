@@ -1,7 +1,5 @@
-#xyz_path:  data/datasets/10000-set/xyz
-#xanes_path:  data/datasets/10000-set/xanes
-xyz_path:  .github/workflows/data/datasets/graph-set/xyz_train
-xanes_path:  .github/workflows/data/datasets/graph-set/xanes_train
+xyz_path:  .github/workflows/data/graph-set/xyz_train
+xanes_path:  .github/workflows/data/graph-set/xanes_train
 
 descriptors:
   - type: pdos
@@ -10,7 +8,7 @@ descriptors:
       init_guess: minao
       orb_type: p
       max_scf_cycles: 0
-      num_points: 80
+      num_points: 20
       e_min: -10.0
       e_max: 30.0
       sigma: 0.8
@@ -32,7 +30,7 @@ model:
   params:
     hidden_size: 512
     dropout: 0.2
-    num_hidden_layers: 5
+    num_hidden_layers: 3
     activation: prelu
     layer_name: GATv2 #GAT, GATv2, GCN, GraphConv
     layer_params:
@@ -43,11 +41,11 @@ model:
 hyperparams:
   batch_size: 3
   lr: 0.001
-  epochs: 50
+  epochs: 10
   optim_fn: Adam
   kernel_init: xavier_uniform
   bias_init: zeros
-  model_eval : False
+  model_eval : True
   seed: 2021
   weight_seed: 2023
   loss:
@@ -62,7 +60,7 @@ kfold_params:
   n_repeats: 1
   seed: 2021
 
-lr_scheduler: False
+lr_scheduler: True
 scheduler_params:
   type: step
   step_size: 50

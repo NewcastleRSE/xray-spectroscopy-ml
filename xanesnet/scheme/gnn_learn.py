@@ -33,7 +33,7 @@ import time
 from sklearn.model_selection import RepeatedKFold
 import numpy as np
 import random
-from xanesnet.optuna import ParamOptuna
+
 
 class GNNLearn(Learn):
     def __init__(self, x_data, y_data, **kwargs):
@@ -188,30 +188,9 @@ class GNNLearn(Learn):
         score = running_loss / len(train_loader)
 
         return model, score
-    
-    def train_optuna(self, trial, x_data, y_data, seed):
-        po = ParamOptuna(trial, self.model_params, self.hyper_params)
-
-        for name, flag in self.optuna_params.items():
-            if name.startswith("tune_") and flag:
-                po.get_fn(name)
-
-        self.model_params["x_data"] = x_data
-        self.model_params["mlp_feat_size"] = x_data[0].graph_attr.shape[0]
-
-        model = create_model(self.model_name, **self.model_params)
-        model.to(self.device)
-        model = self.setup_weight(model, seed)
-        _, score = self.train(model, x_data, y_data)
-
-        return score
 
     def train_std(self):
         x_data = self.x_data
-
-        # Optuna optimisation if enabled
-        if self.optuna:
-            self.proc_optuna(x_data, None, self.weight_seed)
 
         self.model_params["x_data"] = x_data
         self.model_params["mlp_feat_size"] = x_data[0].graph_attr.shape[0]

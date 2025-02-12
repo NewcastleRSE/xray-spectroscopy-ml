@@ -16,9 +16,10 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
 import tqdm as tqdm
+
+from typing import Tuple
 from ase.io import read
 from mace.calculators import mace_mp
-
 from pathlib import Path
 
 from xanesnet.data_graph import GraphDataset
@@ -31,10 +32,15 @@ from xanesnet.utils import (
 )
 
 
-def encode_xyz(xyz_path: Path, index: list, descriptor_list: list):
+def encode_xyz(xyz_path: Path, index: list, descriptor_list: list) -> np.ndarray:
+    """
+    Encodes XYZ molecular data into numerical feature array,
+    Multiple descriptors can be applied, and the results are concatenated.
+    """
     n_samples = len(index)
-    # Feature length
     n_x_features = 0
+
+    # Get total feature length
     for descriptor in descriptor_list:
         if descriptor.get_type() == "direct":
             n_x_features += linecount(xyz_path / f"{index[0]}.dsc")
@@ -50,6 +56,9 @@ def encode_xyz(xyz_path: Path, index: list, descriptor_list: list):
     xyz_data = np.full((n_samples, n_x_features), np.nan)
     print(">> preallocated {}x{} array for XYZ data...".format(*xyz_data.shape))
     print(">> loading encoded data into array(s)...")
+
+    # Iterate each sample data to extract descriptor values,
+    # and assign result to array.
     for i, id_ in enumerate(tqdm.tqdm(index)):
         s = 0
         for descriptor in descriptor_list:
@@ -69,6 +78,8 @@ def encode_xyz(xyz_path: Path, index: list, descriptor_list: list):
                     atoms = load_xyz(f)
                 xyz_data[i, s : s + l] = descriptor.transform(atoms)
             s += l
+
+        # Check for any NaN values in the encoded data
         if np.any(np.isnan(xyz_data[i, :])):
             print(f"Warning issue arising with transformation of {id_}.")
             continue
@@ -76,13 +87,20 @@ def encode_xyz(xyz_path: Path, index: list, descriptor_list: list):
     return xyz_data
 
 
-def encode_xanes(xanes_path: Path, index: list):
+def encode_xanes(xanes_path: Path, index: list) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Encodes XANES spectral data into a numerical feature array.
+    """
     n_samples = len(index)
     n_y_features = linecount(xanes_path / f"{index[0]}.txt") - 2
+
+    # Feature array pre-allocation
     xanes_data = np.full((n_samples, n_y_features), np.nan)
 
     print(">> preallocated {}x{} array for XANES data...".format(*xanes_data.shape))
     print(">> loading data into array(s)...")
+
+    # Iterate each sample and assign XANES spectra to array
     for i, id_ in enumerate(tqdm.tqdm(index)):
         with open(xanes_path / f"{id_}.txt", "r") as f:
             xanes = load_xanes(f)
@@ -91,10 +109,12 @@ def encode_xanes(xanes_path: Path, index: list):
     return xanes_data, e
 
 
-def data_learn(xyz_path: str, xanes_path: str, descriptor_list: list):
+def data_learn(
+    xyz_path: str, xanes_path: str, descriptor_list: list
+) -> Tuple[np.ndarray, np.ndarray, list[str]]:
     """
-    Process and encode data from given XYZ and xanes files using
-    one or more descriptors.
+    Process and encode training data from XYZ and xanes files,
+    returning encoded XYZ data, XANES data, and a common index list.
     """
     xyz_path = Path(xyz_path)
     xanes_path = Path(xanes_path)
@@ -103,7 +123,7 @@ def data_learn(xyz_path: str, xanes_path: str, descriptor_list: list):
         raise FileNotFoundError("Path to data doesn't exist")
 
     if xyz_path.is_dir() and xanes_path.is_dir():
-        # Dataset index by finding the common elements in XYZ and xanes files
+        # Find common files and sort the index
         index = list(set(list_filestems(xyz_path)) & set(list_filestems(xanes_path)))
         index.sort()
 
@@ -111,6 +131,7 @@ def data_learn(xyz_path: str, xanes_path: str, descriptor_list: list):
         xanes_data, e = encode_xanes(xanes_path, index)
 
     elif xyz_path.is_file() and xanes_path.is_file():
+        # Load data from .npz files
         print(">> loading data from .npz archive(s)...\n")
 
         with open(xyz_path, "rb") as f:
@@ -121,7 +142,6 @@ def data_learn(xyz_path: str, xanes_path: str, descriptor_list: list):
         print(">> ...loaded {}x{} array of XANES data".format(*xanes_data.shape))
         with open(xyz_path, "rb") as f:
             index = np.load(f)["ids"]
-
     else:
         err_str = (
             "paths to data are expected to be either a) both "
@@ -138,42 +158,53 @@ def data_predict(
     descriptor_list: list,
     mode: str,
     pred_eval: bool,
-):
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, list[str]]:
+    """
+    Process and encode prediction (test) data from XYZ and xanes files,
+    returning encoded XYZ data, XANES data, energy value,
+    and a common index list.
+    """
+
     print(">> loading xanes data into array(s)...")
     if mode == "predict_all" or pred_eval:
+        # If AEGAN prediction (predict_all mode) or evaluating prediction results,
+        # both xyz and xanes data are required.
         xyz_path = Path(xyz_path)
         xanes_path = Path(xanes_path)
-
         if not xyz_path.exists() or not xanes_path.exists():
             raise FileNotFoundError("Path to data doesn't exist")
 
+        # Find common files in both XYZ and XANES directories
         index = list(set(list_filestems(xyz_path)) & set(list_filestems(xanes_path)))
         index.sort()
-        # Load both xyz and xanes data
+
+        # Encode data
         xyz_data = encode_xyz(xyz_path, index, descriptor_list)
         xanes_data, e = encode_xanes(xanes_path, index)
 
     elif mode == "predict_xyz":
+        # In 'predict_xyz' mode, only XANES data is required.
         xanes_path = Path(xanes_path)
-
         if not xanes_path.exists():
             raise FileNotFoundError("Path to data doesn't exist")
 
         index = list(set(list_filestems(xanes_path)))
         index.sort()
-        # Load xanes data
+
+        # Encode data
         xanes_data, e = encode_xanes(xanes_path, index)
         xyz_data = None
 
     elif mode == "predict_xanes":
+        # In 'predict_xanes' mode, only XYZ data is required.
         xyz_path = Path(xyz_path)
-
         if not xyz_path.exists():
             raise FileNotFoundError("Path to data doesn't exist")
 
         index = list(set(list_filestems(xyz_path)))
         index.sort()
-        # Load xyz data
+
+        # Encode data
         xyz_data = encode_xyz(xyz_path, index, descriptor_list)
         xanes_data = None
         e = None
@@ -186,12 +217,16 @@ def data_predict(
 def data_gnn_learn(
     xyz_path: str,
     xanes_path: str,
-    apply_fourier_transform: bool,
-    fourier_params: dict,
     node_feats: dict,
     edge_feats: dict,
     descriptor_list: list,
-):
+    apply_fourier_transform: bool,
+    fourier_params: dict,
+) -> GraphDataset:
+    """
+    Process and convert XYZ data into a graph-based dataset
+    for Graph Neural Network (GNN) training.
+    """
     xyz_path = Path(xyz_path)
     xanes_path = Path(xanes_path)
 
@@ -199,10 +234,13 @@ def data_gnn_learn(
         raise FileNotFoundError("Path to data doesn't exist")
 
     if xyz_path.is_dir() and xanes_path.is_dir():
+        # Find and sort common files in both XYZ and XANES directories
         index = list(set(list_filestems(xyz_path)) & set(list_filestems(xanes_path)))
         index.sort()
+
         xanes_data, _ = encode_xanes(xanes_path, index)
-        
+        print(f"Converting {len(index)} data files from XYZ format to graphs...")
+
         # Apply FFT to spectra training dataset if specified
         if apply_fourier_transform:
             from .data_transform import fourier_transform
@@ -210,7 +248,6 @@ def data_gnn_learn(
             print(">> Transforming spectra data using Fourier transform...")
             xanes_data = fourier_transform(xanes_data, fourier_params["concat"])
 
-        print(f"Converting {len(index)} data files from XYZ format to graphs...")
         graph_dataset = GraphDataset(
             root=str(xyz_path),
             index=index,
@@ -233,12 +270,18 @@ def data_gnn_predict(
     edge_feats: dict,
     descriptor_list: list,
     pred_eval: bool,
-):
+) -> Tuple[GraphDataset, list[str], np.ndarray, np.ndarray]:
+    """
+    Process and convert XYZ data into a graph-based dataset
+    for Graph Neural Network (GNN) prediction.
+    """
+
     xyz_path = Path(xyz_path)
     if not xyz_path.exists():
         raise FileNotFoundError("Path to data doesn't exist")
 
     if pred_eval:
+        # Load XANES data when evaluating prediction results
         xanes_path = Path(xanes_path)
         if not xanes_path.exists():
             raise FileNotFoundError("Path to data doesn't exist")

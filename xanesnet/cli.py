@@ -73,6 +73,13 @@ def parse_args(args: list):
         help="toggle mlflow on and save logs to disk",
     )
 
+    parser.add_argument(
+        "--tensorboard",
+        type=str,
+        default="no",
+        help="toggle tensorboard on and save logs to disk",
+    )
+
     args = parser.parse_args()
 
     return args

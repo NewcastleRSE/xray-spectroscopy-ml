@@ -1,5 +1,5 @@
-xyz_path:  .github/workflows/data/datasets/fe/preconv/xyz_train
-xanes_path:  .github/workflows/data/datasets/fe/preconv/xanes_train
+xyz_path:  .github/workflows/data/fe/xyz_train
+xanes_path:  .github/workflows/data/fe/xanes_train
 
 descriptors:
   - type: wacsf
@@ -34,17 +34,17 @@ model:
         loss_reg_param: 0.001
 
 hyperparams:
-  batch_size: 64
+  batch_size: 2
   epochs: 10
   kernel_init: xavier_uniform
   bias_init: zeros
-  model_eval: True
+  model_eval: False
   seed: 2021
   weight_seed: 2023
 
 kfold: False
 kfold_params:
-  n_splits: 5
+  n_splits: 2
   n_repeats: 1
   seed: 2022
 
@@ -60,9 +60,8 @@ augment_params:
   # augment_type: random_combination
   augment_mult: 5
   # for random noise
-  augment_params:
-    normal_mean: 0
-    normal_sd: 0.1
+  normal_mean: 0
+  normal_sd: 0.1
   # for random combination
   # augment_params : {}
 

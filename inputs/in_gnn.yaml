@@ -1,7 +1,5 @@
-#xyz_path:  data/datasets/10000-set/xyz
-#xanes_path:  data/datasets/10000-set/xanes
-xyz_path:  data/datasets/graph-set/xyz_train
-xanes_path:  data/datasets/graph-set/xanes_train
+xyz_path:  data/graph-set/xyz_train
+xanes_path:  data/graph-set/xanes_train
 
 descriptors:
   - type: pdos
@@ -90,7 +88,7 @@ ensemble_params:
   n_ens: 3
   weight_seed: [97, 39, 22]
 
-optuna: True
+optuna: False
 optuna_params:
   n_trials: 3
   tune_optim_fn: True
@@ -99,6 +97,7 @@ optuna_params:
   tune_loss_fn: True
   tune_lr: True
   tune_dropout: True
+  tune_mlp: True
 
 freeze: False
 freeze_params:

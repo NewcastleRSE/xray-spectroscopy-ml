@@ -86,6 +86,10 @@ class AEGANLearn(Learn):
 
         # initialise dataloader
         train_loader, valid_loader, eval_loader = self.setup_dataloader(x_data, y_data)
+        print(eval_loader)
+        if self.model_eval and len(eval_loader) < 2:
+            print(len(eval_loader))
+            raise ValueError("eval_loader expects more than 1 data")
 
         gen_opt, dis_opt = model.get_optimizer()
 

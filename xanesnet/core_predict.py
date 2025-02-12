@@ -26,15 +26,19 @@ from xanesnet.utils import save_predict, load_descriptors, load_models
 
 def predict_data(config, args, metadata):
     model_dir = Path(args.in_model)
+
     # Mode consistency check in metadata and args
     meta_mode = metadata["mode"]
     mode = args.mode
     print(f"Prediction mode: {mode}")
     consistency_check(config, meta_mode, mode)
+
     # Load descriptor list
     descriptor_list = load_descriptors(model_dir)
+
     # Enable model evaluation if test data is present
     pred_eval = (config["xyz_path"] is not None) and (config["xanes_path"] is not None)
+
     # Encode prediction dataset with saved descriptors
     xyz, xanes, e, index = data_predict(
         config["xyz_path"], config["xanes_path"], descriptor_list, mode, pred_eval
@@ -67,7 +71,7 @@ def predict_data(config, args, metadata):
         model_list = load_models(model_dir)
         result = scheme.predict_ensemble(model_list)
 
-    elif predict_scheme == "std":
+    elif predict_scheme == "std" or predict_scheme == "kfold":
         model = torch.load(model_dir / "model.pt", map_location=torch.device("cpu"))
         result = scheme.predict_std(model)
 
@@ -77,6 +81,7 @@ def predict_data(config, args, metadata):
     # Set output path
     path = Path("outputs") / args.in_model
     path = Path(str(path).replace("models/", ""))
+
     # Save prediction result
     if config["result_save"]:
         save_predict(path, mode, result, index, e, scheme.recon_flag)
@@ -100,8 +105,10 @@ def predict_data_gnn(config, args, metadata):
         raise ValueError(f"Unsupported prediction mode for GNN: {args.mode}")
     mode = args.mode
     print(f"Prediction mode: {mode}")
+
     # Enable model evaluation if test data is present
     pred_eval = config["xanes_path"] is not None
+
     # Load descriptor list
     descriptor_list = load_descriptors(model_dir)
 
@@ -139,11 +146,11 @@ def predict_data_gnn(config, args, metadata):
     elif predict_scheme == "ensemble":
         if "ensemble" not in str(model_dir):
             raise ValueError("Invalid ensemble directory")
-        
+
         model_list = load_models(model_dir)
         result = scheme.predict_ensemble(model_list)
-        
-    elif predict_scheme == "std":
+
+    elif predict_scheme == "std" or predict_scheme == "kfold":
         model = torch.load(model_dir / "model.pt", map_location=torch.device("cpu"))
         result = scheme.predict_std(model)
 
@@ -152,6 +159,7 @@ def predict_data_gnn(config, args, metadata):
 
     path = Path("outputs") / args.in_model
     path = Path(str(path).replace("models/", ""))
+
     # Save prediction result
     if config["result_save"]:
         save_predict(path, mode, result, index, e, False)

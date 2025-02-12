@@ -17,6 +17,7 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 from pathlib import Path
 
 import mlflow
+import numpy as np
 import optuna
 import torch
 import time
@@ -127,12 +128,9 @@ class Learn(ABC):
         model = self.setup_weight(model, seed)
         _, score = self.train(model, x_data, y_data)
 
-        # if len(score) > 1:
-        #    score = sum([v[-1] for k, v in score.items()])
-
         return score
 
-    def setup_writer(self, layout):
+    def setup_writer(self, layout: dict) -> SummaryWriter:
         # setup tensorboard stuff
         writer = SummaryWriter(f"/tmp/tensorboard/{int(time.time())}")
         writer.add_custom_scalars(layout)

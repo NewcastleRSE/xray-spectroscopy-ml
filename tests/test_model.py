@@ -55,11 +55,11 @@ def init_dataset_gnn(config):
     dataset = data_gnn_learn(
         config["xyz_path"],
         config["xanes_path"],
-        config["fourier_transform"],
-        config["fourier_params"],
         config["model"]["node_features"],
         config["model"]["edge_features"],
         descriptor_list,
+        config["fourier_transform"],
+        config["fourier_params"],
     )
     return dataset
 
@@ -293,8 +293,8 @@ class TestModelGNN:
                 "layer_params": {"heads": 2, "concat": True, "edge_dim": 16},
             },
         },
-        'fourier_transform': False, 
-        'fourier_params': {'concat': True}, 
+        "fourier_transform": False,
+        "fourier_params": {"concat": True},
     }
 
     def test_arch_xyz(self):

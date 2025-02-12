@@ -1,9 +1,9 @@
-xyz_path:  .github/workflows/data/datasets/fe/preconv/xyz_test
-xanes_path:  .github/workflows/data/datasets/fe/preconv/xanes_test
+xyz_path:  .github/workflows/data/fe/xyz_test
+xanes_path:  .github/workflows/data/fe/xanes_test
 
-plot_save: False
-result_save: False
+plot_save: True
+result_save: True
 
 shap: False
 shap_params:
-  nsamples: 5
+  nsamples: 3

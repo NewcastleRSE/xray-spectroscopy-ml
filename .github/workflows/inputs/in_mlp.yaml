@@ -1,5 +1,5 @@
-xyz_path:  .github/workflows/data/datasets/fe/preconv/xyz_train
-xanes_path:  .github/workflows/data/datasets/fe/preconv/xanes_train
+xyz_path:  .github/workflows/data/fe/xyz_train
+xanes_path:  .github/workflows/data/fe/xanes_train
 
 descriptors:
   - type: wacsf
@@ -14,18 +14,18 @@ model:
   params:
     hidden_size: 512
     dropout: 0.2
-    num_hidden_layers: 5
+    num_hidden_layers: 3
     shrink_rate: 0.5
     activation: prelu
 
 hyperparams:
-  batch_size: 64
+  batch_size: 3
   lr: 0.0001
-  epochs: 100
+  epochs: 10
   optim_fn: Adam
   kernel_init: xavier_uniform
   bias_init: zeros
-  model_eval : False
+  model_eval : True
   seed: 2021
   weight_seed: 2023
   loss:
@@ -36,7 +36,7 @@ hyperparams:
 
 kfold: False
 kfold_params:
-  n_splits: 3
+  n_splits: 2
   n_repeats: 1
   seed: 2021
 
@@ -70,7 +70,7 @@ ensemble_params:
 
 optuna: False
 optuna_params:
-  n_trials: 3
+  n_trials: 1
   tune_optim_fn: True
   tune_batch_size: True
   tune_activation: True
