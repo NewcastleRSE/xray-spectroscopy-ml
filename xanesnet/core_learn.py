@@ -185,7 +185,7 @@ def train_model_gnn(config, args):
         "freeze": config["freeze"],
         "freeze_params": config["freeze_params"],
         "scaler": config["standardscaler"],
-        "mlflow": args.mlflow_flag,
+        "mlflow": args.mlflow,
         "tensorboard": args.tensorboard,
     }
 
