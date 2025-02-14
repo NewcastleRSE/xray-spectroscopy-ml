@@ -27,15 +27,16 @@ Our XANESNET code address two fundamental challenges: the so-called forward (pro
 
 XANESNET is under continuous development, so feel free to flag up any issues/make pull requests - we appreciate your input!
 
-The original version of XANESNET, which was implemented using Keras, can be obtained from <a href="https://gitlab.com/team-xnet/xanesnet_keras">here.</a>. The <a href="https://xanesnet.readthedocs.io">XANESNET User Manual</a> has more information about the code and its uses.
+The original version of XANESNET, which was implemented using Keras, can be obtained from <a href="https://gitlab.com/team-xnet/xanesnet_keras">here</a>. The <a href="https://xanesnet.readthedocs.io">XANESNET User Manual</a> has more information about the code and its uses.
 
 ## Features
 
 * GPLv3 licensed open-source distribution
 * Automated data processing: data augmentation, Fourier transform
-* Feature extraction: wACSF, SOAP, MBTR, LMBTR, RDC, LMBTR, pDOS, MSR
-* Neural network architecture: MLP, CNN, LSTM, Autoencoder, Autoencoder-GAN
-* Learning scheme: K-fold, ensemble, bootstrap
+* Feature extraction: wACSF, SOAP, MBTR, LMBTR, RDC, LMBTR, pDOS, MSR, XTB
+* Neural network architecture: MLP, CNN, GNN, LSTM, Autoencoder, Autoencoder-GAN
+* Learning scheme: K-fold, ensemble, bootstrapping
+* Experiment tracking and visualisation: MLFlow, TensorBoard
 * Hyperparameter optimisation
 * Learning rate scheduler
 * Layer freezing
@@ -81,7 +82,7 @@ python -m pip install .
 
 To train a model, the following command is used:  
 
-```python3 -m xanesnet.cli --mode MODE --in_file <path/to/file.yaml>```
+```python3 -m xanesnet.cli --mode MODE --in_file <path/to/file.yaml> --save```
 
 The implemented training MODE include:  
 - `train_xanes`: The xanes spectra are used the input data and the featurised structures are the target of the model   
@@ -94,9 +95,9 @@ options can be found in the 'inputs/' folder
 
 Below is an example command for training a model using MLP architecture, and featurised structures as input data:  
 
-```python3 -m xanesnet.cli --mode train_xyz --in_file inputs/in_mlp.yaml```
+```python3 -m xanesnet.cli --mode train_xyz --in_file inputs/in_mlp.yaml --save```
 
-The resulting trained model and its metadata will be automatically saved in the 'models/' directory. 
+The resulting trained model and its metadata will be saved in the 'models/' directory. 
 
 ### Prediction
 
@@ -124,7 +125,7 @@ The [-\-in_file] specifies a path to input file for prediction. As an example, e
 
 ### RSE Contact
 <a href="https://rse.ncldata.dev/team/bowen-li">Dr. Bowen Li </a>, Newcastle University (bowen.li2@newcastle.ac.uk)\
-<a href="https://rse.ncldata.dev/team/alex-surtees">Alex Surtees </a>,  Newcastle University (alex.surtees@newcastle.ac.uk)
+<a href="https://rse.ncldata.dev/team/alex-surtees">Dr. Lorenzo Rossi </a>,  Newcastle University (lorenzo.rossi@newcastle.ac.uk)
 
 <!--
 ### EVALUATION
