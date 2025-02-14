@@ -47,26 +47,18 @@ class Learn(ABC):
         self.y_data = y_data
 
         self.model = kwargs.get("model")
+        self.model_name = self.model["type"]
         self.model_params = kwargs.get("model")["params"]
-        self.hyper_params = kwargs.get("hyper_params")
-        self.kfold = kwargs.get("kfold")
-        self.kfold_params = kwargs.get("kfold_params")
-        self.bootstrap_params = kwargs.get("bootstrap_params")
-        self.ensemble_params = kwargs.get("ensemble_params")
-        self.lr_scheduler = kwargs.get("scheduler")
-        self.scheduler_params = kwargs.get("scheduler_params")
-        self.optuna = kwargs.get("optuna")
-        self.optuna_params = kwargs.get("optuna_params")
-        self.freeze = kwargs.get("freeze")
-        self.freeze_params = kwargs.get("freeze_params")
-        self.scaler = kwargs.get("scaler")
 
         # kfold parameter set
+        self.kfold = kwargs.get("kfold")
+        self.kfold_params = kwargs.get("kfold_params")
         self.n_splits = self.kfold_params["n_splits"]
         self.n_repeats = self.kfold_params["n_repeats"]
         self.seed_kfold = self.kfold_params["seed"]
 
         # hyperparameter set
+        self.hyper_params = kwargs.get("hyper_params")
         self.batch_size = self.hyper_params["batch_size"]
         self.n_epoch = self.hyper_params["epochs"]
         self.kernel = self.hyper_params["kernel_init"]
@@ -76,25 +68,39 @@ class Learn(ABC):
         self.seed = self.hyper_params["seed"]
 
         # bootstrap parameter set
+        self.bootstrap_params = kwargs.get("bootstrap_params")
         self.n_boot = self.bootstrap_params["n_boot"]
         self.weight_seed_boot = self.bootstrap_params["weight_seed"]
         self.n_size = self.bootstrap_params["n_size"]
 
         # ensemble parameter set
+        self.ensemble_params = kwargs.get("ensemble_params")
         self.n_ens = self.ensemble_params["n_ens"]
         self.weight_seed_ens = self.ensemble_params["weight_seed"]
 
+        # learning rate scheduler
+        self.lr_scheduler = kwargs.get("scheduler")
+        self.scheduler_params = kwargs.get("scheduler_params")
+
+        # Optuna
+        self.optuna = kwargs.get("optuna")
+        self.optuna_params = kwargs.get("optuna_params")
+
+        # model freeze
+        self.freeze = kwargs.get("freeze")
+        self.freeze_params = kwargs.get("freeze_params")
+
+        # standard scaler
+        self.scaler = kwargs.get("scaler")
+
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-        # mlflow experiment info
-        self.model_name = self.model["type"]
-        exp_name = f"{self.model_name}"
-        self.exp_time = f"run_{datetime.today()}"
-        try:
-            self.exp_id = mlflow.get_experiment_by_name(exp_name).experiment_id
-        except:
-            self.exp_id = mlflow.create_experiment(exp_name)
+        # mlflow and tensorboard
+        self.mlflow_flag = kwargs.get("mlflow")
+        self.tb_flag = kwargs.get("tensorboard")
+        self.writer = None
 
+        # reconstruction flag = 1 when calling AELearn and AEGANLearn
         self.recon_flag = 0
 
     @abstractmethod
@@ -130,13 +136,6 @@ class Learn(ABC):
 
         return score
 
-    def setup_writer(self, layout: dict) -> SummaryWriter:
-        # setup tensorboard stuff
-        writer = SummaryWriter(f"/tmp/tensorboard/{int(time.time())}")
-        writer.add_custom_scalars(layout)
-
-        return writer
-
     def setup_model(self, x_data, y_data):
         if self.freeze:
             # Load existing model from the specified path
@@ -163,14 +162,20 @@ class Learn(ABC):
 
         return model
 
-    def setup_scheduler(self, optimizer):
+    def setup_scheduler(self, *optimizers):
         scheduler_type = self.scheduler_params["type"]
         params = {
             key: value for key, value in self.scheduler_params.items() if key != "type"
         }
-        scheduler = LRScheduler(optimizer, scheduler_type=scheduler_type, params=params)
 
-        return scheduler
+        # Create a scheduler for each optimizer
+        schedulers = [
+            LRScheduler(optimizer, scheduler_type=scheduler_type, params=params)
+            for optimizer in optimizers
+        ]
+
+        # Return a list if multiple optimizers, else return a single scheduler
+        return schedulers if len(schedulers) > 1 else schedulers[0]
 
     def setup_dataloader(self, x_data, y_data):
         # split dataset and setup train/valid/test dataloader
@@ -238,40 +243,58 @@ class Learn(ABC):
         )
         return model
 
+    def setup_mlflow(self):
+        if mlflow.get_experiment_by_name(self.model_name) is None:
+            mlflow.create_experiment(name=self.model_name)
+        mlflow.set_experiment(self.model_name)
+
+        mlflow.start_run(
+            run_name=f"run_{datetime.today().strftime('%Y-%m-%d_%H-%M-%S')}"
+        )
+        mlflow.log_params(self.hyper_params)
+        mlflow.log_param("n_epoch", self.n_epoch)
+
+    def setup_writer(self, layout: dict) -> SummaryWriter:
+        # setup tensorboard stuff
+        writer = SummaryWriter(f"tensorboard/{int(time.time())}")
+        writer.add_custom_scalars(layout)
+
+        return writer
+
     def setup_scaler(self, x_data):
         scaler = StandardScaler()
         x_data = scaler.fit_transform(x_data)
 
         return x_data
 
-    def log_scalar(self, writer, name, value, epoch):
-        """Log a scalar value to both MLflow and TensorBoard"""
-        writer.add_scalar(name, value, epoch)
-        mlflow.log_metric(name, value)
-
-    def write_log(self, model):
-        # # Create a SummaryWriter to write TensorBoard events locally
-        output_dir = tempfile.mkdtemp()
-
-        # Upload the TensorBoard event logs as a run artifact
-        print("Uploading TensorBoard events as a run artifact...")
-        mlflow.log_artifacts(output_dir, artifact_path="events")
-        print(
-            "\nLaunch TensorBoard with:\n\ntensorboard --logdir=%s"
-            % os.path.join(mlflow.get_artifact_uri(), "events")
-        )
-
+    def log_mlflow(self, model):
         # Log the model as an artifact of the MLflow run.
         print("\nLogging the trained model as a run artifact...")
         mlflow.pytorch.log_model(
             model, artifact_path="pytorch-model", pickle_module=pickle
         )
-        print(
-            "\nThe model is logged at:\n%s"
-            % os.path.join(mlflow.get_artifact_uri(), "pytorch-model")
-        )
 
         mlflow.pytorch.load_model(mlflow.get_artifact_uri("pytorch-model"))
+
+    def log_loss(self, name: str, value: float, epoch: int):
+        # Log loss to MLflow if enabled
+        if self.mlflow_flag:
+            mlflow.log_metric(name, value, step=epoch)
+
+        # Log loss to TensorBoard if enabled
+        if self.tb_flag:
+            self.writer.add_scalar(name, value, epoch)
+
+    def log_close(self):
+        if self.tb_flag:
+            log_dir = self.writer.log_dir  # Get TensorBoard log directory
+            self.writer.close()
+            print(f"\nTensorBoard logs saved at: file://{Path(log_dir).resolve()}")
+
+        if self.mlflow_flag:
+            run_url = mlflow.get_artifact_uri()  # Get the MLflow run URL
+            mlflow.end_run()
+            print(f"\nMLflow run saved at: {run_url}")
 
     def proc_optuna(self, x_data, y_data, seed):
         n_trials = self.optuna_params["n_trials"]

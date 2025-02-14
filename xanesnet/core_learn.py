@@ -103,17 +103,19 @@ def train_model(config, args):
         "freeze": config["freeze"],
         "freeze_params": config["freeze_params"],
         "scaler": config["standardscaler"],
+        "mlflow": args.mlflow,
+        "tensorboard": args.tensorboard,
     }
-    print(kwargs)
+
     scheme = create_learn_scheme(
         x_data,
         y_data,
         **kwargs,
     )
 
-    models = []
     # Train the model using selected training strategy
     print(">> Training %s model..." % config["model"]["type"])
+    models = []
     if config["bootstrap"]:
         train_scheme = "bootstrap"
         models = scheme.train_bootstrap()
@@ -128,7 +130,7 @@ def train_model(config, args):
         models.append(scheme.train_std())
 
     # Save trained model, metadata, compressed dataset, and descriptors to disk
-    if args.save == "yes":
+    if args.save:
         metadata = {
             "mode": args.mode,
             "model_type": config["model"]["type"],
@@ -183,6 +185,8 @@ def train_model_gnn(config, args):
         "freeze": config["freeze"],
         "freeze_params": config["freeze_params"],
         "scaler": config["standardscaler"],
+        "mlflow": args.mlflow_flag,
+        "tensorboard": args.tensorboard,
     }
 
     models = []
@@ -203,7 +207,7 @@ def train_model_gnn(config, args):
         models.append(scheme.train_std())
 
     # Save trained model, metadata, and descriptors to disk
-    if args.save == "yes":
+    if args.save:
         metadata = {
             "mode": args.mode,
             "model_type": config["model"]["type"],

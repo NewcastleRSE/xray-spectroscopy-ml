@@ -140,7 +140,7 @@ def save_models(
     if len(models) == 1:
         # Save single model
         torch.save(models[0], save_path / f"model.pt")
-        print(f"saved model to disk: {save_path}")
+        print("\nModel saved to disk: %s" % save_path.resolve().as_uri())
     else:
         # Save multiple models
         for model in models:
@@ -148,7 +148,7 @@ def save_models(
             model_dir.mkdir()
 
             torch.save(model, model_dir / f"model.pt")
-            print(f"saved model to disk: {model_dir}")
+            print("\nModel saved to disk: %s" % model_dir.resolve().as_uri())
 
     metadata["model_dir"] = str(save_path)
     with open(save_path / "metadata.yaml", "w") as f:
@@ -199,7 +199,7 @@ def save_predict(
                 with open(save_path / f"{id_}.txt", "w") as f:
                     save_xanes_mean(f, XANES(e, recon_), std_)
 
-    print(f"Saved prediction result to disk {path}")
+    print("\nPrediction results saved to disk: %s" % path.resolve().as_uri())
 
 
 def load_models(path: Path):

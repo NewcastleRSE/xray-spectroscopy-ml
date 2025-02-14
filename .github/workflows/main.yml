@@ -25,26 +25,26 @@ jobs:
 
       - name: MLP (STD)
         run: |
-          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_mlp.yaml
+          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_mlp.yaml  --save
           python3 -m xanesnet.cli --mode predict_xanes --in_model models/mlp_std_001 --in_file ./.github/workflows/inputs/in_predict.yaml
-          python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_mlp.yaml
+          python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_mlp.yaml  --save
           python3 -m xanesnet.cli --mode predict_xyz --in_model models/mlp_std_002 --in_file ./.github/workflows/inputs/in_predict.yaml
 
       - name: MLP (Kfold)
         run: |
           sed -i 's/kfold: False/kfold: True/' ./.github/workflows/inputs/in_mlp.yaml
-          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_mlp.yaml
+          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_mlp.yaml  --save
           python3 -m xanesnet.cli --mode predict_xanes --in_model models/mlp_kfold_001 --in_file ./.github/workflows/inputs/in_predict.yaml
-          python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_mlp.yaml
+          python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_mlp.yaml  --save
           python3 -m xanesnet.cli --mode predict_xyz --in_model models/mlp_kfold_002 --in_file ./.github/workflows/inputs/in_predict.yaml
           sed -i 's/kfold: True/kfold: False/' ./.github/workflows/inputs/in_mlp.yaml
 
       - name: MLP (Bootstrap)
         run: |
           sed -i 's/bootstrap: False/bootstrap: True/' ./.github/workflows/inputs/in_mlp.yaml
-          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_mlp.yaml
+          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_mlp.yaml  --save
           python3 -m xanesnet.cli --mode predict_xanes --in_model models/mlp_bootstrap_001 --in_file ./.github/workflows/inputs/in_predict.yaml
-          python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_mlp.yaml
+          python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_mlp.yaml  --save
           python3 -m xanesnet.cli --mode predict_xyz --in_model models/mlp_bootstrap_002 --in_file ./.github/workflows/inputs/in_predict.yaml
           # disable boostrap
           sed -i 's/bootstrap: True/bootstrap: False/' ./.github/workflows/inputs/in_mlp.yaml
@@ -53,49 +53,49 @@ jobs:
         run: |    
           # enable ensemble
           sed -i 's/ensemble: False/ensemble: True/' ./.github/workflows/inputs/in_mlp.yaml
-          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_mlp.yaml
+          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_mlp.yaml  --save
           python3 -m xanesnet.cli --mode predict_xanes --in_model models/mlp_ensemble_001 --in_file ./.github/workflows/inputs/in_predict.yaml
-          python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_mlp.yaml
+          python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_mlp.yaml  --save
           python3 -m xanesnet.cli --mode predict_xyz --in_model models/mlp_ensemble_002 --in_file ./.github/workflows/inputs/in_predict.yaml
           # disable ensemble
           sed -i 's/ensemble: True/ensemble: False/' ./.github/workflows/inputs/in_mlp.yaml
 
       - name: CNN (STD)
         run: |
-          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_cnn.yaml
+          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_cnn.yaml  --save
           python3 -m xanesnet.cli --mode predict_xanes --in_model models/cnn_std_001 --in_file ./.github/workflows/inputs/in_predict.yaml
-          python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_cnn.yaml
+          python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_cnn.yaml  --save
           python3 -m xanesnet.cli --mode predict_xyz --in_model models/cnn_std_002 --in_file ./.github/workflows/inputs/in_predict.yaml
 
       - name: LSTM (STD)
         run: |
-          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_lstm.yaml
+          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_lstm.yaml  --save
           python3 -m xanesnet.cli --mode predict_xanes --in_model models/lstm_std_001 --in_file ./.github/workflows/inputs/in_predict.yaml
-          python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_lstm.yaml
+          python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_lstm.yaml  --save
           python3 -m xanesnet.cli --mode predict_xyz --in_model models/lstm_std_002 --in_file ./.github/workflows/inputs/in_predict.yaml
 
       - name: AE_MLP (STD)
         run: |
-          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_ae_mlp.yaml
+          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_ae_mlp.yaml  --save
           python3 -m xanesnet.cli --mode predict_xanes --in_model models/ae_mlp_std_001 --in_file ./.github/workflows/inputs/in_predict.yaml
-          python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_ae_mlp.yaml
+          python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_ae_mlp.yaml  --save
           python3 -m xanesnet.cli --mode predict_xyz --in_model models/ae_mlp_std_002 --in_file ./.github/workflows/inputs/in_predict.yaml
 
       - name: AE_MLP (Kfold)
         run: |
           sed -i 's/kfold: False/kfold: True/' ./.github/workflows/inputs/in_ae_mlp.yaml
-          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_ae_mlp.yaml
+          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_ae_mlp.yaml  --save
           python3 -m xanesnet.cli --mode predict_xanes --in_model models/ae_mlp_kfold_001 --in_file ./.github/workflows/inputs/in_predict.yaml
-          python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_ae_mlp.yaml
+          python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_ae_mlp.yaml  --save
           python3 -m xanesnet.cli --mode predict_xyz --in_model models/ae_mlp_kfold_002 --in_file ./.github/workflows/inputs/in_predict.yaml
           sed -i 's/kfold: True/kfold: False/' ./.github/workflows/inputs/in_ae_mlp.yaml
 
       - name: AE_MLP (Bootstrap)
         run: |
           sed -i 's/bootstrap: False/bootstrap: True/' ./.github/workflows/inputs/in_ae_mlp.yaml
-          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_ae_mlp.yaml
+          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_ae_mlp.yaml  --save
           python3 -m xanesnet.cli --mode predict_xanes --in_model models/ae_mlp_bootstrap_001 --in_file ./.github/workflows/inputs/in_predict.yaml
-          python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_ae_mlp.yaml
+          python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_ae_mlp.yaml  --save
           python3 -m xanesnet.cli --mode predict_xyz --in_model models/ae_mlp_bootstrap_002 --in_file ./.github/workflows/inputs/in_predict.yaml
           # disable boostrap
           sed -i 's/bootstrap: True/bootstrap: False/' ./.github/workflows/inputs/in_ae_mlp.yaml
@@ -104,36 +104,36 @@ jobs:
         run: |    
           # enable ensemble
           sed -i 's/ensemble: False/ensemble: True/' ./.github/workflows/inputs/in_ae_mlp.yaml
-          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_ae_mlp.yaml
+          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_ae_mlp.yaml  --save
           python3 -m xanesnet.cli --mode predict_xanes --in_model models/ae_mlp_ensemble_001 --in_file ./.github/workflows/inputs/in_predict.yaml
-          python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_ae_mlp.yaml
+          python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_ae_mlp.yaml  --save
           python3 -m xanesnet.cli --mode predict_xyz --in_model models/ae_mlp_ensemble_002 --in_file ./.github/workflows/inputs/in_predict.yaml
           # disable ensemble
           sed -i 's/ensemble: True/ensemble: False/' ./.github/workflows/inputs/in_ae_mlp.yaml
 
       - name: AE_CNN (STD)
         run: |
-          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_ae_cnn.yaml
+          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_ae_cnn.yaml  --save
           python3 -m xanesnet.cli --mode predict_xanes --in_model models/ae_mlp_std_001 --in_file ./.github/workflows/inputs/in_predict.yaml
-          python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_ae_cnn.yaml
+          python3 -m xanesnet.cli --mode train_xanes --in_file ./.github/workflows/inputs/in_ae_cnn.yaml  --save
           python3 -m xanesnet.cli --mode predict_xyz --in_model models/ae_cnn_std_002 --in_file ./.github/workflows/inputs/in_predict.yaml
 
       - name: AEGAN (STD)
         run: |
-          python3 -m xanesnet.cli --mode train_aegan --in_file ./.github/workflows/inputs/in_aegan.yaml
+          python3 -m xanesnet.cli --mode train_aegan --in_file ./.github/workflows/inputs/in_aegan.yaml  --save
           python3 -m xanesnet.cli --mode predict_all --in_model models/aegan_mlp_std_001 --in_file ./.github/workflows/inputs/in_predict.yaml
 
       - name: AEGAN (Kfold)
         run: |
           sed -i 's/kfold: False/kfold: True/' ./.github/workflows/inputs/in_aegan.yaml
-          python3 -m xanesnet.cli --mode train_aegan --in_file ./.github/workflows/inputs/in_aegan.yaml
+          python3 -m xanesnet.cli --mode train_aegan --in_file ./.github/workflows/inputs/in_aegan.yaml  --save
           python3 -m xanesnet.cli --mode predict_all --in_model models/aegan_mlp_kfold_001 --in_file ./.github/workflows/inputs/in_predict.yaml
           sed -i 's/kfold: True/kfold: False/' ./.github/workflows/inputs/in_aegan.yaml
 
       - name: AEGAN (Bootstrap)
         run: |
-          sed -i 's/bootstrap: False/bootstrap: True/' ./.github/workflows/inputs/in_aegan.yaml
-          python3 -m xanesnet.cli --mode train_aegan --in_file ./.github/workflows/inputs/in_aegan.yaml
+          sed -i 's/bootstrap: False/bootstrap: True/' ./.github/workflows/inputs/in_aegan.yaml 
+          python3 -m xanesnet.cli --mode train_aegan --in_file ./.github/workflows/inputs/in_aegan.yaml  --save
           python3 -m xanesnet.cli --mode predict_all --in_model models/aegan_mlp_bootstrap_001 --in_file ./.github/workflows/inputs/in_predict.yaml
           # disable boostrap
           sed -i 's/bootstrap: True/bootstrap: False/' ./.github/workflows/inputs/in_aegan.yaml
@@ -141,28 +141,28 @@ jobs:
       - name: AEGAN (Ensemble)
         run: |    
           # enable ensemble
-          sed -i 's/ensemble: False/ensemble: True/' ./.github/workflows/inputs/in_aegan.yaml
-          python3 -m xanesnet.cli --mode train_aegan --in_file ./.github/workflows/inputs/in_aegan.yaml
+          sed -i 's/ensemble: False/ensemble: True/' ./.github/workflows/inputs/in_aegan.yaml 
+          python3 -m xanesnet.cli --mode train_aegan --in_file ./.github/workflows/inputs/in_aegan.yaml  --save
           python3 -m xanesnet.cli --mode predict_all --in_model models/aegan_mlp_ensemble_001 --in_file ./.github/workflows/inputs/in_predict.yaml
           # disable ensemble
           sed -i 's/ensemble: True/ensemble: False/' ./.github/workflows/inputs/in_aegan.yaml
 
       - name: GNN (Std)
         run: |
-          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_gnn.yaml
+          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_gnn.yaml  --save
           python3 -m xanesnet.cli --mode predict_xanes --in_model models/gnn_std_001 --in_file ./.github/workflows/inputs/in_predict_gnn.yaml
 
       - name: GNN (Kfold)
         run: |
-          sed -i 's/kfold: False/kfold: True/' ./.github/workflows/inputs/in_gnn.yaml
-          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_gnn.yaml
+          sed -i 's/kfold: False/kfold: True/' ./.github/workflows/inputs/in_gnn.yaml 
+          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_gnn.yaml  --save
           python3 -m xanesnet.cli --mode predict_xanes --in_model models/gnn_kfold_001 --in_file ./.github/workflows/inputs/in_predict_gnn.yaml
           sed -i 's/kfold: True/kfold: False/' ./.github/workflows/inputs/in_gnn.yaml
 
       - name: GNN (Bootstrap)
         run: |
           sed -i 's/bootstrap: False/bootstrap: True/' ./.github/workflows/inputs/in_gnn.yaml
-          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_gnn.yaml
+          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_gnn.yaml  --save
           python3 -m xanesnet.cli --mode predict_xanes --in_model models/gnn_bootstrap_001 --in_file ./.github/workflows/inputs/in_predict_gnn.yaml
           # disable boostrap
           sed -i 's/bootstrap: True/bootstrap: False/' ./.github/workflows/inputs/in_gnn.yaml
@@ -171,7 +171,7 @@ jobs:
         run: |    
           # enable ensemble
           sed -i 's/ensemble: False/ensemble: True/' ./.github/workflows/inputs/in_gnn.yaml
-          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_gnn.yaml
+          python3 -m xanesnet.cli --mode train_xyz --in_file ./.github/workflows/inputs/in_gnn.yaml  --save
           python3 -m xanesnet.cli --mode predict_xanes --in_model models/gnn_ensemble_001 --in_file ./.github/workflows/inputs/in_predict_gnn.yaml
           # disable ensemble
           sed -i 's/ensemble: True/ensemble: False/' ./.github/workflows/inputs/in_gnn.yaml

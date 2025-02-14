@@ -77,7 +77,6 @@ class AEEval(Eval):
             "ModelEvalResults-Prediction:": p_results,
         }
 
-        print(f"{'='*19} MLFlow: Evaluation Results Logged {'='*18}")
         return test_results
 
     def get_true_loss(self):

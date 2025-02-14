@@ -61,22 +61,19 @@ def parse_args(args: list):
     )
     parser.add_argument(
         "--save",
-        type=str,
-        default="yes",
+        action="store_true",
         help="save result to disk",
     )
 
     parser.add_argument(
         "--mlflow",
-        type=str,
-        default="no",
+        action="store_true",
         help="toggle mlflow on and save logs to disk",
     )
 
     parser.add_argument(
         "--tensorboard",
-        type=str,
-        default="no",
+        action="store_true",
         help="toggle tensorboard on and save logs to disk",
     )
 

@@ -120,7 +120,6 @@ class AEGANEval(Eval):
             "ModelEvalResults-Prediction-Xanes": p_y_results,
         }
 
-        print(f"{'='*19} MLFlow: Evaluation Results Logged {'='*18}")
         return test_results
 
     def get_true_loss(self):

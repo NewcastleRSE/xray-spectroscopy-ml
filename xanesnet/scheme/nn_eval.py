@@ -55,7 +55,6 @@ class NNEval(Eval):
 
         test_results = {"ModelEvalResults-Prediction": test_results}
 
-        print(f"{'='*19} MLFlow: Evaluation Results Logged {'='*18}")
         return test_results
 
     def get_true_loss(self):

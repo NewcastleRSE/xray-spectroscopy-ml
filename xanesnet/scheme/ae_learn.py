@@ -41,156 +41,151 @@ class AELearn(Learn):
         self.loss_fn = self.hyper_params["loss"]["loss_fn"]
         self.loss_args = self.hyper_params["loss"]["loss_args"]
 
-        layout = {
-            "Multi": {
-                "recon_loss": [
-                    "Multiline",
-                    ["recon_loss/train", "recon_loss/validation"],
-                ],
-                "pred_loss": ["Multiline", ["pred_loss/train", "pred_loss/validation"]],
-            },
-        }
+        # Initialise tensorboard writer with custom layout
+        if self.tb_flag:
+            layout = {
+                "Losses": {
+                    "Total Losses": (
+                        "Multiline",
+                        ["total_loss/train", "total_loss/valid"],
+                    ),
+                    "Reconstruction Losses": (
+                        "Multiline",
+                        ["recon_loss/train", "recon_loss/valid"],
+                    ),
+                    "Prediction Losses": (
+                        "Multiline",
+                        ["pred_loss/train", "pred_loss/valid"],
+                    ),
+                },
+            }
+            self.writer = self.setup_writer(layout)
 
-        self.writer = self.setup_writer(layout)
+        # Initialise mlflow experiment
+        if self.mlflow_flag:
+            self.setup_mlflow()
 
     def train(self, model, x_data, y_data):
         device = self.device
-        writer = self.writer
 
-        # Apply standardscaler to training dataset
-        if self.scaler:
-            print(">> Applying standardscaler to training dataset...")
-            x_data = self.setup_scaler(x_data)
-
-        # initialise dataloader
+        # Initialise dataloaders
         train_loader, valid_loader, eval_loader = self.setup_dataloader(x_data, y_data)
 
-        # Initialise optimizer using specified optimization function and learning rate
+        # Initialise optimizer
         optim_fn = OptimSwitch().fn(self.optim_fn)
         optimizer = optim_fn(model.parameters(), lr=self.lr)
+
+        # Initialise loss function
         criterion = LossSwitch().fn(self.loss_fn, self.loss_args)
 
-        # initialise schedular
+        # Initialise lr_schedular
         if self.lr_scheduler:
             scheduler = self.setup_scheduler(optimizer)
 
-        with mlflow.start_run(experiment_id=self.exp_id, run_name=self.exp_time):
-            mlflow.log_params(self.hyper_params)
-            mlflow.log_param("n_epoch", self.n_epoch)
+        # Apply standardscaler to training dataset
+        if self.scaler:
+            x_data = self.setup_scaler(x_data)
 
-            for epoch in range(self.n_epoch):
-                print(f">>> epoch = {epoch}")
-                model.train()
+        for epoch in range(self.n_epoch):
+            # Training
+            running_loss = 0
+            loss_r = 0
+            loss_p = 0
 
-                running_loss = 0
-                loss_r = 0
-                loss_p = 0
+            print(f">>> epoch = {epoch}")
+            model.train()
 
-                for inputs, labels in train_loader:
-                    inputs, labels = inputs.to(device), labels.to(device)
-                    inputs, labels = inputs.float(), labels.float()
+            for inputs, labels in train_loader:
+                inputs, labels = inputs.to(device), labels.to(device)
+                inputs, labels = inputs.float(), labels.float()
 
-                    optimizer.zero_grad()
+                optimizer.zero_grad()
 
-                    recon_input, outputs = model(inputs)
+                recon_input, outputs = model(inputs)
+                loss_recon = criterion(recon_input, inputs).mean()
+                loss_pred = criterion(outputs, labels).mean()
 
-                    loss_recon = criterion(recon_input, inputs)
-                    loss_pred = criterion(outputs, labels)
+                loss = loss_recon + loss_pred
+                loss.backward()
+                optimizer.step()
 
-                    loss = loss_recon + loss_pred
-                    loss.backward()
+                running_loss += loss.item()
+                loss_r += loss_recon.item()
+                loss_p += loss_pred.item()
 
-                    optimizer.step()
-                    running_loss += loss.mean().item()
-                    loss_r += loss_recon.item()
-                    loss_p += loss_pred.item()
+            # Validation
+            valid_loss = 0
+            valid_loss_r = 0
+            valid_loss_p = 0
 
-                valid_loss = 0
-                valid_loss_r = 0
-                valid_loss_p = 0
+            model.eval()
 
-                model.eval()
+            for inputs, labels in valid_loader:
+                inputs, labels = inputs.to(device), labels.to(device)
+                inputs, labels = inputs.float(), labels.float()
 
-                for inputs, labels in valid_loader:
-                    inputs, labels = inputs.to(device), labels.to(device)
-                    inputs, labels = inputs.float(), labels.float()
+                recon_input, outputs = model(inputs)
 
-                    recon_input, outputs = model(inputs)
+                loss_recon = criterion(recon_input, inputs).mean()
+                loss_pred = criterion(outputs, labels).mean()
+                loss = loss_recon + loss_pred
 
-                    loss_recon = criterion(recon_input, inputs)
-                    loss_pred = criterion(outputs, labels)
+                valid_loss = loss.item()
+                valid_loss_r += loss_recon.item()
+                valid_loss_p += loss_pred.item()
 
-                    loss = loss_recon + loss_pred
+            if self.lr_scheduler:
+                before_lr = optimizer.param_groups[0]["lr"]
+                scheduler.step()
+                after_lr = optimizer.param_groups[0]["lr"]
+                print("Epoch %d: Adam lr %.5f -> %.5f" % (epoch, before_lr, after_lr))
 
-                    valid_loss = loss.item()
-                    valid_loss_r += loss_recon.item()
-                    valid_loss_p += loss_pred.item()
+            train_loss = running_loss / len(train_loader)
+            train_loss_recon = loss_r / len(train_loader)
+            train_loss_pred = loss_p / len(train_loader)
 
-                if self.lr_scheduler:
-                    before_lr = optimizer.param_groups[0]["lr"]
-                    scheduler.step()
-                    after_lr = optimizer.param_groups[0]["lr"]
-                    print(
-                        "Epoch %d: Adam lr %.5f -> %.5f" % (epoch, before_lr, after_lr)
-                    )
+            valid_loss = valid_loss / len(valid_loader)
+            valid_loss_recon = valid_loss_r / len(valid_loader)
+            valid_loss_pred = valid_loss_r / len(valid_loader)
 
-                print("Training loss:", running_loss / len(train_loader))
-                print("Validation loss:", valid_loss / len(valid_loader))
+            # Print losses to screen
+            print("Training Loss:", train_loss)
+            print("Validation Loss:", valid_loss)
 
-                self.log_scalar(
-                    writer,
-                    "total_loss/train",
-                    (running_loss / len(train_loader)),
-                    epoch,
-                )
-                self.log_scalar(
-                    writer,
-                    "total_loss/validation",
-                    (valid_loss / len(valid_loader)),
-                    epoch,
-                )
+            # Log losses
+            self.log_loss("total_loss/train", train_loss, epoch)
+            self.log_loss("recon_loss/train", train_loss_recon, epoch)
+            self.log_loss("pred_loss/train", train_loss_pred, epoch)
 
-                self.log_scalar(
-                    writer, "recon_loss/train", (loss_r / len(train_loader)), epoch
-                )
-                self.log_scalar(
-                    writer,
-                    "recon_loss/validation",
-                    (valid_loss_r / len(train_loader)),
-                    epoch,
-                )
+            self.log_loss("total_loss/valid", valid_loss, epoch)
+            self.log_loss("recon_loss/valid", valid_loss_recon, epoch)
+            self.log_loss("pred_loss/valid", valid_loss_pred, epoch)
 
-                self.log_scalar(
-                    writer, "pred_loss/train", (loss_p / len(train_loader)), epoch
-                )
-                self.log_scalar(
-                    writer,
-                    "pred_loss/validation",
-                    (valid_loss_p / len(valid_loader)),
-                    epoch,
-                )
+        if self.mlflow_flag:
+            self.log_mlflow(model)
 
-            self.write_log(model)
+        # Evaluation using invariance tests
+        if self.model_eval:
+            eval_test = create_eval_scheme(
+                self.model_name,
+                model,
+                train_loader,
+                valid_loader,
+                eval_loader,
+                x_data.shape[1],
+                y_data[0].size,
+            )
 
-            # Perform model evaluation using invariance tests
-            if self.model_eval:
-                eval_test = create_eval_scheme(
-                    self.model_name,
-                    model,
-                    train_loader,
-                    valid_loader,
-                    eval_loader,
-                    x_data.shape[1],
-                    y_data[0].size,
-                )
+            eval_results = eval_test.eval()
 
-                eval_results = eval_test.eval()
-
-                # Log results
+            # Log evaluation results
+            if self.mlflow_flag:
                 for k, v in eval_results.items():
                     mlflow.log_dict(v, f"{k}.yaml")
+                print(f"{'='*19} MLFlow: Evaluation Results Logged {'='*18}")
 
-        self.writer.close()
+        self.log_close()
+
         score = running_loss / len(train_loader)
 
         return model, score

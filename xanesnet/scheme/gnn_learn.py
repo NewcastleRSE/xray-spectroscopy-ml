@@ -46,12 +46,18 @@ class GNNLearn(Learn):
         self.loss_fn = self.hyper_params["loss"]["loss_fn"]
         self.loss_args = self.hyper_params["loss"]["loss_args"]
 
-        layout = {
-            "Multi": {
-                "loss": ["Multiline", ["loss/train", "loss/validation"]],
-            },
-        }
-        self.writer = self.setup_writer(layout)
+        # Initialise tensorboard writer with custom layout
+        if self.tb_flag:
+            layout = {
+                "Losses": {
+                    "Losses": ["Multiline", ["loss/train", "loss/validation"]],
+                },
+            }
+            self.writer = self.setup_writer(layout)
+
+        # Initialise mlflow experiment
+        if self.mlflow_flag:
+            self.setup_mlflow()
 
     def setup_dataloader(self, x_data, y_data):
         # split dataset and setup train/valid/test dataloader
@@ -99,92 +105,99 @@ class GNNLearn(Learn):
         else:
             eval_loader = None
 
-        return [train_loader, valid_loader, eval_loader]
+        return train_loader, valid_loader, eval_loader
 
     def train(self, model, x_data, y_data):
         device = self.device
-        writer = self.writer
 
-        # initialise dataloaders
+        # Initialise dataloaders
         train_loader, valid_loader, eval_loader = self.setup_dataloader(x_data, y_data)
-        # initialise optimizer
+
+        # Initialise optimizer
         optim_fn = OptimSwitch().fn(self.optim_fn)
         optimizer = optim_fn(model.parameters(), self.lr)
-        # initialise loss criterion
+
+        # Initialise loss function
         criterion = LossSwitch().fn(self.loss_fn, self.loss_args)
+
         # initialise schedular
         if self.lr_scheduler:
             scheduler = self.setup_scheduler(optimizer)
 
-        with mlflow.start_run(experiment_id=self.exp_id, run_name=self.exp_time):
-            mlflow.log_params(self.hyper_params)
-            mlflow.log_param("n_epoch", self.n_epoch)
-            for epoch in range(self.n_epoch):
-                print(f">>> epoch = {epoch}")
-                model.train()
-                running_loss = 0
-                for batch in train_loader:
-                    batch.to(device)
-                    optimizer.zero_grad()
-                    # reshape concatenated graph_attr to [batch_size, feat_size]
-                    nfeats = batch[0].graph_attr.shape[0]
-                    graph_attr = batch.graph_attr.reshape(len(batch), nfeats)
-                    # pass data to the model
-                    pred = model(
-                        batch.x.float(),
-                        batch.edge_attr.float(),
-                        graph_attr.float(),
-                        batch.edge_index,
-                        batch.batch,
-                    )
-                    pred = torch.flatten(pred)
-                    # calculate loss
-                    loss = criterion(pred, batch.y.float())
-                    # Backpropagation
-                    loss.backward()
-                    # Update model parameters
-                    optimizer.step()
-                    # Update tracking
-                    running_loss += loss.item()
+        for epoch in range(self.n_epoch):
+            # Training
+            running_loss = 0
 
-                # Model validation
-                valid_loss = 0
-                model.eval()
-                for batch in valid_loader:
-                    batch.to(device)
-                    nfeats = batch[0].graph_attr.shape[0]
-                    graph_attr = batch.graph_attr.reshape(len(batch), nfeats)
-                    pred = model(
-                        batch.x.float(),
-                        batch.edge_attr.float(),
-                        graph_attr.float(),
-                        batch.edge_index,
-                        batch.batch,
-                    )
-                    pred = torch.flatten(pred)
-                    loss = criterion(pred, batch.y.float())
-                    valid_loss += loss.item()
+            print(f">>> epoch = {epoch}")
+            model.train()
 
-                if self.lr_scheduler:
-                    before_lr = optimizer.param_groups[0]["lr"]
-                    scheduler.step()
-                    after_lr = optimizer.param_groups[0]["lr"]
-                    print(
-                        "Epoch %d: Adam lr %.5f -> %.5f" % (epoch, before_lr, after_lr)
-                    )
+            for batch in train_loader:
+                batch.to(device)
 
-                train_loss = running_loss / len(train_loader)
-                valid_loss = valid_loss / len(valid_loader)
-                # Print to screen
-                print("Training loss:", train_loss)
-                print("Validation loss:", valid_loss)
-                # Save to log
-                self.log_scalar(writer, "loss/train", train_loss, epoch)
-                self.log_scalar(writer, "loss/validation", valid_loss, epoch)
+                optimizer.zero_grad()
 
-            self.write_log(model)
+                # reshape concatenated graph_attr to [batch_size, feat_size]
+                nfeats = batch[0].graph_attr.shape[0]
+                graph_attr = batch.graph_attr.reshape(len(batch), nfeats)
 
-        self.writer.close()
+                pred = model(
+                    batch.x.float(),
+                    batch.edge_attr.float(),
+                    graph_attr.float(),
+                    batch.edge_index,
+                    batch.batch,
+                )
+                pred = torch.flatten(pred)
+
+                loss = criterion(pred, batch.y.float())
+                loss.backward()
+                optimizer.step()
+
+                running_loss += loss.item()
+
+            # Validation
+            valid_loss = 0
+            model.eval()
+
+            for batch in valid_loader:
+                batch.to(device)
+                nfeats = batch[0].graph_attr.shape[0]
+                graph_attr = batch.graph_attr.reshape(len(batch), nfeats)
+
+                pred = model(
+                    batch.x.float(),
+                    batch.edge_attr.float(),
+                    graph_attr.float(),
+                    batch.edge_index,
+                    batch.batch,
+                )
+
+                pred = torch.flatten(pred)
+                loss = criterion(pred, batch.y.float())
+                valid_loss += loss.item()
+
+            if self.lr_scheduler:
+                before_lr = optimizer.param_groups[0]["lr"]
+                scheduler.step()
+                after_lr = optimizer.param_groups[0]["lr"]
+                print("Epoch %d: Adam lr %.5f -> %.5f" % (epoch, before_lr, after_lr))
+
+            train_loss = running_loss / len(train_loader)
+            valid_loss = valid_loss / len(valid_loader)
+
+            # Print losses to screen
+            print("Training Loss:", train_loss)
+            print("Validation Loss:", valid_loss)
+
+            # Log losses
+            self.log_loss("loss/train", train_loss, epoch)
+            self.log_loss("loss/validation", valid_loss, epoch)
+
+        if self.mlflow_flag:
+            self.log_mlflow(model)
+
+        self.log_close()
+
         score = running_loss / len(train_loader)
 
         return model, score

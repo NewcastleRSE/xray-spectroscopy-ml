@@ -34,7 +34,7 @@ model:
         loss_reg_param: 0.001
 
 hyperparams:
-  batch_size: 64
+  batch_size: 5
   epochs: 100
   kernel_init: xavier_uniform
   bias_init: zeros
