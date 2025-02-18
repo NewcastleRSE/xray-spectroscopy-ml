@@ -202,7 +202,7 @@ class Freeze:
         return self.model
 
 
-    def aegan_mlp(model, params):
+    def aegan_mlp(self, params):
         """
         freeze_params = {
             # Number of layers to freeze
@@ -229,7 +229,7 @@ class Freeze:
         # Encoder 1
         if n_encoder1 > 0:
             count = 0
-            for layer in model.gen_a.encoder_layers.children():
+            for layer in self.model.gen_a.encoder_layers.children():
                 if isinstance(layer, nn.Sequential):
                     count += 1
                     if count <= n_encoder1:
@@ -239,7 +239,7 @@ class Freeze:
         # Encoder 2
         if n_encoder2 > 0:
             count = 0
-            for layer in model.gen_b.encoder_layers.children():
+            for layer in self.model.gen_b.encoder_layers.children():
                 if isinstance(layer, nn.Sequential):
                     count += 1
                     if count <= n_encoder2:
@@ -249,7 +249,7 @@ class Freeze:
         # Decoder 1
         if n_decoder1 > 0:
             count = 0
-            for layer in model.gen_a.decoder_layers.children():
+            for layer in self.model.gen_a.decoder_layers.children():
                 if isinstance(layer, nn.Sequential):
                     count += 1
                     if count <= n_decoder1:
@@ -259,7 +259,7 @@ class Freeze:
         # Decoder 2
         if n_decoder2 > 0:
             count = 0
-            for layer in model.gen_b.decoder_layers.children():
+            for layer in self.model.gen_b.decoder_layers.children():
                 if isinstance(layer, nn.Sequential):
                     count += 1
                     if count <= n_decoder2:
@@ -269,7 +269,7 @@ class Freeze:
         # Shared Encoder Layers
         if n_shared_encoder > 0:
             count = 0
-            for layer in model.enc_shared.dense_layers.children():
+            for layer in self.model.enc_shared.dense_layers.children():
                 if isinstance(layer, nn.Sequential):
                     count += 1
                     if count <= n_shared_encoder:
@@ -278,7 +278,7 @@ class Freeze:
 
         if n_shared_decoder > 0:
             count = 0
-            for layer in model.dec_shared.dense_layers.children():
+            for layer in self.model.dec_shared.dense_layers.children():
                 if isinstance(layer, nn.Sequential):
                     count += 1
                     if count <= n_shared_decoder:
@@ -288,7 +288,7 @@ class Freeze:
         # Discriminator 1
         if n_discrim1 > 0:
             count = 0
-            for layer in model.dis_a.dense_layers.children():
+            for layer in self.model.dis_a.dense_layers.children():
                 if isinstance(layer, nn.Sequential):
                     count += 1
                     if count <= n_discrim1:
@@ -298,14 +298,11 @@ class Freeze:
         # Discriminator 2
         if n_discrim1 > 0:
             count = 0
-            for layer in model.dis_b.dense_layers.children():
+            for layer in self.model.dis_b.dense_layers.children():
                 if isinstance(layer, nn.Sequential):
                     count += 1
                     if count <= n_discrim2:
                         for param in layer.parameters():
                             param.requires_grad = False
 
-        return model
-
-
-
+        return self.model
