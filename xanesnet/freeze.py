@@ -306,3 +306,6 @@ class Freeze:
                             param.requires_grad = False
 
         return self.model
+
+    def gnn(self, params):
+        return self.model

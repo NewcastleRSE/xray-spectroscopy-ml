@@ -291,7 +291,7 @@ class TestGNNLearn:
 
         initial_weights = [p.clone() for p in model.parameters()]
         model = scheme.setup_weight(model, scheme.weight_seed)
-        output, _ = scheme.train(model, scheme.x_data, scheme.y_data)
+        output, _ = scheme.train(model, scheme.x_data)
 
         # Check if the model is on the expected device
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
