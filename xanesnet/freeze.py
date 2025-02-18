@@ -202,107 +202,110 @@ class Freeze:
         return self.model
 
 
-def freeze_layers_aegan_mlp(model, freeze_params):
-    """
-    freeze_params = {
-        # Number of layers to freeze
-        n_encoder1 : int
-        n_encoder2 : int
-        n_decoder1 : int
-        n_decoder2 : int
-        n_shared_encoder : int
-        n_shared_decoder : int
-        n_discrim1 : int
-        n_discrim2 : int
-    }
-    """
+    def aegan_mlp(model, params):
+        """
+        freeze_params = {
+            # Number of layers to freeze
+            n_encoder1 : int
+            n_encoder2 : int
+            n_decoder1 : int
+            n_decoder2 : int
+            n_shared_encoder : int
+            n_shared_decoder : int
+            n_discrim1 : int
+            n_discrim2 : int
+        }
+        """
 
-    n_encoder1 = freeze_params["n_encoder1"]
-    n_encoder2 = freeze_params["n_encoder2"]
-    n_decoder1 = freeze_params["n_decoder1"]
-    n_decoder2 = freeze_params["n_decoder2"]
-    n_shared_encoder = freeze_params["n_shared_encoder"]
-    n_shared_decoder = freeze_params["n_shared_decoder"]
-    n_discrim1 = freeze_params["n_discrim1"]
-    n_discrim2 = freeze_params["n_discrim2"]
+        n_encoder1 = params["n_encoder1"]
+        n_encoder2 = params["n_encoder2"]
+        n_decoder1 = params["n_decoder1"]
+        n_decoder2 = params["n_decoder2"]
+        n_shared_encoder = params["n_shared_encoder"]
+        n_shared_decoder = params["n_shared_decoder"]
+        n_discrim1 = params["n_discrim1"]
+        n_discrim2 = params["n_discrim2"]
 
-    # Encoder 1
-    if n_encoder1 > 0:
-        count = 0
-        for layer in model.gen_a.encoder_layers.children():
-            if isinstance(layer, nn.Sequential):
-                count += 1
-                if count <= n_encoder1:
-                    for param in layer.parameters():
-                        param.requires_grad = False
+        # Encoder 1
+        if n_encoder1 > 0:
+            count = 0
+            for layer in model.gen_a.encoder_layers.children():
+                if isinstance(layer, nn.Sequential):
+                    count += 1
+                    if count <= n_encoder1:
+                        for param in layer.parameters():
+                            param.requires_grad = False
 
-    # Encoder 2
-    if n_encoder2 > 0:
-        count = 0
-        for layer in model.gen_b.encoder_layers.children():
-            if isinstance(layer, nn.Sequential):
-                count += 1
-                if count <= n_encoder2:
-                    for param in layer.parameters():
-                        param.requires_grad = False
+        # Encoder 2
+        if n_encoder2 > 0:
+            count = 0
+            for layer in model.gen_b.encoder_layers.children():
+                if isinstance(layer, nn.Sequential):
+                    count += 1
+                    if count <= n_encoder2:
+                        for param in layer.parameters():
+                            param.requires_grad = False
 
-    # Decoder 1
-    if n_decoder1 > 0:
-        count = 0
-        for layer in model.gen_a.decoder_layers.children():
-            if isinstance(layer, nn.Sequential):
-                count += 1
-                if count <= n_decoder1:
-                    for param in layer.parameters():
-                        param.requires_grad = False
+        # Decoder 1
+        if n_decoder1 > 0:
+            count = 0
+            for layer in model.gen_a.decoder_layers.children():
+                if isinstance(layer, nn.Sequential):
+                    count += 1
+                    if count <= n_decoder1:
+                        for param in layer.parameters():
+                            param.requires_grad = False
 
-    # Decoder 2
-    if n_decoder2 > 0:
-        count = 0
-        for layer in model.gen_b.decoder_layers.children():
-            if isinstance(layer, nn.Sequential):
-                count += 1
-                if count <= n_decoder2:
-                    for param in layer.parameters():
-                        param.requires_grad = False
+        # Decoder 2
+        if n_decoder2 > 0:
+            count = 0
+            for layer in model.gen_b.decoder_layers.children():
+                if isinstance(layer, nn.Sequential):
+                    count += 1
+                    if count <= n_decoder2:
+                        for param in layer.parameters():
+                            param.requires_grad = False
 
-    # Shared Encoder Layers
-    if n_shared_encoder > 0:
-        count = 0
-        for layer in model.enc_shared.dense_layers.children():
-            if isinstance(layer, nn.Sequential):
-                count += 1
-                if count <= n_shared_encoder:
-                    for param in layer.parameters():
-                        param.requires_grad = False
+        # Shared Encoder Layers
+        if n_shared_encoder > 0:
+            count = 0
+            for layer in model.enc_shared.dense_layers.children():
+                if isinstance(layer, nn.Sequential):
+                    count += 1
+                    if count <= n_shared_encoder:
+                        for param in layer.parameters():
+                            param.requires_grad = False
 
-    if n_shared_decoder > 0:
-        count = 0
-        for layer in model.dec_shared.dense_layers.children():
-            if isinstance(layer, nn.Sequential):
-                count += 1
-                if count <= n_shared_decoder:
-                    for param in layer.parameters():
-                        param.requires_grad = False
+        if n_shared_decoder > 0:
+            count = 0
+            for layer in model.dec_shared.dense_layers.children():
+                if isinstance(layer, nn.Sequential):
+                    count += 1
+                    if count <= n_shared_decoder:
+                        for param in layer.parameters():
+                            param.requires_grad = False
 
-    # Discriminator 1
-    if n_discrim1 > 0:
-        count = 0
-        for layer in model.dis_a.dense_layers.children():
-            if isinstance(layer, nn.Sequential):
-                count += 1
-                if count <= n_discrim1:
-                    for param in layer.parameters():
-                        param.requires_grad = False
+        # Discriminator 1
+        if n_discrim1 > 0:
+            count = 0
+            for layer in model.dis_a.dense_layers.children():
+                if isinstance(layer, nn.Sequential):
+                    count += 1
+                    if count <= n_discrim1:
+                        for param in layer.parameters():
+                            param.requires_grad = False
 
-    # Discriminator 2
-    if n_discrim1 > 0:
-        count = 0
-        for layer in model.dis_b.dense_layers.children():
-            if isinstance(layer, nn.Sequential):
-                count += 1
-                if count <= n_discrim2:
-                    for param in layer.parameters():
-                        param.requires_grad = False
+        # Discriminator 2
+        if n_discrim1 > 0:
+            count = 0
+            for layer in model.dis_b.dense_layers.children():
+                if isinstance(layer, nn.Sequential):
+                    count += 1
+                    if count <= n_discrim2:
+                        for param in layer.parameters():
+                            param.requires_grad = False
 
-    return model
+        return model
+
+
+
