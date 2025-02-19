@@ -308,4 +308,43 @@ class Freeze:
         return self.model
 
     def gnn(self, params):
+        """
+        freeze_params = {
+            n_gnn : int
+            n_dense : int
+        }
+        """
+        print(">>> FREEZING FOR GNNS")
+        n_gnn = params["n_gnn"]
+        n_dense = params["n_dense"]
+
+        block_count = 0
+        module_count = 0
+        modules_per_block = 4
+
+        total_layers = len(self.model.layers)
+        while module_count < total_layers and block_count < n_gnn:
+            current_block_size = (
+                modules_per_block
+                if (module_count + modules_per_block) < total_layers
+                else 1
+            )
+
+            for i in range(current_block_size):
+                layer = self.model.layers[module_count + i]
+                for param in layer.parameters():
+                    param.requires_grad = False
+
+            block_count += 1
+            module_count += current_block_size
+
+        if n_dense > 0:
+            count = 0
+            for layer in self.model.head.children():
+                if isinstance(layer, nn.Sequential):
+                    count += 1
+                    if count <= n_dense:
+                        for param in layer.parameters():
+                            param.requires_grad = False
+
         return self.model

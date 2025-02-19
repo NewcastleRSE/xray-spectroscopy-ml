@@ -88,7 +88,7 @@ ensemble_params:
   n_ens: 3
   weight_seed: [97, 39, 22]
 
-optuna: True
+optuna: False
 optuna_params:
   n_trials: 3
   tune_optim_fn: True
@@ -101,7 +101,8 @@ optuna_params:
 
 freeze: False
 freeze_params:
-  model_path: ./models/model_mlp_001
+  model_path: ./models/gnn_std_001
+  n_gnn: 3
   n_dense: 2
 
 fourier_transform: False
