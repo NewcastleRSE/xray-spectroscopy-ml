@@ -24,7 +24,6 @@ import numpy as np
 from sklearn.model_selection import RepeatedKFold
 from torchinfo import summary
 
-from xanesnet.optuna import ParamOptuna
 from xanesnet.scheme.base_learn import Learn
 from xanesnet.creator import create_eval_scheme
 from xanesnet.utils_model import OptimSwitch, LossSwitch

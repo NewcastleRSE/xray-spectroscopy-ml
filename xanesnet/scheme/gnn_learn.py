@@ -33,10 +33,10 @@ import time
 from sklearn.model_selection import RepeatedKFold
 import numpy as np
 import random
-from xanesnet.optuna import ParamOptuna
+from xanesnet.param_optuna import ParamOptuna
 from pathlib import Path
 import yaml
-from xanesnet.freeze import Freeze
+from xanesnet.param_freeze import Freeze
 
 
 class GNNLearn(Learn):
@@ -63,7 +63,7 @@ class GNNLearn(Learn):
         if self.mlflow_flag:
             self.setup_mlflow()
 
-    def setup_dataloader(self, x_data):
+    def setup_dataloader(self, x_data, y_data=None):
         # split dataset and setup train/valid/test dataloader
         indices = list(range(len(x_data)))
 
@@ -110,8 +110,8 @@ class GNNLearn(Learn):
             eval_loader = None
 
         return train_loader, valid_loader, eval_loader
-    
-    def setup_model(self, x_data):
+
+    def setup_model(self, x_data, y_data=None):
         if self.freeze:
             # Load existing model from the specified path
             model_path = self.freeze_params["model_path"]
@@ -137,7 +137,7 @@ class GNNLearn(Learn):
 
         return model
 
-    def train(self, model, x_data):
+    def train(self, model, x_data, y_data=None):
         device = self.device
 
         # Initialise dataloaders
@@ -231,19 +231,6 @@ class GNNLearn(Learn):
         score = running_loss / len(train_loader)
 
         return model, score
-    
-    def train_optuna(self, trial, x_data, y_data, seed):
-        po = ParamOptuna(trial, self.model_params, self.hyper_params)
-
-        for name, flag in self.optuna_params.items():
-            if name.startswith("tune_") and flag:
-                po.get_fn(name)
-
-        model = self.setup_model(x_data)
-        model = self.setup_weight(model, seed)
-        _, score = self.train(model, x_data)
-
-        return score
 
     def train_std(self):
         x_data = self.x_data

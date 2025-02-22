@@ -17,13 +17,10 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 from pathlib import Path
 
 import mlflow
-import numpy as np
 import optuna
 import torch
 import time
-import os
 import pickle
-import tempfile
 
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -34,9 +31,9 @@ from torch.utils.tensorboard import SummaryWriter
 from sklearn.preprocessing import StandardScaler
 
 from xanesnet.creator import create_model
-from xanesnet.freeze import Freeze
+from xanesnet.param_freeze import Freeze
 from xanesnet.utils_model import LRScheduler, WeightInitSwitch, weight_bias_init
-from xanesnet.optuna import ParamOptuna
+from xanesnet.param_optuna import ParamOptuna
 
 
 class Learn(ABC):
