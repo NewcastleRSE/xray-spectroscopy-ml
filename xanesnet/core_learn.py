@@ -39,12 +39,9 @@ def train_model(config, args):
     if descriptors is None:
         raise ValueError("No descriptors found in the configuration file.")
 
-    for d in descriptors:
-        print(f">> Initialising {d['type']} feature descriptor...")
-        if d["type"] in ("mace", "direct"):
-            descriptor = create_descriptor(d["type"])
-        else:
-            descriptor = create_descriptor(d["type"], **d["params"])
+    for descriptor in descriptors:
+        print(f">> Initialising {descriptor['type']} feature descriptor...")
+        descriptor = create_descriptor(descriptor["type"], **descriptor["params"])
         descriptor_list.append(descriptor)
 
     xyz, xanes, index = data_learn(
@@ -106,7 +103,8 @@ def train_model(config, args):
         "mlflow": args.mlflow,
         "tensorboard": args.tensorboard,
     }
-    scheme = create_learn_scheme(x_data, y_data, **kwargs)
+    name = config["model"]["type"]
+    scheme = create_learn_scheme(name, x=x_data, y=y_data, **kwargs)
 
     # Train the model using selected training strategy
     print(">> Training %s model..." % config["model"]["type"])
@@ -148,11 +146,15 @@ def train_model_gnn(config, args):
 
     # Encode training dataset with specified descriptor types
     descriptor_list = []
-    if config["descriptors"] is not None:
-        for d in config["descriptors"]:
-            print(f">> Initialising {d['type']} feature descriptor...")
-            descriptor = create_descriptor(d["type"], **d["params"])
-            descriptor_list.append(descriptor)
+    descriptors = config.get("descriptors")
+
+    if descriptors is None:
+        raise ValueError("No descriptors found in the configuration file!")
+
+    for descriptor in config["descriptors"]:
+        print(f">> Initialising {descriptor['type']} feature descriptor...")
+        descriptor = create_descriptor(descriptor["type"], **descriptor["params"])
+        descriptor_list.append(descriptor)
 
     graph_dataset = data_gnn_learn(
         config["xyz_path"],
@@ -185,7 +187,9 @@ def train_model_gnn(config, args):
     }
 
     models = []
-    scheme = create_learn_scheme(graph_dataset, None, **kwargs)
+    name = config["model"]["type"]
+    scheme = create_learn_scheme(name, x=graph_dataset, **kwargs)
+
     # Train the model using selected training strategy
     print(">> Training %s model..." % config["model"]["type"])
     if config["bootstrap"]:

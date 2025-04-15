@@ -14,13 +14,17 @@ You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import numpy as np
+
 ###############################################################################
 ############################### LIBRARY IMPORTS ###############################
 ###############################################################################
 
 from ase import Atoms
+from mace.calculators import mace_mp
 
 from xanesnet.descriptor.base_descriptor import BaseDescriptor
+
 
 ###############################################################################
 ################################## CLASSES ####################################
@@ -28,16 +32,38 @@ from xanesnet.descriptor.base_descriptor import BaseDescriptor
 
 
 class MACE(BaseDescriptor):
-    """
-    A class for reading the descriptor straight from a file. It tries to avoid
-    doing any of the fancy stuff the other descriptors do. Only reads the file
-    """
+    def __init__(self, invariants_only: bool = False, num_layers: int = -1):
+        self.invariants_only = invariants_only
+        self.num_layers = num_layers
+        self.mace = mace_mp()
 
-    def transform(self, system: Atoms) -> int:
-        return 0
+    def transform(self, system: Atoms) -> np.ndarray:
+        tmp = self.mace.get_descriptors(
+            system, invariants_only=self.invariants_only, num_layers=self.num_layers
+        )
+        return tmp[0, :]
 
     def get_nfeatures(self) -> int:
-        return 0
+        num_interactions = int(self.mace.models[0].num_interactions)
+        if self.num_layers == -1:
+            self.num_layers = num_interactions
+        elif self.num_layers > num_interactions + 1:
+            raise ValueError("num_layers cannot be greater than num_interactions+1")
+
+        irreps_out = self.mace.models[0].products[0].linear.__dict__["irreps_out"]
+        l_max = irreps_out.lmax
+        num_features = irreps_out.dim // (l_max + 1) ** 2
+
+        if self.invariants_only:
+            total = 0
+            for i in range(self.num_layers - 1):
+                total += (i * (l_max + 1) ** 2 + 1) * num_features - i * (
+                    l_max + 1
+                ) ** 2 * num_features
+            n_feats = num_features + total
+        else:
+            n_feats = ((num_interactions - 1) * (l_max + 1) ** 2 + 1) * num_features
+        return n_feats
 
     def get_type(self) -> str:
         return "mace"

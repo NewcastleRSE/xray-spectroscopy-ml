@@ -13,6 +13,9 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from typing import TextIO
+
+import numpy as np
 
 ###############################################################################
 ############################### LIBRARY IMPORTS ###############################
@@ -33,11 +36,14 @@ class DIRECT(BaseDescriptor):
     doing any of the fancy stuff the other descriptors do. Only reads the file
     """
 
-    def transform(self, system: Atoms) -> int:
-        return 0
+    def __init__(self, nfeatures):
+        self.nfeatures = nfeatures
+
+    def transform(self, system: Atoms) -> np.ndarray:
+        pass
 
     def get_nfeatures(self) -> int:
-        return 0
+        return self.nfeatures
 
     def get_type(self) -> str:
         return "direct"

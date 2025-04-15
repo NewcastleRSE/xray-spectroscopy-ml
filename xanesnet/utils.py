@@ -88,23 +88,6 @@ def str_to_numeric(str_: str):
         return str_
 
 
-def print_nested_dict(dict_: dict, nested_level: int = 0):
-    # prints the key:value pairs in a dictionary (`dict`) in the format
-    # '>> key :: value'; iterates recursively through any subdictionaries,
-    # indenting with two white spaces for each sublevel (`nested level`)
-
-    for key, val in dict_.items():
-        if not isinstance(val, dict):
-            if isinstance(val, list):
-                val = f"[{val[0]}, ..., {val[-1]}]"
-            print("  " * nested_level + f">> {key} :: {val}")
-        else:
-            print("  " * nested_level + f">> {key}")
-            print_nested_dict(val, nested_level=nested_level + 1)
-
-    return 0
-
-
 def mkdir_output(path: Path, name: str):
     save_path = path / name
     save_path.mkdir(parents=True, exist_ok=True)
@@ -119,6 +102,12 @@ def save_models(
     metadata: dict,
     dataset: dict = None,
 ):
+    """
+    Save trained models, descriptors, metadata, and datasets (if provided) to disk.
+    For bootstrap and ensemble training, the files are saved in a structured directory
+    format.
+    """
+
     mode_suffix = metadata["mode"].replace("train_", "")
     path.mkdir(parents=True, exist_ok=True)
     save_path = unique_path(
@@ -143,6 +132,7 @@ def save_models(
     if len(models) == 1:
         # Save single model
         torch.save(models[0], save_path / f"model.pt")
+        torch.save(models[0].state_dict(), save_path / f"weights.pth")
         print("\nModel saved to disk: %s" % save_path.resolve().as_uri())
     else:
         # Save multiple models
@@ -151,6 +141,7 @@ def save_models(
             model_dir.mkdir()
 
             torch.save(model, model_dir / f"model.pt")
+            torch.save(model.state_dict(), model_dir / f"weights.pth")
             print("\nModel saved to disk: %s" % model_dir.resolve().as_uri())
 
     metadata["model_dir"] = str(save_path)
@@ -161,6 +152,10 @@ def save_models(
 def save_predict(
     path: Path, mode: str, result: dataclass, index: list, e: list, recon_flag: bool
 ):
+    """
+    Save prediction and reconstruction results to disk.
+    """
+
     if mode == "predict_xanes" or mode == "predict_all":
         # Save xanes prediction result to disk
         save_path = mkdir_output(path, "xanes_pred")
@@ -206,6 +201,10 @@ def save_predict(
 
 
 def load_models(path: Path):
+    """
+    Load one or more pre-trained models from the specified directory.
+    """
+
     model_list = []
     n_models = len(next(os.walk(path))[1])
 
@@ -218,6 +217,9 @@ def load_models(path: Path):
 
 
 def load_descriptors(path: Path):
+    """
+    Load one or more descriptors from the specified directory.
+    """
     descriptor_list = []
 
     file_pattern = path / "descriptor*.pickle"
@@ -233,7 +235,9 @@ def load_descriptors(path: Path):
 
 
 def load_xyz(xyz_f: TextIO) -> Atoms:
-    # loads an Atoms object from a .xyz file
+    """
+    Load an Atoms object from a .xyz file
+    """
 
     xyz_f_l = xyz_f.readlines()
 
@@ -271,7 +275,9 @@ def load_xyz(xyz_f: TextIO) -> Atoms:
 
 
 def save_xyz(xyz_f: TextIO, atoms: Atoms):
-    # saves an Atoms object in .xyz format
+    """
+    Save an Atoms object in .xyz format
+    """
 
     # write the number of atoms in `atoms`
     xyz_f.write(f"{len(atoms)}\n")
@@ -292,7 +298,9 @@ def save_xyz(xyz_f: TextIO, atoms: Atoms):
 
 
 def load_xanes(xanes_f: TextIO) -> XANES:
-    # loads a XANES object from an FDMNES (.txt) output file
+    """
+    Load a XANES object from an FDMNES (.txt) output file
+    """
 
     xanes_f_l = xanes_f.readlines()
 
@@ -311,7 +319,9 @@ def load_xanes(xanes_f: TextIO) -> XANES:
 
 
 def save_xanes(xanes_f: TextIO, xanes: XANES):
-    # saves a XANES object in FDMNES (.txt) output format
+    """
+    Save a XANES object in FDMNES (.txt) output format
+    """
 
     xanes_f.write(f'{"FDMNES":>10}\n{"energy":>10}{"<xanes>":>12}\n')
     for e_, m_ in zip(*xanes.spectrum):
@@ -322,7 +332,10 @@ def save_xanes(xanes_f: TextIO, xanes: XANES):
 
 
 def save_xanes_mean(xanes_f: TextIO, xanes: XANES, std):
-    # saves a mean and sandard deviation of XANES object in FDMNES (.txt) output format
+    """
+    Save a mean and standard deviation of XANES object in FDMNES (.txt) output format
+    """
+
     xanes_f.write(f'{"FDMNES"}\n{"energy <xanes> <std>"}\n')
     for e_, m_, std_ in zip(*xanes.spectrum, std):
         fmt = f"{e_:<10.2f}{m_:<15.7E}{std_:<15.7E}\n"
@@ -332,7 +345,10 @@ def save_xanes_mean(xanes_f: TextIO, xanes: XANES, std):
 
 
 def save_xyz_mean(xyz_f: TextIO, mean, std):
-    # saves a mean and sandard deviation of XANES object in FDMNES (.txt) output format
+    """
+    Save a mean and standard deviation of XANES object in FDMNES (.txt) output format
+    """
+
     xyz_f.write(f'{"<xyz> <std>"}\n')
     for m_, std_ in zip(mean, std):
         fmt = f"{m_:<15.7E}{std_:<15.7E}\n"
@@ -342,7 +358,9 @@ def save_xyz_mean(xyz_f: TextIO, mean, std):
 
 
 def load_descriptor_direct(direct_f: TextIO):
-    # loads a descriptor directly from a (.dsc) input file
+    """
+    Load a descriptor directly from a (.dsc) input file
+    """
 
     v = np.loadtxt(direct_f)
     return v

@@ -52,8 +52,8 @@ def predict_data(config, args, metadata):
         "fourier": metadata["fourier_transform"],
         "fourier_param": metadata["fourier_param"],
     }
-
-    scheme = create_predict_scheme(metadata["model_type"], xyz, xanes, **kwargs)
+    name = metadata["model_type"]
+    scheme = create_predict_scheme(name, xyz=xyz, xanes=xanes, **kwargs)
 
     # Predict with loaded models and scheme
     predict_scheme = metadata["scheme"]
@@ -129,7 +129,7 @@ def predict_data_gnn(config, args, metadata):
         "fourier": metadata["fourier_transform"],
         "fourier_param": metadata["fourier_param"],
     }
-    scheme = create_predict_scheme("gnn", graph_dataset, xanes_data, **kwargs)
+    scheme = create_predict_scheme("gnn", xyz=graph_dataset, xanes=xanes_data, **kwargs)
 
     # Predict with loaded models and scheme
     predict_scheme = metadata["scheme"]

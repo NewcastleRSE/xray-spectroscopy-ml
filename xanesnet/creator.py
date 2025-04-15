@@ -95,7 +95,9 @@ def create_descriptor(name: str, **kwargs):
         raise ValueError(f"Unsupported descriptor name: {name}")
 
 
-def create_learn_scheme(x_data: np.ndarray, y_data: np.ndarray, **kwargs):
+def create_learn_scheme(
+    name: str, x: np.ndarray = None, y: np.ndarray = None, **kwargs
+):
     """
     Returns an instance of a learn scheme class based on the model type.
 
@@ -116,12 +118,10 @@ def create_learn_scheme(x_data: np.ndarray, y_data: np.ndarray, **kwargs):
         "gnn": GNNLearn,
     }
 
-    model_type = kwargs.get("model")["type"]
-
-    if model_type in scheme:
-        return scheme[model_type](x_data, y_data, **kwargs)
+    if name in scheme:
+        return scheme[name](x, y, **kwargs)
     else:
-        raise ValueError(f"Unsupported learn scheme for the model: {model_type}")
+        raise ValueError(f"Unsupported learn scheme for the model: {name}")
 
 
 def create_eval_scheme(
@@ -166,7 +166,7 @@ def create_eval_scheme(
 
 
 def create_predict_scheme(
-    name: str, xyz_data: np.ndarray, xanes_data: np.ndarray, **kwargs
+    name: str, xyz: np.ndarray = None, xanes: np.ndarray = None, **kwargs
 ):
     """
     Returns an instance of a prediction scheme class based on the model type.
@@ -189,6 +189,6 @@ def create_predict_scheme(
     }
 
     if name in scheme:
-        return scheme[name](xyz_data, xanes_data, **kwargs)
+        return scheme[name](xyz, xanes, **kwargs)
     else:
         raise ValueError(f"Unsupported prediction scheme for the model: {name}")

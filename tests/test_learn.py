@@ -82,8 +82,8 @@ def init_scheme(config, xyz, xanes):
         "freeze_params": config["freeze_params"],
         "scaler": config["standardscaler"],
     }
-
-    scheme = create_learn_scheme(xyz, xanes, **kwargs)
+    name = config["model"]["type"]
+    scheme = create_learn_scheme(name, xyz, xanes, **kwargs)
 
     return scheme
 

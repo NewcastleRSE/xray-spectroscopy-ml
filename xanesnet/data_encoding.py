@@ -18,17 +18,14 @@ import numpy as np
 import tqdm as tqdm
 
 from typing import Tuple
-from ase.io import read
-from mace.calculators import mace_mp
 from pathlib import Path
 
 from xanesnet.data_graph import GraphDataset
 from xanesnet.utils import (
-    load_xyz,
     load_xanes,
     linecount,
     list_filestems,
-    load_descriptor_direct,
+    load_xyz,
 )
 
 
@@ -38,22 +35,13 @@ def encode_xyz(xyz_path: Path, index: list, descriptor_list: list) -> np.ndarray
     Multiple descriptors can be applied, and the results are concatenated.
     """
     n_samples = len(index)
-    n_x_features = 0
-
+    n_features = 0
     # Get total feature length
     for descriptor in descriptor_list:
-        if descriptor.get_type() == "direct":
-            n_x_features += linecount(xyz_path / f"{index[0]}.dsc")
-        elif descriptor.get_type() == "mace":
-            env = read(xyz_path / f"{index[0]}.xyz")
-            mace = mace_mp()
-            tmp = mace.get_descriptors(env, num_layers=2)
-            n_x_features += len(tmp[0, :])
-        else:
-            n_x_features += descriptor.get_nfeatures()
+        n_features += descriptor.get_nfeatures()
 
     # Feature array pre-allocation
-    xyz_data = np.full((n_samples, n_x_features), np.nan)
+    xyz_data = np.full((n_samples, n_features), np.nan)
     print(">> preallocated {}x{} array for XYZ data...".format(*xyz_data.shape))
     print(">> loading encoded data into array(s)...")
 
@@ -62,18 +50,11 @@ def encode_xyz(xyz_path: Path, index: list, descriptor_list: list) -> np.ndarray
     for i, id_ in enumerate(tqdm.tqdm(index)):
         s = 0
         for descriptor in descriptor_list:
+            l = descriptor.get_nfeatures()
             if descriptor.get_type() == "direct":
-                l = linecount(xyz_path / f"{index[0]}.dsc")
                 with open(xyz_path / f"{id_}.dsc", "r") as f:
-                    xyz_data[i, s : s + l] = load_descriptor_direct(f)
-            elif descriptor.get_type() == "mace":
-                env = read(xyz_path / f"{id_}.xyz")
-                mace = mace_mp()
-                tmp = mace.get_descriptors(env, num_layers=2)
-                l = len(tmp[0, :])
-                xyz_data[i, s : s + l] = tmp[0, :]
+                    xyz_data[i, s : s + l] = np.loadtxt(f)
             else:
-                l = descriptor.get_nfeatures()
                 with open(xyz_path / f"{id_}.xyz", "r") as f:
                     atoms = load_xyz(f)
                 xyz_data[i, s : s + l] = descriptor.transform(atoms)
