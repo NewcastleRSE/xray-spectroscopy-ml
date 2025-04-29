@@ -20,7 +20,7 @@ from pathlib import Path
 from xanesnet.creator import create_predict_scheme
 from xanesnet.data_encoding import data_predict, data_gnn_predict
 from xanesnet.post_plot import plot_predict, plot_recon_predict
-from xanesnet.post_shap import shap_analysis
+from xanesnet.post_shap import shap_analysis, shap_analysis_gnn
 from xanesnet.utils import save_predict, load_descriptors, load_models
 
 
@@ -167,6 +167,12 @@ def predict_data_gnn(config, args, metadata):
     # Plot prediction result
     if config["plot_save"]:
         plot_predict(path, mode, result, index, None, xanes_data)
+
+    # SHAP analysis
+    if config["shap"] and predict_scheme == "std":
+        xyz_data = scheme.xyz_data
+        nsamples = config["shap_params"]["nsamples"]
+        shap_analysis_gnn(path, mode, model, index, xyz_data, xanes_data, nsamples)
 
 
 def consistency_check(config, meta_mode, mode):
