@@ -23,6 +23,7 @@ from torchinfo import summary
 from sklearn.model_selection import train_test_split
 
 from xanesnet.creator import create_model
+from xanesnet.creator import create_eval_scheme
 from xanesnet.scheme.base_learn import Learn
 from xanesnet.utils_model import (
     OptimSwitch,
@@ -225,6 +226,24 @@ class GNNLearn(Learn):
 
         if self.mlflow_flag:
             self.log_mlflow(model)
+
+        # Evaluation using invariance tests
+        if self.model_eval:
+            eval_test = create_eval_scheme(
+                self.model_name,
+                model,
+                train_loader,
+                valid_loader,
+                eval_loader,
+                x_data[0].graph_attr.shape[0],
+                x_data[0].y.shape[0],
+            )
+            eval_results = eval_test.eval()
+
+            # Log evaluation results to mlflow
+            if self.mlflow_flag:
+                for k, v in eval_results.items():
+                    mlflow.log_dict(v, f"{k}.yaml")
 
         self.log_close()
 

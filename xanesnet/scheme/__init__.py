@@ -4,6 +4,7 @@ from .nn_predict import NNPredict
 
 from .gnn_learn import GNNLearn
 from .gnn_predict import GNNPredict
+from .gnn_eval import GNNEval
 
 from .ae_learn import AELearn
 from .ae_eval import AEEval

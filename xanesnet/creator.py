@@ -112,7 +112,7 @@ def create_eval_scheme(
     input_size: int,
     output_size: int,
 ):
-    from xanesnet.scheme import NNEval, AEEval, AEGANEval
+    from xanesnet.scheme import NNEval, AEEval, AEGANEval, GNNEval
 
     scheme = {
         "mlp": NNEval,
@@ -121,6 +121,7 @@ def create_eval_scheme(
         "ae_mlp": AEEval,
         "ae_cnn": AEEval,
         "aegan_mlp": AEGANEval,
+        "gnn": GNNEval,
     }
 
     if name in scheme:

@@ -45,7 +45,7 @@ hyperparams:
   optim_fn: Adam
   kernel_init: xavier_uniform
   bias_init: zeros
-  model_eval : False
+  model_eval : True
   seed: 2021
   weight_seed: 2023
   loss:
