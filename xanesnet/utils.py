@@ -34,7 +34,7 @@ from typing import TextIO, List, Any, Dict
 from dataclasses import dataclass
 from torch import nn
 
-from xanesnet.spectrum.xanes import XANES
+from xanesnet.xanes import XANES
 from xanesnet.switch import KernelInitSwitch, BiasInitSwitch
 
 

@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from sklearn.metrics.pairwise import cosine_similarity
 
 from xanesnet.utils import save_xanes, mkdir_output
-from xanesnet.spectrum.xanes import XANES
+from xanesnet.xanes import XANES
 
 
 def plot_predict(
