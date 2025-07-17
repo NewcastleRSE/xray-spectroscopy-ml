@@ -21,9 +21,9 @@ import tqdm as tqdm
 from typing import Tuple
 from pathlib import Path
 
-from xanesnet.data_graph import GraphDataset
-from xanesnet.data_transform import fourier_transform
-from xanesnet.utils import load_xanes, linecount, list_filestems, load_xyz
+from xanesnet.datasets.graph import GraphDataset
+from xanesnet.utils.fourier import fourier_transform
+from xanesnet.utils.io import load_xanes, linecount, list_filestems, load_xyz
 
 
 def encode_xyz(xyz_path: Path, index: list, descriptor_list: list) -> np.ndarray:

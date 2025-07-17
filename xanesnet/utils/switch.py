@@ -23,7 +23,7 @@ from torch import optim
 from torch import nn
 from typing import Dict
 
-from xanesnet.loss import EMDLoss, CosineSimilarityLoss, WCCLoss
+from xanesnet.utils.loss import EMDLoss, CosineSimilarityLoss, WCCLoss
 
 # Suppress non-significant warning for shap and WCCLoss function
 warnings.filterwarnings("ignore")

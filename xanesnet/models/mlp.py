@@ -20,7 +20,7 @@ from torch import nn
 
 from xanesnet.registry import register_model, register_scheme
 from xanesnet.models.base_model import Model
-from xanesnet.switch import ActivationSwitch
+from xanesnet.utils.switch import ActivationSwitch
 
 
 @register_model("mlp")

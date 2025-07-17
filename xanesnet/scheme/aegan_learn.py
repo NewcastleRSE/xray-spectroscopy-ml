@@ -24,7 +24,12 @@ from collections import defaultdict
 from sklearn.model_selection import RepeatedKFold
 
 from xanesnet.scheme.base_learn import Learn
-from xanesnet.switch import LossSwitch, OptimSwitch, LossRegSwitch, LRSchedulerSwitch
+from xanesnet.utils.switch import (
+    LossSwitch,
+    OptimSwitch,
+    LossRegSwitch,
+    LRSchedulerSwitch,
+)
 
 
 class AEGANLearn(Learn):

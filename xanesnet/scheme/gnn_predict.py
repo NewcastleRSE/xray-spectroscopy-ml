@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from torch_geometric.data import DataLoader
 
 from xanesnet.scheme.base_predict import Predict
-from xanesnet.data_transform import inverse_fourier_transform
+from xanesnet.utils.fourier import inverse_fourier_transform
 
 
 @dataclass

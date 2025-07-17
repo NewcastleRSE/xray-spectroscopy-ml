@@ -23,7 +23,7 @@ from torch import nn
 
 from xanesnet.models.base_model import Model
 from xanesnet.registry import register_model, register_scheme
-from xanesnet.switch import ActivationSwitch
+from xanesnet.utils.switch import ActivationSwitch
 
 gnn_layer_by_name = {
     "GCN": geom_nn.GCNConv,

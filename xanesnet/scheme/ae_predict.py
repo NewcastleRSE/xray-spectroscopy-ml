@@ -23,7 +23,7 @@ from sklearn.preprocessing import StandardScaler
 from dataclasses import dataclass
 
 from xanesnet.scheme.base_predict import Predict
-from xanesnet.data_transform import (
+from xanesnet.utils.fourier import (
     fourier_transform,
     inverse_fourier_transform,
 )

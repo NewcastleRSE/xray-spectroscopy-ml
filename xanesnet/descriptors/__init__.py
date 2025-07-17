@@ -6,6 +6,6 @@ from .wacsf import WACSF
 from .msr import MSR
 from .armsr import ARMSR
 from .pdos import PDOS
-from .xtb import XTB 
+from .xtb import XTB
 from .direct import DIRECT
-from .mace import MACE 
+from .mace import MACE

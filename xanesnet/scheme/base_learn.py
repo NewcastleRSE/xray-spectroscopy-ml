@@ -28,11 +28,18 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
 from sklearn.model_selection import train_test_split
+from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 from torch_geometric.data import Dataset
 
-from xanesnet.switch import OptimSwitch, LossSwitch, LRSchedulerSwitch, LossRegSwitch
-from xanesnet.utils import init_model_weights
+from xanesnet.utils.switch import (
+    OptimSwitch,
+    LossSwitch,
+    LRSchedulerSwitch,
+    LossRegSwitch,
+    KernelInitSwitch,
+    BiasInitSwitch,
+)
 
 # from xanesnet.param_optuna import ParamOptuna
 # from xanesnet.param_freeze import Freeze
@@ -158,7 +165,7 @@ class Learn(ABC):
             # Deep copy model and re-initialise model weight using bootstrap seeds
             model = copy.deepcopy(self.model)
             self.weights_params["seed"] = self.weight_seed_boot[i]
-            model = init_model_weights(model, **self.weights_params)
+            model = self._init_model_weights(model, **self.weights_params)
 
             # Train the model on the bootstrap sample
             model, _ = self.train(model, X_boot, y_boot)
@@ -179,7 +186,7 @@ class Learn(ABC):
             model = copy.deepcopy(self.model)
 
             self.weights_params["seed"] = self.weight_seed_ens[i]
-            model = init_model_weights(model, **self.weights_params)
+            model = self._init_model_weights(model, **self.weights_params)
 
             model, _ = self.train(model, X, y)
 
@@ -318,3 +325,32 @@ class Learn(ABC):
     #         print("Logging evaluation results to MLflow...")
     #         for k, v in eval_results.items():
     #             mlflow.log_dict(v, f"{k}.yaml")
+
+    def _init_model_weights(self, model, **kwargs):
+        """
+        Initialise model weights and biases
+        """
+        kernel = kwargs.get("kernel", "xavier_uniform")
+        bias = kwargs.get("bias", "zeros")
+        seed = kwargs.get("seed", random.randrange(1000))
+
+        # set seed
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed(seed)
+        else:
+            torch.manual_seed(seed)
+
+        kernel_init_fn = KernelInitSwitch().get(kernel)
+        bias_init_fn = BiasInitSwitch().get(bias)
+
+        # nested function to apply to each module
+        def _init_fn(m):
+            # Initialise Conv and Linear layers
+            if isinstance(m, (nn.Linear, nn.Conv1d, nn.ConvTranspose1d)):
+                kernel_init_fn(m.weight)
+                if m.bias is not None:
+                    bias_init_fn(m.bias)
+
+        model.apply(_init_fn)
+
+        return model

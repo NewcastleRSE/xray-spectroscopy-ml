@@ -24,7 +24,7 @@ from torch.utils.data import DataLoader
 from xanesnet.descriptors.base_descriptor import BaseDescriptor
 from xanesnet.models.base_model import Model
 from xanesnet.models.pre_trained import ModelInfo, PretrainedModels
-from xanesnet.utils import overwrite_config, get_config_from_url
+from xanesnet.utils.io import load_config_from_url
 from xanesnet.registry import (
     MODEL_REGISTRY,
     LEARN_SCHEME_REGISTRY,
@@ -129,11 +129,11 @@ def create_pretrained_model(name: str, **kwargs: Any):
         raise ValueError(f"Model '{name}' is not available in PretrainedModels.")
 
     meta: ModelInfo = getattr(PretrainedModels, name)
-    config = get_config_from_url(meta.config_url)
+    config = load_config_from_url(meta.config_url)
     model_config = config.get("model")
 
     # Overwrite values in configurations
-    overwrite_config(kwargs, model_config)
+    _overwrite_config(kwargs, model_config)
 
     # Create model instance
     model = create_model(model_config.get("type"), **model_config.get("params"))
@@ -165,7 +165,7 @@ def create_pretrained_descriptors(name: str):
         raise ValueError(f"Model '{name}' is not available in PretrainedModels.")
 
     meta: ModelInfo = getattr(PretrainedModels, name)
-    config = get_config_from_url(meta.config_url)
+    config = load_config_from_url(meta.config_url)
     descriptor_config = config.get("descriptors")
 
     descriptors = create_descriptors_from_meta(descriptor_config)
@@ -208,3 +208,12 @@ def create_eval_scheme(
         )
     else:
         raise ValueError(f"Unsupported learn scheme for the model: {name}")
+
+
+def _overwrite_config(kwargs: Dict[str, Any], config: Dict[str, Any]) -> None:
+    """
+    Overrides values in config if matching keys are found in kwargs
+    """
+    for key in config:
+        if key in kwargs:
+            config[key] = kwargs[key]

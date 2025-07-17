@@ -22,7 +22,7 @@ import numpy as np
 from pathlib import Path
 from torch_geometric.data import Batch
 
-from xanesnet.utils import mkdir_output
+from xanesnet.utils.io import mkdir_output
 
 
 def shap_analysis(path, mode, model, index, xyz, xanes, n_samples):

@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from xanesnet.utils import load_xyz
+from xanesnet.utils.io import load_xyz
 
 
 atomic_radii = dict(

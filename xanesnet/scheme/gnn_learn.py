@@ -22,7 +22,7 @@ import numpy as np
 from sklearn.model_selection import RepeatedKFold, train_test_split
 
 from xanesnet.scheme.base_learn import Learn
-from xanesnet.switch import LossSwitch, LossRegSwitch
+from xanesnet.utils.switch import LossSwitch, LossRegSwitch
 
 
 class GNNLearn(Learn):

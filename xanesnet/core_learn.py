@@ -26,14 +26,15 @@ from pathlib import Path
 from numpy.random import RandomState
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import shuffle
+from torch import nn
 from torchinfo import summary
 
-from xanesnet.data_encoding import data_learn, data_gnn_learn
-from xanesnet.data_transform import fourier_transform
+from xanesnet.encoder import data_learn, data_gnn_learn
+from xanesnet.utils.fourier import fourier_transform
 from xanesnet.models import AEGAN_MLP, GNN
 from xanesnet.models.pre_trained import PretrainedModels
-from xanesnet.switch import DataAugmentSwitch
-from xanesnet.utils import save_models, init_model_weights
+from xanesnet.utils.switch import DataAugmentSwitch, KernelInitSwitch, BiasInitSwitch
+from xanesnet.utils.io import save_models
 from xanesnet.creator import (
     create_learn_scheme,
     create_descriptors,
@@ -209,7 +210,37 @@ def _setup_model(config, X, y):
         weights_config = config["model"].get("weights", {})
         weight_kernel = weights_config.get("kernel", "xavier_uniform")
         logging.info(f">> Initialising model weights: {weight_kernel}")
-        model = init_model_weights(model, **weights_config)
+        model = _init_model_weights(model, **weights_config)
+
+    return model
+
+
+def _init_model_weights(model, **kwargs):
+    """
+    Initialise model weights and biases
+    """
+    kernel = kwargs.get("kernel", "xavier_uniform")
+    bias = kwargs.get("bias", "zeros")
+    seed = kwargs.get("seed", random.randrange(1000))
+
+    # set seed
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+    else:
+        torch.manual_seed(seed)
+
+    kernel_init_fn = KernelInitSwitch().get(kernel)
+    bias_init_fn = BiasInitSwitch().get(bias)
+
+    # nested function to apply to each module
+    def _init_fn(m):
+        # Initialise Conv and Linear layers
+        if isinstance(m, (nn.Linear, nn.Conv1d, nn.ConvTranspose1d)):
+            kernel_init_fn(m.weight)
+            if m.bias is not None:
+                bias_init_fn(m.bias)
+
+    model.apply(_init_fn)
 
     return model
 

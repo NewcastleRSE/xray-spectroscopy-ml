@@ -22,7 +22,7 @@ from tqdm import tqdm
 from pathlib import Path
 from torch_geometric.data import Dataset, Data
 
-from xanesnet.xyz2graph import MolGraph
+from xanesnet.utils.xyz2graph import MolGraph
 
 
 class GraphDataset(Dataset):

@@ -16,7 +16,6 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
 import os
-import random
 import requests
 
 ###############################################################################
@@ -32,10 +31,8 @@ from pathlib import Path
 from ase import Atoms
 from typing import TextIO, List, Any, Dict
 from dataclasses import dataclass
-from torch import nn
 
-from xanesnet.xanes import XANES
-from xanesnet.switch import KernelInitSwitch, BiasInitSwitch
+from xanesnet.utils.xanes import XANES
 
 
 ###############################################################################
@@ -75,12 +72,6 @@ def _str_to_numeric(str_: str):
         return float(str_) if "." in str_ else int(str_)
     except ValueError:
         return str_
-
-
-def _weight_bias(m, kernel_init_fn, bias_init_fn):
-    if isinstance(m, (nn.Linear, nn.Conv1d, nn.ConvTranspose1d)):
-        kernel_init_fn(m.weight)
-        bias_init_fn(m.bias)
 
 
 def linecount(f: Path) -> int:
@@ -273,29 +264,6 @@ def load_models(path: Path) -> List[Any]:
     return model_list
 
 
-def init_model_weights(model, **kwargs):
-    """
-    Initialise model weight & bias
-    """
-    kernel = kwargs.get("kernel", "xavier_uniform")
-    bias = kwargs.get("bias", "zeros")
-    seed = kwargs.get("seed", random.randrange(1000))
-
-    kernel_init = KernelInitSwitch().get(kernel)
-    bias_init = BiasInitSwitch().get(bias)
-
-    # set seed
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed(seed)
-    else:
-        torch.manual_seed(seed)
-
-    # Apply initialization recursively
-    model.apply(lambda m: _weight_bias(m, kernel_init, bias_init))
-
-    return model
-
-
 def load_xyz(xyz_f: TextIO) -> Atoms:
     """
     Load an Atoms object from a .xyz file
@@ -419,7 +387,7 @@ def save_xyz_mean(xyz_f: TextIO, mean, std):
     return 0
 
 
-def get_config_from_url(url: str) -> Dict[str, Any]:
+def load_config_from_url(url: str) -> Dict[str, Any]:
     response = requests.get(url)
     response.raise_for_status()
     config = yaml.safe_load(response.text)
@@ -427,12 +395,3 @@ def get_config_from_url(url: str) -> Dict[str, Any]:
     # descriptor_config = config.get("descriptors")
 
     return config
-
-
-def overwrite_config(kwargs: Dict[str, Any], config: Dict[str, Any]) -> None:
-    """
-    Overrides values in config if matching keys are found in kwargs
-    """
-    for key in config:
-        if key in kwargs:
-            config[key] = kwargs[key]

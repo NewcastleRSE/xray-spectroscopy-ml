@@ -12,8 +12,9 @@ setup(
         "xanesnet",
         "xanesnet.descriptors",
         "xanesnet.scheme",
-        "xanesnet.spectrum",
+        "xanesnet.datasets",
         "xanesnet.models",
+        "xanesnet.utils",
     ],
     package_dir={"xanesnet": "./xanesnet"},
     install_requires=[

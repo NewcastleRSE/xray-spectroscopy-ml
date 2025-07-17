@@ -22,7 +22,7 @@ import torch
 from sklearn.model_selection import RepeatedKFold
 
 from xanesnet.scheme.base_learn import Learn
-from xanesnet.switch import LossSwitch, LossRegSwitch
+from xanesnet.utils.switch import LossSwitch, LossRegSwitch
 
 
 class NNLearn(Learn):

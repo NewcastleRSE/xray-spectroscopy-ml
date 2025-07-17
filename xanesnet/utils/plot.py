@@ -23,8 +23,8 @@ from pathlib import Path
 from dataclasses import dataclass
 from sklearn.metrics.pairwise import cosine_similarity
 
-from xanesnet.utils import save_xanes, mkdir_output
-from xanesnet.xanes import XANES
+from xanesnet.utils.io import save_xanes, mkdir_output
+from xanesnet.utils.xanes import XANES
 
 
 def plot_predict(

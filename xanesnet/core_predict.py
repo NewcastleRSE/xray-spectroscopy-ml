@@ -19,9 +19,9 @@ import logging
 from pathlib import Path
 
 from xanesnet.creator import create_predict_scheme
-from xanesnet.data_encoding import data_predict, data_gnn_predict
-from xanesnet.post_plot import plot_predict, plot_recon_predict
-from xanesnet.utils import save_predict, load_descriptors, load_models, load_model
+from xanesnet.encoder import data_predict, data_gnn_predict
+from xanesnet.utils.plot import plot_predict, plot_recon_predict
+from xanesnet.utils.io import save_predict, load_descriptors, load_models, load_model
 
 # from xanesnet.post_shap import shap_analysis, shap_analysis_gnn
 
