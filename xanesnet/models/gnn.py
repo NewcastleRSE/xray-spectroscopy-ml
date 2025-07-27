@@ -47,7 +47,7 @@ class GNN(Model):
         mlp_feat_size: int,
         layer_name: str = "GATv2",
         layer_params: Optional[dict] = None,
-        hidden_size: int = "512",
+        hidden_size: int = 512,
         dropout: float = 0.2,
         num_hidden_layers: int = 5,
         num_mlp_hidden_layers: int = 3,

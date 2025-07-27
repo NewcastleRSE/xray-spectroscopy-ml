@@ -14,14 +14,13 @@ You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import logging
-import os
-import requests
-
 ###############################################################################
 ############################### LIBRARY IMPORTS ###############################
 ###############################################################################
 
+
+import logging
+import requests
 import torch
 import yaml
 import tqdm as tqdm
@@ -32,6 +31,9 @@ from ase import Atoms
 from typing import TextIO, List, Any, Dict
 from dataclasses import dataclass
 
+from torch.hub import load_state_dict_from_url
+
+from xanesnet.models.pre_trained import ModelInfo
 from xanesnet.utils.xanes import XANES
 
 
@@ -52,14 +54,14 @@ def _unique_path(path: Path, base_name: str) -> Path:
             return unique_path
 
 
-def _list_files(d: Path, with_ext: bool = True) -> list:
+def _list_files(path: Path, with_ext: bool = True) -> list:
     # returns a list of files (as POSIX paths) found in a directory (`d`);
     # 'hidden' files are always omitted and, if with_ext == False, file
     # extensions are also omitted
 
     return [
         (f if with_ext else f.with_suffix(""))
-        for f in d.iterdir()
+        for f in path.iterdir()
         if f.is_file() and not f.stem.startswith(".")
     ]
 
@@ -84,7 +86,6 @@ def linecount(f: Path) -> int:
 def list_filestems(d: Path) -> list:
     # returns a list of file stems (as strings) found in a directory (`d`);
     # 'hidden' files are always omitted
-
     return [f.stem for f in _list_files(d)]
 
 
@@ -99,7 +100,6 @@ def save_models(
     path: Path,
     models: list,
     metadata: dict,
-    dataset: dict = None,
 ):
     """
     Save trained models, descriptors, metadata, and datasets (if provided) to disk.
@@ -113,15 +113,6 @@ def save_models(
         path, metadata["model"]["type"] + "_" + metadata["scheme"] + "_" + mode_suffix
     )
     save_path.mkdir()
-
-    if dataset is not None:
-        with open(save_path / "dataset.npz", "wb") as f:
-            np.savez_compressed(
-                f,
-                ids=dataset["index"],
-                x=dataset["X"],
-                y=dataset["y"],
-            )
 
     if len(models) == 1:
         # Save single model
@@ -141,7 +132,7 @@ def save_models(
         yaml.dump_all([metadata], f)
 
 
-def save_predict(
+def save_predict_result(
     path: Path, mode: str, result: dataclass, index: list, e: list, recon_flag: bool
 ):
     """
@@ -190,78 +181,167 @@ def save_predict(
                     save_xanes_mean(f, XANES(e, recon_), std_)
 
 
-def load_descriptors(path: Path) -> List[Any]:
+def _create_descriptors_from_meta(config: Dict = None):
+    """
+    Create and return a list of descriptor instances based on the configuration.
+    """
+    from xanesnet.creator import create_descriptor
+
+    descriptor_list = []
+
+    for descriptor in config:
+        des_type = descriptor["type"]
+        params = {k: v for k, v in descriptor.items() if k != "type"}
+        descriptor = create_descriptor(des_type, **params)
+        descriptor_list.append(descriptor)
+
+    return descriptor_list
+
+
+def load_descriptors_from_local(path: Path) -> List:
     """
     Load one or more descriptors from a local directory.
     """
-    from xanesnet.creator import create_descriptors_from_meta
 
+    logging.info(f">> Loading descriptors from: {path}")
     config_path = path / "metadata.yaml"
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
 
     descriptor_config = config["descriptors"]
-    descriptor_types = ", ".join(d["type"] for d in descriptor_config)
 
-    logging.info(f">> Loading descriptors: {descriptor_types}")
-    descriptor_list = create_descriptors_from_meta(config=descriptor_config)
-
-    # Return the list of loaded descriptors
-    return descriptor_list
+    return _create_descriptors_from_meta(config=descriptor_config)
 
 
-def load_model(path: Path):
+def _build_and_load_model(model_config: Dict, weight_path: Path) -> Any:
     from xanesnet.creator import create_model
 
+    """Create a model, load its weights, and set to eval mode."""
+    # Create a copy to prevent mutation of the original dictionary
+    config = model_config.copy()
+    model_type = config.pop("type")
+
+    model = create_model(model_type, **config)
+
+    # Load state_dict from the specific weight path
+    state_dict = torch.load(weight_path, map_location=torch.device("cpu"))
+    model.load_state_dict(state_dict)
+    model.eval()
+
+    return model
+
+
+def load_model_from_local(path: Path):
+    """Loads a single model from a directory."""
     config_path = path / "metadata.yaml"
     weight_path = path / "model_weights.pth"
 
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
 
-    model_type = config["model"]["type"]
-    model_config = {k: v for k, v in config["model"].items() if k != "type"}
-
-    model = create_model(model_type, **model_config)
-
-    # Load state_dict
-    state_dict = torch.load(weight_path, map_location=torch.device("cpu"))
-    model.load_state_dict(state_dict)
-
-    model.eval()
-
-    return model
+    return _build_and_load_model(config["model"], weight_path)
 
 
-def load_models(path: Path) -> List[Any]:
-    """
-    Load multiple models from a local directory.
-    """
-    from xanesnet.creator import create_model
-
-    model_list = []
+def load_models_from_local(path: Path) -> List[Any]:
+    """Loads an ensemble of models efficiently from a directory."""
     config_path = path / "metadata.yaml"
-    n_models = len(next(os.walk(path))[1])
 
-    for i in range(1, n_models + 1):
-        model_dir = path / f"model_{i:03d}"
-        weight_path = model_dir / "model_weights.pth"
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
 
-        with open(config_path, "r") as f:
-            config = yaml.safe_load(f)
+    model_config = config["model"]
 
-        model_type = config["model"]["type"]
-        model_config = {k: v for k, v in config["model"].items() if k != "type"}
-        model = create_model(model_type, **model_config)
+    model_dirs = sorted([d for d in path.iterdir() if d.is_dir()])
+    if not model_dirs:
+        raise FileNotFoundError(f"No model subdirectories found in {path}")
 
-        # Load state_dict
-        state_dict = torch.load(weight_path, map_location=torch.device("cpu"))
-        model.load_state_dict(state_dict)
-
-        model.eval()
-        model_list.append(model)
+    model_list = [
+        _build_and_load_model(model_config, model_dir / "model_weights.pth")
+        for model_dir in model_dirs
+    ]
 
     return model_list
+
+
+def _load_config_from_url(url: str) -> Dict[str, Any]:
+    response = requests.get(url)
+    response.raise_for_status()
+    config = yaml.safe_load(response.text)
+    # model_config = config.get("model")
+    # descriptor_config = config.get("descriptors")
+
+    return config
+
+
+def load_pretrained_descriptors(name: str):
+    """
+    Create and return a pre-trained model and its descriptors from the weights
+    and configuration files.
+    Args:
+        name: Name of pretrained model.
+        progress (bool, optional): If True, displays a progress bar of the
+            download to stderr. Default is True.
+        **kwargs: Parameters to override default model or descriptor configuration.
+    """
+    from xanesnet.models import PretrainedModels
+
+    if not hasattr(PretrainedModels, name):
+        raise ValueError(f"Model '{name}' is not available in PretrainedModels.")
+
+    meta: ModelInfo = getattr(PretrainedModels, name)
+    config = _load_config_from_url(meta.config_url)
+    descriptor_config = config.get("descriptors")
+
+    descriptors = _create_descriptors_from_meta(descriptor_config)
+
+    return descriptors
+
+
+def _overwrite_config(kwargs: Dict[str, Any], config: Dict[str, Any]) -> None:
+    """
+    Overrides values in config if matching keys are found in kwargs
+    """
+    for key in config:
+        if key in kwargs:
+            config[key] = kwargs[key]
+
+
+def load_pretrained_model(name: str, **kwargs: Any):
+    """
+    Create and return a pre-trained model and its descriptors from the weights
+    and configuration files.
+    Args:
+        name: Name of pretrained model.
+        progress (bool, optional): If True, displays a progress bar of the
+            download to stderr. Default is True.
+        **kwargs: Parameters to override default model or descriptor configuration.
+    """
+    from xanesnet.creator import create_model
+    from xanesnet.models import PretrainedModels
+
+    if not hasattr(PretrainedModels, name):
+        raise ValueError(f"Model '{name}' is not available in PretrainedModels.")
+
+    meta: ModelInfo = getattr(PretrainedModels, name)
+    config = _load_config_from_url(meta.config_url)
+    model_config = config.get("model")
+
+    # Overwrite values in configurations
+    _overwrite_config(kwargs, model_config)
+
+    # Create model instance
+    model = create_model(model_config.get("type"), **model_config.get("params"))
+
+    # Obtain weights file
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    state_dict = load_state_dict_from_url(
+        meta.weight_url, progress=True, map_location=device
+    )
+
+    # Load weights to the model
+    model.load_state_dict(state_dict)
+
+    return model
 
 
 def load_xyz(xyz_f: TextIO) -> Atoms:
@@ -385,13 +465,3 @@ def save_xyz_mean(xyz_f: TextIO, mean, std):
         xyz_f.write(fmt.format(m_, std_))
 
     return 0
-
-
-def load_config_from_url(url: str) -> Dict[str, Any]:
-    response = requests.get(url)
-    response.raise_for_status()
-    config = yaml.safe_load(response.text)
-    # model_config = config.get("model")
-    # descriptor_config = config.get("descriptors")
-
-    return config

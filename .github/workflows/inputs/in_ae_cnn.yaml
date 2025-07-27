@@ -1,5 +1,18 @@
-xyz_path:  .github/workflows/data/fe/xyz_train
-xanes_path:  .github/workflows/data/fe/xanes_train
+dataset:
+  type: xanesx
+  root_path: .github/workflows/data/fe
+  xyz_path: .github/workflows/data/fe/xyz_train
+  xanes_path: .github/workflows/data/fe/xanes_train
+  params:
+    fourier: False
+    fourier_concat: False
+    augment: False
+    augment_params:
+      type: random_noise #random_combination
+      augment_mult: 5
+      normal_mean: 0
+      normal_sd: 0.1
+
 
 descriptors:
   - type: wacsf

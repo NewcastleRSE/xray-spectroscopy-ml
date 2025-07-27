@@ -6,7 +6,7 @@ import pytest
 from torch_geometric.utils import to_networkx
 from networkx.algorithms import is_connected
 
-from xanesnet.data_encoding import (
+from xanesnet.utils.encode import (
     data_gnn_learn,
     data_learn,
     data_predict,

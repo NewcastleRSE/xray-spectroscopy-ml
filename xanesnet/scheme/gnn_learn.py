@@ -143,6 +143,38 @@ class GNNLearn(Learn):
 
         return best_model
 
+    def train_bootstrap(self):
+        """
+        Trains multiple models on bootstrap resamples of the provided dataset.
+        """
+
+        model_list = []
+        n_samples = int(len(self.X))
+
+        # Size of each bootstrap sample
+        sample_size = int(n_samples * self.n_size)
+
+        for i in range(self.n_boot):
+            rng = np.random.default_rng(self.weight_seed_boot[i])
+
+            # Generate all random indices at once
+            bootstrap_indices = rng.choice(n_samples, size=sample_size, replace=True)
+
+            # Create the bootstrap sample in a single, fast indexing operation
+            X_boot = self.X[bootstrap_indices]
+
+            # Deep copy model and re-initialise model weight using bootstrap seeds
+            model = copy.deepcopy(self.model)
+            self.weights_params["seed"] = self.weight_seed_boot[i]
+            model = self._init_model_weights(model, **self.weights_params)
+
+            # Train the model on the bootstrap sample
+            model, _ = self.train(model, X_boot)
+
+            model_list.append(model)
+
+        return model_list
+
     def _run_one_epoch(
         self, phase, loader, model, criterion, regularizer, optimizer=None
     ):

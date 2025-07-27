@@ -13,113 +13,150 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
+import logging
 import os
+from pathlib import Path
+
 import torch
 import numpy as np
+from torch import Tensor
 
 from tqdm import tqdm
-from pathlib import Path
-from torch_geometric.data import Dataset, Data
+from typing import List, Union
+from torch_geometric.data import Data
 
+from xanesnet.datasets.base_dataset import BaseDataset, IndexType
+from xanesnet.registry import register_dataset
+from xanesnet.utils.encode import encode_xanes
+from xanesnet.utils.fourier import fourier_transform
+from xanesnet.utils.io import list_filestems
 from xanesnet.utils.xyz2graph import MolGraph
 
 
-class GraphDataset(Dataset):
+@register_dataset("graph")
+class GraphDataset(BaseDataset):
     def __init__(
         self,
         root: str,
-        index: list[str],
-        node_feats: dict,
-        edge_feats: dict,
-        descriptor_list: list,
-        xanes_data: np.ndarray = None,
-        transform=None,
-        pre_transform=None,
+        xyz_path: List[str] | str | Path = None,
+        xanes_path: List[str] | str | Path = None,
+        descriptors: list = None,
+        **kwargs,
     ):
-        """
-        Args:
-            root (str): Root directory containing XYZ files
-            index (list[str]): List of XYZ file stems
-            node_feats (dict): Node feature parameters obtained from the input file.
-            edge_feats (dict): Edge feature parameters obtained from the input file.
-            descriptor_list(list): List of descriptors added to graph feature
-            xanes_data (np.ndarray): graph label
-        """
+        # Unpack kwargs
+        self.n = kwargs.get("n", 16)
+        self.r_min = kwargs.get("r_min", 0.0)
+        self.r_max = kwargs.get("r_max", 4.0)
+        self.fft = kwargs.get("fourier", False)
+        self.fft_concat = kwargs.get("fourier_concat", False)
+
+        # Graph dataset accepts only a single path
+        if isinstance(xyz_path, List):
+            self.xyz_path = Path(xyz_path[0]) if xyz_path else None
+            if xyz_path and len(xyz_path) > 1:
+                raise ValueError("Invalid dataset: xyz_path cannot be > 1")
+        else:
+            self.xyz_path = Path(xyz_path) if xyz_path else None
+
+        if isinstance(xanes_path, List):
+            self.xanes_path = Path(xanes_path[0]) if xanes_path else None
+            if xanes_path and len(xanes_path) > 1:
+                raise ValueError("Invalid dataset: xyz_paths cannot be > 1")
+        else:
+            self.xanes_path = Path(xanes_path) if xanes_path else None
+
+        BaseDataset.__init__(
+            self, root, self.xyz_path, self.xanes_path, descriptors, **kwargs
+        )
+
+        # Save configuration
+        params = {
+            "fourier": self.fft,
+            "fourier_concat": self.fft_concat,
+            "n": self.n,
+            "r_min": self.r_min,
+            "r_max": self.r_max,
+        }
+        self.register_config(locals(), type="graph")
+
+        # Assign this dataset to xyz_data
+        self.xyz_data = self
+
+    def set_index(self):
+        xyz_stems = set(list_filestems(self.xyz_path))
+        if self.xyz_path and self.xanes_path:
+            xanes_stems = set(list_filestems(self.xanes_path))
+            # Find common files
+            index = sorted(list(xyz_stems & xanes_stems))
+        else:
+            index = sorted(list(xyz_stems))
+
+        if not index:
+            raise ValueError("No matching files found in xyz_path and xanes_path.")
 
         self.index = index
-        self.xanes_data = xanes_data
-        self.descriptor_list = descriptor_list
-        # Extracted edge feature parameters
-        self.n = edge_feats["n"]
-        self.r_min = edge_feats["r_min"]
-        self.r_max = edge_feats["r_max"]
-
-        super(GraphDataset, self).__init__(root, transform, pre_transform)
 
     @property
-    def raw_dir(self) -> str:
-        return self.root
+    def processed_file_names(self) -> List[str]:
+        """A list of all processed file names."""
+        return [f"{i}_{stem}.pt" for i, stem in enumerate(self.index)]
 
     @property
     def processed_dir(self) -> str:
         """The directory containing processed graph datasets"""
-        return os.path.join(self.root, "graph")
-
-    @property
-    def raw_file_names(self):
-        """If this file exists in raw_dir, the download is not triggered.
-        (The download func. is not implemented here)
-        """
-        return [f"{i}.xyz" for i in list(self.index)]
-
-    @property
-    def processed_file_names(self):
-        """If these files are found in raw_dir, processing is skipped"""
-        file_names = []
-        idx = 0
-        for file_name in self.index:
-            file_names.append(str(idx) + "_" + Path(file_name).stem + ".pt")
-            idx += 1
-
-        return file_names
-
-    def download(self):
-        pass
+        xyz_dirname = os.path.basename(self.xyz_path)
+        return self.root / "processed" / xyz_dirname
 
     def process(self):
         """
-        Processes raw XYZ files to convert them into graph data objects.
+        Processes raw XYZ and Xanes files to convert them into graph data objects.
         """
-        idx = 0
-        for raw_path in tqdm(self.raw_paths):
+        logging.info("Encoding XANES spectra...")
+
+        xanes_data = None
+        if self.xanes_path:
+            xanes_data, e = encode_xanes(self.xanes_path, self.index)
+            self.e_data = e
+
+        # Apply FFT to spectra training dataset if specified
+        if self.fft:
+            logging.info(">> Transforming spectra data using Fourier transform...")
+            xanes_data = fourier_transform(xanes_data, self.fft_concat)
+
+        logging.info(f"Converting {len(self.index)} XYZ files to graph data objects...")
+        for idx, stem in tqdm(enumerate(self.index), total=len(self.index)):
+            raw_path = os.path.join(self.xyz_path, f"{stem}.xyz")
+
             mg = MolGraph()
             mg.read_xyz(raw_path)
-            # Node features
-            node_feats = self._get_node_features(mg)
-            # Edge features
-            edge_feats = self._get_edge_features(mg)
-            # Graph features to be added as the additional argument to Data()
-            graph_feats = self._get_graph_features(mg)
-            # Get adjacency info
-            edge_index = mg.edge_index
-            # Get graph-level labels info
-            if self.xanes_data is not None:
-                label = self._get_labels(self.xanes_data[idx])
-            else:
-                label = None
 
-            name = Path(raw_path).stem
+            y = torch.tensor(xanes_data[idx]) if xanes_data is not None else None
+
             data = Data(
-                x=node_feats,
-                edge_index=edge_index,
-                edge_attr=edge_feats,
-                y=label,
-                graph_attr=graph_feats,
+                x=self._get_node_features(mg),
+                edge_index=mg.edge_index,
+                edge_attr=self._get_edge_features(mg),
+                y=y,
+                graph_attr=self._get_graph_features(mg),
+                name=stem,
             )
 
-            torch.save(data, os.path.join(self.processed_dir, f"{idx}_{name}.pt"))
-            idx += 1
+            save_path = os.path.join(self.processed_dir, f"{idx}_{stem}.pt")
+            torch.save(data, save_path)
+
+    def __getitem__(
+        self, idx: Union[int, np.integer, IndexType]
+    ) -> Union["BaseDataset", Data]:
+        if (
+            isinstance(idx, (int, np.integer))
+            or (isinstance(idx, Tensor) and idx.dim() == 0)
+            or (isinstance(idx, np.ndarray) and np.isscalar(idx))
+        ):
+            data = torch.load(self.processed_paths[idx])
+            return data
+
+        else:
+            return self.index_select(idx)
 
     def _get_node_features(self, mg: MolGraph):
         """
@@ -186,23 +223,6 @@ class GraphDataset(Dataset):
             s += l
 
         return torch.tensor(all_graph_feats, dtype=torch.float)
-
-    def _get_labels(self, xanes_data):
-        return torch.from_numpy(xanes_data)
-
-    def len(self):
-        return len(self.processed_file_names)
-
-    def get(self, idx):
-        """Load a file with specified prefix from the processed directory."""
-        file_list = os.listdir(self.processed_dir)
-        for name in file_list:
-            if name.startswith(f"{idx}_"):
-                path = os.path.join(self.processed_dir, name)
-                data = torch.load(path)
-                return data
-        # Raise an error if no matching file is found
-        raise FileNotFoundError(f"File not found: index={idx}")
 
 
 def gaussian(r: np.ndarray, h: float, m: float) -> np.ndarray:

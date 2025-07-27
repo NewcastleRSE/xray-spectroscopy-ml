@@ -5,7 +5,7 @@ import pytest
 import torch
 import yaml
 
-from xanesnet.data_encoding import data_gnn_learn, data_learn
+from xanesnet.utils.encode import data_gnn_learn, data_learn
 from xanesnet.creator import create_descriptor, create_learn_scheme, create_model
 from xanesnet.scheme import NNLearn, AELearn, AEGANLearn
 

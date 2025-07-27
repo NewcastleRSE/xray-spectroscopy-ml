@@ -15,13 +15,20 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import logging
+from enum import Enum
 
 from pathlib import Path
 
-from xanesnet.creator import create_predict_scheme
-from xanesnet.encoder import data_predict, data_gnn_predict
+import numpy as np
+
+from xanesnet.creator import create_predict_scheme, create_dataset
 from xanesnet.utils.plot import plot_predict, plot_recon_predict
-from xanesnet.utils.io import save_predict, load_descriptors, load_models, load_model
+from xanesnet.utils.io import (
+    save_predict_result,
+    load_descriptors_from_local,
+    load_models_from_local,
+    load_model_from_local,
+)
 
 # from xanesnet.post_shap import shap_analysis, shap_analysis_gnn
 
@@ -31,37 +38,28 @@ def predict(config, args, metadata):
     Prediction pipeline for non-GNN models.
     """
     model_dir = Path(args.in_model)
+    xyz_path = config["dataset"].get("xyz_path", None)
+    xanes_path = config["dataset"].get("xanes_path", None)
+
     mode = args.mode
+    _verify_mode(xyz_path, xanes_path, metadata, mode)
     logging.info(f">> Prediction mode: {mode}")
 
-    # Mode consistency check in metadata and args
-    _verify_mode(config["xyz_path"], config["xanes_path"], metadata["mode"], mode)
-
     # Load descriptor list
-    descriptor_list = load_descriptors(model_dir)
+    descriptor_list = load_descriptors_from_local(model_dir)
 
     # Enable model evaluation if test data is present
-    pred_eval = (config["xyz_path"] is not None) and (config["xanes_path"] is not None)
+    pred_eval = xyz_path is not None and xanes_path is not None
 
-    # Encode prediction dataset with saved descriptors
-    xyz, xanes, e, index = _setup_datasets(
-        mode, config, metadata, descriptor_list, pred_eval
-    )
+    # Load, encode, and preprocess data
+    dataset = _setup_datasets(config, metadata, descriptor_list)
 
-    # Initialise prediction scheme
-    kwargs = {
-        "pred_mode": mode,
-        "pred_eval": pred_eval,
-        "scaler": metadata["standardscaler"],
-        "fourier": metadata["fourier_transform"],
-        "fourier_param": metadata["fourier_param"],
-    }
-    model_type = metadata["model"]["type"]
-    scheme = create_predict_scheme(model_type, xyz=xyz, xanes=xanes, **kwargs)
+    # Setup prediction scheme
+    scheme = _setup_scheme(metadata, mode, pred_eval, dataset)
 
     # Predict with loaded models and scheme
-    predict_scheme = metadata["scheme"]
-    result, model = _run_prediction(scheme, model_dir, predict_scheme)
+    saved_train_scheme = metadata["scheme"]
+    result, model = _run_prediction(scheme, model_dir, saved_train_scheme)
 
     # Set output path
     path = Path("outputs") / args.in_model
@@ -69,14 +67,20 @@ def predict(config, args, metadata):
 
     # Save prediction result
     if config["result_save"]:
-        save_predict(path, mode, result, index, e, scheme.recon_flag)
+        save_predict_result(
+            path, mode, result, dataset.index, dataset.e_data, scheme.recon_flag
+        )
 
     # Plot prediction result
     if config["plot_save"]:
         if scheme.recon_flag:
-            plot_recon_predict(path, mode, result, index, xyz, xanes)
+            plot_recon_predict(
+                path, mode, result, dataset.index, dataset.xyz_data, dataset.xanes_data
+            )
         else:
-            plot_predict(path, mode, result, index, xyz, xanes)
+            plot_predict(
+                path, mode, result, dataset.index, dataset.xyz_data, dataset.xanes_data
+            )
 
     logging.info("\nPrediction results saved to disk: %s", path.resolve().as_uri())
 
@@ -87,27 +91,61 @@ def predict(config, args, metadata):
     #     shap_analysis_gnn(path, mode, model, index, xyz_data, xanes_data, nsamples)
 
 
-def _setup_datasets(mode, config, metadata, descriptor_list, pred_eval):
-    model_type = metadata["model"]["type"]
+def _setup_datasets(config, metadata, descriptor_list):
+    logging.info(">> Initialising prediction datasets...")
+    dataset_type = metadata["dataset"]["type"]
+    root_path = config["dataset"].get("root_path")
+    xyz_path = config["dataset"].get("xyz_path", None)
+    xanes_path = config["dataset"].get("xanes_path", None)
 
-    logging.info(">> Encoding prediction datasets...")
+    # Pack kwargs
+    kwargs = {
+        "root": root_path,
+        "xyz_path": xyz_path,
+        "xanes_path": xanes_path,
+        "descriptors": descriptor_list,
+        "shuffle": False,
+        **metadata["dataset"]["params"],
+    }
+
+    dataset = create_dataset(dataset_type, **kwargs)
+    return dataset
+
+
+def _setup_scheme(metadata, mode, pred_eval, dataset):
+    kwargs = {
+        "pred_mode": mode,
+        "pred_eval": pred_eval,
+        "scaler": metadata["standardscaler"],
+        "fourier": metadata["dataset"]["params"]["fourier"],
+        "fourier_param": metadata["dataset"]["params"]["fourier_concat"],
+    }
+
+    model_type = metadata["model"]["type"]
     if model_type.lower() == "gnn":
-        if mode != "predict_xanes":
-            raise ValueError(f"Unsupported prediction mode for GNN: {mode}")
-        xyz, xanes, e, index = data_gnn_predict(
-            config["xyz_path"],
-            config["xanes_path"],
-            metadata["node_features"],
-            metadata["edge_features"],
-            descriptor_list,
-            pred_eval,
+        xanes_data = None
+        if pred_eval:
+            xanes_data = [graph.y.numpy() for graph in dataset]
+            xanes_data = np.array(xanes_data)
+        xyz, xanes = dataset, xanes_data
+
+        logging.info(
+            f">> Graph dataset (samples: {len(xyz)}, "
+            f"node features: {dataset[0].x.shape[1]}, "
+            f"edge features: {dataset[0].edge_attr.shape[1]}, "
+            f"graph features: {dataset[0].graph_attr.shape[0]})"
         )
     else:
-        xyz, xanes, e, index = data_predict(
-            config["xyz_path"], config["xanes_path"], descriptor_list, mode, pred_eval
-        )
+        xyz, xanes = dataset.xyz_data, dataset.xanes_data
+        if xyz is not None:
+            logging.info(f">> xyz (samples: {xyz.shape[0]}, features: {xyz.shape[1]})")
+        if xanes is not None:
+            logging.info(
+                f">> xanes (samples: {xanes.shape[0]}, features: {xanes.shape[1]})"
+            )
 
-    return xyz, xanes, e, index
+    scheme = create_predict_scheme(model_type, xyz=xyz, xanes=xanes, **kwargs)
+    return scheme
 
 
 def _run_prediction(scheme, model_dir: Path, predict_scheme: str) -> tuple:
@@ -119,17 +157,17 @@ def _run_prediction(scheme, model_dir: Path, predict_scheme: str) -> tuple:
         if "bootstrap" not in str(model_dir):
             raise ValueError("Invalid bootstrap directory")
 
-        model_list = load_models(model_dir)
+        model_list = load_models_from_local(model_dir)
         result = scheme.predict_bootstrap(model_list)
 
     elif predict_scheme == "ensemble":
         if "ensemble" not in str(model_dir):
             raise ValueError("Invalid ensemble directory")
-        model_list = load_models(model_dir)
+        model_list = load_models_from_local(model_dir)
         result = scheme.predict_ensemble(model_list)
 
     elif predict_scheme == "std" or predict_scheme == "kfold":
-        model = load_model(model_dir)
+        model = load_model_from_local(model_dir)
         result = scheme.predict_std(model)
 
     else:
@@ -138,10 +176,12 @@ def _run_prediction(scheme, model_dir: Path, predict_scheme: str) -> tuple:
     return result, model
 
 
-def _verify_mode(xyz_path: str, sanes_path: str, meta_mode: str, mode: str):
+def _verify_mode(xyz_path, xanes_path, metadata, mode):
     """
     Checks for consistency between training mode and prediction mode/data.
     """
+    meta_mode = metadata["mode"]
+
     if (meta_mode == "train_xyz" and mode != "predict_xanes") or (
         meta_mode == "train_xanes" and mode != "predict_xyz"
     ):
@@ -150,7 +190,7 @@ def _verify_mode(xyz_path: str, sanes_path: str, meta_mode: str, mode: str):
         )
 
     if (meta_mode == "train_xyz" and xyz_path is None) or (
-        meta_mode == "train_xanes" and sanes_path is None
+        meta_mode == "train_xanes" and xanes_path is None
     ):
         data_type = "xyz" if mode == "train_xyz" else "xanes"
         raise ValueError(f"Cannot find {data_type} prediction dataset.")

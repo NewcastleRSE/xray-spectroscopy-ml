@@ -78,7 +78,7 @@ class GNNPredict(Predict):
         # Print MSE of the mean prediction
         if self.pred_eval:
             target_data = (
-                self.xyz_data if self.pred_mode == "predict_xyz" else self.xanes_data
+                self.xyz_data if self.mode == "predict_xyz" else self.xanes_data
             )
             logging.info("-" * 55)
             Predict.print_mse("target", "mean prediction", target_data, mean_pred)

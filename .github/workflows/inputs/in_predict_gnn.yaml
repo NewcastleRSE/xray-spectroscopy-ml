@@ -1,5 +1,7 @@
-xyz_path:  .github/workflows/data/graph-set/xyz_test
-xanes_path:  .github/workflows/data/graph-set/xanes_test
+dataset:
+  root_path: .github/workflows/data/graph-set
+  xyz_path:  .github/workflows/data/graph-set/xyz_test
+  xanes_path:  .github/workflows/data/graph-set/xanes_test
 
 plot_save: True
 result_save: True

@@ -15,27 +15,48 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import numpy as np
-import torch
 
-from torch.hub import load_state_dict_from_url
-from typing import Dict, Any
+from typing import Dict
 from torch.utils.data import DataLoader
 
+from xanesnet.datasets.base_dataset import BaseDataset
 from xanesnet.descriptors.base_descriptor import BaseDescriptor
 from xanesnet.models.base_model import Model
-from xanesnet.models.pre_trained import ModelInfo, PretrainedModels
-from xanesnet.utils.io import load_config_from_url
 from xanesnet.registry import (
     MODEL_REGISTRY,
     LEARN_SCHEME_REGISTRY,
     PREDICT_SCHEME_REGISTRY,
     EVAL_SCHEME_REGISTRY,
     DESCRIPTOR_REGISTRY,
+    DATASET_REGISTRY,
 )
 
 """
 Factory functions to create instance of model, descriptor or scheme
 """
+
+
+def create_dataset(name: str, **kwargs) -> BaseDataset:
+    """
+    Create and return an instance of a dataset class based on the given name.
+
+    Dataset must be registered using the @register_dataset("dataset_name") decorator.
+    See `models/mlp.py` for an example of how to register a model class.
+
+    Args:
+        name (str): The name of the dataset to create.
+        **kwargs: Additional keyword arguments passed to the dataset constructor.
+
+    Returns:
+        An instance of the dataset.
+
+    Raises:
+        ValueError: If the specified dataset name is not registered.
+    """
+    if name in DATASET_REGISTRY:
+        return DATASET_REGISTRY[name](**kwargs)
+    else:
+        raise ValueError(f"Unsupported dataset name: {name}")
 
 
 def create_model(name: str, **kwargs) -> Model:
@@ -85,21 +106,6 @@ def create_descriptor(name: str, **kwargs) -> BaseDescriptor:
         raise ValueError(f"Unsupported descriptor name: {name}")
 
 
-def create_descriptors_from_meta(config: Dict = None):
-    """
-    Create and return a list of descriptor instances based on the configuration.
-    """
-    descriptor_list = []
-
-    for descriptor in config:
-        des_type = descriptor["type"]
-        params = {k: v for k, v in descriptor.items() if k != "type"}
-        descriptor = create_descriptor(des_type, **params)
-        descriptor_list.append(descriptor)
-
-    return descriptor_list
-
-
 def create_descriptors(config: Dict = None):
     """
     Create and return a list of descriptor instances based on the configuration.
@@ -112,65 +118,6 @@ def create_descriptors(config: Dict = None):
         descriptor_list.append(descriptor)
 
     return descriptor_list
-
-
-def create_pretrained_model(name: str, **kwargs: Any):
-    """
-    Create and return a pre-trained model and its descriptors from the weights
-    and configuration files.
-    Args:
-        name: Name of pretrained model.
-        progress (bool, optional): If True, displays a progress bar of the
-            download to stderr. Default is True.
-        **kwargs: Parameters to override default model or descriptor configuration.
-    """
-
-    if not hasattr(PretrainedModels, name):
-        raise ValueError(f"Model '{name}' is not available in PretrainedModels.")
-
-    meta: ModelInfo = getattr(PretrainedModels, name)
-    config = load_config_from_url(meta.config_url)
-    model_config = config.get("model")
-
-    # Overwrite values in configurations
-    _overwrite_config(kwargs, model_config)
-
-    # Create model instance
-    model = create_model(model_config.get("type"), **model_config.get("params"))
-
-    # Obtain weights file
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    state_dict = load_state_dict_from_url(
-        meta.weight_url, progress=True, map_location=device
-    )
-
-    # Load weights to the model
-    model.load_state_dict(state_dict)
-
-    return model
-
-
-def create_pretrained_descriptors(name: str):
-    """
-    Create and return a pre-trained model and its descriptors from the weights
-    and configuration files.
-    Args:
-        name: Name of pretrained model.
-        progress (bool, optional): If True, displays a progress bar of the
-            download to stderr. Default is True.
-        **kwargs: Parameters to override default model or descriptor configuration.
-    """
-
-    if not hasattr(PretrainedModels, name):
-        raise ValueError(f"Model '{name}' is not available in PretrainedModels.")
-
-    meta: ModelInfo = getattr(PretrainedModels, name)
-    config = load_config_from_url(meta.config_url)
-    descriptor_config = config.get("descriptors")
-
-    descriptors = create_descriptors_from_meta(descriptor_config)
-
-    return descriptors
 
 
 def create_learn_scheme(name, model, X=None, y=None, **kwargs):
@@ -208,12 +155,3 @@ def create_eval_scheme(
         )
     else:
         raise ValueError(f"Unsupported learn scheme for the model: {name}")
-
-
-def _overwrite_config(kwargs: Dict[str, Any], config: Dict[str, Any]) -> None:
-    """
-    Overrides values in config if matching keys are found in kwargs
-    """
-    for key in config:
-        if key in kwargs:
-            config[key] = kwargs[key]

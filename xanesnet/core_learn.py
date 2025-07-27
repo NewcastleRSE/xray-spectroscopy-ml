@@ -23,24 +23,23 @@ import time
 from datetime import timedelta
 from enum import Enum
 from pathlib import Path
-from numpy.random import RandomState
+
 from sklearn.preprocessing import StandardScaler
-from sklearn.utils import shuffle
 from torch import nn
 from torchinfo import summary
 
-from xanesnet.encoder import data_learn, data_gnn_learn
-from xanesnet.utils.fourier import fourier_transform
-from xanesnet.models import AEGAN_MLP, GNN
 from xanesnet.models.pre_trained import PretrainedModels
-from xanesnet.utils.switch import DataAugmentSwitch, KernelInitSwitch, BiasInitSwitch
-from xanesnet.utils.io import save_models
+from xanesnet.utils.switch import KernelInitSwitch, BiasInitSwitch
+from xanesnet.utils.io import (
+    save_models,
+    load_pretrained_descriptors,
+    load_pretrained_model,
+)
 from xanesnet.creator import (
     create_learn_scheme,
     create_descriptors,
     create_model,
-    create_pretrained_model,
-    create_pretrained_descriptors,
+    create_dataset,
 )
 
 logging.basicConfig(
@@ -56,7 +55,7 @@ logging.basicConfig(
 class TrainingMode(Enum):
     XYZ_TO_XANES = "train_xyz"
     XANES_TO_XYZ = "train_xanes"
-    AEGAN = "train_aegan"
+    TRAIN_ALL = "train_all"
 
 
 def train(config, args):
@@ -65,6 +64,7 @@ def train(config, args):
     """
     try:
         mode = TrainingMode(args.mode)
+        logging.info(f">> Training mode: {mode.value}")
     except ValueError:
         raise ValueError(f"'{args.mode}' is not a valid training mode.")
 
@@ -72,19 +72,25 @@ def train(config, args):
     descriptor_list = _setup_descriptors(config)
 
     # Load, encode, and preprocess data
-    X, y, index = _setup_datasets(config, descriptor_list, mode)
+    dataset = _setup_datasets(config, descriptor_list)
+
+    # Assign dataset items to training features X and labels y
+    X, y = _setup_X_y(config, mode, dataset)
+
+    # Print dataset summary
+    _dataset_summary(config, X, y)
 
     # Setup model from inputscript or pretrained model
-    model = _setup_model(config, X, y)
+    model = _setup_model(config, X, y, mode)
 
     # Setup training scheme
     scheme = _setup_scheme(config, args, model, X, y)
 
     # Run model training
-    model_list, train_scheme, train_time = _train_models(config, scheme)
+    model_list, scheme_type, train_time = _train_models(config, scheme)
 
-    # Print model summary
-    _model_summary(model_list[0], X, y)
+    # Print trained model summary
+    _model_summary(config, model_list[0], X, y)
 
     # Print training time
     logging.info(f"Training completed in {str(timedelta(seconds=int(train_time)))}")
@@ -93,18 +99,14 @@ def train(config, args):
     if args.save:
         metadata = {
             "mode": args.mode,
+            "dataset": dataset.config,
             "model": model.config,
             "descriptors": [desc.config for desc in descriptor_list],
-            "scheme": train_scheme,
+            "scheme": scheme_type,
             "standardscaler": config["standardscaler"],
-            "fourier_transform": config["fourier_transform"],
-            "fourier_param": config["fourier_params"],
-            "node_features": config.get("node_features", {}),
-            "edge_features": config.get("edge_features", {}),
         }
 
-        dataset = {"index": index, "X": X, "y": y}
-        save_models(Path("models"), model_list, metadata, dataset=dataset)
+        save_models(Path("models"), model_list, metadata)
 
 
 def _setup_descriptors(config):
@@ -113,7 +115,7 @@ def _setup_descriptors(config):
 
     if hasattr(PretrainedModels, model_type):
         logging.info(f">> Loading descriptors from pretrained model: {model_type}")
-        descriptor_list = create_pretrained_descriptors(model_type)
+        descriptor_list = load_pretrained_descriptors(model_type)
     else:
         descriptor_config = config["descriptors"]
         descriptor_types = ", ".join(d["type"] for d in descriptor_config)
@@ -123,75 +125,51 @@ def _setup_descriptors(config):
     return descriptor_list
 
 
-def _setup_datasets(config, descriptor_list, mode: TrainingMode):
-    model_type = config["model"]["type"]
+def _setup_datasets(config, descriptor_list):
+    dataset_type = config["dataset"]["type"]
 
-    logging.info(">> Encoding training datasets...")
-    if model_type.lower() == "gnn":
-        # Preprocessing datasets into graph representation for GNN input
-        X, y, index = data_gnn_learn(
-            config["xyz_path"],
-            config["xanes_path"],
-            config["node_features"],
-            config["edge_features"],
-            descriptor_list,
-            config["fourier_transform"],
-            config["fourier_params"],
-        )
-    else:
-        # Preprocessing datasets for non-GNN models
-        xyz, xanes, index = data_learn(
-            config["xyz_path"], config["xanes_path"], descriptor_list
-        )
+    logging.info(f">> Initialising training datasets: {dataset_type}")
+    # Pack kwargs
+    kwargs = {
+        "root": config["dataset"]["root_path"],
+        "xyz_path": config["dataset"]["xyz_path"],
+        "xanes_path": config["dataset"]["xanes_path"],
+        "descriptors": descriptor_list,
+        "shuffle": True,
+        **config["dataset"].get("params", {}),
+    }
 
-        n_samples = config.get("hyperparams", {}).get("n_samples")
-        seed = config.get("hyperparams", {}).get("seed", random.sample(range(1000), 1))
-        logging.info(
-            f">> Shuffling training datasets: n_samples = {n_samples or 'all'}"
-        )
-        xyz, xanes = shuffle(
-            xyz, xanes, random_state=RandomState(seed=seed), n_samples=n_samples
-        )
-
-        if config.get("fourier_transform"):
-            logging.info("Applying Fourier transform to spectra data...")
-            params = config.get("fourier_params", {})
-            xanes = fourier_transform(xanes, params.get("concat", False))
-
-        if config.get("data_augment"):
-            logging.info("Applying data augmentation...")
-            params = config.get("augment_params", {})
-            xyz, xanes = DataAugmentSwitch().augment(xyz, xanes, **params)
-
-        # Assigns the final X and Y datasets based on the training mode.
-        logging.info(f">> Setting X and Y datasets for mode: {mode.value}")
-
-        if mode in [TrainingMode.XYZ_TO_XANES, TrainingMode.AEGAN]:
-            X, y = xyz, xanes
-            logging.info(f">> X = xyz (samples: {X.shape[0]}, features: {X.shape[1]})")
-            logging.info(f">> y = xanes(samples: {y.shape[0]}, features: {y.shape[1]})")
-        else:
-            X, y = xanes, xyz
-            logging.info(
-                f">> X = xanes (samples: {X.shape[0]}, features: {X.shape[1]})"
-            )
-            logging.info(f">> y = xyz(samples: {y.shape[0]}, features: {y.shape[1]})")
-
-        if config.get("standardscaler"):
-            scaler = StandardScaler()
-            X = scaler.fit_transform(X)
-
-    return X, y, index
+    dataset = create_dataset(dataset_type, **kwargs)
+    return dataset
 
 
-def _setup_model(config, X, y):
+def _setup_X_y(config, mode: TrainingMode, dataset):
+    logging.info(f">> Setting X and y datasets ...")
+
+    X = y = None
+    if mode in [TrainingMode.XYZ_TO_XANES, TrainingMode.TRAIN_ALL]:
+        logging.info(f">> X = XYZ dataset, Y = Xanes dataset")
+        X, y = dataset.xyz_data, dataset.xanes_data
+
+    elif mode == TrainingMode.XANES_TO_XYZ:
+        logging.info(f">> X = Xanes dataset, Y = XYZ dataset")
+        X, y = dataset.xanes_data, dataset.xyz_data
+
+    if config.get("standardscaler"):
+        logging.info(">> Applying standard scaler to X...")
+        X = StandardScaler().fit_transform(X)
+
+    return X, y
+
+
+def _setup_model(config, X, y, mode: TrainingMode):
     """Initialises or loads the model and its descriptors."""
     model_type = config["model"]["type"]
 
     if hasattr(PretrainedModels, model_type):
         logging.info(f">> Loading pretrained model: {model_type}")
         model_params = config["model"].get("params", {})
-        model = create_pretrained_model(model_type, **model_params)
+        model = load_pretrained_model(model_type, **model_params)
     else:
         logging.info(f">> Initialising model: {model_type}")
         model_params = config["model"].get("params", {})
@@ -272,36 +250,54 @@ def _train_models(config, scheme):
     start_time = time.time()
     if config["bootstrap"]:
         logging.info(">> Training model using bootstrap resampling...\n")
-        train_scheme = "bootstrap"
+        scheme_type = "bootstrap"
         model_list = scheme.train_bootstrap()
     elif config["ensemble"]:
         logging.info(">> Training model using ensemble learning...\n")
-        train_scheme = "ensemble"
+        scheme_type = "ensemble"
         model_list = scheme.train_ensemble()
     elif config["kfold"]:
         logging.info(">> Training model using kfold cross-validation...\n")
-        train_scheme = "kfold"
+        scheme_type = "kfold"
         model_list.append(scheme.train_kfold())
     else:
         logging.info(">> Training model using standard training procedure...\n")
-        train_scheme = "std"
+        scheme_type = "std"
         model_list.append(scheme.train_std())
 
     train_time = time.time() - start_time
 
-    return model_list, train_scheme, train_time
+    return model_list, scheme_type, train_time
 
 
-def _model_summary(model, X, y):
+def _dataset_summary(config, X, y):
+    # Print dataset summary
+    model_type = config["model"]["type"]
+    if model_type.lower() == "gnn":
+        logging.info(
+            f">> Graph dataset (samples: {len(X)}, "
+            f"node features: {X[0].x.shape[1]}, "
+            f"edge features: {X[0].edge_attr.shape[1]}, "
+            f"graph features: {X[0].graph_attr.shape[0]})"
+        )
+    else:
+        logging.info(f">> XYZ dataset: samples = {X.shape[0]}, features = {X.shape[1]}")
+        logging.info(
+            f">> XANES dataset: samples = {y.shape[0]}, features = {y.shape[1]}"
+        )
+
+
+def _model_summary(config, model, X, y):
     logging.info("\n--- Model Summary ---")
+    model_type = config["model"].get("type")
 
-    if isinstance(model, AEGAN_MLP):
+    if model_type.lower() == "aegan_mlp":
         X_dim = X.shape[1]
         y_dim = y.shape[1]
         dummy_x = torch.randn(1, X_dim)
         dummy_y = torch.randn(1, y_dim)
         input_data = (dummy_x, dummy_y)
-    elif isinstance(model, GNN):
+    elif model_type.lower() == "gnn":
         input_data = None
     else:
         X_dim = X.shape[1]

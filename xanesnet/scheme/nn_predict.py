@@ -42,7 +42,7 @@ class NNPredict(Predict):
         xyz_pred, xanes_pred = None, None
         model.eval()
 
-        if self.pred_mode == "predict_xyz":
+        if self.mode == "predict_xyz":
             # Predict xyz data
             input_data = self.xanes_data
             if self.fourier:
@@ -59,7 +59,7 @@ class NNPredict(Predict):
             if self.pred_eval:
                 Predict.print_mse("xyz", "xyz prediction", self.xyz_data, xyz_pred)
 
-        elif self.pred_mode == "predict_xanes":
+        elif self.mode == "predict_xanes":
             # Predict xanes data
             input_data = self.xyz_data
 
@@ -92,7 +92,7 @@ class NNPredict(Predict):
 
         xyz_pred, xanes_pred = self.predict(model)
 
-        if self.pred_mode == "predict_xyz":
+        if self.mode == "predict_xyz":
             std_dev = np.zeros_like(xyz_pred)
             return Result(xyz_pred=(xyz_pred, std_dev))
         else:  # predict_xanes
@@ -113,12 +113,12 @@ class NNPredict(Predict):
         # Print MSE of the mean prediction
         if self.pred_eval:
             target_data = (
-                self.xyz_data if self.pred_mode == "predict_xyz" else self.xanes_data
+                self.xyz_data if self.mode == "predict_xyz" else self.xanes_data
             )
             logging.info("-" * 55)
             Predict.print_mse("target", "mean prediction", target_data, mean_pred)
 
-        if self.pred_mode == "predict_xyz":
+        if self.mode == "predict_xyz":
             return Result(xyz_pred=(mean_pred, std_pred))
         else:  # predict_xanes
             return Result(xanes_pred=(mean_pred, std_pred))
@@ -141,7 +141,7 @@ class NNPredict(Predict):
             )
             pred_result = self.predict(model)
             prediction = (
-                pred_result[0] if self.pred_mode == "predict_xyz" else pred_result[1]
+                pred_result[0] if self.mode == "predict_xyz" else pred_result[1]
             )
             predictions.append(prediction)
 

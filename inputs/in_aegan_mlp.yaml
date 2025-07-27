@@ -1,5 +1,17 @@
-xyz_path:  data/fe/xyz_train
-xanes_path:  data/fe/xanes_train
+dataset:
+  type: xanesx
+  root_path: data/fe
+  xyz_path: data/fe/xyz_train
+  xanes_path: data/fe/xanes_train
+  params:
+    fourier: False
+    fourier_concat: False
+    augment: False
+    augment_params:
+      type: random_noise #random_combination
+      augment_mult: 5
+      normal_mean: 0
+      normal_sd: 0.1
 
 descriptors:
   - type: wacsf
@@ -24,7 +36,7 @@ model:
 
 hyperparams:
   batch_size: 16
-  epochs: 50
+  epochs: 10
   model_eval: False
   seed: 2021
   lr: [0.01, 0.00001]     #[generative autoencoder, discriminator]
@@ -39,7 +51,7 @@ kfold_params:
   n_repeats: 1
   seed: 2021
 
-bootstrap: True
+bootstrap: False
 bootstrap_params:
   n_boot: 3
   n_size: 1.0
@@ -55,18 +67,5 @@ scheduler_params:
   type: step
   step_size: 10
   gamma: 0.5
-
-data_augment: False
-augment_params:
-  type: random_noise
-  augment_mult: 5
-  normal_mean: 0
-  normal_sd: 0.1
-  # type: random_combination
-  # augment_mult: 5
-
-fourier_transform: False
-fourier_params:
-  concat: True
 
 standardscaler: False

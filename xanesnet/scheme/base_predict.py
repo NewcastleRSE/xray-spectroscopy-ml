@@ -30,11 +30,11 @@ class Predict(ABC):
         self.xyz_data = xyz_data
         self.xanes_data = xanes_data
 
-        self.pred_mode = kwargs.get("pred_mode")
+        self.mode = kwargs.get("pred_mode")
         self.pred_eval = kwargs.get("pred_eval")
         self.scaler = kwargs.get("scaler")
         self.fourier = kwargs.get("fourier")
-        self.fourier_concat = kwargs.get("fourier_param").get("concat")
+        self.fourier_concat = kwargs.get("fourier_concat")
 
         self.recon_flag = 0
 

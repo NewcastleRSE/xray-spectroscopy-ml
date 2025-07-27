@@ -1,5 +1,17 @@
-xyz_path:  data/fe/xyz_train
-xanes_path:  data/fe/xanes_train
+dataset:
+  type: xanesx
+  root_path: data/fe
+  xyz_path: data/fe/xyz_train
+  xanes_path: data/fe/xanes_train
+  params:
+    fourier: False
+    fourier_concat: False
+    augment: False
+    augment_params:
+      type: random_noise #random_combination
+      augment_mult: 5
+      normal_mean: 0
+      normal_sd: 0.1
 
 descriptors:
   - type: wacsf
@@ -55,18 +67,5 @@ scheduler_params:
   type: step
   step_size: 50
   gamma: 0.1
-
-data_augment: False
-augment_params:
-  type: random_noise
-  augment_mult: 5
-  normal_mean: 0
-  normal_sd: 0.1
-  # type: random_combination
-  # augment_mult: 5
-
-fourier_transform: False
-fourier_params:
-  concat: True
 
 standardscaler: False

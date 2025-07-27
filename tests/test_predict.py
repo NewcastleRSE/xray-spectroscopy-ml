@@ -6,7 +6,7 @@ import torch
 import yaml
 
 from xanesnet.creator import create_predict_scheme
-from xanesnet.data_encoding import data_predict, data_gnn_predict
+from xanesnet.utils.encode import data_predict, data_gnn_predict
 from xanesnet.model import MLP, AE_MLP, AEGAN_MLP, GNN
 from xanesnet.scheme import NNPredict, AEPredict, AEGANPredict, GNNPredict
 from xanesnet.utils import load_descriptors, load_models

@@ -89,25 +89,25 @@ python3 -m xanesnet.cli --mode predict_xyz --in_model models/ae_cnn_std_xanes_00
 # --- AEGAN Models ---
 
 echo "--- Running: AEGAN (STD) ---"
-python3 -m xanesnet.cli --mode train_aegan --in_file ./.github/workflows/inputs/in_aegan.yaml --save
-python3 -m xanesnet.cli --mode predict_all --in_model models/aegan_mlp_std_aegan_001 --in_file ./.github/workflows/inputs/in_predict.yaml
+python3 -m xanesnet.cli --mode train_all --in_file ./.github/workflows/inputs/in_aegan.yaml --save
+python3 -m xanesnet.cli --mode predict_all --in_model models/aegan_mlp_std_all_001 --in_file ./.github/workflows/inputs/in_predict.yaml
 
 echo "--- Running: AEGAN (Kfold) ---"
 sed -i 's/kfold: False/kfold: True/' ./.github/workflows/inputs/in_aegan.yaml
-python3 -m xanesnet.cli --mode train_aegan --in_file ./.github/workflows/inputs/in_aegan.yaml --save
-python3 -m xanesnet.cli --mode predict_all --in_model models/aegan_mlp_kfold_aegan_001 --in_file ./.github/workflows/inputs/in_predict.yaml
+python3 -m xanesnet.cli --mode train_all --in_file ./.github/workflows/inputs/in_aegan.yaml --save
+python3 -m xanesnet.cli --mode predict_all --in_model models/aegan_mlp_kfold_all_001 --in_file ./.github/workflows/inputs/in_predict.yaml
 sed -i 's/kfold: True/kfold: False/' ./.github/workflows/inputs/in_aegan.yaml
 
 echo "--- Running: AEGAN (Bootstrap) ---"
 sed -i 's/bootstrap: False/bootstrap: True/' ./.github/workflows/inputs/in_aegan.yaml
-python3 -m xanesnet.cli --mode train_aegan --in_file ./.github/workflows/inputs/in_aegan.yaml --save
-python3 -m xanesnet.cli --mode predict_all --in_model models/aegan_mlp_bootstrap_aegan_001 --in_file ./.github/workflows/inputs/in_predict.yaml
+python3 -m xanesnet.cli --mode train_all --in_file ./.github/workflows/inputs/in_aegan.yaml --save
+python3 -m xanesnet.cli --mode predict_all --in_model models/aegan_mlp_bootstrap_all_001 --in_file ./.github/workflows/inputs/in_predict.yaml
 sed -i 's/bootstrap: True/bootstrap: False/' ./.github/workflows/inputs/in_aegan.yaml
 
 echo "--- Running: AEGAN (Ensemble) ---"
 sed -i 's/ensemble: False/ensemble: True/' ./.github/workflows/inputs/in_aegan.yaml
-python3 -m xanesnet.cli --mode train_aegan --in_file ./.github/workflows/inputs/in_aegan.yaml --save
-python3 -m xanesnet.cli --mode predict_all --in_model models/aegan_mlp_ensemble_aegan_001 --in_file ./.github/workflows/inputs/in_predict.yaml
+python3 -m xanesnet.cli --mode train_all --in_file ./.github/workflows/inputs/in_aegan.yaml --save
+python3 -m xanesnet.cli --mode predict_all --in_model models/aegan_mlp_ensemble_all_001 --in_file ./.github/workflows/inputs/in_predict.yaml
 sed -i 's/ensemble: True/ensemble: False/' ./.github/workflows/inputs/in_aegan.yaml
 
 # --- GNN Models ---

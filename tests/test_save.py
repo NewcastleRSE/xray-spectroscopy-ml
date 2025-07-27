@@ -11,7 +11,7 @@ from xanesnet.creator import (
     create_learn_scheme,
     create_predict_scheme,
 )
-from xanesnet.data_encoding import data_learn, data_predict
+from xanesnet.utils.encode import data_learn, data_predict
 from xanesnet.utils import save_models, load_descriptors, save_predict
 
 

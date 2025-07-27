@@ -1,14 +1,13 @@
 import os
 import shutil
 
-import pytest
 import torch
 import torch_geometric.nn as geom_nn
 
 from torch import nn
 
 from xanesnet.creator import create_descriptor, create_model
-from xanesnet.data_encoding import data_learn, data_gnn_learn
+from xanesnet.utils.encode import data_learn, data_gnn_learn
 from xanesnet.model import MLP, CNN, LSTM, GNN, AE_MLP, AE_CNN
 
 

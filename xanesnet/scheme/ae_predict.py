@@ -51,7 +51,7 @@ class AEPredict(Predict):
         xyz_pred = xanes_pred = xyz_recon = xanes_recon = None
         model.eval()
 
-        if self.pred_mode == "predict_xyz":
+        if self.mode == "predict_xyz":
             input_data = self.xanes_data
 
             if self.fourier:
@@ -82,7 +82,7 @@ class AEPredict(Predict):
             if self.pred_eval:
                 Predict.print_mse("xyz", "xyz prediction", self.xyz_data, xyz_pred)
 
-        elif self.pred_mode == "predict_xanes":
+        elif self.mode == "predict_xanes":
             # Predict xanes data
             input_data = self.xyz_data
 
@@ -126,10 +126,10 @@ class AEPredict(Predict):
         xyz_pred, xanes_pred, xyz_recon, xanes_recon = self.predict(model)
 
         # Create dummy array for STD
-        if self.pred_mode == "predict_xyz":
+        if self.mode == "predict_xyz":
             xyz_sd = np.zeros_like(xyz_pred)
             xanes_recon_sd = np.zeros_like(xanes_recon)
-        elif self.pred_mode == "predict_xanes":
+        elif self.mode == "predict_xanes":
             xanes_sd = np.zeros_like(xanes_pred)
             xyz_recon_sd = np.zeros_like(xyz_recon)
 
@@ -153,7 +153,7 @@ class AEPredict(Predict):
 
         logging.info("-" * 55)
 
-        if self.pred_mode == "predict_xyz":
+        if self.mode == "predict_xyz":
             # Calculate mean and std for xyz predictions
             mean_xyz_pred = np.mean(all_xyz_p, axis=0)
             std_xyz_pred = np.std(all_xyz_p, axis=0)
@@ -173,7 +173,7 @@ class AEPredict(Predict):
                     "xyz", "mean xyz prediction", self.xyz_data, mean_xyz_pred
                 )
 
-        elif self.pred_mode == "predict_xanes":
+        elif self.mode == "predict_xanes":
             # Calculate mean and std for xanes predictions
             mean_xanes_pred = np.mean(all_xanes_p, axis=0)
             sd_xanes_pred = np.std(all_xanes_p, axis=0)
@@ -226,10 +226,10 @@ class AEPredict(Predict):
                 xyz_p, xanes_p, xyz_r, xanes_r = self.predict(model)
 
             # Append results based on prediction mode
-            if self.pred_mode == "predict_xyz":
+            if self.mode == "predict_xyz":
                 xyz_preds.append(xyz_p)
                 xanes_recons.append(xanes_r)
-            elif self.pred_mode == "predict_xanes":
+            elif self.mode == "predict_xanes":
                 xanes_preds.append(xanes_p)
                 xyz_recons.append(xyz_r)
 

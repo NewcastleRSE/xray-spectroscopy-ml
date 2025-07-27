@@ -18,6 +18,7 @@ import copy
 import logging
 import numpy as np
 import torch
+from sklearn.metrics import mean_squared_error
 
 from sklearn.model_selection import RepeatedKFold
 

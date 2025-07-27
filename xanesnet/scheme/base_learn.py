@@ -30,7 +30,6 @@ from pathlib import Path
 from sklearn.model_selection import train_test_split
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
-from torch_geometric.data import Dataset
 
 from xanesnet.utils.switch import (
     OptimSwitch,
@@ -140,10 +139,7 @@ class Learn(ABC):
         """
 
         model_list = []
-        if isinstance(self.X, Dataset):
-            n_samples = int(len(self.X))
-        else:
-            n_samples = self.X.shape[0]
+        n_samples = self.X.shape[0]
 
         # Size of each bootstrap sample
         sample_size = int(n_samples * self.n_size)
@@ -155,12 +151,8 @@ class Learn(ABC):
             bootstrap_indices = rng.choice(n_samples, size=sample_size, replace=True)
 
             # Create the bootstrap sample in a single, fast indexing operation
-            X_boot = self.X[bootstrap_indices]
-            y_boot = self.y[bootstrap_indices]
-
-            if not isinstance(self.X, Dataset):
-                X_boot = np.asarray(X_boot)
-                y_boot = np.asarray(y_boot)
+            X_boot = np.asarray(self.X[bootstrap_indices])
+            y_boot = np.asarray(self.y[bootstrap_indices])
 
             # Deep copy model and re-initialise model weight using bootstrap seeds
             model = copy.deepcopy(self.model)

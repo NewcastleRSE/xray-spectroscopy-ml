@@ -15,6 +15,7 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from xanesnet.scheme import *
 
+DATASET_REGISTRY = {}
 MODEL_REGISTRY = {}
 DESCRIPTOR_REGISTRY = {}
 SCHEME_REGISTRY = {
@@ -44,6 +45,14 @@ Usage:
 Once registered, the classes can be instantiated via corresponding
 `create_*` factory functions using the registered name.
 """
+
+
+def register_dataset(name):
+    def decorator(cls):
+        DATASET_REGISTRY[name] = cls
+        return cls
+
+    return decorator
 
 
 def register_model(name):

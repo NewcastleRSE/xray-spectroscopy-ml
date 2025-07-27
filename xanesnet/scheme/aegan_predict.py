@@ -48,7 +48,7 @@ class AEGANPredict(Predict):
         xyz_pred = xanes_pred = xyz_recon = xanes_recon = None
         model.eval()
 
-        if self.pred_mode in ["predict_xyz", "predict_all"]:
+        if self.mode in ["predict_xyz", "predict_all"]:
             input_data = self.xanes_data
 
             if self.fourier:
@@ -76,7 +76,7 @@ class AEGANPredict(Predict):
             if self.pred_eval:
                 Predict.print_mse("xyz", "xyz prediction", self.xyz_data, xyz_pred)
 
-        if self.pred_mode in ["predict_xanes", "predict_all"]:
+        if self.mode in ["predict_xanes", "predict_all"]:
             input_data = self.xyz_data
             if self.scaler:
                 scaler = StandardScaler()
@@ -111,11 +111,11 @@ class AEGANPredict(Predict):
         # Get all predictions and reconstructions
         xyz_pred, xanes_pred, xyz_recon, xanes_recon = self.predict(model)
 
-        if self.pred_mode in ["predict_xyz", "predict_all"]:
+        if self.mode in ["predict_xyz", "predict_all"]:
             xyz_sd = np.zeros_like(xyz_pred)
             xanes_recon_sd = np.zeros_like(xanes_recon)
 
-        if self.pred_mode in ["predict_xanes", "predict_all"]:
+        if self.mode in ["predict_xanes", "predict_all"]:
             xanes_sd = np.zeros_like(xanes_pred)
             xyz_recon_sd = np.zeros_like(xyz_recon)
 
@@ -138,7 +138,7 @@ class AEGANPredict(Predict):
 
         logging.info("-" * 55)
 
-        if self.pred_mode in ["predict_xyz", "predict_all"]:
+        if self.mode in ["predict_xyz", "predict_all"]:
             mean = np.mean(all_xyz_p, axis=0)
             sd = np.std(all_xyz_p, axis=0)
             xyz_pred_res = (mean, sd)
@@ -151,7 +151,7 @@ class AEGANPredict(Predict):
             Predict.print_mse(
                 "xanes", "mean xanes reconstruction", self.xanes_data, mean
             )
-        if self.pred_mode in ["predict_xanes", "predict_all"]:
+        if self.mode in ["predict_xanes", "predict_all"]:
             mean = np.mean(all_xanes_p, axis=0)
             sd = np.std(all_xanes_p, axis=0)
             xanes_pred_res = (mean, sd)
@@ -194,11 +194,11 @@ class AEGANPredict(Predict):
             with torch.no_grad():
                 xyz_p, xanes_p, xyz_r, xanes_r = self.predict(model)
 
-            if self.pred_mode in ["predict_xyz", "predict_all"]:
+            if self.mode in ["predict_xyz", "predict_all"]:
                 xyz_preds.append(xyz_p)
                 xanes_recons.append(xanes_r)
 
-            if self.pred_mode in ["predict_xanes", "predict_all"]:
+            if self.mode in ["predict_xanes", "predict_all"]:
                 xanes_preds.append(xanes_p)
                 xyz_recons.append(xyz_r)
 

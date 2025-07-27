@@ -1,5 +1,14 @@
-xyz_path:  .github/workflows/data/graph-set/xyz_train
-xanes_path:  .github/workflows/data/graph-set/xanes_train
+dataset:
+  type: graph
+  root_path: .github/workflows/data
+  xyz_path: .github/workflows/data/graph-set/xyz_train
+  xanes_path: .github/workflows/data/graph-set/xanes_train
+  params:
+    n: 16
+    r_min: 0.0
+    r_max: 4.0
+    fourier: False
+    fourier_concat: False
 
 descriptors:
   - type: pdos
