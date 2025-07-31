@@ -13,17 +13,11 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from xanesnet.scheme import *
 
 DATASET_REGISTRY = {}
 MODEL_REGISTRY = {}
 DESCRIPTOR_REGISTRY = {}
-SCHEME_REGISTRY = {
-    "nn": {"learn": NNLearn, "predict": NNPredict, "eval": NNEval},
-    "ae": {"learn": AELearn, "predict": AEPredict, "eval": AEEval},
-    "aegan": {"learn": AEGANLearn, "predict": AEGANPredict, "eval": AEGANEval},
-    "gnn": {"learn": GNNLearn, "predict": GNNPredict, "eval": None},
-}
+SCHEME_REGISTRY = {}
 LEARN_SCHEME_REGISTRY = {}
 PREDICT_SCHEME_REGISTRY = {}
 EVAL_SCHEME_REGISTRY = {}
@@ -73,6 +67,46 @@ def register_descriptor(name):
 
 def register_scheme(model_name, scheme_name):
     def decorator(cls):
+        if not SCHEME_REGISTRY:
+            from xanesnet.scheme import (
+                AEEval,
+                AEGANEval,
+                AEGANLearn,
+                AEGANPredict,
+                AELearn,
+                AEPredict,
+                GNNLearn,
+                GNNPredict,
+                NNEval,
+                NNLearn,
+                NNPredict,
+            )
+
+            SCHEME_REGISTRY.update(
+                {
+                    "nn": {
+                        "learn": NNLearn,
+                        "predict": NNPredict,
+                        "eval": NNEval,
+                    },
+                    "ae": {
+                        "learn": AELearn,
+                        "predict": AEPredict,
+                        "eval": AEEval,
+                    },
+                    "aegan": {
+                        "learn": AEGANLearn,
+                        "predict": AEGANPredict,
+                        "eval": AEGANEval,
+                    },
+                    "gnn": {
+                        "learn": GNNLearn,
+                        "predict": GNNPredict,
+                        "eval": None,
+                    },
+                },
+            )
+
         scheme = SCHEME_REGISTRY.get(scheme_name)
         if scheme is None:
             raise ValueError(f"Scheme '{scheme_name}' is not registered.")
