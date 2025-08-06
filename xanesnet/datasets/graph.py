@@ -69,6 +69,12 @@ class GraphDataset(BaseDataset):
             self, root, self.xyz_path, self.xanes_path, descriptors, **kwargs
         )
 
+        if (
+            self.xanes_path
+            and (e := Path(root) / f"processed/{self.xanes_path.name}_e.pt").exists()
+        ):
+            self.e_data = torch.load(e)
+
         # Save configuration
         params = {
             "fourier": self.fft,
