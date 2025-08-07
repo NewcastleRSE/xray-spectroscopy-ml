@@ -75,22 +75,22 @@ def train(config, args):
     dataset = _setup_datasets(config, descriptor_list)
 
     # Assign dataset items to training features X and labels y
-    X, y = _setup_X_y(config, mode, dataset)
+    dataset = _prepare_dataset(config, mode, dataset)
 
     # Print dataset summary
-    _dataset_summary(config, X, y)
+    _dataset_summary(config, dataset)
 
     # Setup model from inputscript or pretrained model
-    model = _setup_model(config, X, y, mode)
+    model = _setup_model(config, dataset, mode)
 
     # Setup training scheme
-    scheme = _setup_scheme(config, args, model, X, y)
+    scheme = _setup_scheme(config, args, model, dataset)
 
     # Run model training
     model_list, scheme_type, train_time = _train_models(config, scheme)
 
     # Print trained model summary
-    _model_summary(config, model_list[0], X, y)
+    _model_summary(config, model_list[0], dataset)
 
     # Print training time
     logging.info(f"Training completed in {str(timedelta(seconds=int(train_time)))}")
@@ -142,27 +142,26 @@ def _setup_datasets(config, descriptor_list):
     dataset = create_dataset(dataset_type, **kwargs)
     return dataset
 
-
-def _setup_X_y(config, mode: TrainingMode, dataset):
+def _prepare_dataset(config, mode: TrainingMode, dataset):
     logging.info(f">> Setting X and y datasets ...")
 
-    X = y = None
     if mode in [TrainingMode.XYZ_TO_XANES, TrainingMode.TRAIN_ALL]:
         logging.info(f">> X = XYZ dataset, Y = Xanes dataset")
-        X, y = dataset.xyz_data, dataset.xanes_data
 
     elif mode == TrainingMode.XANES_TO_XYZ:
         logging.info(f">> X = Xanes dataset, Y = XYZ dataset")
-        X, y = dataset.xanes_data, dataset.xyz_data
+        X, y = dataset.xyz_data, dataset.xanes_data
+        dataset.xyz_data = y
+        dataset.xanes_data = X
 
     if config.get("standardscaler"):
         logging.info(">> Applying standard scaler to X...")
-        X = StandardScaler().fit_transform(X)
+        dataset.xyz_data = StandardScaler().fit_transform(dataset.xyz_data)
 
-    return X, y
+    return dataset
 
 
-def _setup_model(config, X, y, mode: TrainingMode):
+def _setup_model(config, dataset, mode: TrainingMode):
     """Initialises or loads the model and its descriptors."""
     model_type = config["model"]["type"]
 
@@ -176,12 +175,16 @@ def _setup_model(config, X, y, mode: TrainingMode):
 
         # Add additional model parameters
         if model_type.lower() == "gnn":
-            model_params["in_size"] = X[0].x.shape[1]
-            model_params["out_size"] = X[0].y.shape[0]
-            model_params["mlp_feat_size"] = X[0].graph_attr.shape[0]
+            model_params["in_size"] = dataset.xyz_data[0].x.shape[1]
+            model_params["out_size"] = dataset.xyz_data[0].y.shape[0]
+            model_params["mlp_feat_size"] = dataset.xyz_data[0].graph_attr.shape[0]
+        elif model_type.lower() == "transformer":
+            model_params["in_size_mace_descriptor"] = dataset.mace_descriptor_data[0].shape[1]
+            model_params["in_size_other_descriptor"] = dataset.other_descriptor_data[0].shape[0]
+            model_params["out_size"] = dataset.xanes_data[0].shape[0]
         else:
-            model_params["in_size"] = X.shape[1]
-            model_params["out_size"] = y.shape[1]
+            model_params["in_size"] = dataset.xyz_data.shape[1]
+            model_params["out_size"] = dataset.xanes_data.shape[1]
 
         model = create_model(model_type, **model_params)
 
@@ -223,7 +226,7 @@ def _init_model_weights(model, **kwargs):
     return model
 
 
-def _setup_scheme(config, args, model, X, y):
+def _setup_scheme(config, args, model, dataset):
     model_type = config["model"].get("type")
 
     logging.info(">> Initialising training scheme")
@@ -240,7 +243,7 @@ def _setup_scheme(config, args, model, X, y):
         "tensorboard": args.tensorboard,
     }
 
-    scheme = create_learn_scheme(model_type, model, X=X, y=y, **kwargs)
+    scheme = create_learn_scheme(model_type, model, dataset, **kwargs)
 
     return scheme
 
@@ -270,24 +273,35 @@ def _train_models(config, scheme):
     return model_list, scheme_type, train_time
 
 
-def _dataset_summary(config, X, y):
+def _dataset_summary(config, dataset):
     # Print dataset summary
     model_type = config["model"]["type"]
     if model_type.lower() == "gnn":
         logging.info(
-            f">> Graph dataset (samples: {len(X)}, "
-            f"node features: {X[0].x.shape[1]}, "
-            f"edge features: {X[0].edge_attr.shape[1]}, "
-            f"graph features: {X[0].graph_attr.shape[0]})"
+            f">> Graph dataset (samples: {len(dataset.xyz_data)}, "
+            f"node features: {dataset.xyz_data[0].x.shape[1]}, "
+            f"edge features: {dataset.xyz_data[0].edge_attr.shape[1]}, "
+            f"graph features: {dataset.xyz_data[0].graph_attr.shape[0]})"
+        )
+    elif model_type.lower() == "transformer":
+        logging.info(
+            f">> Transformer dataset (samples: {len(dataset.xyz_data)}, "
+            f"mace descriptor features: {dataset.mace_descriptor_data[0].shape[1]}, "
+            f"other descriptor features: {dataset.other_descriptor_data[0].shape[0]}, "
+        )
+        logging.info(
+            f">> xanes (samples: {len(dataset.xanes_data)}, features: {dataset.xanes_data[0].shape[0]})"
         )
     else:
-        logging.info(f">> XYZ dataset: samples = {X.shape[0]}, features = {X.shape[1]}")
+        logging.info(f">> XYZ dataset: samples = {dataset.xyz_data.shape[0]}, features = {dataset.xyz_data.shape[1]}")
         logging.info(
-            f">> XANES dataset: samples = {y.shape[0]}, features = {y.shape[1]}"
+            f">> XANES dataset: samples = {dataset.xanes_data.shape[0]}, features = {dataset.xanes_data.shape[1]}"
         )
 
 
-def _model_summary(config, model, X, y):
+def _model_summary(config, model, dataset):
+    X = dataset.xyz_data
+    y = dataset.xanes_data
     logging.info("\n--- Model Summary ---")
     model_type = config["model"].get("type")
 
@@ -297,7 +311,7 @@ def _model_summary(config, model, X, y):
         dummy_x = torch.randn(1, X_dim)
         dummy_y = torch.randn(1, y_dim)
         input_data = (dummy_x, dummy_y)
-    elif model_type.lower() == "gnn":
+    elif model_type.lower() in ["gnn", "transformer"]:
         input_data = None
     else:
         X_dim = X.shape[1]

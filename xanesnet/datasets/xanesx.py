@@ -131,7 +131,7 @@ class XanesXDataset(BaseDataset):
         return file_list
 
     def __getitem__(self, idx: Union[int, np.integer, IndexType]):
-        data = {}
+        xyz_data = xanes_data = None
         # Dataset preloaded in RAM
         if (
             isinstance(idx, (int, np.integer))
@@ -139,10 +139,10 @@ class XanesXDataset(BaseDataset):
             or (isinstance(idx, np.ndarray) and np.isscalar(idx))
         ):
             if self.xyz_path:
-                data["xyz"] = self.xyz_data[idx]
+                xyz_data = self.xyz_data[idx]
             if self.xanes_path:
-                data["xanes"] = self.xanes_data[idx]
-            return data
+                xanes_data = self.xanes_data[idx]
+            return xyz_data, xanes_data
         else:
             return self.index_select(idx)
 

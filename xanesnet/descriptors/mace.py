@@ -34,17 +34,21 @@ from xanesnet.registry import register_descriptor
 
 @register_descriptor("mace")
 class MACE(BaseDescriptor):
-    def __init__(self, invariants_only: bool = False, num_layers: int = -1):
+    def __init__(self, invariants_only: bool = False, num_layers: int = -1, absorber_atom_only: bool = False):
         self.register_config(locals(), type="mace")
         self.invariants_only = invariants_only
         self.num_layers = num_layers
+        self.absorber_atom_only = absorber_atom_only
         self.mace = mace_mp()
 
     def transform(self, system: Atoms) -> np.ndarray:
         tmp = self.mace.get_descriptors(
             system, invariants_only=self.invariants_only, num_layers=self.num_layers
         )
-        return tmp[0, :]
+        if self.absorber_atom_only:
+            return tmp[0, :]
+        else:
+            return tmp
 
     def get_nfeatures(self) -> int:
         num_interactions = int(self.mace.models[0].num_interactions)

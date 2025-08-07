@@ -5,4 +5,5 @@ from .ae_cnn import AE_CNN
 from .ae_mlp import AE_MLP
 from .aegan_mlp import AEGAN_MLP
 from .gnn import GNN
+from .transformer import Transformer
 from .pre_trained import PretrainedModels

@@ -33,9 +33,9 @@ from xanesnet.utils.switch import (
 
 
 class AEGANLearn(Learn):
-    def __init__(self, model, X, y, **kwargs):
+    def __init__(self, model, dataset, **kwargs):
         # Call the constructor of the parent class
-        super().__init__(model, X, y, **kwargs)
+        super().__init__(model, dataset, **kwargs)
 
         # Unpack AEGAN hyperparameters
         hyper_params = self.hyper_params
@@ -49,12 +49,12 @@ class AEGANLearn(Learn):
             "loss_lambda", [0.001, 0.001]
         )
 
-    def train(self, model, X, y):
+    def train(self, model, dataset):
         """
         Main training loop
         """
 
-        train_loader, valid_loader, eval_loader = self.setup_dataloaders(X, y)
+        train_loader, valid_loader, eval_loader = self.setup_dataloaders(dataset)
 
         optimizers, criterion, regularizer, schedulers = self.setup_components(model)
         model.to(self.device)
@@ -116,15 +116,15 @@ class AEGANLearn(Learn):
         """
         Performs standard training run
         """
-        model, _ = self.train(self.model, self.X, self.y)
+        model, _ = self.train(self.model, self.dataset)
 
         return self.model
 
-    def train_kfold(self, x_data=None, y_data=None):
+    def train_kfold(self, dataset = None):
         """
         Performs K-fold cross-validation
         """
-        X, y = self.X, self.y
+        X, y = self.dataset.xyz_data, self.dataset.xanes_data
         best_model = None
         best_score = float("inf")
         score_list = {"train_score": [], "test_score": []}

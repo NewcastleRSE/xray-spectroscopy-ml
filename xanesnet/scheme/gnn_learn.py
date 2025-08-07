@@ -26,11 +26,11 @@ from xanesnet.utils.switch import LossSwitch, LossRegSwitch
 
 
 class GNNLearn(Learn):
-    def train(self, model, X, y=None):
+    def train(self, model, dataset):
         """
         Main training loop
         """
-        train_loader, valid_loader, eval_loader = self.setup_dataloaders(X)
+        train_loader, valid_loader, eval_loader = self.setup_dataloaders(dataset)
 
         optimizer, criterion, regularizer, scheduler = self.setup_components(model)
         model.to(self.device)
@@ -77,7 +77,7 @@ class GNNLearn(Learn):
         """
         Performs standard training run
         """
-        model, _ = self.train(self.model, self.X, self.y)
+        model, _ = self.train(self.model, self.dataset)
 
         return model
 
@@ -85,7 +85,7 @@ class GNNLearn(Learn):
         """
         Performs K-fold cross-validation
         """
-        X = self.X
+        X = self.dataset.xyz_data
         best_model = None
         best_score = float("inf")
         score_list = {"train_score": [], "test_score": []}
@@ -149,7 +149,7 @@ class GNNLearn(Learn):
         """
 
         model_list = []
-        n_samples = int(len(self.X))
+        n_samples = int(len(self.dataset.xyz_data))
 
         # Size of each bootstrap sample
         sample_size = int(n_samples * self.n_size)
@@ -209,10 +209,11 @@ class GNNLearn(Learn):
 
         return running_loss / len(loader)
 
-    def setup_dataloaders(self, X, y=None):
+    def setup_dataloaders(self, dataset):
         """
         Splits data and creates DataLoaders.
         """
+        X = dataset.xyz_data
         indices = list(range(len(X)))
 
         if self.model_eval:

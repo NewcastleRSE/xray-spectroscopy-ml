@@ -24,14 +24,16 @@ from sklearn.model_selection import RepeatedKFold
 
 from xanesnet.scheme.base_learn import Learn
 from xanesnet.utils.switch import LossSwitch, LossRegSwitch
+from xanesnet.utils.pad import pad, pad_all
+from torch.utils.data._utils.collate import default_collate
 
 
 class NNLearn(Learn):
-    def train(self, model, X, y):
+    def train(self, model, dataset):
         """
         Main training loop
         """
-        train_loader, valid_loader, eval_loader = self.setup_dataloaders(X, y)
+        train_loader, valid_loader, eval_loader = self.setup_dataloaders(dataset, collate_fn = self.pad_batch)
 
         optimizer, criterion, regularizer, scheduler = self.setup_components(model)
         model.to(self.device)
@@ -78,7 +80,7 @@ class NNLearn(Learn):
         """
         Performs standard training run
         """
-        model, _ = self.train(self.model, self.X, self.y)
+        model, _ = self.train(self.model, self.dataset)
 
         return self.model
 
@@ -86,7 +88,8 @@ class NNLearn(Learn):
         """
         Performs K-fold cross-validation
         """
-        X, y = self.X, self.y
+        dataset = self.dataset
+        X, y = dataset.xyz_data, dataset.xanes_data
         best_model = None
         best_score = float("inf")
         score_list = {"train_score": [], "test_score": []}
@@ -150,7 +153,11 @@ class NNLearn(Learn):
 
         with torch.set_grad_enabled(is_train):
             for inputs, labels in loader:
-                inputs, labels = inputs.to(device).float(), labels.to(device).float()
+                if isinstance(inputs, torch.Tensor):
+                    inputs = inputs.to(device).float()
+                else:
+                    inputs = tuple(input.to(device=device, dtype=input.dtype) for input in inputs)
+                labels = labels.to(device).float()
 
                 # Zero the parameter gradients only during training
                 if is_train:
@@ -178,3 +185,13 @@ class NNLearn(Learn):
             },
         }
         return layout
+
+    def pad_batch(self, batch):
+        try:
+            xyz_batch, xanes_batch = zip(*batch)
+            xyz_sequences = tuple(zip(*xyz_batch))
+            padded_xyz_sequences = pad_all(xyz_sequences)
+            padded_xanes_batch = torch.stack([torch.as_tensor(x) for x in xanes_batch])
+            return padded_xyz_sequences, padded_xanes_batch
+        except:
+            return default_collate(batch)

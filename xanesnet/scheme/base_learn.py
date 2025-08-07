@@ -47,10 +47,11 @@ from xanesnet.utils.switch import (
 class Learn(ABC):
     """Base class for model training procedures"""
 
-    def __init__(self, model, X, y, **kwargs):
+    def __init__(self, model, dataset, **kwargs):
         self.model = model
-        self.X = X
-        self.y = y
+        self.dataset = dataset
+        self.X = dataset.xyz_data
+        self.y = dataset.xanes_data
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.recon_flag = 0  # Set to 1 for AELearn or AEGANLearn
 
@@ -122,7 +123,7 @@ class Learn(ABC):
         pass
 
     @abstractmethod
-    def train(self, model, X, y):
+    def train(self, model, dataset):
         pass
 
     @abstractmethod
@@ -151,8 +152,7 @@ class Learn(ABC):
             bootstrap_indices = rng.choice(n_samples, size=sample_size, replace=True)
 
             # Create the bootstrap sample in a single, fast indexing operation
-            X_boot = np.asarray(self.X[bootstrap_indices])
-            y_boot = np.asarray(self.y[bootstrap_indices])
+            dataset_boot = [self.dataset[bootstrap_index] for bootstrap_index in bootstrap_indices]
 
             # Deep copy model and re-initialise model weight using bootstrap seeds
             model = copy.deepcopy(self.model)
@@ -160,7 +160,7 @@ class Learn(ABC):
             model = self._init_model_weights(model, **self.weights_params)
 
             # Train the model on the bootstrap sample
-            model, _ = self.train(model, X_boot, y_boot)
+            model, _ = self.train(model, dataset_boot)
 
             model_list.append(model)
 
@@ -171,7 +171,7 @@ class Learn(ABC):
         Train multiple models with ensemble learning
         """
         model_list = []
-        X, y = self.X, self.y
+        dataset = self.dataset
 
         for i in range(self.n_ens):
             # Deep copy model and re-initialise model weight using ensemble seeds
@@ -180,7 +180,7 @@ class Learn(ABC):
             self.weights_params["seed"] = self.weight_seed_ens[i]
             model = self._init_model_weights(model, **self.weights_params)
 
-            model, _ = self.train(model, X, y)
+            model, _ = self.train(model, dataset)
 
             model_list.append(model)
 
@@ -209,50 +209,47 @@ class Learn(ABC):
 
         return optimizer, criterion, regularizer, scheduler
 
-    def setup_dataloaders(self, X, y):
+    def setup_dataloaders(self, dataset, collate_fn = None):
         """
         Splits data and creates DataLoaders.
         """
+
         if self.model_eval:
             # Data split: train/valid/test
             train_ratio, valid_ratio, eval_ratio = 0.75, 0.15, 0.10
 
             # First split: train vs (test + eval)
-            X_train, X_temp, y_train, y_temp = train_test_split(
-                X, y, test_size=(1 - train_ratio), random_state=self.seed
+            dataset_train, dataset_temp = train_test_split(
+                dataset, test_size=(1 - train_ratio), random_state=self.seed
             )
 
             # Second split: test vs eval
             test_eval_ratio = eval_ratio / (eval_ratio + valid_ratio)
-            X_valid, X_eval, y_valid, y_eval = train_test_split(
-                X_temp, y_temp, test_size=test_eval_ratio, random_state=self.seed
+            dataset_valid, dataset_eval = train_test_split(
+                dataset_temp, test_size=test_eval_ratio, random_state=self.seed
             )
         else:
             # 80/20 train/valid split
-            X_train, X_valid, y_train, y_valid = train_test_split(
-                X, y, test_size=0.2, random_state=self.seed
+            dataset_train, dataset_valid = train_test_split(
+                dataset, test_size=0.2, random_state=self.seed
             )
-
-        train_loader = self._create_dataloader(X_train, y_train, shuffle=True)
-        valid_loader = self._create_dataloader(X_valid, y_valid, shuffle=False)
+        train_loader = self._create_dataloader(dataset_train, shuffle=True, collate_fn = collate_fn)
+        valid_loader = self._create_dataloader(dataset_valid, shuffle=False, collate_fn = collate_fn)
 
         if self.model_eval:
-            eval_loader = self._create_dataloader(X_eval, y_eval, shuffle=False)
+            #dataset_eval = [dataset[i] for i in eval_ids]
+            eval_loader = self._create_dataloader(dataset_eval, shuffle=False, collate_fn = collate_fn)
         else:
             eval_loader = None
 
         return train_loader, valid_loader, eval_loader
 
-    def _create_dataloader(self, X, y, shuffle):
+    def _create_dataloader(self, dataset, shuffle, collate_fn):
         """A helper method to create a DataLoader"""
-        # Convert to tensors
-        X_tensor = torch.from_numpy(X).float()
-        y_tensor = torch.from_numpy(y).float()
-        dataset = torch.utils.data.TensorDataset(X_tensor, y_tensor)
-
         return torch.utils.data.DataLoader(
-            dataset, batch_size=self.batch_size, shuffle=shuffle
+            dataset, batch_size=self.batch_size, shuffle=shuffle, collate_fn = collate_fn
         )
+
 
     def setup_mlflow(self):
         experiment_name = self.model.__class__.__name__

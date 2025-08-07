@@ -24,6 +24,7 @@ from sklearn.preprocessing import StandardScaler
 
 from xanesnet.scheme.base_predict import Predict
 from xanesnet.utils.fourier import fourier_transform, inverse_fourier_transform
+from xanesnet.utils.pad import pad
 
 
 @dataclass
@@ -39,6 +40,7 @@ class NNPredict(Predict):
         """
         Performs a single prediction with a given model.
         """
+        model_type = model.__class__.__name__.lower()
         xyz_pred, xanes_pred = None, None
         model.eval()
 
@@ -51,10 +53,10 @@ class NNPredict(Predict):
                 scaler = StandardScaler()
                 input_data = self.setup_scaler(scaler, input_data, inverse=False)
 
-            input_tensor = torch.from_numpy(input_data).float()
+            input_data = torch.from_numpy(input_data).float()
 
             with torch.no_grad():
-                xyz_pred = model(input_tensor).detach().numpy()
+                xyz_pred = model(input_data).detach().numpy()
 
             if self.pred_eval:
                 Predict.print_mse("xyz", "xyz prediction", self.xyz_data, xyz_pred)
@@ -67,10 +69,13 @@ class NNPredict(Predict):
                 scaler = StandardScaler()
                 input_data = self.setup_scaler(scaler, input_data, inverse=False)
 
-            input_tensor = torch.from_numpy(input_data).float()
+            if model_type == "transformer":
+                input_data = self._prepare_input(input_data)
+            else:
+                input_data = torch.from_numpy(input_data).float()
 
             with torch.no_grad():
-                xanes_pred = model(input_tensor).detach().numpy()
+                xanes_pred = model(input_data).detach().numpy()
 
             if self.fourier:
                 xanes_pred = inverse_fourier_transform(xanes_pred, self.fourier_concat)
@@ -146,3 +151,16 @@ class NNPredict(Predict):
             predictions.append(prediction)
 
         return np.array(predictions)
+
+    def _prepare_input(self, input_data):
+        inputs = tuple(zip(*input_data))
+        prepared_input = []
+        for input in inputs:
+            sample_inputs = []
+            for sample_input in input:
+                tensor_sample_input = torch.Tensor(sample_input)
+                sample_inputs.append(tensor_sample_input)
+            sample_inputs = pad(sample_inputs)
+            prepared_input.append(sample_inputs)
+        prepared_input = tuple(prepared_input)
+        return prepared_input

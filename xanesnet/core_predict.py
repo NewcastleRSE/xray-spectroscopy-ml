@@ -117,8 +117,8 @@ def _setup_scheme(metadata, mode, pred_eval, dataset):
         "pred_mode": mode,
         "pred_eval": pred_eval,
         "scaler": metadata["standardscaler"],
-        "fourier": metadata["dataset"]["params"]["fourier"],
-        "fourier_param": metadata["dataset"]["params"]["fourier_concat"],
+        "fourier": metadata["dataset"]["params"].get("fourier", None),
+        "fourier_param": metadata["dataset"]["params"].get("fourier_concat", None),
     }
 
     model_type = metadata["model"]["type"]
@@ -135,6 +135,18 @@ def _setup_scheme(metadata, mode, pred_eval, dataset):
             f"edge features: {dataset[0].edge_attr.shape[1]}, "
             f"graph features: {dataset[0].graph_attr.shape[0]})"
         )
+    elif model_type.lower() == "transformer":
+        xyz, xanes = dataset.xyz_data, dataset.xanes_data
+        if xyz is not None:
+            logging.info(
+                f">> Transformer dataset (samples: {len(xyz)}, "
+                f"mace descriptor features: {dataset.mace_descriptor_data[0].shape[1]}, "
+                f"other descriptors features: {dataset.other_descriptor_data[0].shape[0]}, "
+            )
+        if xanes is not None:
+            logging.info(
+                f">> xanes (samples: {len(xanes)}, features: {xanes[0].shape[0]})"
+            )
     else:
         xyz, xanes = dataset.xyz_data, dataset.xanes_data
         if xyz is not None:

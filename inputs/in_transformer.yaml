@@ -1,0 +1,55 @@
+dataset:
+  type: transformer
+  root_path: data/graph-set
+  xyz_path: data/graph-set/xyz_test
+  xanes_path: data/graph-set/xanes_test
+  #params:
+
+
+descriptors:
+
+  - type: mace
+    params:
+      invariants_only: True
+      num_layers: 1
+      absorber_atom_only: False
+
+  - type: pdos
+    #params:
+
+model:
+  type: transformer
+  params:
+    hidden_size: 128
+    dropout: 0.1
+    n_heads: 8
+    n_self_attn_layers: 2
+    n_cross_attn_layers: 3
+
+hyperparams:
+  batch_size: 32
+  lr: 0.0001
+  epochs: 3
+  optimizer: Adam
+  model_eval : False
+  seed: 42
+  loss: hybrid
+
+kfold: False
+kfold_params:
+  n_splits: 3
+  n_repeats: 1
+  seed: 2021
+
+bootstrap: False
+bootstrap_params:
+  n_boot: 3
+  n_size: 1.0
+  weight_seed: [97, 39, 22]
+
+ensemble: False
+ensemble_params:
+  n_ens: 3
+  weight_seed: [97, 39, 22]
+
+standardscaler: False

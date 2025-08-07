@@ -96,3 +96,12 @@ class WCCLoss(nn.Module):
 
         loss = 1 - torch.mean(similarity)
         return loss
+
+class HybridLoss(nn.Module):
+
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, y_true, y_pred):
+        loss = nn.functional.mse_loss(y_pred, y_true)
+        return loss

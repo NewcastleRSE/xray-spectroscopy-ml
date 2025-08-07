@@ -26,11 +26,11 @@ from xanesnet.utils.switch import LossSwitch, LossRegSwitch
 
 
 class AELearn(Learn):
-    def train(self, model, X, y):
+    def train(self, model, dataset):
         """
         Main training loop
         """
-        train_loader, valid_loader, eval_loader = self.setup_dataloaders(X, y)
+        train_loader, valid_loader, eval_loader = self.setup_dataloaders(dataset)
 
         optimizer, criterion, regularizer, scheduler = self.setup_components(model)
         model.to(self.device)
@@ -85,15 +85,15 @@ class AELearn(Learn):
         """
         Performs standard training run
         """
-        model, _ = self.train(self.model, self.X, self.y)
+        model, _ = self.train(self.model, self.dataset)
 
         return self.model
 
-    def train_kfold(self, x_data=None, y_data=None):
+    def train_kfold(self, dataset):
         """
         Performs K-fold cross-validation
         """
-        X, y = self.X, self.y
+        X, y = self.dataset.xyz_data, self.dataset.xanes_data
         best_model = None
         best_score = float("inf")
         score_list = {"train_score": [], "test_score": []}

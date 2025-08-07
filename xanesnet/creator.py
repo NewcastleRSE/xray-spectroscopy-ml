@@ -120,9 +120,9 @@ def create_descriptors(config: Dict = None):
     return descriptor_list
 
 
-def create_learn_scheme(name, model, X=None, y=None, **kwargs):
+def create_learn_scheme(name, model, dataset=None, **kwargs):
     if name in LEARN_SCHEME_REGISTRY:
-        return LEARN_SCHEME_REGISTRY[name](model, X, y, **kwargs)
+        return LEARN_SCHEME_REGISTRY[name](model, dataset, **kwargs)
     raise ValueError(f"Unsupported learn scheme for the model: {name}")
 
 
