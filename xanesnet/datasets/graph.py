@@ -59,6 +59,9 @@ class GraphDataset(BaseDataset):
             self, Path(root), xyz_path, xanes_path, mode, descriptors, **kwargs
         )
 
+        if self.mode is not Mode.XYZ_TO_XANES:
+            raise ValueError(f"Unsupported mode for TransformerDataset: {self.mode}")
+
         # Save configuration
         params = {
             "fourier": self.fft,
@@ -98,7 +101,7 @@ class GraphDataset(BaseDataset):
         return [self[0].x.shape[1], self[0].graph_attr.shape[0]]
 
     @property
-    def y_size(self) -> int:
+    def y_size(self) -> Union[int, List[int]]:
         # xanes (label) size
         return len(self[0].y)
 

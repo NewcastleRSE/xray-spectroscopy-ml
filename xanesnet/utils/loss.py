@@ -49,6 +49,15 @@ class CosineSimilarityLoss(nn.Module):
         return loss
 
 
+class HybridLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, y_true, y_pred):
+        loss = nn.functional.mse_loss(y_pred, y_true)
+        return loss
+
+
 class WCCLoss(nn.Module):
     """
     Computes the weighted cross-correlation loss between y_pred and y_true based on the

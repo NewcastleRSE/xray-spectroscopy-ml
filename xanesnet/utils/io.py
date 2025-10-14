@@ -13,6 +13,7 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with 
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 import dataclasses
 import io
 
@@ -436,26 +437,26 @@ def transform_xyz(file_path: str, descriptor_list: List) -> Tensor:
     """
     Encodes XYZ data using a list-append strategy.
     """
-    feature_list = []
+    feature_arrays = []
+    atoms_object = None
 
     with open(file_path, "r") as f:
         file_lines = f.read()
 
-    atoms_object = None
-
     for descriptor in descriptor_list:
         if descriptor.get_type() == "direct":
             with io.StringIO(file_lines) as file_stream:
-                result = np.loadtxt(file_stream).flatten()
+                feature = np.loadtxt(file_stream).flatten()
+                feature_arrays.append(feature)
         else:
             if atoms_object is None:
                 with io.StringIO(file_lines) as file_stream:
                     atoms_object = load_xyz(file_stream)
-            result = descriptor.transform(atoms_object)
+            feature = np.asarray(descriptor.transform(atoms_object))
+            feature_arrays.append(feature)
 
-        feature_list.extend(result)
-
-    return torch.tensor(feature_list, dtype=torch.float64)
+    features = np.concatenate(feature_arrays, axis=0)
+    return torch.tensor(features, dtype=torch.float64)
 
 
 def save_xanes(xanes_f: TextIO, xanes: XANES):
