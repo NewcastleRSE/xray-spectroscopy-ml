@@ -24,7 +24,7 @@ from torch import optim
 from torch import nn
 from typing import Dict
 
-from xanesnet.utils.loss import EMDLoss, CosineSimilarityLoss, WCCLoss
+from xanesnet.utils.loss import EMDLoss, CosineSimilarityLoss, WCCLoss, HybridLoss
 
 # Suppress non-significant warning for shap and WCCLoss function
 warnings.filterwarnings("ignore")
@@ -67,6 +67,7 @@ class LossSwitch:
         "cosine": CosineSimilarityLoss,
         "l1": nn.L1Loss,
         "wcc": WCCLoss,
+        "hybrid": HybridLoss,
     }
 
     def get(self, loss_name: str, **kwargs) -> nn.Module:

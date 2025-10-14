@@ -41,10 +41,10 @@ class Data:
 
     def to(self, device):
         # send batch do device
-        self.x = self.x.to(device) if self.x is not None else None
-        self.y = self.y.to(device) if self.y is not None else None
-        self.head_idx = self.head_idx.to(device) if self.head_idx is not None else None
-
+        for attr in ["x", "y", "head_idx"]:
+            val = getattr(self, attr)
+            if val is not None:
+                setattr(self, attr, val.to(device))
         return self
 
 

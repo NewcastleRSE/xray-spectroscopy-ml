@@ -11,4 +11,6 @@ from .mh_mlp import MultiHead_MLP
 from .mh_cnn import MultiHead_CNN
 from .mh_gnn import MultiHead_GNN
 
+from .transformer import Transformer
+
 from .pre_trained import PretrainedModels
