@@ -101,7 +101,7 @@ def _setup_datasets(root_path, xyz_path, xanes_path, metadata, mode, descriptor_
     dataset = create_dataset(dataset_type, **kwargs)
 
     logging.info(
-        f">> Dataset Summary: # of samples = {len(dataset)}, feature size = {dataset.x_size}"
+        f">> Dataset Summary: # of samples = {len(dataset)}, feature size = {dataset.x_size}, label(y) size = {dataset.y_size}"
     )
 
     return dataset

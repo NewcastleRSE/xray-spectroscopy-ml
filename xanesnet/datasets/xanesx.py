@@ -16,10 +16,9 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
 import os
-from dataclasses import dataclass
-
 import torch
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Union
 from tqdm import tqdm
@@ -39,9 +38,10 @@ class Data:
 
     def to(self, device):
         # send batch do device
-        self.x = self.x.to(device) if self.x is not None else None
-        self.y = self.y.to(device) if self.y is not None else None
-
+        for attr in ["x", "y"]:
+            val = getattr(self, attr)
+            if val is not None:
+                setattr(self, attr, val.to(device))
         return self
 
 
@@ -149,6 +149,6 @@ class XanesXDataset(BaseDataset):
         return len(self[0].x)
 
     @property
-    def y_size(self) -> int:
+    def y_size(self) -> Union[int, List[int]]:
         """Size of the label array."""
         return len(self[0].y)
