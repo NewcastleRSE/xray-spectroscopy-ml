@@ -42,11 +42,11 @@ class Data:
     weight: torch.Tensor = None
     mask: torch.Tensor = None
     y: torch.Tensor = None
-    mask_e: torch.Tensor = None
+    e: torch.Tensor = None
 
     def to(self, device):
         # send batch do device
-        for attr in ["mace", "feat", "pos", "weight", "mask", "y", "mask_e"]:
+        for attr in ["mace", "feat", "pos", "weight", "mask", "y", "e"]:
             val = getattr(self, attr)
             if val is not None:
                 setattr(self, attr, val.to(device))
@@ -167,13 +167,6 @@ class TransformerDataset(BaseDataset):
         std = mace_tensor.std(dim=0, keepdim=True) + 1e-8
         mace_norm_list = [(mdd - mean) / std for mdd in mace_list]
 
-        # masked spectra
-        # TODO check for None xanes
-        spectra_tensor = torch.stack(spec_list)
-        valid_mask = torch.std(spectra_tensor, dim=0) > 1e-6
-        masked_spec_list = [spec[valid_mask] for spec in spec_list]
-        masked_e_list = [e[valid_mask] for e in e_list]
-
         for idx, stem in tqdm(enumerate(self.file_names), total=len(self.file_names)):
             data = Data(
                 mace=mace_norm_list[idx],
@@ -181,8 +174,8 @@ class TransformerDataset(BaseDataset):
                 pos=pos_list[idx],
                 weight=weight_list[idx],
                 mask=mask_list[idx],
-                y=masked_spec_list[idx] if masked_spec_list else None,
-                mask_e=masked_e_list[idx] if masked_e_list else None,
+                y=spec_list[idx] if spec_list else None,
+                e=e_list[idx] if e_list else None,
             )
 
             save_path = os.path.join(self.processed_dir, f"{stem}.pt")
@@ -197,10 +190,10 @@ class TransformerDataset(BaseDataset):
         pos_list = [sample.pos for sample in batch]
         weight_list = [sample.weight for sample in batch]
         mask_list = [sample.mask for sample in batch]
-        mspec_list = [sample.y for sample in batch]
+        spec_list = [sample.y for sample in batch]
 
         feat = torch.stack(feat_list).to(torch.float32)
-        mask_spec = torch.stack(mspec_list).to(torch.float32)
+        mask_spec = torch.stack(spec_list).to(torch.float32)
 
         mace = nn.utils.rnn.pad_sequence(mace_list, batch_first=True).to(torch.float32)
         weight = nn.utils.rnn.pad_sequence(weight_list, batch_first=True).to(
