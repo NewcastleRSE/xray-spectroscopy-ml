@@ -140,12 +140,12 @@ def _build_dataset(config: Config) -> _DatasetProtocol:
     """
 
     ds_cfg = config.section("datasource")
-    datasource = DataSourceRegistry.get(ds_cfg.get_str("datasource_type"))(**ds_cfg.as_kwargs())
+    datasource = DataSourceRegistry.create(ds_cfg.get_str("datasource_type"), **ds_cfg.as_kwargs())
 
     dset_cfg = config.section("dataset")
     dataset = cast(
         _DatasetProtocol,
-        DatasetRegistry.get(dset_cfg.get_str("dataset_type"))(**dset_cfg.as_kwargs(), datasource=datasource),
+        DatasetRegistry.create(dset_cfg.get_str("dataset_type"), **dset_cfg.as_kwargs(), datasource=datasource),
     )
     dataset.prepare()
     dataset.setup_splits()
@@ -172,7 +172,7 @@ def _build_model(config: Config) -> torch.nn.Module:
         raise ValueError(f"Scale fitting is only meaningful for gemnet / gemnet_oc; got {model_type!r}")
     kwargs: dict[str, Any] = model_cfg.as_kwargs()
     kwargs["scale_file"] = None
-    model = cast(torch.nn.Module, ModelRegistry.get(model_type)(**kwargs))
+    model = cast(torch.nn.Module, ModelRegistry.create(model_type, **kwargs))
     return model
 
 
@@ -494,7 +494,10 @@ def main(argv: list[str]) -> None:
     dataset = _build_dataset(config)
     model = _build_model(config)
     dataloader = _build_dataloader(config, dataset)
-    batchprocessor = cast(_BatchProcessorProtocol, BatchProcessorRegistry.get(dataset.dataset_type, model.model_type)())
+    batchprocessor = cast(
+        _BatchProcessorProtocol,
+        BatchProcessorRegistry.create((dataset.dataset_type, model.model_type)),
+    )
 
     logging.info("Fitting scale factors over %d batches each.", args.num_batches)
     fitted = fit_scales(model, dataloader, batchprocessor, device, args.num_batches)

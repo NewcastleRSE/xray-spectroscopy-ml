@@ -197,7 +197,7 @@ class DescriptorDataset(TorchDataset):
         logging.info(f"Initializing descriptors: {descriptor_types}")
         for descriptor_config in descriptors:
             descriptor_type = descriptor_config.get_str("descriptor_type")
-            descriptor = DescriptorRegistry.get(descriptor_type)(**descriptor_config.as_kwargs())
+            descriptor = DescriptorRegistry.create(descriptor_type, **descriptor_config.as_kwargs())
             self.descriptor_list.append(descriptor)
 
         # Setup spectral basis only if needed

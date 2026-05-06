@@ -24,10 +24,10 @@ from .base import BatchProcessor
 from .registry import BatchProcessorRegistry
 
 
-@BatchProcessorRegistry.register("geometrygraph", "dimenet")
-@BatchProcessorRegistry.register("geometrygraph", "dimenet++")
-@BatchProcessorRegistry.register("geometrygraph_mp", "dimenet")
-@BatchProcessorRegistry.register("geometrygraph_mp", "dimenet++")
+@BatchProcessorRegistry.register(("geometrygraph", "dimenet"))
+@BatchProcessorRegistry.register(("geometrygraph", "dimenet++"))
+@BatchProcessorRegistry.register(("geometrygraph_mp", "dimenet"))
+@BatchProcessorRegistry.register(("geometrygraph_mp", "dimenet++"))
 class GeometryGraphDimeNetBatchProcessor(BatchProcessor):
     """Batch processor for the ``GeometryGraphDataset`` feeding DimeNet/DimeNet++.
 

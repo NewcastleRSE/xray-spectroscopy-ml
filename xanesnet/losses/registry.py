@@ -13,66 +13,10 @@
 # You should have received a copy of the GNU General Public License along with this program.
 # If not, see <https://www.gnu.org/licenses/>.
 
-"""Class-level registry for XANESNET loss functions."""
+"""Registry instance for XANESNET loss classes."""
 
-from collections.abc import Callable
+from xanesnet.utils.registry import Registry
 
 from .base import Loss
 
-
-class LossRegistry:
-    """Name-based registry for loss classes."""
-
-    _registry: dict[str, type[Loss]] = {}
-
-    @classmethod
-    def register(cls, name: str) -> Callable[[type[Loss]], type[Loss]]:
-        """Register a loss class under ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Decorator that registers and returns the class unchanged.
-
-        Raises:
-            KeyError: If ``name`` is already registered.
-        """
-        name = name.lower()
-
-        def decorator(ds_cls: type[Loss]) -> type[Loss]:
-            """Register and return the decorated class unchanged."""
-            if name in cls._registry:
-                raise KeyError(f"Loss '{name}' already registered")
-            cls._registry[name] = ds_cls
-            return ds_cls
-
-        return decorator
-
-    @classmethod
-    def get(cls, name: str) -> type[Loss]:
-        """Return the loss class registered as ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Registered loss class.
-
-        Raises:
-            KeyError: If no loss is registered under ``name``.
-        """
-        name = name.lower()
-
-        if name not in cls._registry:
-            raise KeyError(f"Loss '{name}' not found in registry")
-        return cls._registry[name]
-
-    @classmethod
-    def list(cls) -> list[str]:
-        """Return all registered loss names.
-
-        Returns:
-            Registry keys in insertion order.
-        """
-        return list(cls._registry.keys())
+LossRegistry: Registry[type[Loss]] = Registry("Loss", normalize_key=str.lower)

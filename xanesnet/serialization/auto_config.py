@@ -64,8 +64,7 @@ def resolve_auto_model_config(config: Config, dataset: Dataset) -> Config:
 
     resolver = _resolver_for(model_type)
 
-    batchprocessor_type = BatchProcessorRegistry.get(dataset.dataset_type, model_type)
-    batchprocessor = batchprocessor_type()
+    batchprocessor = BatchProcessorRegistry.create((dataset.dataset_type, model_type))
     inputs = batchprocessor.input_preparation_single(dataset, 0)
     target = batchprocessor.target_preparation_single(dataset, 0)
     resolved_fields = resolver(inputs, target)

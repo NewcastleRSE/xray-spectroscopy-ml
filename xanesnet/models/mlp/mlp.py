@@ -81,7 +81,7 @@ class MLP(Model):
 
             layers.append(nn.Linear(current_size, next_size))
             layers.append(nn.Dropout(dropout))
-            layers.append(ActivationRegistry.get(activation))
+            layers.append(ActivationRegistry.create(activation))
             current_size = next_size
 
         # Initialize output layer
@@ -110,13 +110,13 @@ class MLP(Model):
                 ``BiasInitRegistry``).
             **kwargs: Extra keyword arguments forwarded to the weight initializer.
         """
-        weight_init_fn = WeightInitRegistry.get(weights_init, **kwargs)
+        weight_init_fn = WeightInitRegistry.get(weights_init)
         bias_init_fn = BiasInitRegistry.get(bias_init)
 
         def _init_layer(m: nn.Module) -> None:
             """Initialize one linear layer in place."""
             if isinstance(m, (nn.Linear, nn.Conv1d, nn.ConvTranspose1d)):
-                weight_init_fn(m.weight)
+                weight_init_fn(m.weight, **kwargs)
                 assert m.bias is not None, "Bias is None, cannot initialize."
                 bias_init_fn(m.bias)
 

@@ -13,66 +13,10 @@
 # You should have received a copy of the GNU General Public License along with this program.
 # If not, see <https://www.gnu.org/licenses/>.
 
-"""Registry for analysis reporter implementations."""
+"""Registry instance for analysis reporter classes."""
 
-from collections.abc import Callable
+from xanesnet.utils.registry import Registry
 
 from .base import Reporter
 
-
-class ReporterRegistry:
-    """Name-based registry for reporter classes."""
-
-    _registry: dict[str, type[Reporter]] = {}
-
-    @classmethod
-    def register(cls, name: str) -> Callable[[type[Reporter]], type[Reporter]]:
-        """Register a reporter class under ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Decorator that registers and returns the class unchanged.
-
-        Raises:
-            KeyError: If ``name`` is already registered.
-        """
-        name = name.lower()
-
-        def decorator(reporter_cls: type[Reporter]) -> type[Reporter]:
-            """Register and return the decorated class unchanged."""
-            if name in cls._registry:
-                raise KeyError(f"Reporter '{name}' already registered")
-            cls._registry[name] = reporter_cls
-            return reporter_cls
-
-        return decorator
-
-    @classmethod
-    def get(cls, name: str) -> type[Reporter]:
-        """Return the reporter class registered as ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Registered reporter class.
-
-        Raises:
-            KeyError: If no reporter is registered under ``name``.
-        """
-        name = name.lower()
-
-        if name not in cls._registry:
-            raise KeyError(f"Reporter '{name}' not found in registry")
-        return cls._registry[name]
-
-    @classmethod
-    def list(cls) -> list[str]:
-        """Return all registered reporter names.
-
-        Returns:
-            Registry keys in insertion order.
-        """
-        return list(cls._registry.keys())
+ReporterRegistry: Registry[type[Reporter]] = Registry("Reporter", normalize_key=str.lower)

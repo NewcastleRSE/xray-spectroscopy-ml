@@ -16,12 +16,13 @@
 """Public API for XANESNET training components: activations, initializers, optimizers, and schedulers."""
 
 from .activation import ActivationRegistry
-from .init import BiasInitRegistry, WeightInitRegistry
+from .init import BiasInitRegistry, InitFn, WeightInitRegistry
 from .lrscheduler import LRSchedulerRegistry
 from .optim import OptimizerRegistry
 
 __all__ = [
     "BiasInitRegistry",
+    "InitFn",
     "WeightInitRegistry",
     "OptimizerRegistry",
     "ActivationRegistry",

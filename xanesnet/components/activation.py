@@ -13,69 +13,13 @@
 # You should have received a copy of the GNU General Public License along with this program.
 # If not, see <https://www.gnu.org/licenses/>.
 
-"""Activation function registry for XANESNET models."""
-
-from collections.abc import Callable
+"""Registry instance for activation module classes."""
 
 import torch.nn as nn
 
+from xanesnet.utils.registry import Registry
 
-class ActivationRegistry:
-    """Name-based registry for activation module classes."""
-
-    _registry: dict[str, type[nn.Module]] = {}
-
-    @classmethod
-    def register(cls, name: str) -> Callable[[type[nn.Module]], type[nn.Module]]:
-        """Register an activation class under ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Decorator that registers and returns the class unchanged.
-
-        Raises:
-            KeyError: If ``name`` is already registered.
-        """
-        name = name.lower()
-
-        def decorator(act_cls: type[nn.Module]) -> type[nn.Module]:
-            """Register and return the decorated class unchanged."""
-            if name in cls._registry:
-                raise KeyError(f"Activation '{name}' already registered")
-            cls._registry[name] = act_cls
-            return act_cls
-
-        return decorator
-
-    @classmethod
-    def get(cls, name: str, **kwargs) -> nn.Module:
-        """Instantiate and return a registered activation module.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-            **kwargs: Extra keyword arguments forwarded to the activation class constructor.
-
-        Returns:
-            An instantiated ``nn.Module`` for the requested activation.
-
-        Raises:
-            KeyError: If no activation is registered under ``name``.
-        """
-        name = name.lower()
-        if name not in cls._registry:
-            raise KeyError(f"Activation '{name}' not found in registry")
-        return cls._registry[name](**kwargs)
-
-    @classmethod
-    def list(cls) -> list[str]:
-        """Return all registered activation names.
-
-        Returns:
-            Registry keys in insertion order.
-        """
-        return list(cls._registry.keys())
+ActivationRegistry: Registry[type[nn.Module]] = Registry("Activation", normalize_key=str.lower)
 
 
 # register activations

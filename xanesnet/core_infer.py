@@ -79,7 +79,7 @@ def _setup_datasource(config: Config) -> DataSource:
     datasource_config = config.section("datasource")
     datasource_type = datasource_config.get_str("datasource_type")
     logging.info(f"Initializing data source: {datasource_type}")
-    datasource = DataSourceRegistry.get(datasource_type)(**datasource_config.as_kwargs())
+    datasource = DataSourceRegistry.create(datasource_type, **datasource_config.as_kwargs())
 
     return datasource
 
@@ -98,7 +98,7 @@ def _setup_dataset(config: Config, datasource: DataSource) -> Dataset:
     dataset_type = dataset_config.get_str("dataset_type")
 
     logging.info(f"Initializing inference dataset: {dataset_type}")
-    dataset = DatasetRegistry.get(dataset_type)(**dataset_config.as_kwargs(), datasource=datasource)
+    dataset = DatasetRegistry.create(dataset_type, **dataset_config.as_kwargs(), datasource=datasource)
     dataset.prepare()
     dataset.check_preload()  # may preload the dataset into memory
 
@@ -126,7 +126,8 @@ def _setup_strategy(config: Config, dataset: Dataset) -> Strategy:
     inferencer_config = config.section("inferencer")
 
     logging.info(f"Initializing strategy: {strategy_type}")
-    strategy = StrategyRegistry.get(strategy_type)(
+    strategy = StrategyRegistry.create(
+        strategy_type,
         **strategy_config.as_kwargs(),
         checkpoint_dir=None,
         tensorboard_dir=None,

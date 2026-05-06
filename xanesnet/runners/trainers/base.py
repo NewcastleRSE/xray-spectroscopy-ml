@@ -131,7 +131,7 @@ class Trainer(Runner):
             raise ValueError("Loss config is required but was not provided.")
         loss_type = loss_config.get_str("loss_type")
 
-        loss = LossRegistry.get(loss_type)(**loss_config.as_kwargs())
+        loss = LossRegistry.create(loss_type, **loss_config.as_kwargs())
 
         return loss
 
@@ -149,7 +149,7 @@ class Trainer(Runner):
             raise ValueError("Regularizer config is required but was not provided.")
         regularizer_type = regularizer_config.get_str("regularizer_type")
 
-        regularizer = RegularizerRegistry.get(regularizer_type)(**regularizer_config.as_kwargs())
+        regularizer = RegularizerRegistry.create(regularizer_type, **regularizer_config.as_kwargs())
 
         return regularizer
 
@@ -401,7 +401,6 @@ class Trainer(Runner):
         """
         early_stopper_type = self.early_stopper_config.get_str("early_stopper_type")
 
-        early_stopper_cls = EarlyStopperRegistry.get(early_stopper_type)
-        early_stopper = early_stopper_cls(**self.early_stopper_config.as_kwargs())
+        early_stopper = EarlyStopperRegistry.create(early_stopper_type, **self.early_stopper_config.as_kwargs())
 
         return early_stopper

@@ -169,12 +169,12 @@ class SchNet(Model):
             interaction.init_weights(weights_init, bias_init, **kwargs)
 
         # Init top-level linear layers
-        weight_init_fn = WeightInitRegistry.get(weights_init, **kwargs)
+        weight_init_fn = WeightInitRegistry.get(weights_init)
         bias_init_fn = BiasInitRegistry.get(bias_init)
 
-        weight_init_fn(self.lin1.weight)
+        weight_init_fn(self.lin1.weight, **kwargs)
         bias_init_fn(self.lin1.bias)
-        weight_init_fn(self.lin2.weight)
+        weight_init_fn(self.lin2.weight, **kwargs)
         bias_init_fn(self.lin2.bias)
 
     @property
@@ -243,15 +243,15 @@ class InteractionBlock(torch.nn.Module):
             bias_init: Bias initialization scheme name.
             **kwargs: Extra keyword arguments forwarded to the weight initializer.
         """
-        weight_init_fn = WeightInitRegistry.get(weights_init, **kwargs)
+        weight_init_fn = WeightInitRegistry.get(weights_init)
         bias_init_fn = BiasInitRegistry.get(bias_init)
 
-        weight_init_fn(self.mlp[0].weight)
+        weight_init_fn(self.mlp[0].weight, **kwargs)
         bias_init_fn(self.mlp[0].bias)
-        weight_init_fn(self.mlp[2].weight)
+        weight_init_fn(self.mlp[2].weight, **kwargs)
         bias_init_fn(self.mlp[2].bias)
         self.conv.init_weights(weights_init, bias_init, **kwargs)
-        weight_init_fn(self.lin.weight)
+        weight_init_fn(self.lin.weight, **kwargs)
         bias_init_fn(self.lin.bias)
 
     def forward(
@@ -315,11 +315,11 @@ class CFConv(tgnn.MessagePassing):
             bias_init: Bias initialization scheme name.
             **kwargs: Extra keyword arguments forwarded to the weight initializer.
         """
-        weight_init_fn = WeightInitRegistry.get(weights_init, **kwargs)
+        weight_init_fn = WeightInitRegistry.get(weights_init)
         bias_init_fn = BiasInitRegistry.get(bias_init)
 
-        weight_init_fn(self.lin1.weight)
-        weight_init_fn(self.lin2.weight)
+        weight_init_fn(self.lin1.weight, **kwargs)
+        weight_init_fn(self.lin2.weight, **kwargs)
         bias_init_fn(self.lin2.bias)
 
     def forward(

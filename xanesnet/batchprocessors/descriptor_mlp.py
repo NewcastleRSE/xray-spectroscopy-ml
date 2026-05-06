@@ -24,8 +24,8 @@ from .base import BatchProcessor
 from .registry import BatchProcessorRegistry
 
 
-@BatchProcessorRegistry.register("descriptor", "mlp")
-@BatchProcessorRegistry.register("descriptor_mp", "mlp")
+@BatchProcessorRegistry.register(("descriptor", "mlp"))
+@BatchProcessorRegistry.register(("descriptor_mp", "mlp"))
 class DescriptorMLPBatchProcessor(BatchProcessor):
     """Batch processor for ``DescriptorData`` feeding the MLP model.
 

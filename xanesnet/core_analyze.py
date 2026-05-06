@@ -157,7 +157,7 @@ def _setup_selectors(
         logging.info("No selectors configured, using 'all' selector for each predictions reader")
         selector_config = Config({"selector_type": "all"})
         selectors = [
-            [SelectorRegistry.get("all")(**selector_config.as_kwargs(), data_source=reader)]
+            [SelectorRegistry.create("all", **selector_config.as_kwargs(), data_source=reader)]
             for reader in predictions_readers
         ]
         return selectors, Config({"selectors": [selector_config]})
@@ -170,7 +170,7 @@ def _setup_selectors(
         logging.info(f"Initializing selector: {selector_type}")
         selector_list: list[Selector] = []
         for reader in predictions_readers:
-            selector = SelectorRegistry.get(selector_type)(**selector_config.as_kwargs(), data_source=reader)
+            selector = SelectorRegistry.create(selector_type, **selector_config.as_kwargs(), data_source=reader)
             selector_list.append(selector)
         selectors.append(selector_list)
 
@@ -198,7 +198,7 @@ def _setup_collectors(config: Config) -> tuple[list[Collector], Config]:
         collector_type = collector_config.get_str("collector_type")
 
         logging.info(f"Initializing collector: {collector_type}")
-        collector = CollectorRegistry.get(collector_type)(**collector_config.as_kwargs())
+        collector = CollectorRegistry.create(collector_type, **collector_config.as_kwargs())
         collectors.append(collector)
 
     return collectors, Config({"collectors": collectors_config})
@@ -224,7 +224,7 @@ def _setup_aggregators(config: Config) -> tuple[list[Aggregator], Config]:
         aggregator_type = aggregator_config.get_str("aggregator_type")
 
         logging.info(f"Initializing aggregator: {aggregator_type}")
-        aggregator = AggregatorRegistry.get(aggregator_type)(**aggregator_config.as_kwargs())
+        aggregator = AggregatorRegistry.create(aggregator_type, **aggregator_config.as_kwargs())
         aggregators.append(aggregator)
 
     return aggregators, Config({"aggregators": aggregators_config})
@@ -250,7 +250,7 @@ def _setup_reporters(config: Config) -> tuple[list[Reporter], Config]:
         reporter_type = reporter_config.get_str("reporter_type")
 
         logging.info(f"Initializing reporter: {reporter_type}")
-        reporter = ReporterRegistry.get(reporter_type)(**reporter_config.as_kwargs())
+        reporter = ReporterRegistry.create(reporter_type, **reporter_config.as_kwargs())
         reporters.append(reporter)
 
     return reporters, Config({"reporters": reporters_config})
@@ -276,7 +276,7 @@ def _setup_plotters(config: Config) -> tuple[list[Plotter], Config]:
         plotter_type = plotter_config.get_str("plotter_type")
 
         logging.info(f"Initializing plotter: {plotter_type}")
-        plotter = PlotterRegistry.get(plotter_type)(**plotter_config.as_kwargs())
+        plotter = PlotterRegistry.create(plotter_type, **plotter_config.as_kwargs())
         plotters.append(plotter)
 
     return plotters, Config({"plotters": plotters_config})

@@ -13,66 +13,10 @@
 # You should have received a copy of the GNU General Public License along with this program.
 # If not, see <https://www.gnu.org/licenses/>.
 
-"""Class-level registry for XANESNET inferencers."""
+"""Registry instance for XANESNET inferencer classes."""
 
-from collections.abc import Callable
+from xanesnet.utils.registry import Registry
 
 from .base import Inferencer
 
-
-class InferencerRegistry:
-    """Name-based registry for inferencer classes."""
-
-    _registry: dict[str, type[Inferencer]] = {}
-
-    @classmethod
-    def register(cls, name: str) -> Callable[[type[Inferencer]], type[Inferencer]]:
-        """Register an inferencer class under ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Decorator that registers and returns the class unchanged.
-
-        Raises:
-            KeyError: If ``name`` is already registered.
-        """
-        name = name.lower()
-
-        def decorator(ds_cls: type[Inferencer]) -> type[Inferencer]:
-            """Register and return the decorated class unchanged."""
-            if name in cls._registry:
-                raise KeyError(f"Inferencer '{name}' already registered")
-            cls._registry[name] = ds_cls
-            return ds_cls
-
-        return decorator
-
-    @classmethod
-    def get(cls, name: str) -> type[Inferencer]:
-        """Return the inferencer class registered as ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Registered inferencer class.
-
-        Raises:
-            KeyError: If no inferencer is registered under ``name``.
-        """
-        name = name.lower()
-
-        if name not in cls._registry:
-            raise KeyError(f"Inferencer '{name}' not found in registry")
-        return cls._registry[name]
-
-    @classmethod
-    def list(cls) -> list[str]:
-        """Return all registered inferencer names.
-
-        Returns:
-            Registry keys in insertion order.
-        """
-        return list(cls._registry.keys())
+InferencerRegistry: Registry[type[Inferencer]] = Registry("Inferencer", normalize_key=str.lower)

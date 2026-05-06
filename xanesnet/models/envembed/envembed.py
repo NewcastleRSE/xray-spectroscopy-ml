@@ -140,20 +140,20 @@ class EnvEmbed(Model):
                 :class:`~xanesnet.components.BiasInitRegistry`.
             **kwargs: Additional keyword arguments forwarded to the weight initializer.
         """
-        weight_init_fn = WeightInitRegistry.get(weights_init, **kwargs)
+        weight_init_fn = WeightInitRegistry.get(weights_init)
         bias_init_fn = BiasInitRegistry.get(bias_init)
 
         for module in self.encoder.modules():
             if isinstance(module, nn.Linear):
-                weight_init_fn(module.weight)
+                weight_init_fn(module.weight, **kwargs)
                 if module.bias is not None:
                     bias_init_fn(module.bias)
 
         for module in self.coeff_head.modules():
             if isinstance(module, ResidualPreLNBlock):
-                weight_init_fn(module.fc1.weight)
+                weight_init_fn(module.fc1.weight, **kwargs)
                 bias_init_fn(module.fc1.bias)
-                weight_init_fn(module.fc2.weight)
+                weight_init_fn(module.fc2.weight, **kwargs)
                 bias_init_fn(module.fc2.bias)
 
     @property

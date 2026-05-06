@@ -13,66 +13,10 @@
 # You should have received a copy of the GNU General Public License along with this program.
 # If not, see <https://www.gnu.org/licenses/>.
 
-"""Registry for analysis aggregator implementations."""
+"""Registry instance for analysis aggregator classes."""
 
-from collections.abc import Callable
+from xanesnet.utils.registry import Registry
 
 from .base import Aggregator
 
-
-class AggregatorRegistry:
-    """Name-based registry for aggregator classes."""
-
-    _registry: dict[str, type[Aggregator]] = {}
-
-    @classmethod
-    def register(cls, name: str) -> Callable[[type[Aggregator]], type[Aggregator]]:
-        """Register an aggregator class under ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Decorator that registers and returns the class unchanged.
-
-        Raises:
-            KeyError: If ``name`` is already registered.
-        """
-        name = name.lower()
-
-        def decorator(aggregator_cls: type[Aggregator]) -> type[Aggregator]:
-            """Register and return the decorated class unchanged."""
-            if name in cls._registry:
-                raise KeyError(f"Aggregator '{name}' already registered")
-            cls._registry[name] = aggregator_cls
-            return aggregator_cls
-
-        return decorator
-
-    @classmethod
-    def get(cls, name: str) -> type[Aggregator]:
-        """Return the aggregator class registered as ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Registered aggregator class.
-
-        Raises:
-            KeyError: If no aggregator is registered under ``name``.
-        """
-        name = name.lower()
-
-        if name not in cls._registry:
-            raise KeyError(f"Aggregator '{name}' not found in registry")
-        return cls._registry[name]
-
-    @classmethod
-    def list(cls) -> list[str]:
-        """Return all registered aggregator names.
-
-        Returns:
-            Registry keys in insertion order.
-        """
-        return list(cls._registry.keys())
+AggregatorRegistry: Registry[type[Aggregator]] = Registry("Aggregator", normalize_key=str.lower)

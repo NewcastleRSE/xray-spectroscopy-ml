@@ -24,8 +24,8 @@ from .base import BatchProcessor
 from .registry import BatchProcessorRegistry
 
 
-@BatchProcessorRegistry.register("gemnet", "gemnet")
-@BatchProcessorRegistry.register("gemnet_mp", "gemnet")
+@BatchProcessorRegistry.register(("gemnet", "gemnet"))
+@BatchProcessorRegistry.register(("gemnet_mp", "gemnet"))
 class GemNetBatchProcessor(BatchProcessor):
     """Batch processor for the PyG-based ``GemNetDataset`` feeding the GemNet model.
 

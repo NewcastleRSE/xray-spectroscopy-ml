@@ -13,66 +13,10 @@
 # You should have received a copy of the GNU General Public License along with this program.
 # If not, see <https://www.gnu.org/licenses/>.
 
-"""Registry for analysis collector implementations."""
+"""Registry instance for analysis collector classes."""
 
-from collections.abc import Callable
+from xanesnet.utils.registry import Registry
 
 from .base import Collector
 
-
-class CollectorRegistry:
-    """Name-based registry for collector classes."""
-
-    _registry: dict[str, type[Collector]] = {}
-
-    @classmethod
-    def register(cls, name: str) -> Callable[[type[Collector]], type[Collector]]:
-        """Register a collector class under ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Decorator that registers and returns the class unchanged.
-
-        Raises:
-            KeyError: If ``name`` is already registered.
-        """
-        name = name.lower()
-
-        def decorator(module_cls: type[Collector]) -> type[Collector]:
-            """Register and return the decorated class unchanged."""
-            if name in cls._registry:
-                raise KeyError(f"Collector '{name}' already registered")
-            cls._registry[name] = module_cls
-            return module_cls
-
-        return decorator
-
-    @classmethod
-    def get(cls, name: str) -> type[Collector]:
-        """Return the collector class registered as ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Registered collector class.
-
-        Raises:
-            KeyError: If no collector is registered under ``name``.
-        """
-        name = name.lower()
-
-        if name not in cls._registry:
-            raise KeyError(f"Collector '{name}' not found in registry")
-        return cls._registry[name]
-
-    @classmethod
-    def list(cls) -> list[str]:
-        """Return all registered collector names.
-
-        Returns:
-            Registry keys in insertion order.
-        """
-        return list(cls._registry.keys())
+CollectorRegistry: Registry[type[Collector]] = Registry("Collector", normalize_key=str.lower)

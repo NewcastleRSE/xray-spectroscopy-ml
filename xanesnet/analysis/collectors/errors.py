@@ -48,8 +48,7 @@ class ErrorMetrics(Collector):
 
         self.loss_type = loss_type
 
-        loss_class = LossRegistry.get(loss_type)
-        self.loss_fn = loss_class(loss_type=loss_type, **loss_kwargs)
+        self.loss_fn = LossRegistry.create(loss_type, loss_type=loss_type, **loss_kwargs)
 
     def process(self, sample: PredictionSample) -> dict[str, float]:
         """Compute the configured loss for one prediction sample.

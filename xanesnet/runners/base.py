@@ -66,7 +66,7 @@ class Runner(ABC):
         Returns:
             A configured :class:`BatchProcessor` instance.
         """
-        batchprocessor = BatchProcessorRegistry.get(self.dataset.dataset_type, self.model.model_type)()
+        batchprocessor = BatchProcessorRegistry.create((self.dataset.dataset_type, self.model.model_type))
         return batchprocessor
 
     def _setup_dataloader(self) -> Any:

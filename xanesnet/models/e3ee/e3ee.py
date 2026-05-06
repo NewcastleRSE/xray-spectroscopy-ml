@@ -494,14 +494,14 @@ class E3EE(Model):
             bias_init: Name of the bias initializer registered in
                 :class:`~xanesnet.components.BiasInitRegistry`.
             **kwargs: Additional keyword arguments forwarded to the weight
-                initializer factory.
+                initializer.
         """
-        weight_init_fn = WeightInitRegistry.get(weights_init, **kwargs)
+        weight_init_fn = WeightInitRegistry.get(weights_init)
         bias_init_fn = BiasInitRegistry.get(bias_init)
 
         for module in self.modules():
             if isinstance(module, nn.Linear):
-                weight_init_fn(module.weight)
+                weight_init_fn(module.weight, **kwargs)
                 if module.bias is not None:
                     bias_init_fn(module.bias)
             elif isinstance(module, nn.Embedding):

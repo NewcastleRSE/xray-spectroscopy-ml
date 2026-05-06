@@ -13,92 +13,31 @@
 # You should have received a copy of the GNU General Public License along with this program.
 # If not, see <https://www.gnu.org/licenses/>.
 
-"""Weight and bias initialization registries for XANESNET model layers."""
+"""Registry instances for tensor initialization callables."""
 
-from collections.abc import Callable
 from typing import Protocol
 
 import torch
 from torch import nn
 
+from xanesnet.utils.registry import Registry
 
-class WeightInitFn(Protocol):
-    """Protocol for in-place weight initialization callables."""
+
+class InitFn(Protocol):
+    """Protocol for in-place tensor initialization callables."""
 
     def __call__(self, tensor: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """Initialize ``tensor`` in place and return it."""
         ...
 
 
-class WeightInitRegistry:
-    """Name-based registry for weight initializer callables."""
+def _noop(tensor: torch.Tensor, **_) -> torch.Tensor:
+    """Return ``tensor`` unchanged."""
+    return tensor
 
-    _registry: dict[str, WeightInitFn] = {}
 
-    @staticmethod
-    def _noop(tensor: torch.Tensor, **_) -> torch.Tensor:
-        """Return ``tensor`` unchanged (identity/default initializer)."""
-        return tensor
-
-    @classmethod
-    def register(cls, name: str) -> Callable[[WeightInitFn], WeightInitFn]:
-        """Register a weight initializer under ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Decorator that registers and returns the callable unchanged.
-
-        Raises:
-            KeyError: If ``name`` is already registered.
-        """
-        name = name.lower()
-
-        def decorator(fn: WeightInitFn) -> WeightInitFn:
-            """Register and return the decorated class unchanged."""
-            if name in cls._registry:
-                raise KeyError(f"Weight initializer '{name}' already registered")
-            cls._registry[name] = fn
-            return fn
-
-        return decorator
-
-    @classmethod
-    def get(cls, name: str, **kwargs) -> Callable[[torch.Tensor], torch.Tensor]:
-        """Return the weight initializer registered as ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-            **kwargs: Extra keyword arguments forwarded to the underlying initializer.
-
-        Returns:
-            A single-argument callable ``(tensor) -> tensor`` with ``kwargs`` bound.
-
-        Raises:
-            KeyError: If no weight initializer is registered under ``name``.
-        """
-        name = name.lower()
-
-        if name not in cls._registry:
-            raise KeyError(f"Weight initializer '{name}' not found in registry")
-
-        fn = cls._registry[name]
-
-        def wrapped(tensor: torch.Tensor) -> torch.Tensor:
-            """Apply the registered weight initializer."""
-            return fn(tensor, **kwargs)
-
-        return wrapped
-
-    @classmethod
-    def list(cls) -> list[str]:
-        """Return all registered weight initializer names.
-
-        Returns:
-            Registry keys in insertion order.
-        """
-        return list(cls._registry.keys())
+WeightInitRegistry: Registry[InitFn] = Registry("Weight initializer", normalize_key=str.lower)
+BiasInitRegistry: Registry[InitFn] = Registry("Bias initializer", normalize_key=str.lower)
 
 
 # register weights inits
@@ -108,73 +47,7 @@ WeightInitRegistry.register("xavier_uniform")(nn.init.xavier_uniform_)
 WeightInitRegistry.register("xavier_normal")(nn.init.xavier_normal_)
 WeightInitRegistry.register("kaiming_uniform")(nn.init.kaiming_uniform_)
 WeightInitRegistry.register("kaiming_normal")(nn.init.kaiming_normal_)
-WeightInitRegistry.register("default")(WeightInitRegistry._noop)
-
-
-class BiasInitFn(Protocol):
-    """Protocol for in-place bias initialization callables."""
-
-    def __call__(self, tensor: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        """Initialize ``tensor`` in place and return it."""
-        ...
-
-
-class BiasInitRegistry:
-    """Name-based registry for bias initializer callables."""
-
-    _registry: dict[str, BiasInitFn] = {}
-
-    @classmethod
-    def register(cls, name: str) -> Callable[[BiasInitFn], BiasInitFn]:
-        """Register a bias initializer under ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Decorator that registers and returns the callable unchanged.
-
-        Raises:
-            KeyError: If ``name`` is already registered.
-        """
-        name = name.lower()
-
-        def decorator(fn: BiasInitFn) -> BiasInitFn:
-            """Register and return the decorated class unchanged."""
-            if name in cls._registry:
-                raise KeyError(f"Bias initializer '{name}' already registered")
-            cls._registry[name] = fn
-            return fn
-
-        return decorator
-
-    @classmethod
-    def get(cls, name: str) -> BiasInitFn:
-        """Return the bias initializer registered as ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Registered bias initializer callable.
-
-        Raises:
-            KeyError: If no bias initializer is registered under ``name``.
-        """
-        name = name.lower()
-
-        if name not in cls._registry:
-            raise KeyError(f"Bias initializer '{name}' not found in registry")
-        return cls._registry[name]
-
-    @classmethod
-    def list(cls) -> list[str]:
-        """Return all registered bias initializer names.
-
-        Returns:
-            Registry keys in insertion order.
-        """
-        return list(cls._registry.keys())
+WeightInitRegistry.register("default")(_noop)
 
 
 # register bias inits

@@ -13,68 +13,13 @@
 # You should have received a copy of the GNU General Public License along with this program.
 # If not, see <https://www.gnu.org/licenses/>.
 
-"""Optimizer registry for XANESNET training."""
-
-from collections.abc import Callable
+"""Registry instance for optimizer classes."""
 
 import torch.optim as optim
 
+from xanesnet.utils.registry import Registry
 
-class OptimizerRegistry:
-    """Name-based registry for optimizer classes."""
-
-    _registry: dict[str, type[optim.Optimizer]] = {}
-
-    @classmethod
-    def register(cls, name: str) -> Callable[[type[optim.Optimizer]], type[optim.Optimizer]]:
-        """Register an optimizer class under ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Decorator that registers and returns the class unchanged.
-
-        Raises:
-            KeyError: If ``name`` is already registered.
-        """
-        name = name.lower()
-
-        def decorator(optim_cls: type[optim.Optimizer]) -> type[optim.Optimizer]:
-            """Register and return the decorated class unchanged."""
-            if name in cls._registry:
-                raise KeyError(f"Optimizer '{name}' already registered")
-            cls._registry[name] = optim_cls
-            return optim_cls
-
-        return decorator
-
-    @classmethod
-    def get(cls, name: str) -> type[optim.Optimizer]:
-        """Return the optimizer class registered as ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Registered optimizer class.
-
-        Raises:
-            KeyError: If no optimizer is registered under ``name``.
-        """
-        name = name.lower()
-        if name not in cls._registry:
-            raise KeyError(f"Optimizer '{name}' not found in registry")
-        return cls._registry[name]
-
-    @classmethod
-    def list(cls) -> list[str]:
-        """Return all registered optimizer names.
-
-        Returns:
-            Registry keys in insertion order.
-        """
-        return list(cls._registry.keys())
+OptimizerRegistry: Registry[type[optim.Optimizer]] = Registry("Optimizer", normalize_key=str.lower)
 
 
 # register optimizers

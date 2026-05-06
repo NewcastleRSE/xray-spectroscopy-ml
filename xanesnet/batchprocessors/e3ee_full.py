@@ -24,8 +24,8 @@ from .base import BatchProcessor
 from .registry import BatchProcessorRegistry
 
 
-@BatchProcessorRegistry.register("e3ee_full", "e3ee_full")
-@BatchProcessorRegistry.register("e3ee_full_mp", "e3ee_full")
+@BatchProcessorRegistry.register(("e3ee_full", "e3ee_full"))
+@BatchProcessorRegistry.register(("e3ee_full_mp", "e3ee_full"))
 class E3EEFullBatchProcessor(BatchProcessor):
     """Batch processor for the E3EEFull dataset + E3EEFull model combination.
 

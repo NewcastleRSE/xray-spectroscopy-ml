@@ -13,66 +13,10 @@
 # You should have received a copy of the GNU General Public License along with this program.
 # If not, see <https://www.gnu.org/licenses/>.
 
-"""Registry for analysis plotter implementations."""
+"""Registry instance for analysis plotter classes."""
 
-from collections.abc import Callable
+from xanesnet.utils.registry import Registry
 
 from .base import Plotter
 
-
-class PlotterRegistry:
-    """Name-based registry for plotter classes."""
-
-    _registry: dict[str, type[Plotter]] = {}
-
-    @classmethod
-    def register(cls, name: str) -> Callable[[type[Plotter]], type[Plotter]]:
-        """Register a plotter class under ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Decorator that registers and returns the class unchanged.
-
-        Raises:
-            KeyError: If ``name`` is already registered.
-        """
-        name = name.lower()
-
-        def decorator(plotter_cls: type[Plotter]) -> type[Plotter]:
-            """Register and return the decorated class unchanged."""
-            if name in cls._registry:
-                raise KeyError(f"Plotter '{name}' already registered")
-            cls._registry[name] = plotter_cls
-            return plotter_cls
-
-        return decorator
-
-    @classmethod
-    def get(cls, name: str) -> type[Plotter]:
-        """Return the plotter class registered as ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Registered plotter class.
-
-        Raises:
-            KeyError: If no plotter is registered under ``name``.
-        """
-        name = name.lower()
-
-        if name not in cls._registry:
-            raise KeyError(f"Plotter '{name}' not found in registry")
-        return cls._registry[name]
-
-    @classmethod
-    def list(cls) -> list[str]:
-        """Return all registered plotter names.
-
-        Returns:
-            Registry keys in insertion order.
-        """
-        return list(cls._registry.keys())
+PlotterRegistry: Registry[type[Plotter]] = Registry("Plotter", normalize_key=str.lower)

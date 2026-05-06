@@ -93,7 +93,7 @@ class Single(Strategy):
         """Instantiate a single model from ``model_config`` and store it as ``self.model``."""
         model_type = self.model_config.get_str("model_type")
         logging.info(f"Initializing model: {model_type}")
-        model = ModelRegistry.get(model_type)(**self.model_config.as_kwargs())
+        model = ModelRegistry.create(model_type, **self.model_config.as_kwargs())
 
         self.model = model
 
@@ -144,7 +144,8 @@ class Single(Strategy):
 
         logging.info(f"Initializing trainer: {trainer_type}")
 
-        trainer = TrainerRegistry.get(trainer_type)(
+        trainer = TrainerRegistry.create(
+            trainer_type,
             **self.trainer_config.as_kwargs(),
             dataset=self.dataset,
             model=self.model,
@@ -206,7 +207,8 @@ class Single(Strategy):
 
         logging.info(f"Initializing inferencer: {inferencer_type}")
 
-        inferencer = InferencerRegistry.get(inferencer_type)(
+        inferencer = InferencerRegistry.create(
+            inferencer_type,
             **self.inferencer_config.as_kwargs(),
             dataset=self.dataset,
             model=self.model,

@@ -17,7 +17,7 @@
 
 import logging
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 import torch
 
@@ -228,8 +228,8 @@ class DeepEnsemble(Strategy):
 
         inferencer_kwargs = self.inferencer_config.as_kwargs()
         inferencer_kwargs["inferencer_type"] = "ensemble"
-        inferencer_cls = cast(Any, InferencerRegistry.get("ensemble"))
-        inferencer = inferencer_cls(
+        inferencer = InferencerRegistry.create(
+            "ensemble",
             **inferencer_kwargs,
             dataset=self.dataset,
             models=self.models,

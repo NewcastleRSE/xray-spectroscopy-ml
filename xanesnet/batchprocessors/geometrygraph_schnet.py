@@ -24,8 +24,8 @@ from .base import BatchProcessor
 from .registry import BatchProcessorRegistry
 
 
-@BatchProcessorRegistry.register("geometrygraph", "schnet")
-@BatchProcessorRegistry.register("geometrygraph_mp", "schnet")
+@BatchProcessorRegistry.register(("geometrygraph", "schnet"))
+@BatchProcessorRegistry.register(("geometrygraph_mp", "schnet"))
 class GeometryGraphSchNetBatchProcessor(BatchProcessor):
     """Batch processor for the ``GeometryGraphDataset`` feeding SchNet.
 

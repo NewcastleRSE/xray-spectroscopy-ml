@@ -13,66 +13,10 @@
 # You should have received a copy of the GNU General Public License along with this program.
 # If not, see <https://www.gnu.org/licenses/>.
 
-"""Registry for XANESNET strategy implementations."""
+"""Registry instance for XANESNET strategy classes."""
 
-from collections.abc import Callable
+from xanesnet.utils.registry import Registry
 
 from .base import Strategy
 
-
-class StrategyRegistry:
-    """Name-based registry for strategy classes."""
-
-    _registry: dict[str, type[Strategy]] = {}
-
-    @classmethod
-    def register(cls, name: str) -> Callable[[type[Strategy]], type[Strategy]]:
-        """Register a strategy class under ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Decorator that registers and returns the class unchanged.
-
-        Raises:
-            KeyError: If ``name`` is already registered.
-        """
-        name = name.lower()
-
-        def decorator(ds_cls: type[Strategy]) -> type[Strategy]:
-            """Register and return the decorated class unchanged."""
-            if name in cls._registry:
-                raise KeyError(f"Strategy '{name}' already registered")
-            cls._registry[name] = ds_cls
-            return ds_cls
-
-        return decorator
-
-    @classmethod
-    def get(cls, name: str) -> type[Strategy]:
-        """Return the strategy class registered as ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Registered strategy class.
-
-        Raises:
-            KeyError: If no strategy is registered under ``name``.
-        """
-        name = name.lower()
-
-        if name not in cls._registry:
-            raise KeyError(f"Strategy '{name}' not found in registry")
-        return cls._registry[name]
-
-    @classmethod
-    def list(cls) -> list[str]:
-        """Return all registered strategy names.
-
-        Returns:
-            Registry keys in insertion order.
-        """
-        return list(cls._registry.keys())
+StrategyRegistry: Registry[type[Strategy]] = Registry("Strategy", normalize_key=str.lower)

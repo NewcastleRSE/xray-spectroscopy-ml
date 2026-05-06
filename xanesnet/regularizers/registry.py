@@ -13,66 +13,10 @@
 # You should have received a copy of the GNU General Public License along with this program.
 # If not, see <https://www.gnu.org/licenses/>.
 
-"""Class-level registry for XANESNET regularizers."""
+"""Registry instance for XANESNET regularizer classes."""
 
-from collections.abc import Callable
+from xanesnet.utils.registry import Registry
 
 from .base import Regularizer
 
-
-class RegularizerRegistry:
-    """Name-based registry for regularizer classes."""
-
-    _registry: dict[str, type[Regularizer]] = {}
-
-    @classmethod
-    def register(cls, name: str) -> Callable[[type[Regularizer]], type[Regularizer]]:
-        """Register a regularizer class under ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Decorator that registers and returns the class unchanged.
-
-        Raises:
-            KeyError: If ``name`` is already registered.
-        """
-        name = name.lower()
-
-        def decorator(ds_cls: type[Regularizer]) -> type[Regularizer]:
-            """Register and return the decorated class unchanged."""
-            if name in cls._registry:
-                raise KeyError(f"Regularizer '{name}' already registered")
-            cls._registry[name] = ds_cls
-            return ds_cls
-
-        return decorator
-
-    @classmethod
-    def get(cls, name: str) -> type[Regularizer]:
-        """Return the regularizer class registered as ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Registered regularizer class.
-
-        Raises:
-            KeyError: If no regularizer is registered under ``name``.
-        """
-        name = name.lower()
-
-        if name not in cls._registry:
-            raise KeyError(f"Regularizer '{name}' not found in registry")
-        return cls._registry[name]
-
-    @classmethod
-    def list(cls) -> list[str]:
-        """Return all registered regularizer names.
-
-        Returns:
-            Registry keys in insertion order.
-        """
-        return list(cls._registry.keys())
+RegularizerRegistry: Registry[type[Regularizer]] = Registry("Regularizer", normalize_key=str.lower)

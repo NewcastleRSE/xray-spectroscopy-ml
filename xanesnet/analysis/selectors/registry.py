@@ -13,66 +13,10 @@
 # You should have received a copy of the GNU General Public License along with this program.
 # If not, see <https://www.gnu.org/licenses/>.
 
-"""Registry for analysis selector implementations."""
+"""Registry instance for analysis selector classes."""
 
-from collections.abc import Callable
+from xanesnet.utils.registry import Registry
 
 from .base import Selector
 
-
-class SelectorRegistry:
-    """Name-based registry for selector classes."""
-
-    _registry: dict[str, type[Selector]] = {}
-
-    @classmethod
-    def register(cls, name: str) -> Callable[[type[Selector]], type[Selector]]:
-        """Register a selector class under ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Decorator that registers and returns the class unchanged.
-
-        Raises:
-            KeyError: If ``name`` is already registered.
-        """
-        name = name.lower()
-
-        def decorator(selector_cls: type[Selector]) -> type[Selector]:
-            """Register and return the decorated class unchanged."""
-            if name in cls._registry:
-                raise KeyError(f"Selector '{name}' already registered")
-            cls._registry[name] = selector_cls
-            return selector_cls
-
-        return decorator
-
-    @classmethod
-    def get(cls, name: str) -> type[Selector]:
-        """Return the selector class registered as ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Registered selector class.
-
-        Raises:
-            KeyError: If no selector is registered under ``name``.
-        """
-        name = name.lower()
-
-        if name not in cls._registry:
-            raise KeyError(f"Selector '{name}' not found in registry")
-        return cls._registry[name]
-
-    @classmethod
-    def list(cls) -> list[str]:
-        """Return all registered selector names.
-
-        Returns:
-            Registry keys in insertion order.
-        """
-        return list(cls._registry.keys())
+SelectorRegistry: Registry[type[Selector]] = Registry("Selector", normalize_key=str.lower)

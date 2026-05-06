@@ -14,69 +14,10 @@
 # You should have received a copy of the GNU General Public License along with
 # this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Registry for dataset implementations."""
+"""Registry instance for dataset classes."""
 
-from collections.abc import Callable
-from typing import TypeVar
+from xanesnet.utils.registry import Registry
 
 from .base import Dataset
 
-_DatasetT = TypeVar("_DatasetT", bound=type[Dataset])
-
-
-class DatasetRegistry:
-    """Name-based registry for dataset classes."""
-
-    _registry: dict[str, type[Dataset]] = {}
-
-    @classmethod
-    def register(cls, name: str) -> Callable[[_DatasetT], _DatasetT]:
-        """Register a dataset class under ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Decorator that registers and returns the class unchanged.
-
-        Raises:
-            KeyError: If ``name`` is already registered.
-        """
-        name = name.lower()
-
-        def decorator(ds_cls: _DatasetT) -> _DatasetT:
-            """Register and return the decorated class unchanged."""
-            if name in cls._registry:
-                raise KeyError(f"Dataset '{name}' already registered")
-            cls._registry[name] = ds_cls
-            return ds_cls
-
-        return decorator
-
-    @classmethod
-    def get(cls, name: str) -> type[Dataset]:
-        """Return the dataset class registered as ``name``.
-
-        Args:
-            name: Registry key. Matching is case-insensitive.
-
-        Returns:
-            Registered dataset class.
-
-        Raises:
-            KeyError: If no dataset is registered under ``name``.
-        """
-        name = name.lower()
-
-        if name not in cls._registry:
-            raise KeyError(f"Dataset '{name}' not found in registry")
-        return cls._registry[name]
-
-    @classmethod
-    def list(cls) -> list[str]:
-        """Return all registered dataset names.
-
-        Returns:
-            Registry keys in insertion order.
-        """
-        return list(cls._registry.keys())
+DatasetRegistry: Registry[type[Dataset]] = Registry("Dataset", normalize_key=str.lower)

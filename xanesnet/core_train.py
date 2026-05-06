@@ -121,7 +121,7 @@ def _setup_datasource(config: Config) -> DataSource:
     datasource_config = config.section("datasource")
     datasource_type = datasource_config.get_str("datasource_type")
     logging.info(f"Initializing data source: {datasource_type}")
-    datasource = DataSourceRegistry.get(datasource_type)(**datasource_config.as_kwargs())
+    datasource = DataSourceRegistry.create(datasource_type, **datasource_config.as_kwargs())
 
     return datasource
 
@@ -140,7 +140,7 @@ def _setup_dataset(config: Config, datasource: DataSource) -> Dataset:
     dataset_type = dataset_config.get_str("dataset_type")
 
     logging.info(f"Initializing training dataset: {dataset_type}")
-    dataset = DatasetRegistry.get(dataset_type)(**dataset_config.as_kwargs(), datasource=datasource)
+    dataset = DatasetRegistry.create(dataset_type, **dataset_config.as_kwargs(), datasource=datasource)
     dataset.prepare()
     dataset.setup_splits()
     dataset.check_preload()  # may preload the dataset into memory
@@ -172,7 +172,8 @@ def _setup_strategy(config: Config, dataset: Dataset, save_dir: Path, enable_ten
     trainer_config = config.section("trainer")
 
     logging.info(f"Initializing strategy: {strategy_type}")
-    strategy = StrategyRegistry.get(strategy_type)(
+    strategy = StrategyRegistry.create(
+        strategy_type,
         **strategy_config.as_kwargs(),
         checkpoint_dir=save_dir / "checkpoints",
         tensorboard_dir=save_dir / "tensorboard" if enable_tensorboard else None,
@@ -229,7 +230,7 @@ def _summary_models(model_list: list[Model], dataset: Dataset) -> None:
     logging.info("Model Summary")
 
     for idx, model in enumerate(model_list):
-        batchprocessor = BatchProcessorRegistry.get(dataset.dataset_type, model.model_type)()
+        batchprocessor = BatchProcessorRegistry.create((dataset.dataset_type, model.model_type))
         inputs = batchprocessor.input_preparation_single(dataset, 0)
         logging.info(f"Model  {idx}:")
         summary(model, input_data=inputs)
