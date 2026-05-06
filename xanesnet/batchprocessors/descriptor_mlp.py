@@ -40,14 +40,9 @@ class DescriptorMLPBatchProcessor(BatchProcessor):
             batch: Collated descriptor batch.
 
         Returns:
-            Dict with ``"x"`` containing the descriptor tensor. ``(batch_size, n_features)``
-
-        Raises:
-            ValueError: If ``batch.x`` is ``None``.
+            Dict with ``"x"`` containing the descriptor tensor. ``(batch_size, n_features)``.
         """
-        if batch.x is None:
-            raise ValueError("Input data 'x' is None!")
-        return {"x": batch.x}
+        return {"x": batch.x}  # type: ignore[dict-item]
 
     def target_preparation(self, batch: DescriptorData) -> torch.Tensor:
         """Prepare targets from a descriptor batch.
@@ -56,14 +51,9 @@ class DescriptorMLPBatchProcessor(BatchProcessor):
             batch: Collated descriptor batch.
 
         Returns:
-            Spectral intensity tensor. ``(batch_size, n_energies)``
-
-        Raises:
-            ValueError: If ``batch.y`` is ``None``.
+            Spectral intensity tensor. ``(batch_size, n_energies)``.
         """
-        if batch.y is None:
-            raise ValueError("Target data 'y' is None!")
-        return batch.y
+        return batch.y  # type: ignore[return-value]
 
     def file_name_extraction(self, batch: DescriptorData) -> np.ndarray:
         """Extract file names from a descriptor batch.

@@ -47,14 +47,11 @@ class EnvEmbedBatchProcessor(BatchProcessor):
 
         Returns:
             Dict matching :meth:`xanesnet.models.envembed.envembed.EnvEmbed.forward`.
-
-        Raises:
-            ValueError: If any required model input is missing from the batch.
         """
         return {
-            "descriptor_features": batch.descriptor_features,  # type: ignore
-            "distance_features": batch.distance_features,  # type: ignore
-            "lengths": batch.lengths,  # type: ignore
+            "descriptor_features": batch.descriptor_features,  # type: ignore[dict-item]
+            "distance_features": batch.distance_features,  # type: ignore[dict-item]
+            "lengths": batch.lengths,  # type: ignore[dict-item]
             "basis": batch.basis,  # type: ignore[dict-item]
         }
 
@@ -65,12 +62,9 @@ class EnvEmbedBatchProcessor(BatchProcessor):
             batch: Collated EnvEmbed batch.
 
         Returns:
-            Target spectra tensor. ``(batch_size, n_energies)``
-
-        Raises:
-            ValueError: If ``batch.intensities`` is ``None``.
+            Target spectra tensor. ``(batch_size, n_energies)``.
         """
-        return batch.intensities  # type: ignore type
+        return batch.intensities  # type: ignore[return-value]
 
     def file_name_extraction(self, batch: EnvEmbedData) -> np.ndarray:
         """Extract file names from the batch.
@@ -79,9 +73,6 @@ class EnvEmbedBatchProcessor(BatchProcessor):
             batch: Collated EnvEmbed batch.
 
         Returns:
-            Array of file name strings. ``(batch_size,)``
-
-        Raises:
-            ValueError: If ``batch.file_name`` is ``None``.
+            Array of file name strings. ``(batch_size,)``.
         """
-        return np.array(batch.file_name, dtype=str)  # type: ignore type
+        return np.array(batch.file_name, dtype=str)
