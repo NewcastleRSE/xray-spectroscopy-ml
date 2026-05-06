@@ -292,18 +292,10 @@ class Trainer(Runner):
         if self.dataset.train_subset is None:
             raise ValueError("Training subset is required but was not provided.")
 
-        dataloader_cls = self.dataset.get_dataloader()
-
-        dataloader = dataloader_cls(
+        dataloader = self._build_dataloader(
             self.dataset.train_subset,
-            batch_size=self.batch_size,
             shuffle=self.shuffle,
-            collate_fn=self.dataset.collate_fn,
             drop_last=self.drop_last,
-            num_workers=self.num_workers,
-            pin_memory=True,
-            persistent_workers=False if self.num_workers == 0 else True,
-            prefetch_factor=None if self.num_workers == 0 else 2,
         )
 
         return dataloader
@@ -318,18 +310,10 @@ class Trainer(Runner):
         if self.dataset.valid_subset is None:
             return None
 
-        dataloader_cls = self.dataset.get_dataloader()
-
-        dataloader = dataloader_cls(
+        dataloader = self._build_dataloader(
             self.dataset.valid_subset,
-            batch_size=self.batch_size,
             shuffle=False,  # No need to shuffle validation data
-            collate_fn=self.dataset.collate_fn,
             drop_last=False,  # Keep all validation samples
-            num_workers=self.num_workers,
-            pin_memory=True,
-            persistent_workers=False if self.num_workers == 0 else True,
-            prefetch_factor=None if self.num_workers == 0 else 2,
         )
 
         return dataloader

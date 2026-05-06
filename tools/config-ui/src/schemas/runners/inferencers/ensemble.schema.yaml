@@ -29,6 +29,11 @@ $defs:
         minimum: 0
         default: 0
         description: Number of data-loader worker processes.
+      buffer_size:
+        type: integer
+        minimum: 1
+        default: 100000
+        description: Number of absorber rows buffered before prediction data is flushed to disk.
       model_device_policy:
         $ref: ../runner_types.schema.yaml#/$defs/modelDevicePolicy
         default: all

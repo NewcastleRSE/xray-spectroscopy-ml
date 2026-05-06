@@ -15,15 +15,13 @@
 
 """Deep-ensemble inferencer implementation for XANESNET."""
 
-import logging
 import time
-from pathlib import Path
 
 import torch
 
 from xanesnet.datasets import Dataset
 from xanesnet.models import Model
-from xanesnet.serialization.prediction_writers import HDF5Writer, PredictionWriter
+from xanesnet.serialization.prediction_writers import PredictionWriter
 
 from .base import Inferencer
 from .registry import InferencerRegistry
@@ -54,6 +52,8 @@ class EnsembleInferencer(Inferencer):
         drop_last: Whether to drop the last incomplete batch.
         num_workers: Number of data-loader worker processes.
         inferencer_type: Identifier string for this inferencer type.
+        buffer_size: Number of absorber rows buffered before prediction data is
+            flushed to disk.
         model_device_policy: Device-placement policy for ensemble members.
             Supported values are ``"all"`` and ``"sequential"``.
     """
@@ -70,6 +70,7 @@ class EnsembleInferencer(Inferencer):
         num_workers: int,
         # inferencer params:
         inferencer_type: str,
+        buffer_size: int,
         model_device_policy: str,
     ) -> None:
         """Initialize ``EnsembleInferencer``."""
@@ -82,24 +83,13 @@ class EnsembleInferencer(Inferencer):
             drop_last,
             num_workers,
             inferencer_type,
+            buffer_size,
         )
         self.models = models
         self.model_device_policy = model_device_policy
 
-    def infer(self, predictions_save_path: str | Path | None = None) -> None:
-        """Run one full ensemble inference pass over the dataset.
-
-        Uses the configured ``model_device_policy`` to place ensemble members
-        on the inference device, and moves all members back to CPU before
-        returning.
-
-        Args:
-            predictions_save_path: Path to write aggregate predictions to
-                (HDF5 format). Pass ``None`` to run inference without saving
-                results.
-        """
-        writer = None
-
+    def _setup_inference_models(self) -> None:
+        """Move ensemble members according to ``model_device_policy`` before inference."""
         if self.model_device_policy == "all":
             for model in self.models:
                 model.to(self.device)
@@ -107,19 +97,10 @@ class EnsembleInferencer(Inferencer):
             for model in self.models:
                 model.to(torch.device("cpu"))
 
-        writer = HDF5Writer(predictions_save_path, buffer_size=3) if predictions_save_path is not None else None
-
-        logging.info("Start ensemble inference.")
-
-        try:
-            self._infer_one_epoch(writer)
-        finally:
-            if writer is not None:
-                writer.close()
-            for model in self.models:
-                model.to(torch.device("cpu"))
-
-        logging.info("Finished ensemble inference.")
+    def _teardown_inference_models(self) -> None:
+        """Move all ensemble members back to CPU after inference."""
+        for model in self.models:
+            model.to(torch.device("cpu"))
 
     def _infer_one_epoch(self, writer: PredictionWriter | None) -> None:
         """Run one ensemble inference epoch over the data loader.

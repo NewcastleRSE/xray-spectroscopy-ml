@@ -40,6 +40,8 @@ class Inferencer(Runner):
         drop_last: Whether to drop the last incomplete batch.
         num_workers: Number of data-loader worker processes.
         inferencer_type: Identifier string for the concrete inferencer type.
+        buffer_size: Number of absorber rows buffered before prediction data is
+            flushed to disk.
     """
 
     def __init__(
@@ -54,11 +56,13 @@ class Inferencer(Runner):
         num_workers: int,
         # inferencer params:
         inferencer_type: str,
+        buffer_size: int,
     ) -> None:
         """Initialize ``Inferencer``."""
         super().__init__(dataset, model, device, batch_size, shuffle, drop_last, num_workers)
 
         self.inferencer_type = inferencer_type
+        self.buffer_size = buffer_size
 
         # Setup
         self.batch_processor = self._setup_batchprocessor()
@@ -71,23 +75,47 @@ class Inferencer(Runner):
             predictions_save_path: Path to write predictions to (HDF5 format).
                 Pass ``None`` to run inference without saving results.
         """
-        self.model.to(self.device)
-
-        # You can change the writer to another implementation if needed (e.g., NumpyWriter)
-        # TODO adjust buffer size? Should we have a config? Or set to a reasonable default?
-        writer = HDF5Writer(predictions_save_path, buffer_size=3) if predictions_save_path is not None else None
+        writer: PredictionWriter | None = None
 
         logging.info("Start inference.")
 
         try:
-            # Run inference
+            self._setup_inference_models()
+            writer = self._setup_prediction_writer(predictions_save_path)
             self._infer_one_epoch(writer)
         finally:
-            if writer is not None:
-                writer.close()
-            self.model.to(torch.device("cpu"))
+            try:
+                if writer is not None:
+                    writer.close()
+            finally:
+                self._teardown_inference_models()
 
         logging.info("Finished inference.")
+
+    def _setup_prediction_writer(self, predictions_save_path: str | Path | None) -> PredictionWriter | None:
+        """Instantiate the prediction writer for an inference run.
+
+        Args:
+            predictions_save_path: Path to write predictions to (HDF5 format),
+                or ``None`` to disable writing.
+
+        Returns:
+            A configured prediction writer, or ``None`` when predictions should
+            not be saved. The writer uses ``self.buffer_size`` as its flush
+            threshold.
+        """
+        if predictions_save_path is None:
+            return None
+
+        return HDF5Writer(predictions_save_path, buffer_size=self.buffer_size)
+
+    def _setup_inference_models(self) -> None:
+        """Move models to the inference device before a run starts."""
+        self.model.to(self.device)
+
+    def _teardown_inference_models(self) -> None:
+        """Move models back to CPU after a run finishes."""
+        self.model.to(torch.device("cpu"))
 
     @abstractmethod
     def _infer_one_epoch(self, writer: PredictionWriter | None) -> None:

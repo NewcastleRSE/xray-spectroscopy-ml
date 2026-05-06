@@ -411,12 +411,14 @@ INFERENCER_DEFAULTS: dict[str, dict[str, Any]] = {
         "shuffle": False,
         "drop_last": False,
         "num_workers": 0,
+        "buffer_size": 100_000,
     },
     "ensemble": {
         "batch_size": 1,
         "shuffle": False,
         "drop_last": False,
         "num_workers": 0,
+        "buffer_size": 100_000,
         "model_device_policy": "all",
     },
 }

@@ -43,6 +43,8 @@ class BasicInferencer(Inferencer):
         drop_last: Whether to drop the last incomplete batch.
         num_workers: Number of data-loader worker processes.
         inferencer_type: Identifier string for this inferencer type.
+        buffer_size: Number of absorber rows buffered before prediction data is
+            flushed to disk.
     """
 
     def __init__(
@@ -57,6 +59,7 @@ class BasicInferencer(Inferencer):
         num_workers: int,
         # inferencer params:
         inferencer_type: str,
+        buffer_size: int,
     ) -> None:
         """Initialize ``BasicInferencer``."""
         super().__init__(
@@ -68,6 +71,7 @@ class BasicInferencer(Inferencer):
             drop_last,
             num_workers,
             inferencer_type,
+            buffer_size,
         )
 
     def _infer_one_epoch(self, writer: PredictionWriter | None) -> None:
@@ -93,7 +97,8 @@ class BasicInferencer(Inferencer):
             start_time = time.perf_counter()
 
             # Forward pass
-            predictions = self.model(**inputs)
+            with torch.no_grad():
+                predictions = self.model(**inputs)
 
             # Time the forward pass end
             if torch.device(self.device).type == "cuda":
@@ -137,10 +142,8 @@ class BasicInferencer(Inferencer):
             if writer is not None:
                 writer.add(
                     {
-                        # Required:
                         "prediction": predictions,
                         "target": targets,
-                        # Optional:
                         "file_name": self.batch_processor.file_name_extraction(batch),
                         "forward_time": forward_time,
                         "forward_time_pass": forward_time_pass,

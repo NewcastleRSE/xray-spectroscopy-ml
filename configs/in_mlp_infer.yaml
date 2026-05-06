@@ -18,3 +18,4 @@ inferencer:
   shuffle: False
   drop_last: False
   num_workers: 0
+  buffer_size: 100000
