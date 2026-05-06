@@ -39,29 +39,30 @@ LOGO = r"""
 HELP = """Usage: python xanesnet/cli.py <command> [options]
 
 Commands (mutually exclusive):
-  train    Train a model using a configuration file.
-    Arguments:
-      -i, --in_file       Path to input YAML configuration file. (Required)
-      -o, --out_dir       Path to output directory. (Optional, default: ./runs )
-      -n, --name          Name for the training run used for logging and saving (Optional).
-      -t, --tensorboard   Whether to write training metrics to TensorBoard logs (Optional).
-      -y, --yes           Automatically answer yes to confirmation prompts (Optional).
+    train    Train a model using a configuration file.
+        Arguments:
+            -i, --in_file       Path to input YAML configuration file. (Required)
+            -o, --out_dir       Path to output directory. (Optional, default: ./runs )
+            -n, --name          Name for the training run used for logging and saving (Optional).
+            -t, --tensorboard   Whether to write training metrics to TensorBoard logs (Optional).
+            --dry-run           Run one real training epoch and save model_profile.json (Optional).
+            -y, --yes           Automatically answer yes to confirmation prompts (Optional).
 
-  infer    Run inference on data using a trained model.
-    Arguments:
-      -i, --in_file       Path to input YAML configuration file. (Required)
-      -m, --in_model      Path to a trained model .pth file. (Required)
-      -o, --out_dir       Path to output directory. (Optional, default: ./runs )
-      -n, --name          Name for the inference run used for logging and saving (Optional).
-      -y, --yes           Automatically answer yes to confirmation prompts (Optional).
+    infer    Run inference on data using a trained model.
+        Arguments:
+            -i, --in_file       Path to input YAML configuration file. (Required)
+            -m, --in_model      Path to a trained model .pth file. (Required)
+            -o, --out_dir       Path to output directory. (Optional, default: ./runs )
+            -n, --name          Name for the inference run used for logging and saving (Optional).
+            -y, --yes           Automatically answer yes to confirmation prompts (Optional).
 
-  analyze  Analyze predictions from inference runs.
-    Arguments:
-      -i, --in_file       Path to input YAML configuration file. (Required)
-      -p, --predictions   Path to directory containing predictions. (Required)
-      -o, --out_dir       Path to output directory. (Optional, default: ./runs )
-      -n, --name          Name for the analysis run used for logging and saving (Optional).
-      -y, --yes           Automatically answer yes to confirmation prompts (Optional).
+    analyze  Analyze predictions from inference runs.
+        Arguments:
+            -i, --in_file       Path to input YAML configuration file. (Required)
+            -p, --predictions   Path to directory containing predictions. (Required)
+            -o, --out_dir       Path to output directory. (Optional, default: ./runs )
+            -n, --name          Name for the analysis run used for logging and saving (Optional).
+            -y, --yes           Automatically answer yes to confirmation prompts (Optional).
 """
 
 TRAIN = r"""

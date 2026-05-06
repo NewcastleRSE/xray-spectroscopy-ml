@@ -88,6 +88,11 @@ def parse_args(args: list[str]) -> Namespace:
         help="Whether to write training metrics to TensorBoard logs.",
     )
     parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Run one real training epoch and save a model profiling report.",
+    )
+    parser.add_argument(
         "-y",
         "--yes",
         action="store_true",
@@ -107,8 +112,8 @@ def main(args: list[str]) -> None:
     """Run the full training pipeline.
 
     Parses arguments, configures prompt behavior, loads and validates
-    configuration, sets up the run directory, and delegates to the ``train``
-    core function.
+    configuration, applies dry-run overrides when requested, sets up the run
+    directory, and delegates to the ``train`` core function.
 
     Args:
         args: Raw command-line argument strings.
@@ -147,6 +152,11 @@ def main(args: list[str]) -> None:
 
         # Config validation
         config: Config = validate_config_train(config_raw)
+        if args_namespace.dry_run:
+            logging.info(f"Dry run enabled: trainer epochs will be overridden to 1 for a quick test run.")
+            config_dict = config.as_dict()
+            config_dict["trainer"]["epochs"] = 1
+            config = Config(config_dict)
         validate_config_save_path = config.save(save_dir / "validated_train_config.yaml")
         logging.info(f"Validated config file saved to: {validate_config_save_path}.")
 

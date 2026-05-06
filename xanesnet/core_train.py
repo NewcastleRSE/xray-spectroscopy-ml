@@ -22,15 +22,20 @@ from datetime import timedelta
 from pathlib import Path
 
 import torch
-from torchinfo import summary
 
-from xanesnet.batchprocessors import BatchProcessorRegistry
 from xanesnet.datasets import Dataset, DatasetRegistry
 from xanesnet.datasources import DataSource, DataSourceRegistry
 from xanesnet.models import Model
 from xanesnet.serialization.auto_config import resolve_auto_model_config
 from xanesnet.serialization.checkpoints import Checkpoint
 from xanesnet.serialization.config import Config
+from xanesnet.serialization.model_profile import (
+    build_model_profile,
+    create_model_summary,
+    get_peak_memory_allocated_mb,
+    reset_peak_memory_stats,
+    save_model_profile,
+)
 from xanesnet.serialization.models import save_models
 from xanesnet.serialization.splits import save_split_indices
 from xanesnet.strategies import Strategy, StrategyRegistry
@@ -51,7 +56,8 @@ def train(config: Config, args_namespace: Namespace, save_dir: Path) -> None:
     Args:
         config: Validated training configuration, possibly containing
             ``"auto"`` model fields supported by the resolver.
-        args_namespace: Parsed CLI arguments (must contain ``tensorboard``).
+        args_namespace: Parsed CLI arguments (must contain ``tensorboard``;
+            may contain ``dry_run`` to enable profile output).
         save_dir: Root directory for all training outputs.
     """
     logging.info("Training.")
@@ -86,11 +92,25 @@ def train(config: Config, args_namespace: Namespace, save_dir: Path) -> None:
     logging.info(f"Split indices saved to: {split_indices_save_path}")
 
     # Main training
+    if args_namespace.dry_run:
+        reset_peak_memory_stats(config.get_str("device"))
+
     model_list, train_time = _run_training(strategy)
 
     # Display model summary and training duration
     logging.info(f"Number of trained models: {len(model_list)}")
     logging.info(f"Training completed in {str(timedelta(seconds=int(train_time)))}")
+    if args_namespace.dry_run:
+        peak_gpu_memory_allocated_mb = get_peak_memory_allocated_mb(config.get_str("device"))
+        model_profile = build_model_profile(
+            model_list[0],
+            dataset,
+            config.get_str("device"),
+            peak_gpu_memory_allocated_mb,
+        )
+        profile_json_path, profile_readable_path = save_model_profile(save_dir, model_profile)
+        logging.info(f"Dry-run model profile JSON saved to: {profile_json_path}")
+        logging.info(f"Dry-run model profile readable report saved to: {profile_readable_path}")
     try:
         _summary_models(model_list, dataset)
     except Exception as exc:
@@ -230,7 +250,5 @@ def _summary_models(model_list: list[Model], dataset: Dataset) -> None:
     logging.info("Model Summary")
 
     for idx, model in enumerate(model_list):
-        batchprocessor = BatchProcessorRegistry.create((dataset.dataset_type, model.model_type))
-        inputs = batchprocessor.input_preparation_single(dataset, 0)
         logging.info(f"Model  {idx}:")
-        summary(model, input_data=inputs)
+        create_model_summary(model, dataset)
