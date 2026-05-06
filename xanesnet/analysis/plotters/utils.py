@@ -15,27 +15,12 @@
 
 """Shared helpers for analysis plotters."""
 
-from typing import Any, TypeGuard, cast
+from typing import cast
 
+from xanesnet.analysis.utils import ScalarValue, is_scalar_value
 from xanesnet.serialization.jsonl_stream import JSONLStream
 
 from ..selectors import Selector
-
-ScalarValue = int | float
-
-
-def is_scalar(value: Any) -> TypeGuard[ScalarValue]:
-    """Return whether ``value`` is a non-boolean Python scalar number.
-
-    Args:
-        value: Candidate value from a prediction sample or collector output.
-
-    Returns:
-        ``True`` when ``value`` is an ``int`` or ``float``, excluding booleans.
-    """
-    if isinstance(value, bool):
-        return False
-    return isinstance(value, (int, float))
 
 
 def collect_scalar_values(selector: Selector, stream: JSONLStream | None) -> dict[str, list[ScalarValue]]:
@@ -52,14 +37,14 @@ def collect_scalar_values(selector: Selector, stream: JSONLStream | None) -> dic
     if stream is not None:
         for sel_sample, col_sample in zip(selector, stream):
             for key, val in sel_sample.items():
-                if key != "sample_id" and is_scalar(val):
+                if key != "file_name" and is_scalar_value(val):
                     values.setdefault(key, []).append(cast(float, val))
             for key, val in col_sample.items():
-                if key != "sample_id" and is_scalar(val):
+                if key != "file_name" and is_scalar_value(val):
                     values.setdefault(key, []).append(cast(float, val))
     else:
         for sel_sample in selector:
             for key, val in sel_sample.items():
-                if key != "sample_id" and is_scalar(val):
+                if key != "file_name" and is_scalar_value(val):
                     values.setdefault(key, []).append(cast(float, val))
     return values

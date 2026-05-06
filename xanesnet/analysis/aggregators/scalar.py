@@ -15,34 +15,18 @@
 
 """Aggregator that summarizes scalar values from samples and collectors."""
 
-from typing import Any, TypeGuard
+import logging
+from typing import Any
 
 import numpy as np
 
+from xanesnet.analysis.utils import is_scalar_value
 from xanesnet.serialization.jsonl_stream import JSONLStream
 from xanesnet.serialization.prediction_readers import PredictionSample
 
 from ..selectors import Selector
 from .base import Aggregator, AggregatorResult
 from .registry import AggregatorRegistry
-
-
-def _is_scalar(value: Any) -> TypeGuard[int | float | np.integer | np.floating]:
-    """Return whether ``value`` is a non-boolean integer or floating scalar.
-
-    Args:
-        value: Candidate value from a prediction sample or collector output.
-
-    Returns:
-        ``True`` when ``value`` is a Python or NumPy integer/floating scalar, excluding booleans.
-    """
-    if isinstance(value, bool):
-        return False
-    if isinstance(value, (int, float)):
-        return True
-    if isinstance(value, (np.integer, np.floating)):
-        return True
-    return False
 
 
 @AggregatorRegistry.register("scalar")
@@ -65,30 +49,29 @@ class ScalarAggregator(Aggregator):
 
         self.percentiles = percentiles if percentiles is not None else [25, 50, 75]
 
-    def aggregate(self, selector: Selector, per_sample_values: JSONLStream, index: int) -> AggregatorResult:
+    def aggregate(self, selector: Selector, per_sample_values: JSONLStream | None, index: int) -> AggregatorResult:
         """Aggregate scalar values into mean, spread, extrema, and percentile statistics.
 
         Args:
             selector: Selector over prediction samples for one prediction reader and selector pair.
-            per_sample_values: Collector result stream aligned with ``selector``.
+            per_sample_values: Collector result stream aligned with ``selector``, or ``None`` when
+                no collectors were configured.
             index: Zero-based aggregator index from the analysis configuration.
 
         Returns:
             Aggregated scalar statistics grouped by input key.
-
-        Raises:
-            ValueError: If no scalar values are present in either source.
         """
         values_by_key: dict[str, list[float]] = {}
 
         for sample in selector:
             self._collect_scalars(sample, values_by_key)
 
-        for raw_sample in per_sample_values:
-            self._collect_scalars(raw_sample, values_by_key)
+        if per_sample_values is not None:
+            for raw_sample in per_sample_values:
+                self._collect_scalars(raw_sample, values_by_key)
 
         if not values_by_key:
-            raise ValueError(f"ScalarAggregator: No scalar values found for selector {selector} at index {index}.")
+            logging.info(f"ScalarAggregator: No scalar values found for selector {selector} at index {index}.")
 
         data = {name: self._compute_stats(values) for name, values in values_by_key.items()}
         result = AggregatorResult(
@@ -107,7 +90,7 @@ class ScalarAggregator(Aggregator):
             target: Mutable mapping from value key to accumulated scalar values.
         """
         for key, value in sample.items():
-            if _is_scalar(value):
+            if is_scalar_value(value):
                 target.setdefault(key, []).append(float(value))
 
     def _compute_stats(self, values: list[float]) -> dict[str, float]:

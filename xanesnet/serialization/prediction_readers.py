@@ -39,16 +39,17 @@ class PredictionSample(TypedDict):
     All values are numpy arrays or torch tensors with no leading absorber
     dimension - each field corresponds to a single row of the equivalent
     ``PredictionBatch`` field. ``prediction_std`` is present when inference
-    produced an energy/channel-wise uncertainty estimate.
+    produced an energy/channel-wise uncertainty estimate. ``file_name`` is the
+    identifier written by XANESNET inference.
     """
 
     # Required:
     prediction: np.ndarray | torch.Tensor
     target: np.ndarray | torch.Tensor
+    file_name: str
 
     # Optional:
     prediction_std: NotRequired[np.ndarray | torch.Tensor]
-    file_name: NotRequired[str]
     forward_time: NotRequired[float]
     forward_time_pass: NotRequired[float]
 

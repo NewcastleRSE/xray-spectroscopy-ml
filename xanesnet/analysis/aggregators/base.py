@@ -57,12 +57,13 @@ class Aggregator(ABC):
         self.aggregator_type = aggregator_type
 
     @abstractmethod
-    def aggregate(self, selector: Selector, per_sample_values: JSONLStream, index: int) -> AggregatorResult:
+    def aggregate(self, selector: Selector, per_sample_values: JSONLStream | None, index: int) -> AggregatorResult:
         """Aggregate selected samples and per-sample collector values.
 
         Args:
             selector: Selector over prediction samples for one prediction reader and selector pair.
-            per_sample_values: Collector result stream aligned with ``selector``.
+            per_sample_values: Collector result stream aligned with ``selector``, or ``None`` when
+                no collectors were configured.
             index: Zero-based aggregator index from the analysis configuration.
 
         Returns:

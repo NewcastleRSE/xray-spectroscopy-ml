@@ -139,8 +139,8 @@ def _setup_selectors(
     """Instantiate selectors for every prediction reader.
 
     If no selectors are specified in ``config``, an ``'all'`` selector is
-    created for each reader. Otherwise one selector per configured type is
-    instantiated per reader.
+    created for each reader. Otherwise every configured selector is
+    instantiated for every reader.
 
     Args:
         config: Validated analysis configuration.
@@ -148,7 +148,7 @@ def _setup_selectors(
 
     Returns:
         A ``(selectors, selectors_config)`` tuple where ``selectors`` is a
-        list of per-reader selector lists.
+        prediction-first list indexed by ``[predictions_idx][selector_idx]``.
     """
     selectors_config = config.get_config_list("selectors")
 
@@ -156,23 +156,20 @@ def _setup_selectors(
     if len(selectors_config) == 0:
         logging.info("No selectors configured, using 'all' selector for each predictions reader")
         selector_config = Config({"selector_type": "all"})
-        selectors = [
-            [SelectorRegistry.create("all", **selector_config.as_kwargs(), data_source=reader)]
-            for reader in predictions_readers
-        ]
-        return selectors, Config({"selectors": [selector_config]})
+        selectors_config = [selector_config]
+    else:
+        logging.info(f"Initializing {len(selectors_config)} configured selector(s) for each predictions reader")
 
-    # Initializing configured selectors
     selectors: list[list[Selector]] = []
-    for selector_config in selectors_config:
-        selector_type = selector_config.get_str("selector_type")
-
-        logging.info(f"Initializing selector: {selector_type}")
-        selector_list: list[Selector] = []
-        for reader in predictions_readers:
+    for predictions_idx, reader in enumerate(predictions_readers):
+        logging.info(f"  Predictions {predictions_idx + 1}/{len(predictions_readers)}.")
+        predictions_selectors: list[Selector] = []
+        for selector_config in selectors_config:
+            selector_type = selector_config.get_str("selector_type")
+            logging.info(f"    Initializing selector: {selector_type}")
             selector = SelectorRegistry.create(selector_type, **selector_config.as_kwargs(), data_source=reader)
-            selector_list.append(selector)
-        selectors.append(selector_list)
+            predictions_selectors.append(selector)
+        selectors.append(predictions_selectors)
 
     return selectors, Config({"selectors": selectors_config})
 
@@ -293,7 +290,7 @@ def _run_collectors(
     """Execute all collectors for each selector and persist results to disk.
 
     Results are written as JSONL files under ``<save_dir>/aux/``. Each sample
-    record contains a ``"sample_id"`` key plus one entry per collector output key.
+    record contains a ``"file_name"`` key plus one entry per collector output key.
 
     Args:
         collectors: Collector instances to run on each sample.
@@ -326,18 +323,16 @@ def _run_collectors(
             count = 0
             with open(aux_path, "w") as f:
                 # Iterating over all samples in selector
-                for sample_idx, sample in enumerate(selector):
-                    sample_id = sample.get("sample_id", None)
-                    if sample_id is None:
-                        logging.error(f"Sample {sample_idx} has no 'sample_id'. This is not good!")
+                for sample in selector:
+                    file_name = sample["file_name"]
 
                     # Iterating over all collectors
-                    sample_result: dict[str, Any] = {"sample_id": sample_id}
+                    sample_result: dict[str, Any] = {"file_name": file_name}
                     for collector in collectors:
                         collector_result = collector.process(sample)  # run collector on the sample
                         for key, value in collector_result.items():
                             if key in sample_result:
-                                logging.warning(f"Duplicate key '{key}' for sample {sample_id}. Overwriting!")
+                                logging.warning(f"Duplicate key '{key}' for sample {file_name}. Overwriting!")
                             sample_result[key] = json_friendly(value)
                     f.write(json.dumps(sample_result) + "\n")
                     count += 1
@@ -363,7 +358,8 @@ def _run_aggregators(
         aggregators: Aggregator instances to apply.
         selectors: Per-reader lists of selectors (used for loop indexing).
         collector_results: Output of ``_run_collectors``, indexed by
-            ``[predictions_idx][selector_idx]``.
+            ``[predictions_idx][selector_idx]``. May be empty when no collectors
+            were configured.
 
     Returns:
         Results indexed by ``[predictions_idx][selector_idx][aggregator_idx]``.
@@ -381,7 +377,9 @@ def _run_aggregators(
         for selector_idx, selector in enumerate(predictions_selectors):
             logging.info(f"    Selector {selector_idx + 1}/{len(predictions_selectors)}.")
 
-            per_sample_values = collector_results[predictions_idx][selector_idx]
+            per_sample_values: JSONLStream | None = None
+            if predictions_idx < len(collector_results) and selector_idx < len(collector_results[predictions_idx]):
+                per_sample_values = collector_results[predictions_idx][selector_idx]
 
             selector_results: list[AggregatorResult] = []
             for aggregator_idx, aggregator in enumerate(aggregators):

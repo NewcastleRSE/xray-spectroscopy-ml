@@ -18,30 +18,15 @@
 import csv
 import logging
 from pathlib import Path
-from typing import Any, TypeGuard, cast
+from typing import cast
 
+from xanesnet.analysis.utils import ScalarValue, is_scalar_value
 from xanesnet.serialization.jsonl_stream import JSONLStream
 
 from ..result import AnalysisResults
 from ..selectors import Selector
 from .base import Reporter, selector_label
 from .registry import ReporterRegistry
-
-ScalarValue = int | float
-
-
-def _is_scalar(value: Any) -> TypeGuard[ScalarValue]:
-    """Return whether ``value`` is a non-boolean Python scalar number.
-
-    Args:
-        value: Candidate value from a prediction sample or collector output.
-
-    Returns:
-        ``True`` when ``value`` is an ``int`` or ``float``, excluding booleans.
-    """
-    if isinstance(value, bool):
-        return False
-    return isinstance(value, (int, float))
 
 
 @ReporterRegistry.register("scalar")
@@ -92,28 +77,30 @@ class ScalarReporter(Reporter):
     ) -> None:
         """Write one CSV per scalar field found in selected samples and collector values.
 
+        Each CSV uses ``file_name`` as the first column and one scalar field as the second column.
+
         Args:
             selector: Selector over prediction samples for one prediction reader and selector pair.
             stream: Optional collector result stream aligned with ``selector``.
             output_dir: Directory where CSV files should be written.
         """
-        rows_by_key: dict[str, list[tuple[Any, ScalarValue]]] = {}
+        rows_by_key: dict[str, list[tuple[str, ScalarValue]]] = {}
 
         if stream is not None:
             for sel_sample, col_sample in zip(selector, stream):
-                sid = sel_sample.get("sample_id", col_sample.get("sample_id"))
+                file_name = str(col_sample["file_name"])
                 for key, value in sel_sample.items():
-                    if key != "sample_id" and _is_scalar(value):
-                        rows_by_key.setdefault(key, []).append((sid, cast(float, value)))
+                    if key != "file_name" and is_scalar_value(value):
+                        rows_by_key.setdefault(key, []).append((file_name, cast(float, value)))
                 for key, value in col_sample.items():
-                    if key != "sample_id" and _is_scalar(value):
-                        rows_by_key.setdefault(key, []).append((sid, cast(float, value)))
+                    if key != "file_name" and is_scalar_value(value):
+                        rows_by_key.setdefault(key, []).append((file_name, cast(float, value)))
         else:
             for sel_sample in selector:
-                sid = sel_sample.get("sample_id")
+                file_name = str(sel_sample["file_name"])
                 for key, value in sel_sample.items():
-                    if key != "sample_id" and _is_scalar(value):
-                        rows_by_key.setdefault(key, []).append((sid, cast(float, value)))
+                    if key != "file_name" and is_scalar_value(value):
+                        rows_by_key.setdefault(key, []).append((file_name, cast(float, value)))
 
         if not rows_by_key:
             logging.info("      No scalar data found, skipping.")
@@ -123,5 +110,5 @@ class ScalarReporter(Reporter):
             filepath = output_dir / f"{key}.csv"
             with open(filepath, "w", newline="") as f:
                 writer = csv.writer(f)
-                writer.writerow(["sample_id", key])
+                writer.writerow(["file_name", key])
                 writer.writerows(rows)

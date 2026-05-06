@@ -24,6 +24,7 @@ import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.figure import Figure
 
+from xanesnet.analysis.utils import ScalarValue, is_scalar_value
 from xanesnet.serialization.jsonl_stream import JSONLStream
 from xanesnet.serialization.prediction_readers import PredictionSample
 
@@ -32,7 +33,6 @@ from ..result import AnalysisResults
 from ..selectors import Selector
 from .base import Plotter
 from .registry import PlotterRegistry
-from .utils import ScalarValue, is_scalar
 
 
 @PlotterRegistry.register("spectra")
@@ -134,7 +134,7 @@ class SpectraPlotter(Plotter):
                 """
                 sel_s, col_s = entry
                 v = col_s.get(key, sel_s.get(key, 0.0))
-                return cast(float, v) if is_scalar(v) else 0.0
+                return cast(float, v) if is_scalar_value(v) else 0.0
 
             entries.sort(key=_sort_val, reverse=not self.sort_ascending)
 
@@ -157,8 +157,8 @@ class SpectraPlotter(Plotter):
 
         Args:
             sample: Prediction sample containing ``prediction`` and ``target`` spectra, and
-                optionally ``prediction_std`` uncertainty. Values are flattened to one-dimensional
-                arrays with shape ``(N,)``.
+                ``file_name`` for the title. It may also contain ``prediction_std`` uncertainty.
+                Spectra values are flattened to one-dimensional arrays with shape ``(N,)``.
             col_scalars: Collector scalar values aligned with ``sample``.
             subtitle: Subtitle text describing prediction and selector context.
 
@@ -171,7 +171,7 @@ class SpectraPlotter(Plotter):
         pred_std = np.asarray(pred_std_value).ravel() if pred_std_value is not None else None
         residual = pred - target
         x = np.arange(len(pred))
-        sample_id = sample.get("sample_id", "?")
+        file_name = sample["file_name"]
 
         fig, (ax_spec, ax_res) = plt.subplots(
             nrows=2,
@@ -201,15 +201,15 @@ class SpectraPlotter(Plotter):
                 )
         ax_spec.plot(x, pred, label="Prediction", linewidth=2.0, color="#005186", linestyle="--")
         ax_spec.set_ylabel("Intensity")
-        ax_spec.set_title(f"Sample: {sample_id}")
+        ax_spec.set_title(f"Sample: {file_name}")
         ax_spec.legend(fontsize=10, loc="upper right")
 
         scalars: dict[str, ScalarValue] = {}
         for key, value in sample.items():
-            if key not in ("prediction", "target", "sample_id") and is_scalar(value):
+            if key not in ("prediction", "target", "file_name") and is_scalar_value(value):
                 scalars[key] = cast(ScalarValue, value)
         for key, value in col_scalars.items():
-            if key != "sample_id" and is_scalar(value):
+            if key != "file_name" and is_scalar_value(value):
                 scalars[key] = cast(ScalarValue, value)
 
         if scalars:
