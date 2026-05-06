@@ -26,10 +26,6 @@ The project combines descriptor-based neural networks, graph neural networks, YA
 ## Highlights
 
 - Command-line workflows for forward-model training, checkpointed inference, and prediction analysis.
-- YAML configuration files with validation, defaults, copied raw configs, resolved train configs, checkpoint signatures, and strict inference merging.
-- Model families including MLP, LSTM, SchNet, DimeNet, DimeNet++, GemNet, GemNet-OC, E3EE, E3EEFull, and EnvEmbed.
-- Data sources for XYZ/spectrum files, multi-XYZ/spectrum folders, and pymatgen JSON data.
-- Descriptor, EnvEmbed, geometry graph, GemNet, E3EE, and E3EEFull datasets, including multiprocessing variants where implemented.
 - Interactive browser-based config editor in [tools/config-ui/](tools/config-ui/).
 - GPLv3 licensed open-source distribution.
 
@@ -46,9 +42,8 @@ The project combines descriptor-based neural networks, graph neural networks, YA
 
 Install from a local checkout with the project metadata in [pyproject.toml](pyproject.toml):
 
+In XANESNET directory:
 ```bash
-git clone https://github.com/NewcastleRSE/xray-spectroscopy-ml.git
-cd xray-spectroscopy-ml
 python3.12 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip setuptools wheel
@@ -196,15 +191,17 @@ At a high level, a config contains:
 
 The config UI schemas in [tools/config-ui/src/schemas/](tools/config-ui/src/schemas/) mirror this structure for interactive editing.
 
-## People And Attribution
+## Team
 
-**Main code author and current maintainer:** [Hendrik Junkawitsch](https://www.helmholtz-berlin.de/pubbin/vkart.pl?v=yyqxqn&sprache=de), Helmholtz-Zentrum Berlin.
+[Hendrik Junkawitsch](https://www.helmholtz-berlin.de/pubbin/vkart.pl?v=yyqxqn&sprache=de), Helmholtz-Zentrum Berlin, Humboldt-University Berlin
 
-**Scientific lead:** [Prof. Thomas Penfold](https://ncl.ac.uk/nes/people/profile/tompenfold.html), Newcastle University.
+[Prof. Thomas Penfold](https://ncl.ac.uk/nes/people/profile/tompenfold.html), Newcastle University
 
-**Original project team:** [Prof. Thomas Penfold](https://ncl.ac.uk/nes/people/profile/tompenfold.html), Newcastle University, and [Dr. Conor Rankine](https://pure.york.ac.uk/portal/en/persons/conor-rankine), York University.
+[Dr. Thomas Pope](https://www.ncl.ac.uk/nes/people/profile/thomaspope2.html), Newcastle University
 
-**Research software engineering contributors:** Dr. Bowen Li and Dr. Lorenzo Rossi, Newcastle University RSE team.
+[Dr. Conor Rankine](https://pure.york.ac.uk/portal/en/persons/conor-rankine), York University
+
+[Dr. Bowen Li](https://rse.ncldata.dev/team/bowen-li), Newcastle University
 
 ## License
 
@@ -212,22 +209,18 @@ This project is licensed under the GPL-3.0 License. See [LICENSE](LICENSE) for d
 
 ## Publications
 
-### The Program
-
+### XANESNET:
 *[A Deep Neural Network for the Rapid Prediction of X-ray Absorption Spectra](https://doi.org/10.1021/acs.jpca.0c03723)* - C. D. Rankine, M. M. M. Madkhali, and T. J. Penfold, *J. Phys. Chem. A*, 2020, **124**, 4263-4270.
 
-*[Accurate, affordable, and generalizable machine learning simulations of transition metal x-ray absorption spectra using the XANESNET deep neural network](https://doi.org/10.1063/5.0087255)* - C. D. Rankine and T. J. Penfold, *J. Chem. Phys.*, 2022, **156**, 164102.
+*[Accurate, affordable, and generalizable machine learning simulations of transition metal x-ray absorption spectra using the XANESNET deep neural network](https://doi.org/10.1063/5.0087255)* - C. D. Rankine, and T. J. Penfold, *J. Chem. Phys.*, 2022, **156**, 164102.
+ 
+### Extension to X-ray Emission:
+*[A deep neural network for valence-to-core X-ray emission spectroscopy](https://doi.org/10.1080/00268976.2022.2123406)* - T. J. Penfold, and C. D. Rankine, *Mol. Phys.*, 2022, e2123406.
 
-### Extension To X-ray Emission
-
-*[A deep neural network for valence-to-core X-ray emission spectroscopy](https://doi.org/10.1080/00268976.2022.2123406)* - T. J. Penfold and C. D. Rankine, *Mol. Phys.*, 2022, e2123406.
-
-### Applications
-
+### The Applications:
 *[On the Analysis of X-ray Absorption Spectra for Polyoxometallates](https://doi.org/10.1016/j.cplett.2021.138893)* - E. Falbo, C. D. Rankine, and T. J. Penfold, *Chem. Phys. Lett.*, 2021, **780**, 138893.
 
-*[Enhancing the Analysis of Disorder in X-ray Absorption Spectra: Application of Deep Neural Networks to T-Jump-X-ray Probe Experiments](https://doi.org/10.1039/D0CP06244H)* - M. M. M. Madkhali, C. D. Rankine, and T. J. Penfold, *Phys. Chem. Chem. Phys.*, 2021, **23**, 9259-9269.
+*[Enhancing the Anaysis of Disorder in X-ray Absorption Spectra: Application of Deep Neural Networks to T-Jump-X-ray Probe Experiments](https://doi.org/10.1039/D0CP06244H)* - M. M. M. Madkhali, C. D. Rankine, and T. J. Penfold, *Phys. Chem. Chem. Phys.*, 2021, **23**, 9259-9269.
 
-### Miscellaneous
-
+### Miscellaneous:
 *[The Role of Structural Representation in the Performance of a Deep Neural Network for X-ray Spectroscopy](https://doi.org/10.3390/molecules25112715)* - M. M. M. Madkhali, C. D. Rankine, and T. J. Penfold, *Molecules*, 2020, **25**, 2715.
