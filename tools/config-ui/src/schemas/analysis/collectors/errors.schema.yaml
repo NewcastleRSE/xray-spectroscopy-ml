@@ -1,6 +1,9 @@
 $schema: https://json-schema.org/draft/2020-12/schema
 $id: errors.schema.yaml
 title: XANESNET error-metric collector schemas
+$comment: ErrorMetrics accepts collector_type plus loss_type and forwards every remaining loss-specific field as **loss_kwargs
+  into LossRegistry.create(...). The branches below intentionally mirror the selected loss constructor parameters, not only
+  the ErrorMetrics constructor signature.
 $defs:
   collectorErrorMetricMse:
     type: object
@@ -188,4 +191,5 @@ $defs:
         $ref: ../analysis_types.schema.yaml#/$defs/collectorTypeErrorMetric
         description: Registered collector name from the analysis configuration.
     description: Multi-kernel SSIM loss for 1-D signals. Compute a configured loss between prediction and target spectra.
-description: Analysis component schemas used by ``core_analyze`` setup functions and analysis registries.
+description: Error-metric collector schemas. Loss-specific fields are forwarded by ``ErrorMetrics`` to ``LossRegistry.create``
+  and are validated against the selected loss constructor.

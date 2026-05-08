@@ -5,7 +5,6 @@ $defs:
   modelTrain:
     oneOf:
     - $ref: mlp.schema.yaml#/$defs/modelTrainMLP
-    - $ref: lstm.schema.yaml#/$defs/modelTrainLSTM
     - $ref: envembed.schema.yaml#/$defs/modelTrainEnvEmbed
     - $ref: schnet.schema.yaml#/$defs/modelTrainSchNet
     - $ref: dimenet.schema.yaml#/$defs/modelTrainDimeNet
@@ -18,7 +17,6 @@ $defs:
   modelInfer:
     oneOf:
     - $ref: mlp.schema.yaml#/$defs/modelInferMLP
-    - $ref: lstm.schema.yaml#/$defs/modelInferLSTM
     - $ref: envembed.schema.yaml#/$defs/modelInferEnvEmbed
     - $ref: schnet.schema.yaml#/$defs/modelInferSchNet
     - $ref: dimenet.schema.yaml#/$defs/modelInferDimeNet

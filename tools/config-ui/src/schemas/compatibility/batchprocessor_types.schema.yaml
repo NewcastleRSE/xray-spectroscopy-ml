@@ -12,7 +12,6 @@ $defs:
     type: string
     enum:
     - mlp
-    - lstm
     description: Model types registered for descriptor dataset batch processing.
   envEmbedDatasets:
     type: string

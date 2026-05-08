@@ -28,7 +28,7 @@ $defs:
       type: string
       not:
         pattern: ^[Aa][Uu][Tt][Oo]$
-    - title: Null
+    - title: 'Null'
       type: 'null'
     description: String value other than ``auto``, or ``null``.
   booleanValue:
@@ -87,7 +87,7 @@ $defs:
       type: array
       items:
         type: number
-    - title: Null
+    - title: 'Null'
       type: 'null'
     description: Array of numeric values or ``null``.
   autoPositiveInteger:

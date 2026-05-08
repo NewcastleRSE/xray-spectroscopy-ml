@@ -10,8 +10,9 @@ required:
 - reporters
 - plotters
 $comment: Analysis configs are only minimally wrapped by validate_config_analyze(), so this schema documents the runtime component
-  constructors used by core_analyze. All five component lists must be present. Empty lists are valid; an empty selectors list
-  creates an implicit all-selector at runtime.
+  constructors used by core_analyze. All five component lists must be present. Selectors are configured as one flat YAML
+  list; runtime setup expands that list once per prediction reader. Empty selectors are valid and create one implicit all-selector
+  for each prediction reader.
 properties:
   seed:
     $ref: shared/value_types.schema.yaml#/$defs/nullableInteger
@@ -23,8 +24,9 @@ properties:
     items:
       $ref: analysis/analysis.schema.yaml#/$defs/selector
     default: []
-    description: Analysis selector configurations; an empty list creates an implicit ``all`` selector for each prediction
-      reader in ``_setup_selectors``.
+    description: Flat analysis selector configuration list. ``_setup_selectors`` instantiates this list for each prediction
+      reader, producing ``selectors[predictions_idx][selector_idx]`` at runtime; an empty list creates an implicit ``all``
+      selector for each prediction reader.
   collectors:
     type: array
     items:

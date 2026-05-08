@@ -32,13 +32,15 @@ properties:
     description: Configuration section used by core setup code to instantiate and prepare ``DatasetRegistry.get(dataset_type)``.
   model:
     $ref: models/models.schema.yaml#/$defs/modelInfer
-    description: Optional model section after checkpoint-signature merge; inference rejects ``"auto"`` model values.
+    description: Optional in user-authored inference YAML because the checkpoint signature normally supplies it. After the
+      checkpoint-signature merge, inference rejects ``"auto"`` model values.
   inferencer:
     $ref: runners/inferencers.schema.yaml#/$defs/inferencer
     description: Inference runner section; mutually exclusive with ``trainer`` in ``validate_config``.
   strategy:
     $ref: strategies/strategies.schema.yaml#/$defs/strategy
-    description: Configuration section used by core setup code to instantiate ``StrategyRegistry.get(strategy_type)``.
+    description: Optional in user-authored inference YAML because the checkpoint signature normally supplies it. After the
+      checkpoint-signature merge, core setup instantiates ``StrategyRegistry.get(strategy_type)``.
 allOf:
 - not:
     required:

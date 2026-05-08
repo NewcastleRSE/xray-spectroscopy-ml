@@ -9,11 +9,14 @@ datasource:
 
 dataset: 
   # general:
-  dataset_type: richgraph
+  dataset_type: geometrygraph
   root: ./data/fe/processed_train/  # Where should the processed data be stored
   preload: True                     # Preload dataset into RAM if True; otherwise load on-the-fly
   skip_prepare: False
   split_ratios: [0.8, 0.2]
+  cutoff: 5.0
+  max_num_neighbors: 32
+  graph_method: radius
 
 model:
   # general:
@@ -25,13 +28,7 @@ model:
   num_filters: 128
   num_interactions: 6
   num_gaussians: 50
-  cutoff: 10.0
-  max_num_neighbors: 32
-  readout: add
-  dipole: False
-  mean: null
-  std: null 
-  atomref: null
+  cutoff: 5.0
 
 trainer:
   # general:

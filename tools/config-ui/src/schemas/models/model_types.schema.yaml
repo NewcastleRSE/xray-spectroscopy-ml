@@ -6,7 +6,6 @@ $defs:
     type: string
     enum:
     - mlp
-    - lstm
     - envembed
     - schnet
     - dimenet
@@ -52,9 +51,6 @@ $defs:
     description: Branch fusion mode accepted by E3EE and E3EE-full models.
   modelTypeMLP:
     const: mlp
-    description: Registry key definition used by the corresponding XANESNET registry.
-  modelTypeLSTM:
-    const: lstm
     description: Registry key definition used by the corresponding XANESNET registry.
   modelTypeEnvEmbed:
     const: envembed
