@@ -11,17 +11,19 @@ Deep learning for theoretical X-ray spectroscopy.
 </div>
 
 <div align="center">
-! This README.md is WORK IN PROGRESS !
+<strong>This README is a work in progress.</strong>
 </div>
 
 ## Overview
 
-XANESNET is a Python package for machine-learning simulation and analysis of X-ray absorption near edge structure (XANES) spectra. The current Python codebase supports the forward prediction workflow: train models on structures and spectra, run checkpointed inference, and analyze prediction outputs.
+XANESNET is a Python codebase for machine-learning simulation and analysis of structure-spectra relationships. It was originally developed for, but is not limited to, X-ray absorption near-edge structure (XANES) spectra.
+The current version mainly supports the forward prediction workflow from structure to spectra: train models on structures and spectra, run checkpointed inference, and analyze prediction outputs.
 
 - **Supported now:** forward mapping from molecular or periodic structural inputs to spectra.
 - **Planned later:** reverse mapping from spectra back to properties or structural information.
 
-The project combines descriptor-based neural networks, graph neural networks, YAML-driven workflows, checkpoint signatures, and an interactive configuration editor so that forward XANES experiments are reproducible and easier to share.
+The project provides a suite of architectures and training strategies: from simple descriptor-based neural networks to more advanced invariant and equivariant graph neural networks.
+The main goal of this work is to make machine-learning research in spectroscopy more accessible, reproducible, extendable, and comparable. This should ultimately support faster research progress and the development of new, more accurate, and explainable ML models for spectra prediction.
 
 ## Highlights
 
@@ -42,7 +44,7 @@ The project combines descriptor-based neural networks, graph neural networks, YA
 
 Install from a local checkout with the project metadata in [pyproject.toml](pyproject.toml):
 
-In XANESNET directory:
+From the XANESNET directory:
 ```bash
 python3.12 -m venv .venv
 source .venv/bin/activate
@@ -62,7 +64,7 @@ After installation, the `xanesnet` command should be available:
 xanesnet --help
 ```
 
-### PyTorch And PyTorch Geometric
+### PyTorch and PyTorch Geometric
 
 XANESNET depends on PyTorch and PyTorch Geometric native extensions. CPU-only Linux installs may work with plain pip resolution. For CUDA installs, or if `torch-scatter`, `torch-sparse`, or `torch-cluster` cannot find wheels automatically, install wheels matching your Python, PyTorch, and CUDA versions first.
 
@@ -76,7 +78,7 @@ python -m pip install -e .
 
 Adjust the wheel URLs for your target platform. The PyTorch and PyTorch Geometric installation guides are the source of truth for the current compatibility matrix.
 
-### Developer And Docs Extras
+### Developer and Docs Extras
 
 ```bash
 python -m pip install -e ".[dev]"   # build and test tooling
@@ -193,11 +195,11 @@ At a high level, a config contains:
 
 The config UI schemas in [tools/config-ui/src/schemas/](tools/config-ui/src/schemas/) mirror this structure for interactive editing.
 
-## Team
+## People and Attribution
 
-[Hendrik Junkawitsch](https://www.helmholtz-berlin.de/pubbin/vkart.pl?v=yyqxqn&sprache=de), Helmholtz-Zentrum Berlin, Humboldt-University Berlin
+[Hendrik Junkawitsch](https://www.helmholtz-berlin.de/pubbin/vkart.pl?v=yyqxqn&sprache=de), Helmholtz-Zentrum Berlin and Humboldt University of Berlin - main code author and current maintainer
 
-[Prof. Thomas Penfold](https://ncl.ac.uk/nes/people/profile/tompenfold.html), Newcastle University
+[Prof. Thomas Penfold](https://ncl.ac.uk/nes/people/profile/tompenfold.html), Newcastle University - project lead and supervision
 
 [Dr. Thomas Pope](https://www.ncl.ac.uk/nes/people/profile/thomaspope2.html), Newcastle University
 
@@ -211,18 +213,18 @@ This project is licensed under the GPL-3.0 License. See [LICENSE](LICENSE) for d
 
 ## Publications
 
-### XANESNET:
+### XANESNET
 *[A Deep Neural Network for the Rapid Prediction of X-ray Absorption Spectra](https://doi.org/10.1021/acs.jpca.0c03723)* - C. D. Rankine, M. M. M. Madkhali, and T. J. Penfold, *J. Phys. Chem. A*, 2020, **124**, 4263-4270.
 
 *[Accurate, affordable, and generalizable machine learning simulations of transition metal x-ray absorption spectra using the XANESNET deep neural network](https://doi.org/10.1063/5.0087255)* - C. D. Rankine, and T. J. Penfold, *J. Chem. Phys.*, 2022, **156**, 164102.
  
-### Extension to X-ray Emission:
+### Extension to X-ray Emission
 *[A deep neural network for valence-to-core X-ray emission spectroscopy](https://doi.org/10.1080/00268976.2022.2123406)* - T. J. Penfold, and C. D. Rankine, *Mol. Phys.*, 2022, e2123406.
 
-### The Applications:
+### Applications
 *[On the Analysis of X-ray Absorption Spectra for Polyoxometallates](https://doi.org/10.1016/j.cplett.2021.138893)* - E. Falbo, C. D. Rankine, and T. J. Penfold, *Chem. Phys. Lett.*, 2021, **780**, 138893.
 
-*[Enhancing the Anaysis of Disorder in X-ray Absorption Spectra: Application of Deep Neural Networks to T-Jump-X-ray Probe Experiments](https://doi.org/10.1039/D0CP06244H)* - M. M. M. Madkhali, C. D. Rankine, and T. J. Penfold, *Phys. Chem. Chem. Phys.*, 2021, **23**, 9259-9269.
+*[Enhancing the Analysis of Disorder in X-ray Absorption Spectra: Application of Deep Neural Networks to T-Jump X-ray Probe Experiments](https://doi.org/10.1039/D0CP06244H)* - M. M. M. Madkhali, C. D. Rankine, and T. J. Penfold, *Phys. Chem. Chem. Phys.*, 2021, **23**, 9259-9269.
 
-### Miscellaneous:
+### Miscellaneous
 *[The Role of Structural Representation in the Performance of a Deep Neural Network for X-ray Spectroscopy](https://doi.org/10.3390/molecules25112715)* - M. M. M. Madkhali, C. D. Rankine, and T. J. Penfold, *Molecules*, 2020, **25**, 2715.
