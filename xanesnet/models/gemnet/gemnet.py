@@ -576,7 +576,10 @@ class GemNet(Model):
 
     @property
     def signature(self) -> Config:
-        """Return the model signature as a :class:`~xanesnet.serialization.config.Config`.
+        """Return the model signature.
+
+        Returns:
+            Configuration values needed to recreate this model.
 
         Note:
             ``scale_file`` is always set to ``None`` in the signature. The fitted

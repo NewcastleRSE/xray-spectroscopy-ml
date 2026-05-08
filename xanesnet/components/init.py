@@ -27,7 +27,16 @@ class InitFn(Protocol):
     """Protocol for in-place tensor initialization callables."""
 
     def __call__(self, tensor: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        """Initialize ``tensor`` in place and return it."""
+        """Initialize ``tensor`` in place and return it.
+
+        Args:
+            tensor: Tensor to initialize.
+            *args: Positional arguments forwarded to the initializer.
+            **kwargs: Keyword arguments forwarded to the initializer.
+
+        Returns:
+            The initialized tensor.
+        """
         ...
 
 

@@ -58,7 +58,11 @@ class Model(nn.Module, ABC):
     @property
     @abstractmethod
     def signature(self) -> Config:
-        """Return the model signature as a :class:`~xanesnet.serialization.config.Config`."""
+        """Return the model signature.
+
+        Returns:
+            Configuration values needed to recreate this model.
+        """
         signature = Config(
             {
                 "model_type": self.model_type,

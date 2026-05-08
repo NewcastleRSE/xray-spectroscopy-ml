@@ -47,7 +47,11 @@ class _MpDataset(Protocol):
 
     @property
     def processed_dir(self) -> str:
-        """Directory that receives processed ``.pth`` files."""
+        """Directory that receives processed ``.pth`` files.
+
+        Returns:
+            Path to the processed data directory.
+        """
         ...
 
     datasource: Any

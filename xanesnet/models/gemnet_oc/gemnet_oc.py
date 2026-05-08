@@ -827,7 +827,11 @@ class GemNetOC(Model):
 
     @property
     def num_params(self) -> int:
-        """Total number of learnable parameters."""
+        """Total number of learnable parameters.
+
+        Returns:
+            Number of parameters with ``requires_grad=True``.
+        """
         return sum(p.numel() for p in self.parameters())
 
     def init_weights(self, weights_init: str, bias_init: str, **kwargs) -> None:

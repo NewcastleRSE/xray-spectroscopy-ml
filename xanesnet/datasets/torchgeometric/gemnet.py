@@ -538,12 +538,18 @@ class GemNetDataset(TorchGeometricDataset):
             batch: GemNet graph samples loaded by ``__getitem__``.
 
         Returns:
-            PyG batch with target tensors concatenated over absorber sites.
+            PyG batch with target tensors and file names concatenated over
+            absorber sites.
         """
         fields_to_cat = ["energies", "intensities", "absorber_mask"]
-        batched = Batch.from_data_list(batch, exclude_keys=fields_to_cat)
+        batched = Batch.from_data_list(batch, exclude_keys=[*fields_to_cat, "file_name"])
         for field in fields_to_cat:
             setattr(batched, field, torch.cat([getattr(d, field) for d in batch], dim=0))
+        batched.file_name = [
+            str(getattr(data, "file_name"))
+            for data in batch
+            for _ in range(int(getattr(data, "absorber_mask").sum().item()))
+        ]
         return batched
 
     @staticmethod

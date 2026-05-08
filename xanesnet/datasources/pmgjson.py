@@ -54,12 +54,20 @@ class PMGJSONSource(DataSource):
         self.file_names: list[str] = self._get_file_list()
 
     def __iter__(self) -> Iterator[Molecule | Structure]:
-        """Iterate over all entries in the datasource."""
+        """Iterate over all entries in the datasource.
+
+        Returns:
+            Iterator over loaded pymatgen entries.
+        """
         for i in range(len(self.file_names)):
             yield self[i]
 
     def __len__(self) -> int:
-        """Return the total number of entries in the datasource."""
+        """Return the total number of entries in the datasource.
+
+        Returns:
+            Number of JSON files available for loading.
+        """
         return len(self.file_names)
 
     def __getitem__(self, idx: int) -> Molecule | Structure:

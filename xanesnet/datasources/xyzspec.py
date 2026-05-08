@@ -60,12 +60,20 @@ class XYZSpecSource(DataSource):
         self.file_names: list[str] = self._get_file_list()
 
     def __iter__(self) -> Iterator[Molecule]:
-        """Iterate over all molecule entries in the datasource."""
+        """Iterate over all molecule entries in the datasource.
+
+        Returns:
+            Iterator over loaded molecule entries.
+        """
         for i in range(len(self.file_names)):
             yield self[i]
 
     def __len__(self) -> int:
-        """Return the total number of entries in the datasource."""
+        """Return the total number of entries in the datasource.
+
+        Returns:
+            Number of matched XYZ/spectrum pairs.
+        """
         return len(self.file_names)
 
     def __getitem__(self, idx: int) -> Molecule:

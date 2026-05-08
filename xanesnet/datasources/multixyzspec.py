@@ -58,12 +58,20 @@ class MultiXYZSpecSource(DataSource):
         ]
 
     def __iter__(self) -> Iterator[Molecule]:
-        """Iterate over all molecule entries in the datasource."""
+        """Iterate over all molecule entries in the datasource.
+
+        Returns:
+            Iterator over loaded molecule entries.
+        """
         for i in range(len(self._flat_index)):
             yield self[i]
 
     def __len__(self) -> int:
-        """Return the total number of entries across all subdirectories."""
+        """Return the total number of entries across all subdirectories.
+
+        Returns:
+            Number of matched XYZ/spectrum pairs.
+        """
         return len(self._flat_index)
 
     def __getitem__(self, idx: int) -> Molecule:

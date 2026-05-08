@@ -46,7 +46,14 @@ class _BatchProtocol(Protocol):
     """Minimal batch interface used by the scale-fitting forward pass."""
 
     def to(self, device: torch.device) -> Any:
-        """Move contained tensors to ``device``."""
+        """Move contained tensors to ``device``.
+
+        Args:
+            device: Target torch device.
+
+        Returns:
+            Batch object on the requested device.
+        """
         ...
 
 
@@ -54,7 +61,14 @@ class _BatchProcessorProtocol(Protocol):
     """Minimal batchprocessor interface used to prepare model inputs."""
 
     def input_preparation(self, batch: _BatchProtocol) -> dict[str, Any]:
-        """Return keyword arguments consumed by the model forward call."""
+        """Return keyword arguments consumed by the model forward call.
+
+        Args:
+            batch: Batch returned by the dataloader.
+
+        Returns:
+            Keyword arguments for the model forward call.
+        """
         ...
 
 
@@ -78,11 +92,19 @@ class _DatasetProtocol(Protocol):
         ...
 
     def get_dataloader(self) -> type:
-        """Return the dataset-specific dataloader class."""
+        """Return the dataset-specific dataloader class.
+
+        Returns:
+            Dataloader class used to iterate this dataset.
+        """
         ...
 
     def get_all_subset_indices(self) -> list[list[int]]:
-        """Return ordered split-index lists."""
+        """Return ordered split-index lists.
+
+        Returns:
+            Split indices in the order used by the dataset.
+        """
         ...
 
 
@@ -90,7 +112,11 @@ class _DataLoaderProtocol(Protocol):
     """Iterable dataloader interface used by the fitter."""
 
     def __iter__(self) -> Iterator[_BatchProtocol]:
-        """Iterate batches."""
+        """Iterate batches.
+
+        Returns:
+            Iterator over scale-fitting batches.
+        """
         ...
 
 
@@ -107,7 +133,17 @@ class _ScaleFactorProtocol(Protocol):
         with_kwargs: bool = False,
         always_call: bool = False,
     ) -> torch.utils.hooks.RemovableHandle:
-        """Register a PyTorch forward hook and return its removable handle."""
+        """Register a PyTorch forward hook and return its removable handle.
+
+        Args:
+            hook: Hook function receiving module, args, kwargs, and output.
+            prepend: Whether to prepend the hook before existing hooks.
+            with_kwargs: Whether the hook receives keyword arguments.
+            always_call: Whether to run the hook when forward raises.
+
+        Returns:
+            Handle that removes the hook when closed.
+        """
         ...
 
 

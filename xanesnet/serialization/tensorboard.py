@@ -77,7 +77,11 @@ class _TensorBoardGraphWrapper(torch.nn.Module):
 
     @property
     def tensor_arg_names(self) -> tuple[str, ...]:
-        """Names of the tensor-valued forward arguments, in call order."""
+        """Names of the tensor-valued forward arguments, in call order.
+
+        Returns:
+            Tensor argument names expected by ``forward``.
+        """
         return tuple(self._tensor_arg_names)
 
     def forward(self, *tensor_args: torch.Tensor) -> Any:
@@ -133,7 +137,11 @@ class TensorBoardLogger:
 
     @property
     def enabled(self) -> bool:
-        """Whether TensorBoard logging is currently active for this process."""
+        """Whether TensorBoard logging is currently active for this process.
+
+        Returns:
+            ``True`` when TensorBoard logging is enabled and initialized.
+        """
         return self._enabled
 
     def set_config(self, config: Config) -> None:
@@ -285,9 +293,7 @@ class TensorBoardLogger:
             graph_inputs = tuple(input_example[name] for name in graph_model.tensor_arg_names)
 
             if not graph_inputs:
-                logging.warning(
-                    "Skipping TensorBoard graph logging because the model has no tensor inputs to trace."
-                )
+                logging.warning("Skipping TensorBoard graph logging because the model has no tensor inputs to trace.")
                 return
 
             non_tensor_input_names = [

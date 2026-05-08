@@ -237,17 +237,29 @@ class Dataset(TorchDataset, ABC):
 
     @property
     def subsets(self) -> list[Subset]:
-        """Configured dataset subsets."""
+        """Configured dataset subsets.
+
+        Returns:
+            List of subsets created by ``setup_splits``.
+        """
         return self._subsets
 
     @property
     def train_subset(self) -> Subset | None:
-        """Training subset, when configured."""
+        """Training subset, when configured.
+
+        Returns:
+            First configured subset, or ``None`` when no training subset exists.
+        """
         return self.get_subset(0)
 
     @property
     def valid_subset(self) -> Subset | None:
-        """Validation subset, when configured."""
+        """Validation subset, when configured.
+
+        Returns:
+            Second configured subset, or ``None`` when no validation subset exists.
+        """
         return self.get_subset(1)
 
     def get_dataloader(self) -> type[torch.utils.data.DataLoader]:
@@ -323,10 +335,18 @@ class Dataset(TorchDataset, ABC):
 
     @property
     def processed_dir(self) -> str:
-        """Path to the processed data directory."""
+        """Path to the processed data directory.
+
+        Returns:
+            Root directory where processed ``.pth`` files are stored.
+        """
         return self.root
 
     @property
     def processed_files(self) -> list[str]:
-        """Processed file paths in canonical sample order."""
+        """Processed file paths in canonical sample order.
+
+        Returns:
+            File paths ordered by processed sample index.
+        """
         return [os.path.join(self.processed_dir, f"{i}.pth") for i in range(len(self))]

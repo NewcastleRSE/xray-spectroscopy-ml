@@ -89,7 +89,11 @@ class PredictionReader(ABC):
 
     @abstractmethod
     def __len__(self) -> int:
-        """Return the total number of absorber records in the dataset."""
+        """Return the total number of absorber records in the dataset.
+
+        Returns:
+            Number of absorber-level prediction records.
+        """
         ...
 
     @abstractmethod

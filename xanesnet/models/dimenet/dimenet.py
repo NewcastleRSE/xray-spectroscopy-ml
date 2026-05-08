@@ -211,7 +211,11 @@ class DimeNet(Model):
 
     @property
     def signature(self) -> Config:
-        """Return the model signature as a :class:`~xanesnet.serialization.config.Config`."""
+        """Return the model signature.
+
+        Returns:
+            Configuration values needed to recreate this model.
+        """
         signature = super().signature
         signature.update_with_dict(
             {

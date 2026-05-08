@@ -72,7 +72,8 @@ class SpectralLossPlus(Loss):
         Args:
             preds: Model output predictions ``(B, N)``.
             targets: Ground-truth spectral targets ``(B, N)``.
-            mask: Unused; reserved for future use. Defaults to ``None``.
+            mask: Reserved for future masking support. Currently unused.
+                Defaults to ``None``.
 
         Returns:
             Scalar loss tensor: ``alpha * Lc + beta * Ld + gamma * Lg``.
