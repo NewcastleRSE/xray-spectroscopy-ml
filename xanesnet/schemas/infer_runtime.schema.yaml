@@ -1,0 +1,46 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: infer_runtime.schema.yaml
+title: XANESNET merged inference configuration
+type: object
+additionalProperties: false
+required:
+- datasource
+- dataset
+- model
+- inferencer
+- strategy
+$comment: Runtime inference configs are the result of merging user inference YAML with the checkpoint signature before
+  validate_config_infer() runs. The checkpoint must provide the model, strategy, and dataset_type details needed to construct
+  the trained architecture and compatible dataset.
+properties:
+  seed:
+    $ref: shared/value_types.schema.yaml#/$defs/nullableInteger
+    default: null
+    description: Optional top-level seed for Python, NumPy, and PyTorch (CPU + CUDA).
+  device:
+    type:
+    - string
+    - 'null'
+    default: cpu
+    description: Compute device; e.g., ``"cpu"`` or ``"cuda:0"``.
+  datasource:
+    $ref: datasources/datasources.schema.yaml#/$defs/datasource
+    description: Configuration section used by core setup code to instantiate ``DataSourceRegistry.get(datasource_type)``.
+  dataset:
+    $ref: datasets/datasets.schema.yaml#/$defs/dataset
+    description: Merged dataset configuration used by core setup code to instantiate and prepare ``DatasetRegistry.get(dataset_type)``.
+  model:
+    $ref: models/models.schema.yaml#/$defs/modelInfer
+    description: Model architecture restored from the checkpoint signature. ``"auto"`` values are rejected at inference time.
+  inferencer:
+    $ref: runners/inferencers.schema.yaml#/$defs/inferencer
+    description: Inference runner section; mutually exclusive with ``trainer``.
+  strategy:
+    $ref: strategies/strategies.schema.yaml#/$defs/strategy
+    description: Strategy configuration restored from the checkpoint signature and used by core setup code.
+allOf:
+- not:
+    required:
+    - trainer
+- $ref: compatibility/batchprocessors.schema.yaml#/$defs/inferModeCompatibility
+description: Merged inference configuration validated by ``validate_config_infer`` and consumed by ``core_infer.infer``.

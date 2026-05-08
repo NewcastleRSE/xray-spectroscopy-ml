@@ -23,8 +23,7 @@ properties:
     - string
     - 'null'
     default: cpu
-    description: Top-level compute device validated by ``_validate_global``; absent values default to ``"cpu"`` and are passed
-      to trainers or inferencers.
+    description: Top-level compute device; absent values default to ``"cpu"`` and are passed to trainers or inferencers.
   datasource:
     $ref: datasources/datasources.schema.yaml#/$defs/datasource
     description: Configuration section used by core setup code to instantiate ``DataSourceRegistry.get(datasource_type)``.
@@ -37,7 +36,7 @@ properties:
       selected ``"auto"`` fields.
   trainer:
     $ref: runners/trainers.schema.yaml#/$defs/trainer
-    description: Training runner section; mutually exclusive with ``inferencer`` in ``validate_config``.
+    description: Training runner section; mutually exclusive with ``inferencer``.
   strategy:
     $ref: strategies/strategies.schema.yaml#/$defs/strategy
     description: Configuration section used by core setup code to instantiate ``StrategyRegistry.get(strategy_type)``.

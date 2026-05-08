@@ -1,9 +1,9 @@
 $schema: https://json-schema.org/draft/2020-12/schema
-$id: snapshot_ensemble.schema.yaml
-title: 'XANESNET strategy schema: snapshot_ensemble'
-$comment: Registered in defaults, but the implementation currently raises NotImplementedError.
+$id: bootstrap.schema.yaml
+title: 'XANESNET strategy schema: bootstrap'
+$comment: Registered in the strategy schemas, but the implementation currently raises NotImplementedError.
 $defs:
-  strategySnapshotEnsemble:
+  strategyBootstrap:
     type: object
     additionalProperties: false
     required:
@@ -31,7 +31,7 @@ $defs:
         default: null
         description: Epoch interval between checkpoints, or ``None``.
       strategy_type:
-        $ref: strategy_types.schema.yaml#/$defs/strategyTypeSnapshotEnsemble
+        $ref: strategy_types.schema.yaml#/$defs/strategyTypeBootstrap
         description: Strategy identifier.
-    description: Snapshot ensemble strategy.
+    description: Bootstrap ensemble strategy.
 description: Strategy schemas backed by ``StrategyRegistry`` classes.

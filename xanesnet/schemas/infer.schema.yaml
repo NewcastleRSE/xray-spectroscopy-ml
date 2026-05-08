@@ -7,16 +7,14 @@ required:
 - datasource
 - dataset
 - inferencer
-$comment: User inference YAML is strictly merged with the checkpoint signature before validate_config_infer() runs. datasource,
-  dataset, and inferencer are supplied by the user; dataset_type, model, and strategy usually come from the checkpoint signature.
-  If model or strategy are repeated in the user YAML, they must not conflict with the checkpoint and model values cannot use
-  "auto".
+$comment: User inference YAML is merged with the checkpoint signature before runtime validation. datasource, dataset, and
+  inferencer are supplied by the user; dataset_type, model, and strategy usually come from the checkpoint signature. If model
+  or strategy are repeated in the user YAML, they must not conflict with the checkpoint and model values cannot use "auto".
 properties:
   seed:
     $ref: shared/value_types.schema.yaml#/$defs/nullableInteger
     default: null
-    description: Optional top-level seed validated by ``_validate_global``; absent values default to ``null`` before runtime
-      use.
+    description: Optional top-level seed; absent values default to ``null`` before runtime use.
   device:
     type:
     - string
@@ -36,7 +34,7 @@ properties:
       checkpoint-signature merge, inference rejects ``"auto"`` model values.
   inferencer:
     $ref: runners/inferencers.schema.yaml#/$defs/inferencer
-    description: Inference runner section; mutually exclusive with ``trainer`` in ``validate_config``.
+    description: Inference runner section; mutually exclusive with ``trainer``.
   strategy:
     $ref: strategies/strategies.schema.yaml#/$defs/strategy
     description: Optional in user-authored inference YAML because the checkpoint signature normally supplies it. After the
@@ -46,5 +44,4 @@ allOf:
     required:
     - trainer
 - $ref: compatibility/batchprocessors.schema.yaml#/$defs/inferModeCompatibility
-description: Inference configuration validated by ``validate_config_infer`` after checkpoint-signature merge and consumed
-  by ``core_infer.infer``.
+description: User-authored inference configuration used by the config UI before checkpoint-signature merge.

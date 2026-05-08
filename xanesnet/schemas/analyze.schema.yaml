@@ -9,16 +9,14 @@ required:
 - aggregators
 - reporters
 - plotters
-$comment: Analysis configs are only minimally wrapped by validate_config_analyze(), so this schema documents the runtime component
-  constructors used by core_analyze. All five component lists must be present. Selectors are configured as one flat YAML
-  list; runtime setup expands that list once per prediction reader. Empty selectors are valid and create one implicit all-selector
-  for each prediction reader.
+$comment: Analysis configs are validated by validate_config_analyze(). All five component lists must be present. Selectors
+  are configured as one flat YAML list; runtime setup expands that list once per prediction reader. Empty selectors are valid
+  and create one implicit all-selector for each prediction reader.
 properties:
   seed:
     $ref: shared/value_types.schema.yaml#/$defs/nullableInteger
     default: null
-    description: Optional top-level seed validated by ``_validate_global``; absent values default to ``null`` before runtime
-      use.
+    description: Optional top-level seed; absent values default to ``null`` before runtime use.
   selectors:
     type: array
     items:
@@ -51,5 +49,4 @@ properties:
       $ref: analysis/analysis.schema.yaml#/$defs/plotter
     default: []
     description: Analysis plotter configurations instantiated by ``PlotterRegistry`` in ``_setup_plotters``.
-description: Analysis configuration minimally wrapped by ``validate_config_analyze`` and consumed by ``core_analyze`` setup
-  functions.
+description: Analysis configuration validated by ``validate_config_analyze`` and consumed by ``core_analyze`` setup functions.
