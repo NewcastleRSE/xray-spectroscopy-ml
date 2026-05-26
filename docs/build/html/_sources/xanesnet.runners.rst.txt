@@ -18,10 +18,7 @@ Subpackages
 Submodules
 ----------
 
-xanesnet.runners.base module
-----------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.runners.base
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.runners.base

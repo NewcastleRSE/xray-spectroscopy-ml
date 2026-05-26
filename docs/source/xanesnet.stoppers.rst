@@ -9,42 +9,11 @@ xanesnet.stoppers package
 Submodules
 ----------
 
-xanesnet.stoppers.base module
------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.stoppers.base
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.stoppers.basic module
-------------------------------
-
-.. automodule:: xanesnet.stoppers.basic
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.stoppers.no module
----------------------------
-
-.. automodule:: xanesnet.stoppers.no
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.stoppers.registry module
----------------------------------
-
-.. automodule:: xanesnet.stoppers.registry
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.stoppers.time module
------------------------------
-
-.. automodule:: xanesnet.stoppers.time
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.stoppers.base
+   xanesnet.stoppers.basic
+   xanesnet.stoppers.no
+   xanesnet.stoppers.registry
+   xanesnet.stoppers.time

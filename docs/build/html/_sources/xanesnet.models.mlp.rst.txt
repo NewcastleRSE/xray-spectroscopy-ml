@@ -9,10 +9,7 @@ xanesnet.models.mlp package
 Submodules
 ----------
 
-xanesnet.models.mlp.mlp module
-------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.models.mlp.mlp
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.models.mlp.mlp

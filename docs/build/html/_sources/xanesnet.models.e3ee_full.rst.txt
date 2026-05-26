@@ -18,10 +18,7 @@ Subpackages
 Submodules
 ----------
 
-xanesnet.models.e3ee\_full.e3ee\_full module
---------------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.models.e3ee_full.e3ee_full
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.models.e3ee_full.e3ee_full

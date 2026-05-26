@@ -19,10 +19,7 @@ Subpackages
 Submodules
 ----------
 
-xanesnet.datasets.registry module
----------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.datasets.registry
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.datasets.registry

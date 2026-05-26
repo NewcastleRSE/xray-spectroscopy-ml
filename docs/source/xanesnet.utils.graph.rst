@@ -9,58 +9,13 @@ xanesnet.utils.graph package
 Submodules
 ----------
 
-xanesnet.utils.graph.absorber\_paths module
--------------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.utils.graph.absorber_paths
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.utils.graph.edges module
----------------------------------
-
-.. automodule:: xanesnet.utils.graph.edges
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.utils.graph.gemnet\_indices module
--------------------------------------------
-
-.. automodule:: xanesnet.utils.graph.gemnet_indices
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.utils.graph.radius module
-----------------------------------
-
-.. automodule:: xanesnet.utils.graph.radius
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.utils.graph.symmetrize module
---------------------------------------
-
-.. automodule:: xanesnet.utils.graph.symmetrize
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.utils.graph.triplets module
-------------------------------------
-
-.. automodule:: xanesnet.utils.graph.triplets
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.utils.graph.voronoi module
------------------------------------
-
-.. automodule:: xanesnet.utils.graph.voronoi
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.utils.graph.absorber_paths
+   xanesnet.utils.graph.edges
+   xanesnet.utils.graph.gemnet_indices
+   xanesnet.utils.graph.radius
+   xanesnet.utils.graph.symmetrize
+   xanesnet.utils.graph.triplets
+   xanesnet.utils.graph.voronoi

@@ -9,10 +9,7 @@ xanesnet.models.e3ee.utils package
 Submodules
 ----------
 
-xanesnet.models.e3ee.utils.invariants module
---------------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.models.e3ee.utils.invariants
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.models.e3ee.utils.invariants

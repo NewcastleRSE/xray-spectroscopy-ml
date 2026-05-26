@@ -9,58 +9,13 @@ xanesnet.descriptors package
 Submodules
 ----------
 
-xanesnet.descriptors.base module
---------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.descriptors.base
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.descriptors.direct module
-----------------------------------
-
-.. automodule:: xanesnet.descriptors.direct
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.descriptors.mace module
---------------------------------
-
-.. automodule:: xanesnet.descriptors.mace
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.descriptors.pdos\_deprecated module
---------------------------------------------
-
-.. automodule:: xanesnet.descriptors.pdos_deprecated
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.descriptors.rdc module
--------------------------------
-
-.. automodule:: xanesnet.descriptors.rdc
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.descriptors.registry module
-------------------------------------
-
-.. automodule:: xanesnet.descriptors.registry
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.descriptors.wacsf module
----------------------------------
-
-.. automodule:: xanesnet.descriptors.wacsf
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.descriptors.base
+   xanesnet.descriptors.direct
+   xanesnet.descriptors.mace
+   xanesnet.descriptors.pdos_deprecated
+   xanesnet.descriptors.rdc
+   xanesnet.descriptors.registry
+   xanesnet.descriptors.wacsf

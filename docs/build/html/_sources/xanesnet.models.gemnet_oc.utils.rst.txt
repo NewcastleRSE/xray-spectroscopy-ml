@@ -9,18 +9,8 @@ xanesnet.models.gemnet\_oc.utils package
 Submodules
 ----------
 
-xanesnet.models.gemnet\_oc.utils.helpers module
------------------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.models.gemnet_oc.utils.helpers
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.models.gemnet\_oc.utils.initializers module
-----------------------------------------------------
-
-.. automodule:: xanesnet.models.gemnet_oc.utils.initializers
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.models.gemnet_oc.utils.helpers
+   xanesnet.models.gemnet_oc.utils.initializers

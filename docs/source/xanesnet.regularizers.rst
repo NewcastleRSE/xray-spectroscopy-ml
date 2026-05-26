@@ -9,42 +9,11 @@ xanesnet.regularizers package
 Submodules
 ----------
 
-xanesnet.regularizers.base module
----------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.regularizers.base
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.regularizers.l1 module
--------------------------------
-
-.. automodule:: xanesnet.regularizers.l1
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.regularizers.l2 module
--------------------------------
-
-.. automodule:: xanesnet.regularizers.l2
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.regularizers.no module
--------------------------------
-
-.. automodule:: xanesnet.regularizers.no
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.regularizers.registry module
--------------------------------------
-
-.. automodule:: xanesnet.regularizers.registry
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.regularizers.base
+   xanesnet.regularizers.l1
+   xanesnet.regularizers.l2
+   xanesnet.regularizers.no
+   xanesnet.regularizers.registry

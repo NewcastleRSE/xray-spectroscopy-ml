@@ -21,10 +21,8 @@ Subpackages
 Submodules
 ----------
 
-xanesnet.analysis.result module
--------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.analysis.result
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.analysis.result
+   xanesnet.analysis.utils

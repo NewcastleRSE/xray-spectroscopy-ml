@@ -9,26 +9,9 @@ xanesnet.datasets.base package
 Submodules
 ----------
 
-xanesnet.datasets.base.base module
-----------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.datasets.base.base
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.datasets.base.torch\_dataset module
---------------------------------------------
-
-.. automodule:: xanesnet.datasets.base.torch_dataset
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.datasets.base.torchgeometric\_dataset module
------------------------------------------------------
-
-.. automodule:: xanesnet.datasets.base.torchgeometric_dataset
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.datasets.base.base
+   xanesnet.datasets.base.torch_dataset
+   xanesnet.datasets.base.torchgeometric_dataset

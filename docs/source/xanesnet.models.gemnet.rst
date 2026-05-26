@@ -18,10 +18,7 @@ Subpackages
 Submodules
 ----------
 
-xanesnet.models.gemnet.gemnet module
-------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.models.gemnet.gemnet
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.models.gemnet.gemnet

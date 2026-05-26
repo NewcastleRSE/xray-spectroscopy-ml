@@ -9,10 +9,7 @@ xanesnet.checkpointing package
 Submodules
 ----------
 
-xanesnet.checkpointing.checkpointer module
-------------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.checkpointing.checkpointer
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.checkpointing.checkpointer

@@ -17,10 +17,7 @@ Subpackages
 Submodules
 ----------
 
-xanesnet.models.envembed.envembed module
-----------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.models.envembed.envembed
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.models.envembed.envembed

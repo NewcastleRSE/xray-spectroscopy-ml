@@ -9,10 +9,7 @@ xanesnet.models.gemnet.utils package
 Submodules
 ----------
 
-xanesnet.models.gemnet.utils.initializer module
------------------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.models.gemnet.utils.initializer
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.models.gemnet.utils.initializer

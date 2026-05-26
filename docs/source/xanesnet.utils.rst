@@ -18,42 +18,12 @@ Subpackages
 Submodules
 ----------
 
-xanesnet.utils.exceptions module
---------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.utils.exceptions
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.utils.filesystem module
---------------------------------
-
-.. automodule:: xanesnet.utils.filesystem
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.utils.logger module
-----------------------------
-
-.. automodule:: xanesnet.utils.logger
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.utils.prompts module
------------------------------
-
-.. automodule:: xanesnet.utils.prompts
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.utils.random module
-----------------------------
-
-.. automodule:: xanesnet.utils.random
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.utils.exceptions
+   xanesnet.utils.filesystem
+   xanesnet.utils.logger
+   xanesnet.utils.prompts
+   xanesnet.utils.random
+   xanesnet.utils.registry

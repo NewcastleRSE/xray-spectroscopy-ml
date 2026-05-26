@@ -9,26 +9,9 @@ xanesnet.analysis.aggregators package
 Submodules
 ----------
 
-xanesnet.analysis.aggregators.base module
------------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.analysis.aggregators.base
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.analysis.aggregators.registry module
----------------------------------------------
-
-.. automodule:: xanesnet.analysis.aggregators.registry
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.analysis.aggregators.scalar module
--------------------------------------------
-
-.. automodule:: xanesnet.analysis.aggregators.scalar
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.analysis.aggregators.base
+   xanesnet.analysis.aggregators.registry
+   xanesnet.analysis.aggregators.scalar

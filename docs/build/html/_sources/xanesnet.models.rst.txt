@@ -18,7 +18,6 @@ Subpackages
    xanesnet.models.envembed
    xanesnet.models.gemnet
    xanesnet.models.gemnet_oc
-   xanesnet.models.lstm
    xanesnet.models.mlp
    xanesnet.models.schnet
    xanesnet.models.xasnetv2
@@ -26,18 +25,8 @@ Subpackages
 Submodules
 ----------
 
-xanesnet.models.base module
----------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.models.base
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.models.registry module
--------------------------------
-
-.. automodule:: xanesnet.models.registry
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.models.base
+   xanesnet.models.registry

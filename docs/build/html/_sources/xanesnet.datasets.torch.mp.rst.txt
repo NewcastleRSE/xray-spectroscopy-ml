@@ -9,18 +9,8 @@ xanesnet.datasets.torch.mp package
 Submodules
 ----------
 
-xanesnet.datasets.torch.mp.descriptor module
---------------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.datasets.torch.mp.descriptor
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.datasets.torch.mp.envembed module
-------------------------------------------
-
-.. automodule:: xanesnet.datasets.torch.mp.envembed
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.datasets.torch.mp.descriptor
+   xanesnet.datasets.torch.mp.envembed

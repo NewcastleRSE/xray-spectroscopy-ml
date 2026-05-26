@@ -9,34 +9,10 @@ xanesnet.analysis.reporters package
 Submodules
 ----------
 
-xanesnet.analysis.reporters.base module
----------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.analysis.reporters.base
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.analysis.reporters.registry module
--------------------------------------------
-
-.. automodule:: xanesnet.analysis.reporters.registry
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.analysis.reporters.scalar module
------------------------------------------
-
-.. automodule:: xanesnet.analysis.reporters.scalar
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.analysis.reporters.statistics module
----------------------------------------------
-
-.. automodule:: xanesnet.analysis.reporters.statistics
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.analysis.reporters.base
+   xanesnet.analysis.reporters.registry
+   xanesnet.analysis.reporters.scalar
+   xanesnet.analysis.reporters.statistics

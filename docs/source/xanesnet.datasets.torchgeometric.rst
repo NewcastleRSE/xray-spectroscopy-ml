@@ -17,42 +17,11 @@ Subpackages
 Submodules
 ----------
 
-xanesnet.datasets.torchgeometric.e3ee module
---------------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.datasets.torchgeometric.e3ee
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.datasets.torchgeometric.e3ee\_full module
---------------------------------------------------
-
-.. automodule:: xanesnet.datasets.torchgeometric.e3ee_full
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.datasets.torchgeometric.gemnet module
-----------------------------------------------
-
-.. automodule:: xanesnet.datasets.torchgeometric.gemnet
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.datasets.torchgeometric.geometrygraph module
------------------------------------------------------
-
-.. automodule:: xanesnet.datasets.torchgeometric.geometrygraph
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.datasets.torchgeometric.richgraph module
--------------------------------------------------
-
-.. automodule:: xanesnet.datasets.torchgeometric.richgraph
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.datasets.torchgeometric.e3ee
+   xanesnet.datasets.torchgeometric.e3ee_full
+   xanesnet.datasets.torchgeometric.gemnet
+   xanesnet.datasets.torchgeometric.geometrygraph
+   xanesnet.datasets.torchgeometric.richgraph

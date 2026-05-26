@@ -9,42 +9,11 @@ xanesnet.datasources package
 Submodules
 ----------
 
-xanesnet.datasources.base module
---------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.datasources.base
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.datasources.multixyzspec module
-----------------------------------------
-
-.. automodule:: xanesnet.datasources.multixyzspec
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.datasources.pmgjson module
------------------------------------
-
-.. automodule:: xanesnet.datasources.pmgjson
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.datasources.registry module
-------------------------------------
-
-.. automodule:: xanesnet.datasources.registry
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.datasources.xyzspec module
------------------------------------
-
-.. automodule:: xanesnet.datasources.xyzspec
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.datasources.base
+   xanesnet.datasources.multixyzspec
+   xanesnet.datasources.pmgjson
+   xanesnet.datasources.registry
+   xanesnet.datasources.xyzspec

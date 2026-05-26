@@ -9,26 +9,9 @@ xanesnet.runners.trainers package
 Submodules
 ----------
 
-xanesnet.runners.trainers.base module
--------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.runners.trainers.base
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.runners.trainers.basic module
---------------------------------------
-
-.. automodule:: xanesnet.runners.trainers.basic
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.runners.trainers.registry module
------------------------------------------
-
-.. automodule:: xanesnet.runners.trainers.registry
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.runners.trainers.base
+   xanesnet.runners.trainers.basic
+   xanesnet.runners.trainers.registry

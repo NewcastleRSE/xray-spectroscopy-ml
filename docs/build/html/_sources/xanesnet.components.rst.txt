@@ -9,34 +9,10 @@ xanesnet.components package
 Submodules
 ----------
 
-xanesnet.components.activation module
--------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.components.activation
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.components.init module
--------------------------------
-
-.. automodule:: xanesnet.components.init
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.components.lrscheduler module
---------------------------------------
-
-.. automodule:: xanesnet.components.lrscheduler
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.components.optim module
---------------------------------
-
-.. automodule:: xanesnet.components.optim
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.components.activation
+   xanesnet.components.init
+   xanesnet.components.lrscheduler
+   xanesnet.components.optim

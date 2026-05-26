@@ -9,18 +9,8 @@ xanesnet.models.envembed.layers package
 Submodules
 ----------
 
-xanesnet.models.envembed.layers.coeff\_head module
---------------------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.models.envembed.layers.coeff_head
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.models.envembed.layers.encoder module
-----------------------------------------------
-
-.. automodule:: xanesnet.models.envembed.layers.encoder
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.models.envembed.layers.coeff_head
+   xanesnet.models.envembed.layers.encoder

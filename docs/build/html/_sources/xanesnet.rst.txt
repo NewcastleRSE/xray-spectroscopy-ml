@@ -31,58 +31,13 @@ Subpackages
 Submodules
 ----------
 
-xanesnet.analyze module
------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.analyze
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.cli module
--------------------
-
-.. automodule:: xanesnet.cli
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.core\_analyze module
------------------------------
-
-.. automodule:: xanesnet.core_analyze
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.core\_infer module
----------------------------
-
-.. automodule:: xanesnet.core_infer
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.core\_train module
----------------------------
-
-.. automodule:: xanesnet.core_train
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.infer module
----------------------
-
-.. automodule:: xanesnet.infer
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.train module
----------------------
-
-.. automodule:: xanesnet.train
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.analyze
+   xanesnet.cli
+   xanesnet.core_analyze
+   xanesnet.core_infer
+   xanesnet.core_train
+   xanesnet.infer
+   xanesnet.train

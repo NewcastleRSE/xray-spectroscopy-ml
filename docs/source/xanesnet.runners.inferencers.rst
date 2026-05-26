@@ -9,26 +9,10 @@ xanesnet.runners.inferencers package
 Submodules
 ----------
 
-xanesnet.runners.inferencers.base module
-----------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.runners.inferencers.base
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.runners.inferencers.basic module
------------------------------------------
-
-.. automodule:: xanesnet.runners.inferencers.basic
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.runners.inferencers.registry module
---------------------------------------------
-
-.. automodule:: xanesnet.runners.inferencers.registry
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.runners.inferencers.base
+   xanesnet.runners.inferencers.basic
+   xanesnet.runners.inferencers.ensemble
+   xanesnet.runners.inferencers.registry

@@ -9,26 +9,9 @@ xanesnet.analysis.collectors package
 Submodules
 ----------
 
-xanesnet.analysis.collectors.base module
-----------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.analysis.collectors.base
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.analysis.collectors.errors module
-------------------------------------------
-
-.. automodule:: xanesnet.analysis.collectors.errors
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.analysis.collectors.registry module
---------------------------------------------
-
-.. automodule:: xanesnet.analysis.collectors.registry
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.analysis.collectors.base
+   xanesnet.analysis.collectors.errors
+   xanesnet.analysis.collectors.registry

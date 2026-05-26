@@ -9,10 +9,7 @@ xanesnet.models.schnet package
 Submodules
 ----------
 
-xanesnet.models.schnet.schnet module
-------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.models.schnet.schnet
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.models.schnet.schnet

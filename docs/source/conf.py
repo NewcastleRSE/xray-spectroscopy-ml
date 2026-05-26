@@ -42,6 +42,20 @@ extensions = [
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
+# Silence warnings we cannot fix locally:
+# - Duplicate object descriptions are emitted by sphinx-apidoc when the same
+#   class is reachable through both a package's ``__init__`` re-export and the
+#   submodule that defines it. Both descriptions point at the same Python
+#   object, so the warning is cosmetic.
+# - ``sphinx_autodoc_typehints`` emits forward-reference warnings for
+#   ``pymatgen.core.structure`` types (``CompositionLike``, ``ArrayLike``)
+#   that pymatgen only resolves at type-checking time.
+suppress_warnings = [
+    "ref.duplicate_object_description",
+    "sphinx_autodoc_typehints.forward_reference",
+    "sphinx_autodoc_typehints.guarded_import",
+]
+
 # -- Autosummary -------------------------------------------------------------
 autosummary_generate = True  # auto-generate stub .rst files
 autosummary_imported_members = False  # only document explicitly defined members
@@ -54,6 +68,7 @@ autodoc_default_options = {
     "special-members": "__init__",  # document __init__
     "inherited-members": False,
     "show-inheritance": True,  # show class inheritance
+    "ignore-module-all": True,  # don't re-document __all__ re-exports at the package level
 }
 autodoc_typehints = "description"  # render type hints in the description section
 autodoc_typehints_description_target = "documented"
@@ -68,7 +83,7 @@ napoleon_include_special_with_doc = True
 napoleon_use_admonition_for_examples = True
 napoleon_use_admonition_for_notes = True
 napoleon_use_admonition_for_references = True
-napoleon_use_ivar = False
+napoleon_use_ivar = True  # avoid duplicate object descriptions for dataclass attrs
 napoleon_use_param = True
 napoleon_use_rtype = True
 napoleon_preprocess_types = True

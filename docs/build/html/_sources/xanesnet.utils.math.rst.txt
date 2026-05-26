@@ -9,18 +9,8 @@ xanesnet.utils.math package
 Submodules
 ----------
 
-xanesnet.utils.math.fourier module
-----------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.utils.math.fourier
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.utils.math.gaussian module
------------------------------------
-
-.. automodule:: xanesnet.utils.math.gaussian
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.utils.math.fourier
+   xanesnet.utils.math.gaussian

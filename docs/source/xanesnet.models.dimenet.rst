@@ -9,18 +9,8 @@ xanesnet.models.dimenet package
 Submodules
 ----------
 
-xanesnet.models.dimenet.dimenet module
---------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: xanesnet.models.dimenet.dimenet
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-xanesnet.models.dimenet.dimenet\_pp module
-------------------------------------------
-
-.. automodule:: xanesnet.models.dimenet.dimenet_pp
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   xanesnet.models.dimenet.dimenet
+   xanesnet.models.dimenet.dimenet_pp
