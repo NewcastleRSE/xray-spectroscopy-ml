@@ -10,7 +10,7 @@ $defs:
     - step_size
     properties:
       lr_scheduler_type:
-        $ref: ../component_types.schema.yaml#/$defs/lrSchedulerTypeStep
+        const: step
         description: Registry key passed to ``LRSchedulerRegistry.get``.
       step_size:
         type: integer

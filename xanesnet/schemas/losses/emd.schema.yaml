@@ -9,7 +9,7 @@ $defs:
     - loss_type
     properties:
       loss_type:
-        $ref: loss_types.schema.yaml#/$defs/lossTypeEMD
+        const: emd
         description: Identifier string for this loss type.
     description: Earth Mover's (Wasserstein) distance loss.
 description: Loss schemas backed by ``LossRegistry`` classes and loss constructor signatures.

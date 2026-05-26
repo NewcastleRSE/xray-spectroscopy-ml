@@ -10,7 +10,7 @@ $defs:
     - indices
     properties:
       selector_type:
-        $ref: ../analysis_types.schema.yaml#/$defs/selectorTypeIndexList
+        const: index_list
         description: Registered selector name from the analysis configuration.
       indices:
         type: array

@@ -9,7 +9,7 @@ $defs:
     - aggregator_type
     properties:
       aggregator_type:
-        $ref: ../analysis_types.schema.yaml#/$defs/analysisTypeScalar
+        const: scalar
         description: Registered aggregator name from the analysis configuration.
       percentiles:
         type: array

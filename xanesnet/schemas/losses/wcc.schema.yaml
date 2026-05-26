@@ -9,7 +9,7 @@ $defs:
     - loss_type
     properties:
       loss_type:
-        $ref: loss_types.schema.yaml#/$defs/lossTypeWCC
+        const: wcc
         description: Identifier string for this loss type.
       gaussian_hwhm:
         type: integer

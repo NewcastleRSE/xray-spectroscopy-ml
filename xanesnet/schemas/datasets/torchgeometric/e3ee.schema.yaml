@@ -90,7 +90,7 @@ $defs:
         default: null
         description: Optional path to split indices.
       dataset_type:
-        $ref: ../dataset_types.schema.yaml#/$defs/datasetTypeE3EE
+        const: e3ee
         description: Registered dataset type name.
     description: E3EE dataset that emits one graph sample per absorber site.
 description: Dataset schemas backed by ``DatasetRegistry`` classes and dataset constructor signatures.

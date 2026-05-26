@@ -88,7 +88,7 @@ $defs:
         default: null
         description: Optional path to split indices.
       dataset_type:
-        $ref: ../dataset_types.schema.yaml#/$defs/datasetTypeDescriptor
+        const: descriptor
         description: Registered dataset type name.
     allOf:
     - $ref: ../descriptor_feature_rules.schema.yaml#/$defs/descriptorFeatureRules

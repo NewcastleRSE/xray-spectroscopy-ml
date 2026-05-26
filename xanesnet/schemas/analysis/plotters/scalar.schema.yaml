@@ -9,7 +9,7 @@ $defs:
     - plotter_type
     properties:
       plotter_type:
-        $ref: ../analysis_types.schema.yaml#/$defs/analysisTypeScalar
+        const: scalar
         description: Registered plotter name from the analysis configuration.
       bins:
         type: integer

@@ -25,5 +25,6 @@ $defs:
     - $ref: gemnet_oc.schema.yaml#/$defs/modelInferGemNetOC
     - $ref: e3ee.schema.yaml#/$defs/modelInferE3EE
     - $ref: e3ee_full.schema.yaml#/$defs/modelInferE3EEFull
-    description: Union of model configuration objects for inference, where ``auto`` model values are rejected.
+    description: Union of model configuration objects for inference. Runtime validation rejects unresolved ``auto`` model
+      values after checkpoint merge.
 description: Model schemas backed by ``ModelRegistry`` classes and model constructor signatures.

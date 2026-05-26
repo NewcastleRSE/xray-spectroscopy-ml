@@ -9,7 +9,7 @@ $defs:
     - loss_type
     properties:
       loss_type:
-        $ref: loss_types.schema.yaml#/$defs/lossTypeBCE
+        const: bce
         description: Identifier string for this loss type.
     description: Binary cross-entropy loss with logits.
 description: Loss schemas backed by ``LossRegistry`` classes and loss constructor signatures.

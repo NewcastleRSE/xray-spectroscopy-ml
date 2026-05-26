@@ -11,7 +11,8 @@ required:
 - strategy
 $comment: 'Training configs are validated by validate_config_train(). Exactly one runner section is allowed here: trainer
   is required and inferencer is forbidden. Selected top-level model dimensions may be the case-insensitive token "auto"; they
-  are resolved from the prepared dataset before model construction.'
+  are resolved from the prepared dataset before model construction. Dataset/model compatibility is checked against
+  BatchProcessorRegistry by the Python validator.'
 properties:
   seed:
     $ref: shared/value_types.schema.yaml#/$defs/nullableInteger
@@ -40,9 +41,7 @@ properties:
   strategy:
     $ref: strategies/strategies.schema.yaml#/$defs/strategy
     description: Configuration section used by core setup code to instantiate ``StrategyRegistry.get(strategy_type)``.
-allOf:
-- not:
-    required:
-    - inferencer
-- $ref: compatibility/batchprocessors.schema.yaml#/$defs/trainDatasetModelCompatibility
+not:
+  required:
+  - inferencer
 description: Training configuration validated by ``validate_config_train`` and consumed by ``core_train.train``.

@@ -1,6 +1,6 @@
 # XANESNET Config UI
 
-Interactive React editor for XANESNET `train`, `infer`, and `analyze` YAML configuration files. The form is generated from the JSON Schema files in `src/schemas`, so defaults, allowed variants, and compatibility rules stay close to the Python configuration model.
+Interactive React editor for XANESNET `train`, `infer`, and `analyze` YAML configuration files. The form is generated from the JSON Schema files exposed at `src/schemas`, which is a symlink to the packaged schemas in `../../xanesnet/schemas`. This keeps UI defaults and allowed schema variants aligned with runtime Python validation.
 
 The app is intended for two jobs:
 
@@ -41,12 +41,14 @@ npm run preview  # Preview the production build locally
 - `src/App.tsx` contains the React UI, RJSF custom fields/templates, YAML loading, signature loading, and form state handling.
 - `src/configYaml.ts` materializes schema defaults and formats generated YAML.
 - `src/schemaRegistry.ts` loads YAML schemas through Vite, resolves local `$ref`s, and decorates union option labels.
-- `src/schemas/` contains the bundled JSON Schemas for Train, Infer, Analyze, and their component sections.
+- `src/schemas/` links to the packaged JSON Schemas for Train, Infer, Analyze, and their component sections.
 - `public/favicon.svg` is the app icon used by `index.html`.
 
 ## Schema Notes
 
 Schemas are authored as YAML files and imported with Vite raw imports. Local `$ref`s are resolved in `schemaRegistry.ts`, so schema files can stay split by domain while the app receives dereferenced schema objects.
+
+The canonical schema files live in `../../xanesnet/schemas`; do not edit copies under the UI tree.
 
 Infer configs are special: at runtime XANESNET merges user Infer YAML with a checkpoint signature before validation. The UI mirrors that by letting users load `signature.yaml` in Infer mode. User-supplied Infer YAML can stay as a checkpoint overlay without `dataset_type`, `model`, or `strategy`; a loaded signature supplies those fields when available.
 

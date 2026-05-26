@@ -1,7 +1,7 @@
 $schema: https://json-schema.org/draft/2020-12/schema
 $id: common.schema.yaml
 title: XANESNET shared schema index
-$comment: Compatibility index. Editable variant schemas live in project-structured subfolders; reusable enum/value types live
+$comment: Shared schema index. Editable variant schemas live in project-structured subfolders; reusable enum/value types live
   next to their owning concepts.
 $defs:
   nullableInteger:
@@ -36,7 +36,7 @@ $defs:
     description: Union of model configuration objects for training, including supported ``auto`` fields.
   modelInfer:
     $ref: models/models.schema.yaml#/$defs/modelInfer
-    description: Union of model configuration objects for inference, where ``auto`` model values are rejected.
+    description: Union of model configuration objects for inference; runtime validation rejects unresolved ``auto`` values.
   modelType:
     $ref: models/model_types.schema.yaml#/$defs/modelType
     description: Model registry key accepted by ``ModelRegistry.get``.
@@ -49,12 +49,6 @@ $defs:
   strategy:
     $ref: strategies/strategies.schema.yaml#/$defs/strategy
     description: Union of strategy configuration objects instantiated by ``StrategyRegistry``.
-  trainDatasetModelCompatibility:
-    $ref: compatibility/batchprocessors.schema.yaml#/$defs/trainDatasetModelCompatibility
-    description: Dataset/model compatibility rules for training derived from registered batch processors.
-  inferModeCompatibility:
-    $ref: compatibility/batchprocessors.schema.yaml#/$defs/inferModeCompatibility
-    description: Inference-only compatibility rules, including deep-ensemble inferencer requirements.
   selector:
     $ref: analysis/analysis.schema.yaml#/$defs/selector
     description: Union of selector configuration objects instantiated by ``SelectorRegistry`` in ``core_analyze``.

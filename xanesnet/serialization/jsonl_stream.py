@@ -84,6 +84,7 @@ def json_friendly(value: Any) -> Any:
     """Convert a value to a JSON-serializable form.
 
     Conversion priority:
+
     1. ``None`` and JSON primitives (``str``, ``int``, ``float``, ``bool``) are
        returned as-is.
     2. ``Path`` objects are converted to strings.

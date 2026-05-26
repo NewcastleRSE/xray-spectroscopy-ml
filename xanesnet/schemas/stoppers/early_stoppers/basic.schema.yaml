@@ -10,7 +10,7 @@ $defs:
     - patience
     properties:
       early_stopper_type:
-        $ref: ../early_stopper_types.schema.yaml#/$defs/earlyStopperTypeBasic
+        const: basic
         description: Registry key identifying this stopper type.
       restore_best:
         type: boolean

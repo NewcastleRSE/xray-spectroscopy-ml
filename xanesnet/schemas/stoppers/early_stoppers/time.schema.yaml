@@ -10,7 +10,7 @@ $defs:
     - time_limit_seconds
     properties:
       early_stopper_type:
-        $ref: ../early_stopper_types.schema.yaml#/$defs/earlyStopperTypeTime
+        const: time
         description: Registry key identifying this stopper type.
       restore_best:
         type: boolean

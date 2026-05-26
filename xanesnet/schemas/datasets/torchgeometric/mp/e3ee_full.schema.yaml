@@ -101,7 +101,7 @@ $defs:
         default: null
         description: Optional path to split indices.
       dataset_type:
-        $ref: ../../dataset_types.schema.yaml#/$defs/datasetTypeE3EEFullMP
+        const: e3ee_full_mp
         description: Registered dataset type name.
     description: Multiprocessing variant of :class:`E3EEFullDataset`.
 description: Dataset schemas backed by ``DatasetRegistry`` classes and dataset constructor signatures.

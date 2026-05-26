@@ -9,7 +9,7 @@ $defs:
     - plotter_type
     properties:
       plotter_type:
-        $ref: ../analysis_types.schema.yaml#/$defs/plotterTypeStatTable
+        const: stat_table
         description: Registered plotter name from the analysis configuration.
       stat_keys:
         type:

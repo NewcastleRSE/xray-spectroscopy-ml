@@ -15,11 +15,9 @@ __pycache__/
 .pyre/
 
 ############################################
-# ML artifacts (models, runs, etc.)
+# ML artifacts
 ############################################
-models/
 runs/
-!xanesnet/models/
 
 ############################################
 # Data (usually not committed)

@@ -9,7 +9,7 @@ $defs:
     - plotter_type
     properties:
       plotter_type:
-        $ref: ../analysis_types.schema.yaml#/$defs/plotterTypeSpectra
+        const: spectra
         description: Registered plotter name from the analysis configuration.
       sort_by_value:
         type: boolean

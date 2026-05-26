@@ -11,7 +11,7 @@ $defs:
     - end
     properties:
       selector_type:
-        $ref: ../analysis_types.schema.yaml#/$defs/selectorTypeIndexRange
+        const: index_range
         description: Registered selector name from the analysis configuration.
       start:
         type: integer

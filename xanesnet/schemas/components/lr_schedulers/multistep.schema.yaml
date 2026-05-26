@@ -10,7 +10,7 @@ $defs:
     - milestones
     properties:
       lr_scheduler_type:
-        $ref: ../component_types.schema.yaml#/$defs/lrSchedulerTypeMultiStep
+        const: multistep
         description: Registry key passed to ``LRSchedulerRegistry.get``.
       milestones:
         type: array

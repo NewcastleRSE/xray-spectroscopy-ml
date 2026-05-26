@@ -9,7 +9,7 @@ $defs:
     - loss_type
     properties:
       loss_type:
-        $ref: loss_types.schema.yaml#/$defs/lossTypeSpecPlus
+        const: specplus
         description: Identifier string for this loss type.
       blur_sigma_bins:
         type: number

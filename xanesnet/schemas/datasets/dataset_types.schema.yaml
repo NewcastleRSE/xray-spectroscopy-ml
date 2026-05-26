@@ -30,49 +30,4 @@ $defs:
   descriptorModeForward:
     const: forward
     description: Forward descriptor dataset mode required when Fourier or Gaussian transforms are enabled.
-  datasetTypeDescriptor:
-    const: descriptor
-    description: Registry key definition used by the corresponding XANESNET registry.
-  datasetTypeDescriptorMP:
-    const: descriptor_mp
-    description: Registry key definition used by the corresponding XANESNET registry.
-  datasetTypeEnvEmbed:
-    const: envembed
-    description: Registry key definition used by the corresponding XANESNET registry.
-  datasetTypeEnvEmbedMP:
-    const: envembed_mp
-    description: Registry key definition used by the corresponding XANESNET registry.
-  datasetTypeGeometryGraph:
-    const: geometrygraph
-    description: Registry key definition used by the corresponding XANESNET registry.
-  datasetTypeGeometryGraphMP:
-    const: geometrygraph_mp
-    description: Registry key definition used by the corresponding XANESNET registry.
-  datasetTypeGemNet:
-    const: gemnet
-    description: Registry key definition used by the corresponding XANESNET registry.
-  datasetTypeGemNetMP:
-    const: gemnet_mp
-    description: Registry key definition used by the corresponding XANESNET registry.
-  datasetTypeGemNetOC:
-    const: gemnet_oc
-    description: Registry key definition used by the corresponding XANESNET registry.
-  datasetTypeGemNetOCMP:
-    const: gemnet_oc_mp
-    description: Registry key definition used by the corresponding XANESNET registry.
-  datasetTypeE3EE:
-    const: e3ee
-    description: Registry key definition used by the corresponding XANESNET registry.
-  datasetTypeE3EEMP:
-    const: e3ee_mp
-    description: Registry key definition used by the corresponding XANESNET registry.
-  datasetTypeE3EEFull:
-    const: e3ee_full
-    description: Registry key definition used by the corresponding XANESNET registry.
-  datasetTypeE3EEFullMP:
-    const: e3ee_full_mp
-    description: Registry key definition used by the corresponding XANESNET registry.
-  datasetTypeRichGraph:
-    const: richgraph
-    description: Registry key definition used by the corresponding XANESNET registry.
 description: Dataset schemas backed by ``DatasetRegistry`` classes and dataset constructor signatures.

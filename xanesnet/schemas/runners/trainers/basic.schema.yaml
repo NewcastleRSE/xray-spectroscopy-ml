@@ -9,7 +9,7 @@ $defs:
     - trainer_type
     properties:
       trainer_type:
-        $ref: ../runner_types.schema.yaml#/$defs/trainerTypeBasic
+        const: basic
         description: Identifier string for this trainer type.
       batch_size:
         type: integer

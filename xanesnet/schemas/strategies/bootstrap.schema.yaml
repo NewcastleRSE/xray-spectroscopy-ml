@@ -31,7 +31,7 @@ $defs:
         default: null
         description: Epoch interval between checkpoints, or ``None``.
       strategy_type:
-        $ref: strategy_types.schema.yaml#/$defs/strategyTypeBootstrap
+        const: bootstrap
         description: Strategy identifier.
     description: Bootstrap ensemble strategy.
 description: Strategy schemas backed by ``StrategyRegistry`` classes.

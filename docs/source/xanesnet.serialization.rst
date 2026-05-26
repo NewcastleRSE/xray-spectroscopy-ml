@@ -33,10 +33,10 @@ xanesnet.serialization.config module
    :show-inheritance:
    :undoc-members:
 
-xanesnet.serialization.defaults module
---------------------------------------
+xanesnet.serialization.schema\_validation module
+-------------------------------------------------
 
-.. automodule:: xanesnet.serialization.defaults
+.. automodule:: xanesnet.serialization.schema_validation
    :members:
    :show-inheritance:
    :undoc-members:

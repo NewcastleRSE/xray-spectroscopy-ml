@@ -63,19 +63,4 @@ $defs:
     - none
     - 'no'
     description: Aliases registered to the no-op learning-rate scheduler.
-  lrSchedulerTypeStep:
-    const: step
-    description: Registry key definition used by the corresponding XANESNET registry.
-  lrSchedulerTypeMultiStep:
-    const: multistep
-    description: Registry key definition used by the corresponding XANESNET registry.
-  lrSchedulerTypeExponential:
-    const: exponential
-    description: Registry key definition used by the corresponding XANESNET registry.
-  lrSchedulerTypeLinear:
-    const: linear
-    description: Registry key definition used by the corresponding XANESNET registry.
-  lrSchedulerTypeConstant:
-    const: constant
-    description: Registry key definition used by the corresponding XANESNET registry.
 description: Reusable component value schemas backed by activation, optimizer, initializer, and scheduler registries.

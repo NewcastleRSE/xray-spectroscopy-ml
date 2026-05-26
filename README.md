@@ -97,8 +97,7 @@ It provides:
 - YAML import with automatic mode detection.
 - Inference `signature.yaml` import for checkpoint-aware infer configs.
 - Live YAML preview with defaults materialized and top-level sections ordered for readability.
-- Schema-backed compatibility rules for datasource, dataset, model, batch processor, strategy, runner, and analysis choices.
-- Light and dark themes stored in browser state.
+- Schema-backed defaults and object-shape validation for datasource, dataset, model, runner, strategy, and analysis choices.
 
 Run it locally:
 
@@ -179,10 +178,11 @@ For most workflows, the installed `xanesnet` command is the recommended interfac
 
 ## Configuration
 
-Configuration validation and defaults are implemented in:
+Configuration validation and defaults are implemented with packaged JSON Schema files:
 
 - [xanesnet/serialization/config.py](xanesnet/serialization/config.py)
-- [xanesnet/serialization/defaults.py](xanesnet/serialization/defaults.py)
+- [xanesnet/serialization/schema_validation.py](xanesnet/serialization/schema_validation.py)
+- [xanesnet/schemas/](xanesnet/schemas/)
 
 At a high level, a config contains:
 
@@ -193,7 +193,7 @@ At a high level, a config contains:
 - exactly one runner section: `trainer`, `inferencer`, or analysis settings depending on workflow
 - `strategy`: single model or ensemble training/inference behavior
 
-The config UI schemas in [tools/config-ui/src/schemas/](tools/config-ui/src/schemas/) mirror this structure for interactive editing.
+The config UI reads the same schemas through [tools/config-ui/src/schemas](tools/config-ui/src/schemas), a symlink to [xanesnet/schemas/](xanesnet/schemas/).
 
 ## People and Attribution
 

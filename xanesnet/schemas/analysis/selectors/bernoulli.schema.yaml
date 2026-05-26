@@ -10,7 +10,7 @@ $defs:
     - p
     properties:
       selector_type:
-        $ref: ../analysis_types.schema.yaml#/$defs/selectorTypeRandom
+        const: random
         description: Registered selector name from the analysis configuration.
       p:
         type: number

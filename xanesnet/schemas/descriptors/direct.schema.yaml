@@ -9,7 +9,7 @@ $defs:
     - descriptor_type
     properties:
       descriptor_type:
-        $ref: descriptor_types.schema.yaml#/$defs/descriptorTypeDirect
+        const: direct
         description: Identifier string for this descriptor type.
     $comment: Registered but currently raises NotImplementedError.
     description: Descriptor that reads pre-computed features directly without transformation.

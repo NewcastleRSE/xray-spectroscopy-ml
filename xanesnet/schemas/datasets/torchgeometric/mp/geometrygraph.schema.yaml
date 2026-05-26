@@ -71,7 +71,7 @@ $defs:
         default: null
         description: Optional path to split indices.
       dataset_type:
-        $ref: ../../dataset_types.schema.yaml#/$defs/datasetTypeGeometryGraphMP
+        const: geometrygraph_mp
         description: Registered dataset type name.
     description: Multiprocessing variant of :class:`GeometryGraphDataset`.
 description: Dataset schemas backed by ``DatasetRegistry`` classes and dataset constructor signatures.

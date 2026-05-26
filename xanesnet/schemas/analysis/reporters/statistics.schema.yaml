@@ -9,7 +9,7 @@ $defs:
     - reporter_type
     properties:
       reporter_type:
-        $ref: ../analysis_types.schema.yaml#/$defs/reporterTypeStatistics
+        const: statistics
         description: Registered reporter name from the analysis configuration.
       format:
         $ref: ../analysis_types.schema.yaml#/$defs/reportFormat

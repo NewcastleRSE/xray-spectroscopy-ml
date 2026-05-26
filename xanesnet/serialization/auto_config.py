@@ -19,8 +19,6 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
-import torch
-
 from xanesnet.batchprocessors import BatchProcessorRegistry
 from xanesnet.datasets import Dataset
 from xanesnet.utils.exceptions import ConfigError
@@ -34,12 +32,12 @@ AutoResolver = Callable[[dict[str, Any], Any], dict[str, Any]]
 def resolve_auto_model_config(config: Config, dataset: Dataset) -> Config:
     """Resolve model fields set to ``"auto"`` from a prepared dataset.
 
-    The input config is expected to have passed training validation, including
-    validation that ``"auto"`` is used only for supported top-level model
-    fields. This function only performs the dataset-dependent finalization: it
-    uses the registered batch processor for the dataset/model pair to prepare
-    one sample, asks the model-specific resolver for concrete dimensions, and
-    returns a new ``Config`` without mutating the input config.
+    The input config is expected to have passed schema-backed training
+    validation, including validation that ``"auto"`` is used only for supported
+    top-level model fields. This function only performs the dataset-dependent
+    finalization: it uses the registered batch processor for the dataset/model
+    pair to prepare one sample, asks the model-specific resolver for concrete
+    dimensions, and returns a new ``Config`` without mutating the input config.
 
     Args:
         config: Validated training configuration.
@@ -52,7 +50,7 @@ def resolve_auto_model_config(config: Config, dataset: Dataset) -> Config:
 
     Raises:
         ConfigError: If automatic fields are requested for a model that has no
-            resolver or if the resolver cann derive a requested value from the prepared sample.
+            resolver or if the resolver does not produce a requested field.
     """
     config_raw = config.as_dict()
     model_config = config_raw["model"]
@@ -85,8 +83,168 @@ def resolve_auto_model_config(config: Config, dataset: Dataset) -> Config:
     return Config(config_raw)
 
 
+###############################################################################
+############################### MODEL RESOLVERS ###############################
+###############################################################################
+
+
+def _resolve_mlp(inputs: dict[str, Any], target: Any) -> dict[str, Any]:
+    """Resolve MLP input and output dimensions.
+
+    Args:
+        inputs: Prepared model input dictionary.
+        target: Prepared target tensor.
+
+    Returns:
+        Mapping with MLP automatic fields.
+    """
+    return {
+        "in_size": _last_dim(inputs["x"]),
+        "out_size": _last_dim(target),
+    }
+
+
+def _resolve_envembed(inputs: dict[str, Any], target: Any) -> dict[str, Any]:
+    """Resolve EnvEmbed descriptor and spectral-basis dimensions.
+
+    Args:
+        inputs: Prepared model input dictionary.
+        target: Prepared target tensor. Included for resolver interface
+            consistency.
+
+    Returns:
+        Mapping with EnvEmbed automatic fields.
+    """
+    return {
+        "in_size": _last_dim(inputs["descriptor_features"]),
+        "kgroups": _kgroups_from_basis(inputs["basis"]),
+    }
+
+
+def _resolve_schnet(inputs: dict[str, Any], target: Any) -> dict[str, Any]:
+    """Resolve SchNet output dimension.
+
+    Args:
+        inputs: Prepared model input dictionary. Included for resolver interface
+            consistency.
+        target: Prepared target tensor.
+
+    Returns:
+        Mapping with SchNet automatic fields.
+    """
+    return {"reduce_channels_2": _last_dim(target)}
+
+
+def _resolve_dimenet(inputs: dict[str, Any], target: Any) -> dict[str, Any]:
+    """Resolve DimeNet output dimension.
+
+    Args:
+        inputs: Prepared model input dictionary. Included for resolver interface
+            consistency.
+        target: Prepared target tensor.
+
+    Returns:
+        Mapping with DimeNet automatic fields.
+    """
+    return {"out_channels": _last_dim(target)}
+
+
+def _resolve_dimenet_pp(inputs: dict[str, Any], target: Any) -> dict[str, Any]:
+    """Resolve DimeNet++ output dimension.
+
+    Args:
+        inputs: Prepared model input dictionary. Included for resolver interface
+            consistency.
+        target: Prepared target tensor.
+
+    Returns:
+        Mapping with DimeNet++ automatic fields.
+    """
+    return {"out_channels": _last_dim(target)}
+
+
+def _resolve_gemnet(inputs: dict[str, Any], target: Any) -> dict[str, Any]:
+    """Resolve GemNet output dimension.
+
+    Args:
+        inputs: Prepared model input dictionary. Included for resolver interface
+            consistency.
+        target: Prepared target tensor.
+
+    Returns:
+        Mapping with GemNet automatic fields.
+    """
+    return {"num_targets": _last_dim(target)}
+
+
+def _resolve_gemnet_oc(inputs: dict[str, Any], target: Any) -> dict[str, Any]:
+    """Resolve GemNet-OC output dimension.
+
+    Args:
+        inputs: Prepared model input dictionary. Included for resolver interface
+            consistency.
+        target: Prepared target tensor.
+
+    Returns:
+        Mapping with GemNet-OC automatic fields.
+    """
+    return {"num_targets": _last_dim(target)}
+
+
+def _resolve_e3ee(inputs: dict[str, Any], target: Any) -> dict[str, Any]:
+    """Resolve E3EE output dimension.
+
+    Args:
+        inputs: Prepared model input dictionary. Included for resolver interface
+            consistency.
+        target: Prepared target tensor.
+
+    Returns:
+        Mapping with E3EE automatic fields.
+    """
+    return {"out_size": _last_dim(target)}
+
+
+def _resolve_e3ee_full(inputs: dict[str, Any], target: Any) -> dict[str, Any]:
+    """Resolve E3EEFull output dimension.
+
+    Args:
+        inputs: Prepared model input dictionary. Included for resolver interface
+            consistency.
+        target: Prepared target tensor.
+
+    Returns:
+        Mapping with E3EEFull automatic fields.
+    """
+    return {"out_size": _last_dim(target)}
+
+
+MODEL_AUTO_RESOLVERS: dict[str, AutoResolver] = {
+    "mlp": _resolve_mlp,
+    "envembed": _resolve_envembed,
+    "schnet": _resolve_schnet,
+    "dimenet": _resolve_dimenet,
+    "dimenet++": _resolve_dimenet_pp,
+    "gemnet": _resolve_gemnet,
+    "gemnet_oc": _resolve_gemnet_oc,
+    "e3ee": _resolve_e3ee,
+    "e3ee_full": _resolve_e3ee_full,
+}
+
+###############################################################################
+################################### HELPERS ###################################
+###############################################################################
+
+
 def _requested_auto_fields(model_config: dict[str, Any]) -> set[str]:
-    """Return top-level model fields whose value is ``"auto"``."""
+    """Return top-level model fields whose value is ``"auto"``.
+
+    Args:
+        model_config: Raw model configuration dictionary.
+
+    Returns:
+        Set of top-level model field names requesting automatic resolution.
+    """
     return {key for key, value in model_config.items() if _is_auto(value)}
 
 
@@ -109,122 +267,27 @@ def _resolver_for(model_type: str) -> AutoResolver:
         raise ConfigError(f"No automatic model config resolver registered for model '{model_type}'.") from exc
 
 
-def _resolve_descriptor_io(inputs: dict[str, Any], target: Any) -> dict[str, Any]:
-    """Resolve descriptor-vector input size and target spectrum length."""
-    return {
-        "in_size": _last_dim("input 'x'", _required_tensor(inputs, "x")),
-        "out_size": _last_dim("target", target),
-    }
-
-
-def _resolve_mlp(inputs: dict[str, Any], target: Any) -> dict[str, Any]:
-    """Resolve MLP input and output dimensions."""
-    return _resolve_descriptor_io(inputs, target)
-
-
-def _resolve_lstm(inputs: dict[str, Any], target: Any) -> dict[str, Any]:
-    """Resolve LSTM input and output dimensions."""
-    return _resolve_descriptor_io(inputs, target)
-
-
-def _resolve_envembed(inputs: dict[str, Any], target: Any) -> dict[str, Any]:
-    """Resolve EnvEmbed descriptor and spectral-basis dimensions."""
-    return {
-        "in_size": _last_dim("input 'descriptor_features'", _required_tensor(inputs, "descriptor_features")),
-        "kgroups": _kgroups_from_basis(inputs.get("basis")),
-    }
-
-
-def _resolve_schnet(inputs: dict[str, Any], target: Any) -> dict[str, Any]:
-    """Resolve SchNet output dimension."""
-    return {"reduce_channels_2": _last_dim("target", target)}
-
-
-def _resolve_dimenet(inputs: dict[str, Any], target: Any) -> dict[str, Any]:
-    """Resolve DimeNet output dimension."""
-    return {"out_channels": _last_dim("target", target)}
-
-
-def _resolve_dimenet_pp(inputs: dict[str, Any], target: Any) -> dict[str, Any]:
-    """Resolve DimeNet++ output dimension."""
-    return {"out_channels": _last_dim("target", target)}
-
-
-def _resolve_gemnet(inputs: dict[str, Any], target: Any) -> dict[str, Any]:
-    """Resolve GemNet output dimension."""
-    return {"num_targets": _last_dim("target", target)}
-
-
-def _resolve_gemnet_oc(inputs: dict[str, Any], target: Any) -> dict[str, Any]:
-    """Resolve GemNet-OC output dimension."""
-    return {"num_targets": _last_dim("target", target)}
-
-
-def _resolve_e3ee(inputs: dict[str, Any], target: Any) -> dict[str, Any]:
-    """Resolve E3EE output dimension."""
-    return {"out_size": _last_dim("target", target)}
-
-
-def _resolve_e3ee_full(inputs: dict[str, Any], target: Any) -> dict[str, Any]:
-    """Resolve E3EEFull output dimension."""
-    return {"out_size": _last_dim("target", target)}
-
-
-MODEL_AUTO_RESOLVERS: dict[str, AutoResolver] = {
-    "mlp": _resolve_mlp,
-    "lstm": _resolve_lstm,
-    "envembed": _resolve_envembed,
-    "schnet": _resolve_schnet,
-    "dimenet": _resolve_dimenet,
-    "dimenet++": _resolve_dimenet_pp,
-    "gemnet": _resolve_gemnet,
-    "gemnet_oc": _resolve_gemnet_oc,
-    "e3ee": _resolve_e3ee,
-    "e3ee_full": _resolve_e3ee_full,
-}
-
-
 def _is_auto(value: Any) -> bool:
-    """Return whether ``value`` requests automatic resolution."""
+    """Return whether ``value`` requests automatic resolution.
+
+    Args:
+        value: Raw model config value to inspect.
+
+    Returns:
+        ``True`` when ``value`` is the case-insensitive string ``"auto"``.
+    """
     return isinstance(value, str) and value.lower() == AUTO_VALUE
 
 
-def _required_tensor(inputs: dict[str, Any], key: str) -> torch.Tensor:
-    """Return a tensor input by key.
+def _last_dim(value: Any) -> int:
+    """Return the final dimension of a prepared tensor-like value.
 
     Args:
-        inputs: Model input dictionary returned by a batch processor.
-        key: Required input key.
+        value: Prepared value whose final dimension should be used.
 
     Returns:
-        Tensor stored at ``key``.
-
-    Raises:
-        ConfigError: If ``key`` is missing or does not contain a tensor.
+        Size of the final dimension.
     """
-    value = inputs.get(key)
-    if not isinstance(value, torch.Tensor):
-        raise ConfigError(f"Cannot derive automatic model configuration because input '{key}' is not a tensor.")
-    return value
-
-
-def _last_dim(name: str, value: Any) -> int:
-    """Return the final dimension of a tensor.
-
-    Args:
-        name: Human-readable tensor name used in error messages.
-        value: Tensor whose final dimension should be used.
-
-    Returns:
-        Size of the final tensor dimension.
-
-    Raises:
-        ConfigError: If ``value`` is not a tensor or is a scalar tensor.
-    """
-    if not isinstance(value, torch.Tensor):
-        raise ConfigError(f"Cannot derive automatic model configuration because {name} is not a tensor.")
-    if value.ndim == 0:
-        raise ConfigError(f"Cannot derive automatic model configuration from scalar {name} tensor.")
     return int(value.shape[-1])
 
 
@@ -236,24 +299,7 @@ def _kgroups_from_basis(basis: Any) -> list[int]:
 
     Returns:
         List of coefficient counts, one per spectral-basis width group.
-
-    Raises:
-        ConfigError: If the basis does not expose compatible ``Phi`` and
-            ``widths_eV`` attributes.
     """
-    phi = getattr(basis, "Phi", None)
-    widths_eV = getattr(basis, "widths_eV", None)
-    if not isinstance(phi, torch.Tensor):
-        raise ConfigError("Cannot derive model.kgroups because the batch processor did not provide a spectral basis.")
-    if not isinstance(widths_eV, list) or len(widths_eV) == 0:
-        raise ConfigError("Cannot derive model.kgroups because the spectral basis has no width groups.")
-
-    num_groups = len(widths_eV)
-    num_coefficients = int(phi.shape[1])
-    if num_coefficients % num_groups != 0:
-        raise ConfigError(
-            "Cannot derive model.kgroups because the spectral basis coefficient count is not divisible by "
-            "the number of width groups."
-        )
-
+    num_groups = len(basis.widths_eV)
+    num_coefficients = int(basis.Phi.shape[1])
     return [num_coefficients // num_groups] * num_groups

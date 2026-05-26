@@ -1503,7 +1503,7 @@ function App() {
         <section className="editor-panel" aria-label="Configuration form">
           <div className="panel-heading">
             <h2>{activeOption.label} config</h2>
-            <p>Fields, defaults, and compatibility rules come from the bundled JSON Schemas.</p>
+            <p>Fields and defaults come from the bundled JSON Schemas.</p>
           </div>
           {signatureState ? (
             <section className="signature-summary" aria-label="Loaded signature">

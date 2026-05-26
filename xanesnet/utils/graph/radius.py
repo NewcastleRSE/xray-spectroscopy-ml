@@ -68,8 +68,8 @@ def edges_from_structure(
         A 3-tuple ``(edge_index, edge_weight, edge_vec)``:
 
         - ``edge_index``: ``(2, E)`` int64.
-                - ``edge_weight``: ``(E,)`` float32 -- edge lengths in **angstroms**.
-                - ``edge_vec``: ``(E, 3)`` float32 -- displacement vectors
+        - ``edge_weight``: ``(E,)`` float32 -- edge lengths in **angstroms**.
+        - ``edge_vec``: ``(E, 3)`` float32 -- displacement vectors
           ``pos[dst] - pos[src]``.
     """
     all_neighbors = structure.get_all_neighbors(r=cutoff)
@@ -147,8 +147,8 @@ def edges_from_molecule(
         A 3-tuple ``(edge_index, edge_weight, edge_vec)``:
 
         - ``edge_index``: ``(2, E)`` int64.
-                - ``edge_weight``: ``(E,)`` float32 -- edge lengths in **angstroms**.
-                - ``edge_vec``: ``(E, 3)`` float32 -- displacement vectors
+        - ``edge_weight``: ``(E,)`` float32 -- edge lengths in **angstroms**.
+        - ``edge_vec``: ``(E, 3)`` float32 -- displacement vectors
           ``pos[dst] - pos[src]``.
     """
     pos = torch.tensor(molecule.cart_coords, dtype=torch.float32)

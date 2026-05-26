@@ -25,21 +25,7 @@ import yaml
 from xanesnet.utils.exceptions import ConfigError
 from xanesnet.utils.filesystem import copy_file
 
-from .defaults import (
-    DATASET_DEFAULT,
-    DATASET_REQUIRED,
-    DATASOURCE_DEFAULT,
-    DATASOURCE_REQUIRED,
-    INFERENCER_DEFAULTS,
-    INFERENCER_REQUIRED,
-    MODEL_AUTO_FIELDS,
-    MODEL_DEFAULTS,
-    MODEL_REQUIRED,
-    STRATEGY_DEFAULTS,
-    STRATEGY_REQUIRED,
-    TRAINER_DEFAULTS,
-    TRAINER_REQUIRED,
-)
+from .schema_validation import validate_config_schema
 
 ###############################################################################
 ##################################### RAW #####################################
@@ -85,7 +71,7 @@ def save_raw_config(config: ConfigRaw, file_path: str | Path) -> Path:
         file_path: Destination path. Must end with ``.yaml`` or ``.yml``.
 
     Returns:
-        The resolved ``Path`` to the written file.
+        The ``Path`` to the written file.
 
     Raises:
         ConfigError: If the extension is wrong, the parent directory does not
@@ -123,6 +109,10 @@ def copy_raw_config(
 
     Returns:
         The ``Path`` to the copied file.
+
+    Raises:
+        ConfigError: If the source file is missing, has an unsupported suffix,
+            or cannot be copied to ``dst_dir``.
     """
     return copy_file(file_path, dst_dir, new_name, allowed_suffixes={".yaml", ".yml"})
 
@@ -170,7 +160,11 @@ class Config:
     """
 
     def __init__(self, data: ConfigRaw) -> None:
-        """Store a normalized raw configuration mapping."""
+        """Store a normalized raw configuration mapping.
+
+        Args:
+            data: Raw configuration dictionary to wrap.
+        """
         self._data: ConfigRaw = self._normalize_raw(data)
 
     # Getters for config values with type checking
@@ -400,7 +394,15 @@ class Config:
         """
 
         def convert(value: Any) -> Any:
-            """Convert a value into a configuration-friendly representation."""
+            """Convert one raw config value into a constructor-friendly value.
+
+            Args:
+                value: Raw config value to convert.
+
+            Returns:
+                Nested dictionaries as ``Config`` objects, lists converted
+                recursively, and scalar values unchanged.
+            """
             if isinstance(value, dict):
                 return Config(copy.deepcopy(value))
             elif isinstance(value, list):
@@ -417,7 +419,7 @@ class Config:
             file_path: Destination path. Must end with ``.yaml`` or ``.yml``.
 
         Returns:
-            The resolved ``Path`` to the written file.
+            The ``Path`` to the written file.
 
         Raises:
             ConfigError: Propagated from ``save_raw_config``.
@@ -449,12 +451,12 @@ class Config:
         self._data = merge_raw_configs(self._data, normalized_other)
 
     @staticmethod
-    def _normalize_raw(value: ConfigRaw) -> ConfigRaw:
+    def _normalize_raw(value: Any) -> Any:
         """Recursively unwrap any nested ``Config`` objects to plain dicts.
 
         Args:
-            value: A raw config value, possibly containing nested ``Config``
-                instances.
+            value: Raw config value, possibly containing nested ``Config``
+                instances, dictionaries, or lists.
 
         Returns:
             The same structure with all ``Config`` instances replaced by their
@@ -477,314 +479,68 @@ class Config:
 def validate_config_train(config: ConfigRaw) -> Config:
     """Validate a config dict for a training run.
 
-    Training configs may set selected top-level model fields to ``"auto"``.
-    Those values are validated here and resolved later, after the dataset has
-    been prepared.
+    Validation is driven by ``xanesnet/schemas/train.schema.yaml``. Missing
+    schema defaults are materialized into ``config`` in place. Training configs
+    may set selected top-level model fields to ``"auto"``; the train schema
+    validates those fields and ``auto_config.resolve_auto_model_config``
+    resolves them later from the prepared dataset.
 
     Args:
-        config: Raw configuration dictionary.
+        config: Raw configuration dictionary to validate and update.
 
     Returns:
         A validated ``Config`` object.
 
     Raises:
-        ConfigError: If ``"auto"`` is used for an unsupported model field.
+        ConfigError: If the configuration does not satisfy the training schema.
     """
-    # TODO writing better train validation
-    validated = validate_config(config)
-    _validate_train_model_auto_fields(validated.as_dict())
-    return validated
+    logging.info("Validating the raw input training config file...")
+    validated = validate_config_schema(config, "train")
+    logging.info("Config: OK")
+    return Config(validated)
 
 
 def validate_config_infer(config: ConfigRaw) -> Config:
     """Validate a config dict for an inference run.
 
-    Inference model architecture is restored from the checkpoint signature, so
-    model fields set to ``"auto"`` are rejected instead of being re-detected
-    from the inference dataset.
+    Validation is driven by ``xanesnet/schemas/infer_runtime.schema.yaml`` and
+    is intended for the merged user/checkpoint configuration. Missing schema
+    defaults are materialized into ``config`` in place. Inference model
+    architecture comes from the checkpoint signature, so runtime validation
+    rejects unresolved ``"auto"`` model values after schema validation.
 
     Args:
-        config: Raw configuration dictionary.
+        config: Raw configuration dictionary to validate and update.
 
     Returns:
         A validated ``Config`` object.
 
     Raises:
-        ConfigError: If any model value is set to ``"auto"``.
+        ConfigError: If the configuration does not satisfy the merged inference
+            schema.
     """
-    # TODO writing better infer validation
-    validated = validate_config(config)
-    _validate_no_infer_model_auto_fields(validated.as_dict())
-    return validated
+    logging.info("Validating the merged inference config file...")
+    validated = validate_config_schema(config, "infer")
+    logging.info("Config: OK")
+    return Config(validated)
 
 
 def validate_config_analyze(config: ConfigRaw) -> Config:
     """Validate a config dict for an analysis run.
 
-    Args:
-        config: Raw configuration dictionary.
-
-    Returns:
-        A ``Config`` object (minimal validation applied).
-    """
-    # TODO writing better analyze validation
-    return Config(config)
-
-
-def validate_config(config: ConfigRaw) -> Config:
-    """Run full config validation and fill in defaults.
+    Validation is driven by ``xanesnet/schemas/analyze.schema.yaml``. Missing
+    schema defaults are materialized into ``config`` in place.
 
     Args:
-        config: Raw configuration dictionary to validate and mutate in-place.
+        config: Raw configuration dictionary to validate and update.
 
     Returns:
-        A ``Config`` object wrapping the validated and defaulted data.
+        A validated ``Config`` object.
 
     Raises:
-        ConfigError: If any required key is missing, a type key is absent, or
-            mutually exclusive sections coexist.
+        ConfigError: If the configuration does not satisfy the analysis schema.
     """
-    logging.info("Validating the raw input config file...")
-
-    # Global settings
-    _validate_global(config, "seed", None)
-    _validate_global(config, "device", "cpu")
-
-    # Sections
-    _validate_section(config, "datasource", "datasource_type", DATASOURCE_REQUIRED)
-    _validate_section(config, "dataset", "dataset_type", DATASET_REQUIRED)
-    _validate_section(config, "model", "model_type", MODEL_REQUIRED)
-    _validate_mutually_exclusive(config, "trainer", "inferencer")
-    if config.get("trainer", None):
-        _validate_section(config, "trainer", "trainer_type", TRAINER_REQUIRED)
-    if config.get("inferencer", None):
-        _validate_section(config, "inferencer", "inferencer_type", INFERENCER_REQUIRED)
-    _validate_section(config, "strategy", "strategy_type", STRATEGY_REQUIRED)
-
-    # Section defaults
-    _assign_defaults(config, "datasource", "datasource_type", DATASOURCE_DEFAULT)
-    _assign_defaults(config, "dataset", "dataset_type", DATASET_DEFAULT)
-    _assign_defaults(config, "model", "model_type", MODEL_DEFAULTS)
-    if config.get("trainer", None):
-        _assign_defaults(config, "trainer", "trainer_type", TRAINER_DEFAULTS)
-    if config.get("inferencer", None):
-        _assign_defaults(config, "inferencer", "inferencer_type", INFERENCER_DEFAULTS)
-    _assign_defaults(config, "strategy", "strategy_type", STRATEGY_DEFAULTS)
-
+    logging.info("Validating the raw input analysis config file...")
+    validated = validate_config_schema(config, "analyze")
     logging.info("Config: OK")
-
-    return Config(config)
-
-
-def _validate_global(
-    config: ConfigRaw,
-    key: str,
-    default: Any = None,
-    required: bool = False,
-) -> None:
-    """Validate or assign a top-level global config key.
-
-    Args:
-        config: The raw config dictionary (mutated in-place when setting defaults).
-        key: The top-level key to check.
-        default: Default value assigned when the key is absent and not required.
-        required: If ``True``, raise ``ConfigError`` when the key is absent.
-
-    Raises:
-        ConfigError: If ``required=True`` and the key is missing.
-    """
-    value = config.get(key, None)
-    if value is None:
-        if required:
-            raise ConfigError(f"Missing required key '{key}' in config.")
-
-        else:
-            logging.warning(f"Missing optional key '{key}' in config. Using default: '{default}'.")
-            config[key] = default
-
-
-def _validate_section(
-    config: ConfigRaw,
-    section: str,
-    type_key: str,
-    required_by_type: dict[str, list[str]],
-    required: bool = True,
-) -> None:
-    """Validate a config section against a registry of required keys.
-
-    Args:
-        config: The raw config dictionary.
-        section: The section name (top-level key whose value is a sub-dict).
-        type_key: Key inside the section that identifies the component type.
-        required_by_type: Mapping from component type name to the list of
-            required dot-separated key paths.
-        required: If ``True`` (default), raise ``ConfigError`` when the section
-            is absent.
-
-    Raises:
-        ConfigError: If the section is missing (and required), the type key is
-            absent, the type is unknown, or any required key path is absent.
-    """
-    section_config = config.get(section, None)
-    if section_config is None:
-        if required:
-            raise ConfigError(f"Missing required section '{section}' in config.")
-        else:
-            logging.info(f"Optional section '{section}' not present, skipping.")
-            return
-
-    assert section_config is not None
-    section_type = section_config.get(type_key)
-    if not section_type:
-        raise ConfigError(f"'{section}.{type_key}' must be specified.")
-
-    if section_type not in required_by_type:
-        raise ConfigError(f"Unknown {section} type: {section_type!r}")
-
-    for key_path in required_by_type[section_type]:
-        current = section_config
-        for i, part in enumerate(key_path.split(".")):
-            if isinstance(current, dict) and part in current:
-                current = current[part]
-            else:
-                raise ConfigError(f"Missing required key '{key_path}' in section '{section_type}'.")
-
-
-def _validate_mutually_exclusive(config: ConfigRaw, section_a: str, section_b: str) -> None:
-    """Ensure exactly one of two mutually exclusive sections is present.
-
-    Args:
-        config: The raw config dictionary.
-        section_a: Name of the first section.
-        section_b: Name of the second section.
-
-    Raises:
-        ConfigError: If neither or both sections are present.
-    """
-    section_a_config = config.get(section_a, None)
-    section_b_config = config.get(section_b, None)
-
-    if not section_a_config and not section_b_config:
-        raise ConfigError(f"Missing either section '{section_a}' or section '{section_b}'.")
-
-    if section_a_config and section_b_config:
-        raise ConfigError(f"Section '{section_a}' and section '{section_b}' are mutually exclusive.")
-
-
-def _validate_train_model_auto_fields(config: ConfigRaw) -> None:
-    """Validate training-time ``"auto"`` model fields.
-
-    Args:
-        config: Validated raw training config.
-
-    Raises:
-        ConfigError: If ``"auto"`` appears outside the allowlist for the
-            configured model type.
-    """
-    model_config = config.get("model", {})
-    if not isinstance(model_config, dict):
-        return
-
-    model_type = model_config.get("model_type")
-    if not isinstance(model_type, str):
-        return
-
-    allowed_fields = MODEL_AUTO_FIELDS.get(model_type, set())
-    unsupported_paths = [
-        path
-        for path in _find_model_auto_paths(model_config)
-        if path.count(".") > 0 or path not in allowed_fields
-    ]
-    if unsupported_paths:
-        allowed = ", ".join(f"model.{field}" for field in sorted(allowed_fields)) or "none"
-        unsupported = ", ".join(f"model.{path}" for path in unsupported_paths)
-        raise ConfigError(
-            f"Unsupported automatic model config field(s) for model '{model_type}': {unsupported}. "
-            f"Allowed fields: {allowed}."
-        )
-
-
-def _validate_no_infer_model_auto_fields(config: ConfigRaw) -> None:
-    """Reject ``"auto"`` model values in inference configs.
-
-    Args:
-        config: Validated raw inference config.
-
-    Raises:
-        ConfigError: If any model value is set to ``"auto"``.
-    """
-    model_config = config.get("model", {})
-    if not isinstance(model_config, dict):
-        return
-
-    auto_paths = _find_model_auto_paths(model_config)
-    if auto_paths:
-        joined = ", ".join(f"model.{path}" for path in auto_paths)
-        raise ConfigError(
-            "Automatic model configuration is only supported during training. "
-            f"Inference uses the checkpoint signature; found: {joined}."
-        )
-
-
-def _find_model_auto_paths(value: Any, prefix: str = "") -> list[str]:
-    """Return model-config paths whose value is ``"auto"``.
-
-    Args:
-        value: Raw model config value to inspect.
-        prefix: Dot path prefix used during recursion.
-
-    Returns:
-        List of dot paths relative to the model section.
-    """
-    if isinstance(value, str) and value.lower() == "auto":
-        return [prefix]
-    if isinstance(value, dict):
-        paths: list[str] = []
-        for key, subvalue in value.items():
-            path = str(key) if prefix == "" else f"{prefix}.{key}"
-            paths.extend(_find_model_auto_paths(subvalue, path))
-        return paths
-    if isinstance(value, list):
-        paths = []
-        for idx, subvalue in enumerate(value):
-            path = f"{prefix}[{idx}]" if prefix else f"[{idx}]"
-            paths.extend(_find_model_auto_paths(subvalue, path))
-        return paths
-    return []
-
-
-def _assign_defaults(
-    config: ConfigRaw,
-    section: str,
-    type_key: str,
-    defaults_by_type: dict[str, ConfigRaw],
-) -> None:
-    """Fill in default values for a config section based on its component type.
-
-    Missing keys (or keys set to ``None``) are populated from the defaults
-    registry.  The operation is applied in-place on ``config``.
-
-    Args:
-        config: The raw config dictionary (mutated in-place).
-        section: The section name to process.
-        type_key: Key inside the section that identifies the component type.
-        defaults_by_type: Mapping from component type name to a flat dict of
-            dot-separated key paths and their default values.
-    """
-    section_config = config[section]
-    section_type = section_config[type_key]
-
-    defaults = defaults_by_type.get(section_type, {})
-
-    for key_path, default_value in defaults.items():
-        parts = key_path.split(".")
-        current = section_config
-        for part in parts[:-1]:
-            if part not in current or not isinstance(current[part], dict):
-                current[part] = {}
-            current = current[part]
-        last_key = parts[-1]
-        # assign default if key is missing or value is None
-        if last_key not in current or current[last_key] is None:
-            current[last_key] = default_value
-            logging.warning(f"Assigning default for '{section}.{key_path}' (type={section_type}): {default_value}.")
+    return Config(validated)

@@ -16,16 +16,4 @@ $defs:
     - shifted
     - centred
     description: WACSF G2/G4 grid strategy accepted by the WACSF descriptor constructor.
-  descriptorTypeWACSF:
-    const: wacsf
-    description: Registry key definition used by the corresponding XANESNET registry.
-  descriptorTypeRDC:
-    const: rdc
-    description: Registry key definition used by the corresponding XANESNET registry.
-  descriptorTypeMACE:
-    const: mace
-    description: Registry key definition used by the corresponding XANESNET registry.
-  descriptorTypeDirect:
-    const: direct
-    description: Registry key definition used by the corresponding XANESNET registry.
 description: Descriptor schemas backed by ``DescriptorRegistry`` classes imported by ``xanesnet.descriptors``.

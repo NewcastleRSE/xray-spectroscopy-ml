@@ -11,7 +11,8 @@ required:
 - strategy
 $comment: Runtime inference configs are the result of merging user inference YAML with the checkpoint signature before
   validate_config_infer() runs. The checkpoint must provide the model, strategy, and dataset_type details needed to construct
-  the trained architecture and compatible dataset.
+  the trained architecture. Concrete model dimensions and dataset/model/inferencer compatibility are checked by the Python
+  validator after schema validation.
 properties:
   seed:
     $ref: shared/value_types.schema.yaml#/$defs/nullableInteger
@@ -38,9 +39,7 @@ properties:
   strategy:
     $ref: strategies/strategies.schema.yaml#/$defs/strategy
     description: Strategy configuration restored from the checkpoint signature and used by core setup code.
-allOf:
-- not:
-    required:
-    - trainer
-- $ref: compatibility/batchprocessors.schema.yaml#/$defs/inferModeCompatibility
+not:
+  required:
+  - trainer
 description: Merged inference configuration validated by ``validate_config_infer`` and consumed by ``core_infer.infer``.

@@ -152,7 +152,7 @@ $defs:
         default: null
         description: Optional path to split indices.
       dataset_type:
-        $ref: ../dataset_types.schema.yaml#/$defs/datasetTypeGemNetOC
+        const: gemnet_oc
         description: Registered dataset type name.
     description: Dataset for GemNet and GemNet-OC graph inputs.
 description: Dataset schemas backed by ``DatasetRegistry`` classes and dataset constructor signatures.

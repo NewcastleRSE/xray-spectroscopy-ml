@@ -39,7 +39,7 @@ $defs:
         default: null
         description: Optional path to split indices.
       dataset_type:
-        $ref: ../dataset_types.schema.yaml#/$defs/datasetTypeEnvEmbed
+        const: envembed
         description: Registered dataset type name.
       widths_eV:
         type: array

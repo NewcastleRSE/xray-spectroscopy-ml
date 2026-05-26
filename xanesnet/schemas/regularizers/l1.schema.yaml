@@ -9,7 +9,7 @@ $defs:
     - regularizer_type
     properties:
       regularizer_type:
-        $ref: regularizer_types.schema.yaml#/$defs/regularizerTypeL1
+        const: l1
         description: Identifier string for this regularizer type.
       weight:
         type: number

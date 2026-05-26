@@ -9,7 +9,7 @@ $defs:
     - lr_scheduler_type
     properties:
       lr_scheduler_type:
-        $ref: ../component_types.schema.yaml#/$defs/lrSchedulerTypeLinear
+        const: linear
         description: Registry key passed to ``LRSchedulerRegistry.get``.
       start_factor:
         type: number

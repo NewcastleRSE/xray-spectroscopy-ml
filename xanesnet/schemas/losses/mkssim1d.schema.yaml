@@ -10,7 +10,7 @@ $defs:
     - N
     properties:
       loss_type:
-        $ref: loss_types.schema.yaml#/$defs/lossTypeMKSSIM1D
+        const: mkssim1d
         description: Identifier string for this loss type.
       N:
         type: integer

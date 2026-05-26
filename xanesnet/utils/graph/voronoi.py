@@ -254,9 +254,9 @@ def build_edges_voronoi(
         A 4-tuple ``(edge_index, edge_weight, edge_vec, edge_attr)``:
 
         - ``edge_index``: ``(2, E)`` int64.
-                - ``edge_weight``: ``(E,)`` float32 -- edge lengths in **angstroms**.
-                - ``edge_vec``: ``(E, 3)`` float32 -- displacement vectors.
-                - ``edge_attr``: ``(E,)`` float32 -- Voronoi facet areas in
+        - ``edge_weight``: ``(E,)`` float32 -- edge lengths in **angstroms**.
+        - ``edge_vec``: ``(E, 3)`` float32 -- displacement vectors.
+        - ``edge_attr``: ``(E,)`` float32 -- Voronoi facet areas in
           **angstroms squared**.
     """
     if isinstance(pmg_obj, Structure):

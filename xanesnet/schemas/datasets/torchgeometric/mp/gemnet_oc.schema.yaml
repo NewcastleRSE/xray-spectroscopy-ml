@@ -159,7 +159,7 @@ $defs:
         default: null
         description: Optional path to split indices.
       dataset_type:
-        $ref: ../../dataset_types.schema.yaml#/$defs/datasetTypeGemNetOCMP
+        const: gemnet_oc_mp
         description: Registered dataset type name.
     description: Multiprocessing variant of :class:`GemNetDataset` (covers GemNet and GemNet-OC).
 description: Dataset schemas backed by ``DatasetRegistry`` classes and dataset constructor signatures.

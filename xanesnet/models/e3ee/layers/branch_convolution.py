@@ -22,7 +22,6 @@ conditioning is applied *after* aggregation to avoid materialising a per-edge
 energy axis, which significantly reduces activation memory.
 """
 
-
 from typing import cast
 
 import torch
@@ -43,7 +42,7 @@ class EnergyConditionedAtomConvolution(nn.Module):
     Invariant SchNet/PaiNN-style convolution producing a per-(absorber, energy)
     latent.
 
-    For each sample's absorber:
+    For each sample's absorber::
 
         m_{abs<-j} = MLP(h_j, z_j, RBF(dist), is_abs)         # SchNet message
         m_{abs<-j} *= cos_envelope(dist)
@@ -200,7 +199,7 @@ class EnergyConditionedEquivariantAtomConvolution(nn.Module):
     NequIP/MACE-style equivariant convolution producing a per-(absorber,
     energy) latent.
 
-    For each sample's absorber:
+    For each sample's absorber::
 
         sh_j = Y(u_{abs->j})
         v_{abs<-j} = TP(h_full[j], sh_j; W(z_j, RBF, is_abs))   # NequIP message

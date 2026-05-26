@@ -39,7 +39,7 @@ $defs:
         default: null
         description: Optional path to split indices.
       dataset_type:
-        $ref: ../dataset_types.schema.yaml#/$defs/datasetTypeRichGraph
+        const: richgraph
         description: Registered dataset type name.
     $comment: Registered dataset; no batch processor is currently registered for training/inference.
     description: Work-in-progress graph dataset with radius-graph connectivity.

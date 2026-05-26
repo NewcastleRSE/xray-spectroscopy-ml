@@ -9,7 +9,7 @@ $defs:
     - inferencer_type
     properties:
       inferencer_type:
-        $ref: ../runner_types.schema.yaml#/$defs/inferencerTypeBasic
+        const: basic
         description: Identifier string for this inferencer type.
       batch_size:
         type: integer

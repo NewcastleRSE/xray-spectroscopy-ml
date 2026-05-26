@@ -10,7 +10,7 @@ $defs:
     - gamma
     properties:
       lr_scheduler_type:
-        $ref: ../component_types.schema.yaml#/$defs/lrSchedulerTypeExponential
+        const: exponential
         description: Registry key passed to ``LRSchedulerRegistry.get``.
       gamma:
         type: number

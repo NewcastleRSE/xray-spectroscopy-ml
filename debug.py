@@ -27,6 +27,7 @@ def run_debug_train() -> None:
         "<...>",  # Insert name for training run
         # "--tensorboard",  # Enable TensorBoard logging
         "--yes",  # Skip all prompts with yes (use with caution!)
+        # "--dry-run",  # Run one real training epoch and save model_profile.json
     ]
 
     print("Running in debug mode with the following arguments:")

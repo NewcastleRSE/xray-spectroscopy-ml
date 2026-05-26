@@ -8,8 +8,8 @@ required:
 - dataset
 - inferencer
 $comment: User inference YAML is merged with the checkpoint signature before runtime validation. datasource, dataset, and
-  inferencer are supplied by the user; dataset_type, model, and strategy usually come from the checkpoint signature. If model
-  or strategy are repeated in the user YAML, they must not conflict with the checkpoint and model values cannot use "auto".
+  inferencer are supplied by the user; dataset_type, model, and strategy usually come from the checkpoint signature. Runtime
+  validation checks checkpoint conflicts, concrete model dimensions, and registry compatibility after merging.
 properties:
   seed:
     $ref: shared/value_types.schema.yaml#/$defs/nullableInteger
@@ -39,9 +39,7 @@ properties:
     $ref: strategies/strategies.schema.yaml#/$defs/strategy
     description: Optional in user-authored inference YAML because the checkpoint signature normally supplies it. After the
       checkpoint-signature merge, core setup instantiates ``StrategyRegistry.get(strategy_type)``.
-allOf:
-- not:
-    required:
-    - trainer
-- $ref: compatibility/batchprocessors.schema.yaml#/$defs/inferModeCompatibility
+not:
+  required:
+  - trainer
 description: User-authored inference configuration used by the config UI before checkpoint-signature merge.

@@ -7,21 +7,12 @@ $defs:
     enum:
     - basic
     description: Trainer registry key accepted by ``TrainerRegistry.get``.
-  trainerTypeBasic:
-    const: basic
-    description: Registry key definition used by the corresponding XANESNET registry.
   inferencerType:
     type: string
     enum:
     - basic
     - ensemble
     description: Inferencer registry key accepted by ``InferencerRegistry.get``.
-  inferencerTypeBasic:
-    const: basic
-    description: Registry key definition used by the corresponding XANESNET registry.
-  inferencerTypeEnsemble:
-    const: ensemble
-    description: Registry key definition used by the corresponding XANESNET registry.
   modelDevicePolicy:
     type: string
     enum:

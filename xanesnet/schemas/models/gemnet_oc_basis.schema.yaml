@@ -10,7 +10,7 @@ $defs:
       - name
       properties:
         name:
-          $ref: gemnet_oc_basis_types.schema.yaml#/$defs/rbfNameGaussian
+          const: gaussian
           description: GemNet-OC basis function name dispatched by the basis configuration dictionary.
         trainable:
           type: boolean
@@ -22,7 +22,7 @@ $defs:
       - name
       properties:
         name:
-          $ref: gemnet_oc_basis_types.schema.yaml#/$defs/rbfNameSphericalBessel
+          const: spherical_bessel
           description: GemNet-OC basis function name dispatched by the basis configuration dictionary.
     - type: object
       additionalProperties: false
@@ -30,7 +30,7 @@ $defs:
       - name
       properties:
         name:
-          $ref: gemnet_oc_basis_types.schema.yaml#/$defs/rbfNameBernstein
+          const: bernstein
           description: GemNet-OC basis function name dispatched by the basis configuration dictionary.
         pregamma_initial:
           type: number
@@ -46,7 +46,7 @@ $defs:
       - exponent
       properties:
         name:
-          $ref: gemnet_oc_basis_types.schema.yaml#/$defs/envelopeNamePolynomial
+          const: polynomial
           description: GemNet-OC basis function name dispatched by the basis configuration dictionary.
         exponent:
           type: integer
@@ -59,7 +59,7 @@ $defs:
       - name
       properties:
         name:
-          $ref: gemnet_oc_basis_types.schema.yaml#/$defs/envelopeNameExponential
+          const: exponential
           description: GemNet-OC basis function name dispatched by the basis configuration dictionary.
     description: GemNet-OC envelope configuration dictionary passed through the ``envelope`` field.
   gemnetOCCBF:
@@ -70,7 +70,7 @@ $defs:
       - name
       properties:
         name:
-          $ref: gemnet_oc_basis_types.schema.yaml#/$defs/cbfNameGaussian
+          const: gaussian
           description: GemNet-OC basis function name dispatched by the basis configuration dictionary.
         trainable:
           type: boolean
@@ -82,7 +82,7 @@ $defs:
       - name
       properties:
         name:
-          $ref: gemnet_oc_basis_types.schema.yaml#/$defs/cbfNameSphericalHarmonics
+          const: spherical_harmonics
           description: GemNet-OC basis function name dispatched by the basis configuration dictionary.
     description: GemNet-OC circular basis configuration dictionary passed through the ``cbf`` field.
   gemnetOCSBF:
@@ -93,7 +93,7 @@ $defs:
       - name
       properties:
         name:
-          $ref: gemnet_oc_basis_types.schema.yaml#/$defs/sbfNameSphericalHarmonics
+          const: spherical_harmonics
           description: GemNet-OC basis function name dispatched by the basis configuration dictionary.
     - type: object
       additionalProperties: false
@@ -101,7 +101,7 @@ $defs:
       - name
       properties:
         name:
-          $ref: gemnet_oc_basis_types.schema.yaml#/$defs/sbfNameLegendreOuter
+          const: legendre_outer
           description: GemNet-OC basis function name dispatched by the basis configuration dictionary.
     - type: object
       additionalProperties: false
@@ -109,7 +109,7 @@ $defs:
       - name
       properties:
         name:
-          $ref: gemnet_oc_basis_types.schema.yaml#/$defs/sbfNameGaussianOuter
+          const: gaussian_outer
           description: GemNet-OC basis function name dispatched by the basis configuration dictionary.
         trainable:
           type: boolean
