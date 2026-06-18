@@ -16,7 +16,7 @@ Submodules
    xanesnet.losses.bcewithlogits
    xanesnet.losses.emd
    xanesnet.losses.l1
-   xanesnet.losses.mkssim1d
+   xanesnet.losses.msssim
    xanesnet.losses.mse
    xanesnet.losses.registry
    xanesnet.losses.specplus

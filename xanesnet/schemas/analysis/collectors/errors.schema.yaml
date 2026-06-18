@@ -119,7 +119,7 @@ $defs:
         description: Registered collector name from the analysis configuration.
     description: Multi-component spectral loss combining blurred, detail, and gradient terms. Compute a configured loss between
       prediction and target spectra.
-  collectorErrorMetricMkssim1D:
+  collectorErrorMetricMsssim:
     type: object
     additionalProperties: false
     required:
@@ -128,7 +128,7 @@ $defs:
     - N
     properties:
       loss_type:
-        const: mkssim1d
+        const: msssim
         description: Identifier string for this loss type.
       N:
         type: integer

@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License along with this program.
 # If not, see <https://www.gnu.org/licenses/>.
 
-"""Multi-kernel SSIM loss for 1-D signals."""
+"""Multi-scale SSIM loss."""
 
 import torch
 import torch.nn.functional as F
@@ -22,9 +22,9 @@ from .base import Loss
 from .registry import LossRegistry
 
 
-@LossRegistry.register("mkssim1d")
-class MultiKernel_SSIM_1D(Loss):
-    """Multi-kernel SSIM loss for 1-D signals.
+@LossRegistry.register("msssim")
+class MultiScale_SSIM(Loss):
+    """Multi-scale SSIM loss.
 
     Evaluates SSIM at several Gaussian kernel sizes, where each scale is
     determined as a fraction of the signal length ``N``. Scales can be
@@ -66,7 +66,7 @@ class MultiKernel_SSIM_1D(Loss):
         final_combine: bool = True,
         final_mean: bool = True,
     ) -> None:
-        """Initialize ``MultiKernel_SSIM_1D``."""
+        """Initialize ``MultiScale_SSIM``."""
         super().__init__(loss_type)
         self.DR = data_range
         self.C1 = (K[0] * data_range) ** 2
@@ -178,7 +178,7 @@ class MultiKernel_SSIM_1D(Loss):
 
     # TODO what is the mask for?
     def forward(self, preds: torch.Tensor, targets: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
-        """Compute the multi-kernel 1-D SSIM loss.
+        """Compute the multi-scale SSIM loss.
 
         Args:
             preds: Predicted signals ``(B, N)``.

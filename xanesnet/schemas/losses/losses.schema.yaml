@@ -10,6 +10,6 @@ $defs:
     - $ref: emd.schema.yaml#/$defs/lossEMD
     - $ref: wcc.schema.yaml#/$defs/lossWCC
     - $ref: specplus.schema.yaml#/$defs/lossSpecPlus
-    - $ref: mkssim1d.schema.yaml#/$defs/lossMKSSIM1D
+    - $ref: msssim.schema.yaml#/$defs/lossMSSSIM
     description: Union of loss configuration objects instantiated by ``LossRegistry``.
 description: Loss schemas backed by ``LossRegistry`` classes and loss constructor signatures.

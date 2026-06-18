@@ -11,6 +11,6 @@ $defs:
     - emd
     - wcc
     - specplus
-    - mkssim1d
+    - msssim
     description: Loss registry key accepted by ``LossRegistry.get``.
 description: Loss schemas backed by ``LossRegistry`` classes and loss constructor signatures.

@@ -19,8 +19,8 @@ from .base import Loss
 from .bcewithlogits import BCEWithLogitsLoss
 from .emd import EMDLoss
 from .l1 import L1Loss
-from .mkssim1d import MultiKernel_SSIM_1D
 from .mse import MSELoss
+from .msssim import MultiScale_SSIM
 from .registry import LossRegistry
 from .specplus import SpectralLossPlus
 from .wcc import WCCLoss
@@ -32,7 +32,7 @@ __all__ = [
     "EMDLoss",
     "L1Loss",
     "MSELoss",
-    "MultiKernel_SSIM_1D",
+    "MultiScale_SSIM",
     "SpectralLossPlus",
     "WCCLoss",
 ]

@@ -1,8 +1,8 @@
 $schema: https://json-schema.org/draft/2020-12/schema
-$id: mkssim1d.schema.yaml
-title: 'XANESNET loss schema: mkssim1d'
+$id: msssim.schema.yaml
+title: 'XANESNET loss schema: msssim'
 $defs:
-  lossMKSSIM1D:
+  lossMSSSIM:
     type: object
     additionalProperties: false
     required:
@@ -10,7 +10,7 @@ $defs:
     - N
     properties:
       loss_type:
-        const: mkssim1d
+        const: msssim
         description: Identifier string for this loss type.
       N:
         type: integer
