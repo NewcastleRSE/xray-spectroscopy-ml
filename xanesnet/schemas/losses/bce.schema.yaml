@@ -11,5 +11,10 @@ $defs:
       loss_type:
         const: bce
         description: Identifier string for this loss type.
+      loss_weight:
+        type: number
+        exclusiveMinimum: 0
+        description: Weight for this loss term in the combined loss list. If omitted, defaults
+          to equal weighting across all terms.
     description: Binary cross-entropy loss with logits.
 description: Loss schemas backed by ``LossRegistry`` classes and loss constructor signatures.

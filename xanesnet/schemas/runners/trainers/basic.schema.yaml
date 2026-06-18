@@ -30,10 +30,12 @@ $defs:
         default: 0
         description: Number of data-loader worker processes.
       loss:
-        $ref: ../../losses/losses.schema.yaml#/$defs/loss
+        $ref: ../../losses/losses.schema.yaml#/$defs/lossList
         default:
-          loss_type: mse
-        description: Configuration for the loss function.
+        - loss_type: mse
+        description: Non-empty list of loss component configurations. Each entry specifies
+          ``loss_type`` and an optional ``loss_weight``; missing weights are treated as
+          ``1.0`` and all weights are normalized to sum to one.
       regularizer:
         $ref: ../../regularizers/regularizers.schema.yaml#/$defs/regularizer
         default:

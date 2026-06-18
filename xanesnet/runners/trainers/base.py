@@ -24,7 +24,7 @@ import torch
 from xanesnet.checkpointing import Checkpointer
 from xanesnet.components import LRSchedulerRegistry, OptimizerRegistry
 from xanesnet.datasets import Dataset
-from xanesnet.losses import Loss, LossRegistry
+from xanesnet.losses import CombinedLoss, Loss, LossRegistry
 from xanesnet.models import Model
 from xanesnet.regularizers import Regularizer, RegularizerRegistry
 from xanesnet.serialization.config import Config
@@ -46,7 +46,7 @@ class Trainer(Runner):
         shuffle: Whether to shuffle training data each epoch.
         drop_last: Whether to drop the last incomplete training batch.
         num_workers: Number of data-loader worker processes.
-        loss: Configuration for the loss function.
+        loss: Non-empty list of loss configurations.
         regularizer: Configuration for the regularizer.
         trainer_type: Identifier string for the concrete trainer type.
         epochs: Total number of training epochs.
@@ -72,7 +72,7 @@ class Trainer(Runner):
         shuffle: bool,
         drop_last: bool,
         num_workers: int,
-        loss: Config,
+        loss: list[Config],
         regularizer: Config,
         # trainer params:
         trainer_type: str,
@@ -118,22 +118,35 @@ class Trainer(Runner):
         self.regularizer = self._setup_regularizer()
 
     def _setup_loss(self) -> Loss:
-        """Instantiate the loss function from configuration.
+        """Instantiate a :class:`~xanesnet.losses.CombinedLoss` from the list of loss
+        configurations.
+
+        Each entry in the configuration list must provide ``loss_type`` and may
+        provide ``loss_weight`` (a positive number).  Missing weights default to
+        ``1.0``; all weights are normalized to sum to one before constructing
+        :class:`~xanesnet.losses.CombinedLoss`.
 
         Returns:
-            A configured :class:`Loss` instance.
+            A configured :class:`~xanesnet.losses.CombinedLoss` instance.
 
         Raises:
-            ValueError: If the loss configuration is not provided.
+            ValueError: If the loss configuration list is empty or not provided.
         """
-        loss_config = self.loss_config
-        if loss_config is None:
-            raise ValueError("Loss config is required but was not provided.")
-        loss_type = loss_config.get_str("loss_type")
+        loss_configs = self.loss_config
+        if not loss_configs:
+            raise ValueError("Loss config list is required but was not provided.")
 
-        loss = LossRegistry.create(loss_type, **loss_config.as_kwargs())
+        losses: list[Loss] = []
+        raw_weights: list[float] = []
 
-        return loss
+        for item_config in loss_configs:
+            loss_type = item_config.get_str("loss_type")
+            raw_weight = item_config.get_optional_float("loss_weight")
+            raw_weights.append(raw_weight if raw_weight is not None else 1.0)
+            kwargs = {k: v for k, v in item_config.as_kwargs().items() if k != "loss_weight"}
+            losses.append(LossRegistry.create(loss_type, **kwargs))
+
+        return CombinedLoss(losses, raw_weights)
 
     def _setup_regularizer(self) -> Regularizer:
         """Instantiate the regularizer from configuration.

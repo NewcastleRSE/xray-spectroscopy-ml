@@ -47,7 +47,7 @@ trainer:
   lr_warmup: True
   warmup_steps: 500
   loss:
-    loss_type: mse
+    - loss_type: mse
   regularizer:
     regularizer_type: none
   lr_scheduler:

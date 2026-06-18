@@ -17,6 +17,7 @@
 
 from .base import Loss
 from .bcewithlogits import BCEWithLogitsLoss
+from .combined import CombinedLoss
 from .emd import EMDLoss
 from .l1 import L1Loss
 from .mse import MSELoss
@@ -29,6 +30,7 @@ __all__ = [
     "Loss",
     "LossRegistry",
     "BCEWithLogitsLoss",
+    "CombinedLoss",
     "EMDLoss",
     "L1Loss",
     "MSELoss",

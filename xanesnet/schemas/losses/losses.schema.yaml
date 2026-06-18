@@ -12,4 +12,12 @@ $defs:
     - $ref: specplus.schema.yaml#/$defs/lossSpecPlus
     - $ref: msssim.schema.yaml#/$defs/lossMSSSIM
     description: Union of loss configuration objects instantiated by ``LossRegistry``.
+  lossList:
+    type: array
+    minItems: 1
+    items:
+      $ref: "#/$defs/loss"
+    description: Non-empty list of loss configurations forming a combined loss. Each entry
+      may include an optional ``loss_weight`` (positive number); missing weights default to
+      ``1.0`` and all weights are normalized to sum to one before use.
 description: Loss schemas backed by ``LossRegistry`` classes and loss constructor signatures.

@@ -42,7 +42,7 @@ class BasicTrainer(Trainer):
         shuffle: Whether to shuffle training data each epoch.
         drop_last: Whether to drop the last incomplete training batch.
         num_workers: Number of data-loader worker processes.
-        loss: Configuration for the loss function.
+        loss: Non-empty list of loss configurations.
         regularizer: Configuration for the regularizer.
         trainer_type: Identifier string for this trainer type.
         epochs: Total number of training epochs.
@@ -67,7 +67,7 @@ class BasicTrainer(Trainer):
         shuffle: bool,
         drop_last: bool,
         num_workers: int,
-        loss: Config,
+        loss: list[Config],
         regularizer: Config,
         # trainer params:
         trainer_type: str,

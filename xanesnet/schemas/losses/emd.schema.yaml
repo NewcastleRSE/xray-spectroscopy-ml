@@ -11,5 +11,10 @@ $defs:
       loss_type:
         const: emd
         description: Identifier string for this loss type.
+      loss_weight:
+        type: number
+        exclusiveMinimum: 0
+        description: Weight for this loss term in the combined loss list. If omitted, defaults
+          to equal weighting across all terms.
     description: Earth Mover's (Wasserstein) distance loss.
 description: Loss schemas backed by ``LossRegistry`` classes and loss constructor signatures.

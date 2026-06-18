@@ -12,6 +12,11 @@ $defs:
       loss_type:
         const: msssim
         description: Identifier string for this loss type.
+      loss_weight:
+        type: number
+        exclusiveMinimum: 0
+        description: Weight for this loss term in the combined loss list. If omitted, defaults
+          to equal weighting across all terms.
       N:
         type: integer
         minimum: 1

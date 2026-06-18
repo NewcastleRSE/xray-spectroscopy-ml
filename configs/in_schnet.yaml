@@ -3,13 +3,13 @@ device: cuda
 
 datasource:
   datasource_type: pmgjson
-  json_path: /media/hendrik/ExternalSSD/final_data/omnixas_test/
+  json_path: ./data/test_data/json/
 
 
 dataset: 
   # general:
   dataset_type: geometrygraph
-  root: ./data/omnixas/processed_train/  # Where should the processed data be stored
+  root: ./data/test_data/processed_train/  # Where should the processed data be stored
   preload: True                           # Preload dataset into RAM if True; otherwise load on-the-fly
   skip_prepare: False
   split_ratios: [0.8, 0.2]
@@ -46,7 +46,7 @@ trainer:
   lr_warmup: True
   warmup_steps: 500
   loss:
-    loss_type: mse
+    - loss_type: mse
   regularizer:
     regularizer_type: none
   lr_scheduler:
