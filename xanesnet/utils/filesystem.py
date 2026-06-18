@@ -98,14 +98,26 @@ def list_subdir_stems(path: Path) -> list[str]:
 ###############################################################################
 
 
-def create_run_dir(base_dir: str | Path = "./runs", name: str | None = None) -> Path:
-    """Create a uniquely named run directory with a timestamp prefix.
+def create_run_dir(
+    base_dir: str | Path = "./runs",
+    name: str | None = None,
+    mode: str = "count",
+) -> Path:
+    """Create a uniquely named run directory.
+
+    Two naming modes:
+    - ``"count (default)"``:
+        ``<name>_<N>`` where *N* is the highest existing integer suffix
+        for ``<name>_`` in ``base_dir``, incremented by 1.
+
+    - ``"time"``: ``<timestamp>_<name>``
 
     Args:
         base_dir: Parent directory under which the run directory is created.
             Defaults to ``"./runs"``.
         name: Optional suffix appended to the timestamp, separated by
             ``'_'``.
+        mode: Naming mode, either ``"count"`` or ``"time"``.
 
     Returns:
         Path to the newly created run directory.
@@ -113,22 +125,41 @@ def create_run_dir(base_dir: str | Path = "./runs", name: str | None = None) -> 
     if not isinstance(base_dir, Path):
         base_dir = Path(base_dir)
 
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    folder_name = f"{timestamp}"
-    if name:
-        folder_name += f"_{name}"
+    if mode == "count":  # COUNT
+        if name is None:
+            name = "run"
+
+        highest: int = -1
+        prefix = f"{name}_"
+        if base_dir.exists() and base_dir.is_dir():
+            for entry in base_dir.iterdir():
+                if entry.is_dir() and entry.name.startswith(prefix):
+                    suffix = entry.name[len(prefix) :]
+                    try:
+                        n = int(suffix)
+                        if n > highest:
+                            highest = n
+                    except ValueError:
+                        pass
+
+        folder_name = f"{name}_{highest + 1}"
+
+    elif mode == "time":  # TIME
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        folder_name = f"{timestamp}"
+        if name:
+            folder_name += f"_{name}"
+
+    else:
+        raise ValueError(f"Invalid mode: {mode}")
 
     run_dir = base_dir / folder_name
 
-    # Ensure uniqueness by appending a counter if needed
-    counter = 1
-    unique_dir = run_dir
-    while unique_dir.exists():
-        unique_dir = run_dir.with_name(f"{run_dir.name}_{counter}")
-        counter += 1
+    if run_dir.exists():
+        raise FileExistsError(f"Run directory already exists: {run_dir}")
 
-    unique_dir.mkdir(parents=True, exist_ok=False)
-    return unique_dir
+    run_dir.mkdir(parents=True, exist_ok=False)
+    return run_dir
 
 
 def create_subfolders(parent_dir: str | Path, subfolder_names: list[str]) -> dict[str, Path]:
