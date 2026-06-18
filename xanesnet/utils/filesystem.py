@@ -142,7 +142,7 @@ def create_run_dir(
                     except ValueError:
                         pass
 
-        folder_name = f"{name}_{highest + 1}"
+        folder_name = f"{name}_{highest + 1:03d}"
 
     elif mode == "time":  # TIME
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
