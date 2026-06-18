@@ -2,6 +2,8 @@
 #
 # XANESNET
 #
+# Authors:  Hendrik Junkawitsch, Tom J. Penfold, Tom W. Pope, C. D. Rankine, B. Li
+#
 # This program is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
@@ -12,6 +14,9 @@
 #
 # You should have received a copy of the GNU General Public License along with this program.
 # If not, see <https://www.gnu.org/licenses/>.
+#
+# Citations:
+#   ...
 
 """Atom and output update blocks aggregating edge messages into atom embeddings."""
 
@@ -57,9 +62,7 @@ class AtomUpdateBlock(torch.nn.Module):
 
         self.layers = self.get_mlp(emb_size_atom, nHidden, activation)
 
-    def get_mlp(
-        self, units: int, nHidden: int, activation: str
-    ) -> torch.nn.ModuleList:
+    def get_mlp(self, units: int, nHidden: int, activation: str) -> torch.nn.ModuleList:
         """Build the atom-update MLP: one dense layer followed by residual blocks.
 
         Args:
@@ -145,7 +148,6 @@ class OutputBlock(AtomUpdateBlock):
         scale_file: str | None,
         name: str,
     ) -> None:
-
         """Initialize ``OutputBlock``."""
         super().__init__(
             name=name,

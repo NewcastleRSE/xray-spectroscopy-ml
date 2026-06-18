@@ -2,6 +2,8 @@
 #
 # XANESNET
 #
+# Authors:  Hendrik Junkawitsch, Tom J. Penfold, Tom W. Pope, C. D. Rankine, B. Li
+#
 # This program is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
@@ -12,6 +14,9 @@
 #
 # You should have received a copy of the GNU General Public License along with this program.
 # If not, see <https://www.gnu.org/licenses/>.
+#
+# Citations:
+#   ...
 
 """Smooth polynomial cutoff envelope function for GemNet basis layers."""
 
@@ -48,7 +53,5 @@ class Envelope(torch.nn.Module):
             Envelope values in ``[0, 1]``, shape ``(*,)``.
             Exactly ``0`` for ``d_scaled >= 1``.
         """
-        env_val = (
-            1 + self.a * d_scaled**self.p + self.b * d_scaled ** (self.p + 1) + self.c * d_scaled ** (self.p + 2)
-        )
+        env_val = 1 + self.a * d_scaled**self.p + self.b * d_scaled ** (self.p + 1) + self.c * d_scaled ** (self.p + 2)
         return torch.where(d_scaled < 1, env_val, torch.zeros_like(d_scaled))

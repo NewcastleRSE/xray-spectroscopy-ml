@@ -2,6 +2,8 @@
 #
 # XANESNET
 #
+# Authors:  Hendrik Junkawitsch, Tom J. Penfold, Tom W. Pope, C. D. Rankine, B. Li
+#
 # This program is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
@@ -12,6 +14,9 @@
 #
 # You should have received a copy of the GNU General Public License along with this program.
 # If not, see <https://www.gnu.org/licenses/>.
+#
+# Citations:
+#   ...
 
 """Branch fusion layers for E3EEFull."""
 
@@ -54,9 +59,7 @@ class GatedBranchFusion(nn.Module):
         self.fused_dim = fused_dim
         self.use_softmax = use_softmax
 
-        self.proj = nn.ModuleList(
-            [nn.Identity() if d == fused_dim else nn.Linear(d, fused_dim) for d in branch_dims]
-        )
+        self.proj = nn.ModuleList([nn.Identity() if d == fused_dim else nn.Linear(d, fused_dim) for d in branch_dims])
 
         gate_in_dim = self.n_branches * (2 * fused_dim) + cond_dim
         self.gate_mlp = MLP(
@@ -106,10 +109,7 @@ class GatedBranchFusion(nn.Module):
             view_shape = (1,) * len(target_shape) + cond_feat.shape
             return cond_feat.reshape(view_shape).expand(*target_shape, cond_feat.shape[-1])
 
-        if (
-            len(cond_leading) <= len(target_shape)
-            and cond_leading == target_shape[-len(cond_leading) :]
-        ):
+        if len(cond_leading) <= len(target_shape) and cond_leading == target_shape[-len(cond_leading) :]:
             view_shape = (1,) * (len(target_shape) - len(cond_leading)) + cond_feat.shape
             return cond_feat.reshape(view_shape).expand(*target_shape, cond_feat.shape[-1])
 

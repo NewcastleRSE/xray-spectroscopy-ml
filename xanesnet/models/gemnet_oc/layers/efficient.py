@@ -2,6 +2,8 @@
 #
 # XANESNET
 #
+# Authors:  Hendrik Junkawitsch, Tom J. Penfold, Tom W. Pope, C. D. Rankine, B. Li
+#
 # This program is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
@@ -12,6 +14,9 @@
 #
 # You should have received a copy of the GNU General Public License along with this program.
 # If not, see <https://www.gnu.org/licenses/>.
+#
+# Citations:
+#   ...
 
 """Efficient basis embedding and bilinear interaction layers for GemNet-OC."""
 
@@ -232,7 +237,7 @@ class EfficientInteractionBilinear(torch.nn.Module):
             ``(num_edges_or_atoms, emb_size_out)``.
         """
         # num_spherical is actually num_spherical**2 for quadruplets
-        (rad_W1, sph) = basis
+        rad_W1, sph = basis
         # (num_edges, emb_size_interm, num_spherical),
         # (num_edges, num_spherical, Kmax)
         num_edges = sph.shape[0]
