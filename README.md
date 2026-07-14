@@ -97,7 +97,7 @@ It provides:
 - YAML import with automatic mode detection.
 - Inference `signature.yaml` import for checkpoint-aware infer configs.
 - Live YAML preview with defaults materialized and top-level sections ordered for readability.
-- Schema-backed defaults and object-shape validation for datasource, dataset, model, runner, strategy, and analysis choices.
+- Schema-backed defaults and object-shape validation for datasource, dataset, encoding, model, runner, strategy, and analysis choices.
 
 Run it locally:
 

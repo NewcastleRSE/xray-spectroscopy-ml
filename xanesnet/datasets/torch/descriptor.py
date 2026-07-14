@@ -31,7 +31,6 @@ from xanesnet.datasources import DataSource
 from xanesnet.descriptors import Descriptor, DescriptorRegistry
 from xanesnet.serialization.config import Config
 from xanesnet.utils.exceptions import ConfigError
-from xanesnet.utils.math import SpectralBasis, fft, gaussian_fit
 
 from ..base import SavePathFn, TorchDataset
 from ..registry import DatasetRegistry
@@ -47,17 +46,17 @@ class DescriptorData:
         x: Model input tensor, commonly ``(n_features,)`` or ``(batch, n_features)``.
         y: Model target tensor, commonly ``(n_energies,)`` or ``(batch, n_energies)``.
         energies: Energy grid tensor with shape ``(n_energies,)`` or ``(batch, n_energies)``.
-        fourier: Optional Fourier feature tensor.
-        c_star: Optional Gaussian basis coefficient tensor.
         file_name: Source file name metadata for one sample or a batch.
+        element: Absorber atomic number as a scalar tensor for one sample, or
+            ``(batch,)`` for a batch. Consumed by element-aware spectra
+            encodings.
     """
 
     x: torch.Tensor | None = None
     y: torch.Tensor | None = None
     energies: torch.Tensor | None = None
-    fourier: torch.Tensor | None = None
-    c_star: torch.Tensor | None = None
     file_name: str | list[Any] | None = None
+    element: torch.Tensor | None = None
 
     def to(self, device: str | torch.device) -> "DescriptorData":
         """Move tensor attributes to ``device`` in place.
@@ -68,7 +67,7 @@ class DescriptorData:
         Returns:
             This data object after moving tensor attributes.
         """
-        for attr in ["x", "y", "fourier", "c_star", "energies"]:
+        for attr in ["x", "y", "energies", "element"]:
             val = getattr(self, attr)
             if val is not None:
                 setattr(self, attr, val.to(device))
@@ -84,9 +83,8 @@ class DescriptorData:
             "x": self.x,
             "y": self.y,
             "energies": self.energies,
-            "fourier": self.fourier,
-            "c_star": self.c_star,
             "file_name": self.file_name,
+            "element": self.element,
         }
 
     @classmethod
@@ -103,9 +101,8 @@ class DescriptorData:
             x=state.get("x"),
             y=state.get("y"),
             energies=state.get("energies"),
-            fourier=state.get("fourier"),
-            c_star=state.get("c_star"),
             file_name=state.get("file_name"),
+            element=state.get("element"),
         )
 
     def save(self, path: str) -> str:
@@ -147,12 +144,6 @@ class DescriptorDataset(TorchDataset):
         split_ratios: Optional split ratios.
         split_indexfile: Optional path to split indices.
         mode: ``forward`` for descriptor-to-spectrum or ``reverse`` for spectrum-to-descriptor.
-        fourier: Whether to add Fourier-transformed spectra.
-        fourier_concat: Whether Fourier features concatenate real and imaginary components.
-        gaussian: Whether to fit spectra to a Gaussian basis.
-        widths_eV: Gaussian basis widths in **eV**.
-        basis_stride: Energy-grid stride used when creating a Gaussian basis.
-        basis_path: Optional serialized spectral basis path.
         descriptors: Descriptor configuration objects.
     """
 
@@ -167,12 +158,6 @@ class DescriptorDataset(TorchDataset):
         split_indexfile: str | None,
         # params:
         mode: str,
-        fourier: bool,
-        fourier_concat: bool,
-        gaussian: bool,
-        widths_eV: list[float],
-        basis_stride: int,
-        basis_path: str | None,
         # descriptors
         descriptors: list[Config],
     ) -> None:
@@ -180,19 +165,6 @@ class DescriptorDataset(TorchDataset):
         super().__init__(dataset_type, datasource, root, preload, skip_prepare, split_ratios, split_indexfile)
 
         self.mode = mode
-        self.fourier = fourier
-        self.fourier_concat = fourier_concat
-        self.gaussian = gaussian
-        self.widths_eV = widths_eV
-        self.basis_stride = basis_stride
-        self.basis_path = basis_path
-
-        # Some assertions
-        if self.fourier or self.gaussian:
-            if self.mode != "forward":
-                raise NotImplementedError("Fourier and Gaussian features are only allowed in FORWARD mode.")
-            if self.fourier and self.gaussian:
-                raise NotImplementedError("Fourier and Gaussian features cannot be used together.")
 
         # Create descriptors
         self.descriptor_configs = descriptors
@@ -203,11 +175,6 @@ class DescriptorDataset(TorchDataset):
             descriptor_type = descriptor_config.get_str("descriptor_type")
             descriptor = DescriptorRegistry.create(descriptor_type, **descriptor_config.as_kwargs())
             self.descriptor_list.append(descriptor)
-
-        # Setup spectral basis only if needed
-        self.basis: SpectralBasis | None = None
-        if self.gaussian:
-            self._setup_spectral_basis()
 
     def _prepare_single(self, idx: int, save_path_fn: SavePathFn) -> int:
         """Process one datasource item into descriptor samples.
@@ -242,21 +209,13 @@ class DescriptorDataset(TorchDataset):
             # descriptor features
             df = torch.tensor(df, dtype=torch.float32)
 
+            # Absorber atomic number
+            element = torch.tensor(pmg_obj.atomic_numbers[site_idx], dtype=torch.int64)
+
             # XANES
             spectrum = pmg_obj.site_properties[key][site_idx]
             energies = torch.tensor(spectrum["energies"], dtype=torch.float32)
             intensities = torch.tensor(spectrum["intensities"], dtype=torch.float32)
-
-            # FFT
-            fourier = None
-            if self.fourier:
-                fourier = fft(intensities, self.fourier_concat)
-
-            # Gaussian
-            c_star = None
-            if self.gaussian:
-                assert self.basis is not None, "Spectral basis must be set up successfully before preparing data."
-                c_star = gaussian_fit(basis=self.basis, xanes=intensities)
 
             # Mode
             if self.mode == "forward":
@@ -273,9 +232,8 @@ class DescriptorDataset(TorchDataset):
                 x=x,
                 y=y,
                 energies=energies,
-                fourier=fourier,
-                c_star=c_star,
                 file_name=pmg_obj.properties["file_name"],
+                element=element,
             )
 
             # Save processed data
@@ -283,32 +241,6 @@ class DescriptorDataset(TorchDataset):
             seq += 1
 
         return seq
-
-    def _setup_spectral_basis(self) -> None:
-        """Load or create the spectral basis used by Gaussian target features."""
-        if self.basis_path is not None:
-            # TODO never tested this.
-            self.basis = torch.load(self.basis_path)  # TODO: still uses torch.load without weights_only=True
-            logging.info(f"Loaded spectral basis from file @ {self.basis_path}")
-        else:
-            logging.info("Creating spectral basis from datasource")
-            first_data = next(iter(self.datasource))
-            # TODO requires same energy grid for all samples!
-            for key in SPECTRUM_KEYS:
-                if key in first_data.site_properties.keys():
-                    break
-            else:
-                raise ValueError("No XANES spectrum found in datasource to set up spectral basis.")
-
-            xanes = np.array(first_data.site_properties[key], dtype=object)
-            xanes_idxs: list[int] = np.where(xanes != None)[0].tolist()
-            energies = torch.tensor(first_data.site_properties[key][xanes_idxs[0]]["energies"], dtype=torch.float32)
-            self.basis = SpectralBasis(
-                energies=energies,
-                widths_eV=self.widths_eV,
-                normalize_atoms=True,
-                stride=self.basis_stride,
-            )
 
     def collate_fn(self, batch: list[DescriptorData]) -> DescriptorData:
         """Collate descriptor samples into a batch.
@@ -330,9 +262,8 @@ class DescriptorDataset(TorchDataset):
             x=_stack([b.x for b in batch]),
             y=_stack([b.y for b in batch]),
             energies=_stack([b.energies for b in batch]),
-            fourier=_stack([b.fourier for b in batch]),
-            c_star=_stack([b.c_star for b in batch]),
             file_name=[b.file_name for b in batch],
+            element=_stack([b.element for b in batch]),
         )
 
     def _load_item(self, path: str) -> DescriptorData:
@@ -358,12 +289,6 @@ class DescriptorDataset(TorchDataset):
             {
                 "descriptors": self.descriptor_configs,
                 "mode": self.mode,
-                "fourier": self.fourier,
-                "fourier_concat": self.fourier_concat,
-                "gaussian": self.gaussian,
-                "widths_eV": self.widths_eV,
-                "basis_stride": self.basis_stride,
-                "basis_path": self.basis_path,
             }
         )
         return signature

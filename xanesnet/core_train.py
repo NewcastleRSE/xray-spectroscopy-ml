@@ -30,8 +30,12 @@ import torch
 
 from xanesnet.datasets import Dataset, DatasetRegistry
 from xanesnet.datasources import DataSource, DataSourceRegistry
+from xanesnet.encodings import CombinedEncoding, SpectraEncoding
 from xanesnet.models import Model
-from xanesnet.serialization.auto_config import resolve_auto_model_config
+from xanesnet.serialization.auto_config import (
+    resolve_auto_encoding_config,
+    resolve_auto_model_config,
+)
 from xanesnet.serialization.checkpoints import Checkpoint
 from xanesnet.serialization.config import Config
 from xanesnet.serialization.model_profile import (
@@ -70,11 +74,15 @@ def train(config: Config, args_namespace: Namespace, save_dir: Path) -> None:
     datasource = _setup_datasource(config)
     dataset = _setup_dataset(config, datasource)
 
-    config = resolve_auto_model_config(config, dataset)
+    config = resolve_auto_encoding_config(config, dataset)
+
+    encoding = _setup_encoding(config)
+
+    config = resolve_auto_model_config(config, dataset, encoding)
     resolved_config_save_path = config.save(save_dir / "resolved_train_config.yaml")
     logging.info(f"Resolved training config saved to: {resolved_config_save_path}.")
 
-    strategy = _setup_strategy(config, dataset, save_dir, args_namespace.tensorboard)
+    strategy = _setup_strategy(config, dataset, encoding, save_dir, args_namespace.tensorboard)
     strategy.setup_models()
     strategy.setup_checkpointer()
     strategy.init_model_weights()
@@ -86,6 +94,7 @@ def train(config: Config, args_namespace: Namespace, save_dir: Path) -> None:
             "dataset": dataset.signature,
             "model": strategy.model_signature,
             "strategy": strategy.signature,
+            "encodings": encoding.signature,
         }
     )
     signature_save_path = signature.save(save_dir / "models" / "signature.yaml")
@@ -176,13 +185,34 @@ def _setup_dataset(config: Config, datasource: DataSource) -> Dataset:
     return dataset
 
 
-def _setup_strategy(config: Config, dataset: Dataset, save_dir: Path, enable_tensorboard: bool) -> Strategy:
+def _setup_encoding(config: Config) -> SpectraEncoding:
+    """Build the composed spectra encoding from config.
+
+    Args:
+        config: Validated configuration containing an ``encodings`` section.
+
+    Returns:
+        A :class:`CombinedEncoding` wrapping all configured component
+        encodings.
+    """
+    return CombinedEncoding.from_configs(config.get_config_list("encodings"))
+
+
+def _setup_strategy(
+    config: Config,
+    dataset: Dataset,
+    encoding: SpectraEncoding,
+    save_dir: Path,
+    enable_tensorboard: bool,
+) -> Strategy:
     """Instantiate the training strategy from config.
 
     Args:
         config: Validated configuration containing ``strategy``, ``model``,
             and ``trainer`` sections.
         dataset: Prepared and split dataset.
+        encoding: Composed spectra encoding forwarded to the strategy's
+            trainers.
         save_dir: Root run directory (used to derive checkpoint and
             TensorBoard paths).
         enable_tensorboard: Whether to enable TensorBoard logging.
@@ -204,6 +234,7 @@ def _setup_strategy(config: Config, dataset: Dataset, save_dir: Path, enable_ten
         tensorboard_dir=save_dir / "tensorboard" if enable_tensorboard else None,
         dataset=dataset,
         model_config=model_config,
+        encoding=encoding,
         trainer_config=trainer_config,
     )
 

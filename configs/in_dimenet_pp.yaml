@@ -20,6 +20,9 @@ dataset:
   graph_method: voronoi
   min_facet_area: 5%
 
+encodings:
+  - encoding_type: identity
+
 model:
   # general:
   model_type: dimenet++

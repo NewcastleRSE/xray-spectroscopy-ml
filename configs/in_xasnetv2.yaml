@@ -18,6 +18,9 @@ dataset:
   max_num_neighbors: 32
   graph_method: radius
 
+encodings:
+  - encoding_type: identity
+
 model:
   # general:
   model_type: schnet

@@ -71,6 +71,18 @@ class EnvEmbedBatchProcessor(BatchProcessor):
         """
         return batch.intensities  # type: ignore[return-value]
 
+    def element_preparation(self, batch: EnvEmbedData) -> torch.Tensor | None:
+        """Extract absorber atomic numbers from the batch.
+
+        Args:
+            batch: Collated EnvEmbed batch.
+
+        Returns:
+            Per-sample absorber atomic numbers ``(batch_size,)``, or ``None`` if
+            the dataset was built without element information.
+        """
+        return batch.element
+
     def file_name_extraction(self, batch: EnvEmbedData) -> np.ndarray:
         """Extract file names from the batch.
 

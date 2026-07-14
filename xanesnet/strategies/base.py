@@ -28,6 +28,7 @@ import torch
 
 from xanesnet.checkpointing import Checkpointer
 from xanesnet.datasets import Dataset
+from xanesnet.encodings import SpectraEncoding
 from xanesnet.models import Model
 from xanesnet.serialization.config import Config
 
@@ -44,6 +45,8 @@ class Strategy(ABC):
         strategy_type: Registry key identifying this strategy type.
         dataset: The dataset used for training or inference.
         model_config: Configuration for the model.
+        encoding: Composed spectra encoding forwarded to the trainers and
+            inferencers created by this strategy.
         weight_init: Weight initialization scheme name.
         weight_init_params: Additional parameters passed to the weight initializer.
         bias_init: Bias initialization scheme name.
@@ -67,6 +70,7 @@ class Strategy(ABC):
         strategy_type: str,
         dataset: Dataset,
         model_config: Config,
+        encoding: SpectraEncoding,
         weight_init: str,
         weight_init_params: Config,
         bias_init: str,
@@ -80,6 +84,7 @@ class Strategy(ABC):
         self.strategy_type = strategy_type
         self.dataset = dataset
         self.model_config = model_config
+        self.encoding = encoding
 
         self.weight_init = weight_init
         self.weight_init_params = weight_init_params

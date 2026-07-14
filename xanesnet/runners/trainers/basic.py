@@ -24,6 +24,7 @@ import torch
 
 from xanesnet.checkpointing import Checkpointer
 from xanesnet.datasets import Dataset
+from xanesnet.encodings import SpectraEncoding
 from xanesnet.models import Model
 from xanesnet.serialization.config import Config
 
@@ -43,6 +44,8 @@ class BasicTrainer(Trainer):
         model: Model to train.
         device: Device identifier or :class:`torch.device` instance.
         checkpointer: Checkpoint manager for saving model states.
+        encoding: Composed spectra encoding applied to targets before the loss
+            is computed.
         batch_size: Number of samples per training batch.
         shuffle: Whether to shuffle training data each epoch.
         drop_last: Whether to drop the last incomplete training batch.
@@ -67,6 +70,7 @@ class BasicTrainer(Trainer):
         model: Model,
         device: str | torch.device,
         checkpointer: Checkpointer,
+        encoding: SpectraEncoding,
         # runner params:
         batch_size: int,
         shuffle: bool,
@@ -92,6 +96,7 @@ class BasicTrainer(Trainer):
             model,
             device,
             checkpointer,
+            encoding,
             batch_size,
             shuffle,
             drop_last,
@@ -133,8 +138,10 @@ class BasicTrainer(Trainer):
             predictions = self.model(**inputs)
             predictions = self.batchprocessor.prediction_preparation(batch, predictions)
 
-            # Target
+            # Target (encoded into the model's prediction space)
             targets = self.batchprocessor.target_preparation(batch)
+            elements = self.batchprocessor.element_preparation(batch)
+            targets = self.encoding.encode(targets, elements)
 
             # Loss and regularization
             loss = self.loss(predictions, targets)
@@ -182,8 +189,10 @@ class BasicTrainer(Trainer):
                 predictions = self.model(**inputs)
                 predictions = self.batchprocessor.prediction_preparation(batch, predictions)
 
-                # Target
+                # Target (encoded into the model's prediction space)
                 targets = self.batchprocessor.target_preparation(batch)
+                elements = self.batchprocessor.element_preparation(batch)
+                targets = self.encoding.encode(targets, elements)
 
                 # Loss and regularization
                 loss = self.loss(predictions, targets)

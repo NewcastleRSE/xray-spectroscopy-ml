@@ -39,6 +39,9 @@ dataset:
   oc_min_facet_area_aint: null
   oc_cov_radii_scale_aint: null
 
+encodings:
+  - encoding_type: identity
+
 model:
   # general:
   model_type: gemnet

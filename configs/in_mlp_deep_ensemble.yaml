@@ -14,11 +14,6 @@ dataset:
   split_ratios: [0.8, 0.2]
   # params:
   mode: forward
-  fourier: False
-  fourier_concat: False
-  gaussian: False                  # Gaussian transformation (default: False)
-  widths_eV: [0.5, 1.0, 2.0, 4.0]
-  basis_stride: 4                  # Value must be consistent with hyperparams/basis_stride
   # descriptors:
   descriptors:
     - descriptor_type: wacsf
@@ -26,6 +21,9 @@ dataset:
       r_max: 6.0
       n_g2: 16
       n_g4: 32
+
+encodings:
+  - encoding_type: identity
 
 model:
   # general:

@@ -93,6 +93,21 @@ class E3EEFullBatchProcessor(BatchProcessor):
         """
         return batch.intensities
 
+    def element_preparation(self, batch: E3EEFullBatch) -> torch.Tensor | None:
+        """Extract absorber atomic numbers from the batch.
+
+        The atomic numbers ``x`` cover every atom in the padded layout; the
+        ``absorber_mask`` selects the absorbing atoms, aligning the result
+        row-wise with :meth:`target_preparation`.
+
+        Args:
+            batch: Collated E3EEFull batch carrying ``x`` and ``absorber_mask``.
+
+        Returns:
+            Absorber atomic numbers. ``(n_abs,)``
+        """
+        return batch.x[batch.absorber_mask]
+
     def file_name_extraction(self, batch: E3EEFullBatch) -> np.ndarray:
         """Extract file names from the batch.
 

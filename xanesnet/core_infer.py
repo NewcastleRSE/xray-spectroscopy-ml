@@ -28,6 +28,7 @@ from pathlib import Path
 
 from xanesnet.datasets import Dataset, DatasetRegistry
 from xanesnet.datasources import DataSource, DataSourceRegistry
+from xanesnet.encodings import CombinedEncoding, SpectraEncoding
 from xanesnet.serialization.checkpoints import Checkpoint
 from xanesnet.serialization.config import Config
 from xanesnet.strategies import Strategy, StrategyRegistry
@@ -53,7 +54,8 @@ def infer(config: Config, args_namespace: Namespace, save_dir: Path, checkpoint:
 
     datasource = _setup_datasource(config)
     dataset = _setup_dataset(config, datasource)
-    strategy = _setup_strategy(config, dataset)
+    encoding = _setup_encoding(config)
+    strategy = _setup_strategy(config, dataset, encoding)
     strategy.setup_models()
     strategy.set_state_dicts(checkpoint.model_states)
     strategy.setup_inferencers(config.get_str("device"))
@@ -113,13 +115,28 @@ def _setup_dataset(config: Config, datasource: DataSource) -> Dataset:
     return dataset
 
 
-def _setup_strategy(config: Config, dataset: Dataset) -> Strategy:
+def _setup_encoding(config: Config) -> SpectraEncoding:
+    """Build the composed spectra encoding from config.
+
+    Args:
+        config: Validated configuration containing an ``encodings`` section.
+
+    Returns:
+        A :class:`CombinedEncoding` wrapping all configured component
+        encodings.
+    """
+    return CombinedEncoding.from_configs(config.get_config_list("encodings"))
+
+
+def _setup_strategy(config: Config, dataset: Dataset, encoding: SpectraEncoding) -> Strategy:
     """Instantiate the inference strategy from config.
 
     Args:
         config: Validated configuration containing ``strategy``, ``model``,
             and ``inferencer`` sections.
         dataset: Prepared dataset.
+        encoding: Composed spectra encoding forwarded to the strategy's
+            inferencers.
 
     Returns:
         Configured strategy instance (models not yet loaded).
@@ -138,6 +155,7 @@ def _setup_strategy(config: Config, dataset: Dataset) -> Strategy:
         tensorboard_dir=None,
         dataset=dataset,
         model_config=model_config,
+        encoding=encoding,
         inferencer_config=inferencer_config,
     )
 

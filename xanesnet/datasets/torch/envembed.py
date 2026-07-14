@@ -54,6 +54,9 @@ class EnvEmbedData:
         c_star: Gaussian basis coefficient tensor.
         lengths: Original per-sample site counts for padded batches.
         file_name: Source file name metadata for one sample or a batch.
+        element: Absorber atomic number as a scalar tensor for one sample, or
+            ``(batch,)`` for a batch. Consumed by element-aware spectra
+            encodings.
         basis: Spectral basis attached at runtime and excluded from saved state.
     """
 
@@ -64,6 +67,7 @@ class EnvEmbedData:
     c_star: torch.Tensor | None = None
     lengths: torch.Tensor | None = None
     file_name: str | list[Any] | None = None
+    element: torch.Tensor | None = None
     basis: SpectralBasis | None = None  # not saved in state dict
 
     def to(self, device: str | torch.device) -> "EnvEmbedData":
@@ -82,6 +86,7 @@ class EnvEmbedData:
             "energies",
             "c_star",
             "lengths",
+            "element",
             "basis",
         ]:
             val = getattr(self, attr)
@@ -103,6 +108,7 @@ class EnvEmbedData:
             "c_star": self.c_star,
             "lengths": self.lengths,
             "file_name": self.file_name,
+            "element": self.element,
         }
 
     @classmethod
@@ -123,6 +129,7 @@ class EnvEmbedData:
             c_star=state.get("c_star"),
             lengths=state.get("lengths"),
             file_name=state.get("file_name"),
+            element=state.get("element"),
             basis=None,
         )
 
@@ -248,6 +255,9 @@ class EnvEmbedDataset(TorchDataset):
             energies = torch.tensor(spectrum["energies"], dtype=torch.float32)
             intensities = torch.tensor(spectrum["intensities"], dtype=torch.float32)
 
+            # Absorber atomic number
+            element = torch.tensor(pmg_obj.atomic_numbers[site_idx], dtype=torch.int64)
+
             # Build per-site environment: descriptor features + distance features
             # For periodic structures with env_radius, this finds all neighbors
             # (incl. periodic images) within the radius. For molecules, unchanged.
@@ -266,6 +276,7 @@ class EnvEmbedDataset(TorchDataset):
                 energies=energies,
                 c_star=c_star,
                 file_name=pmg_obj.properties["file_name"],
+                element=element,
                 basis=self.basis,
             )
 
@@ -383,6 +394,13 @@ class EnvEmbedDataset(TorchDataset):
         lengths = torch.tensor([d.size(0) for d in desc_list], dtype=torch.long)
         file_name_list = [sample.file_name for sample in batch]
 
+        element_samples = [sample.element for sample in batch]
+        element = (
+            None
+            if any(e is None for e in element_samples)
+            else torch.stack([cast(torch.Tensor, e) for e in element_samples], dim=0)
+        )
+
         intensities = torch.stack([inten.to(dtype=torch.float32) for inten in intensities_list], dim=0)
         energies = torch.stack([en.to(dtype=torch.float32) for en in energies_list], dim=0)
         c_star = torch.stack([c.to(dtype=torch.float32) for c in c_list], dim=0)
@@ -397,6 +415,7 @@ class EnvEmbedDataset(TorchDataset):
             c_star=c_star,
             lengths=lengths,
             file_name=file_name_list,
+            element=element,
             basis=batch[0].basis,
         )
 

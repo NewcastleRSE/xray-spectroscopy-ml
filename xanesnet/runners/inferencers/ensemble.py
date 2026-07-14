@@ -25,6 +25,7 @@ import time
 import torch
 
 from xanesnet.datasets import Dataset
+from xanesnet.encodings import SpectraEncoding
 from xanesnet.models import Model
 from xanesnet.serialization.prediction_writers import PredictionWriter
 
@@ -52,6 +53,9 @@ class EnsembleInferencer(Inferencer):
         dataset: Dataset to run inference on.
         models: Non-empty list of models to evaluate.
         device: Device identifier or :class:`torch.device` instance.
+        encoding: Composed spectra encoding applied to decode each member's
+            predictions before they are reduced to mean and standard deviation
+            in the original spectrum space.
         batch_size: Number of samples per inference batch.
         shuffle: Whether to shuffle the data.
         drop_last: Whether to drop the last incomplete batch.
@@ -68,6 +72,7 @@ class EnsembleInferencer(Inferencer):
         dataset: Dataset,
         models: list[Model],
         device: str | torch.device,
+        encoding: SpectraEncoding,
         # runner params:
         batch_size: int,
         shuffle: bool,
@@ -83,6 +88,7 @@ class EnsembleInferencer(Inferencer):
             dataset,
             models[0],
             device,
+            encoding,
             batch_size,
             shuffle,
             drop_last,
@@ -124,6 +130,7 @@ class EnsembleInferencer(Inferencer):
         for batch in self.dataloader:
             batch.to(self.device)
             inputs = self.batch_processor.input_preparation(batch)
+            elements = self.batch_processor.element_preparation(batch)
 
             if torch.device(self.device).type == "cuda":
                 torch.cuda.synchronize()
@@ -137,6 +144,9 @@ class EnsembleInferencer(Inferencer):
 
                     predictions = model(**inputs)
                     predictions = self.batch_processor.prediction_preparation(batch, predictions)
+                    # Decode each member from the encoded space so the mean and
+                    # standard deviation are computed over decoded spectra.
+                    predictions = self.encoding.decode(predictions, elements)
                     if self.model_device_policy == "sequential":
                         member_predictions.append(predictions.detach().cpu())
                         del predictions

@@ -115,6 +115,41 @@ class BatchProcessor(ABC):
         batch = dataset.collate_fn([sample])
         return self.target_preparation(batch)
 
+    def element_preparation(self, batch: Any) -> torch.Tensor | None:
+        """Extract per-target absorber atomic numbers from a batch.
+
+        The returned tensor is aligned row-wise with :meth:`target_preparation`,
+        carrying the absorbing element's atomic number for each target spectrum.
+        The default implementation returns ``None``, indicating that no element
+        information is available for this dataset/model combination.
+
+        Args:
+            batch: A collated batch produced by the dataset's ``collate_fn``.
+
+        Returns:
+            Per-target atomic numbers ``(batch_size,)``, or ``None`` when the
+            batch carries no element information.
+        """
+        return None
+
+    def element_preparation_single(self, dataset: "Dataset", index: int) -> torch.Tensor | None:
+        """Extract absorber atomic numbers from a single dataset sample.
+
+        Collates the sample at ``index`` into a batch of size 1 and delegates
+        to :meth:`element_preparation`.
+
+        Args:
+            dataset: The dataset to draw the sample from.
+            index: Index of the sample within the dataset.
+
+        Returns:
+            Per-target atomic numbers for the sample, or ``None`` when the
+            batch carries no element information.
+        """
+        sample = dataset[index]
+        batch = dataset.collate_fn([sample])
+        return self.element_preparation(batch)
+
     @abstractmethod
     def file_name_extraction(self, batch: Any) -> np.ndarray:
         """Extract file name identifiers from a batch.

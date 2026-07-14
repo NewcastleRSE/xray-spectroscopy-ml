@@ -28,6 +28,7 @@ from xanesnet.core_infer import infer
 from xanesnet.datasets import DatasetRegistry
 from xanesnet.datasources import DataSourceRegistry
 from xanesnet.descriptors import DescriptorRegistry
+from xanesnet.encodings import SpectraEncodingRegistry
 from xanesnet.models import ModelRegistry
 from xanesnet.runners.inferencers import InferencerRegistry
 from xanesnet.serialization.checkpoints import Checkpoint
@@ -127,6 +128,7 @@ def main(args: list[str]) -> None:
     logging.debug(f"\tInferencers: {InferencerRegistry.list()}")
     logging.debug(f"\tBatchProcessers: {BatchProcessorRegistry.list()}")
     logging.debug(f"\tStrategies: {StrategyRegistry.list()}")
+    logging.debug(f"\tSpectraEncodings: {SpectraEncodingRegistry.list()}")
 
     # Parsing command line arguments
     args_namespace = parse_args(args)

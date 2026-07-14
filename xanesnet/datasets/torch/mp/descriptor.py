@@ -41,12 +41,6 @@ class DescriptorDatasetMp(MpDatasetMixin, DescriptorDataset):
         split_ratios: Optional split ratios.
         split_indexfile: Optional path to split indices.
         mode: ``forward`` for descriptor-to-spectrum or ``reverse`` for spectrum-to-descriptor.
-        fourier: Whether to add Fourier-transformed spectra.
-        fourier_concat: Whether Fourier features concatenate real and imaginary components.
-        gaussian: Whether to fit spectra to a Gaussian basis.
-        widths_eV: Gaussian basis widths in **eV**.
-        basis_stride: Energy-grid stride used when creating a Gaussian basis.
-        basis_path: Optional serialized spectral basis path.
         descriptors: Descriptor configuration objects.
         num_workers: Requested worker process count.
     """
@@ -62,12 +56,6 @@ class DescriptorDatasetMp(MpDatasetMixin, DescriptorDataset):
         split_indexfile: str | None,
         # params:
         mode: str,
-        fourier: bool,
-        fourier_concat: bool,
-        gaussian: bool,
-        widths_eV: list[float],
-        basis_stride: int,
-        basis_path: str | None,
         descriptors: list[Config],
         num_workers: int | None,
     ) -> None:
@@ -81,12 +69,6 @@ class DescriptorDatasetMp(MpDatasetMixin, DescriptorDataset):
             split_ratios=split_ratios,
             split_indexfile=split_indexfile,
             mode=mode,
-            fourier=fourier,
-            fourier_concat=fourier_concat,
-            gaussian=gaussian,
-            widths_eV=widths_eV,
-            basis_stride=basis_stride,
-            basis_path=basis_path,
             descriptors=descriptors,
         )
         self.num_workers = num_workers

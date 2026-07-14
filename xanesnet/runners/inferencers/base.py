@@ -27,6 +27,7 @@ from pathlib import Path
 import torch
 
 from xanesnet.datasets import Dataset
+from xanesnet.encodings import SpectraEncoding
 from xanesnet.models import Model
 from xanesnet.serialization.prediction_writers import HDF5Writer, PredictionWriter
 
@@ -40,6 +41,8 @@ class Inferencer(Runner):
         dataset: Dataset to run inference on.
         model: Model to evaluate.
         device: Device identifier or :class:`torch.device` instance.
+        encoding: Composed spectra encoding applied to decode model predictions
+            back into the original spectrum space.
         batch_size: Number of samples per inference batch.
         shuffle: Whether to shuffle the data (typically ``False`` for inference).
         drop_last: Whether to drop the last incomplete batch.
@@ -54,6 +57,7 @@ class Inferencer(Runner):
         dataset: Dataset,
         model: Model,
         device: str | torch.device,
+        encoding: SpectraEncoding,
         # runner params:
         batch_size: int,
         shuffle: bool,
@@ -64,7 +68,7 @@ class Inferencer(Runner):
         buffer_size: int,
     ) -> None:
         """Initialize ``Inferencer``."""
-        super().__init__(dataset, model, device, batch_size, shuffle, drop_last, num_workers)
+        super().__init__(dataset, model, device, encoding, batch_size, shuffle, drop_last, num_workers)
 
         self.inferencer_type = inferencer_type
         self.buffer_size = buffer_size

@@ -25,6 +25,7 @@ import time
 import torch
 
 from xanesnet.datasets import Dataset
+from xanesnet.encodings import SpectraEncoding
 from xanesnet.models import Model
 from xanesnet.serialization.prediction_writers import PredictionWriter
 
@@ -43,6 +44,8 @@ class BasicInferencer(Inferencer):
         dataset: Dataset to run inference on.
         model: Model to evaluate.
         device: Device identifier or :class:`torch.device` instance.
+        encoding: Composed spectra encoding applied to decode model predictions
+            back into the original spectrum space.
         batch_size: Number of samples per inference batch.
         shuffle: Whether to shuffle the data (typically ``False`` for inference).
         drop_last: Whether to drop the last incomplete batch.
@@ -57,6 +60,7 @@ class BasicInferencer(Inferencer):
         dataset: Dataset,
         model: Model,
         device: str | torch.device,
+        encoding: SpectraEncoding,
         # runner params:
         batch_size: int,
         shuffle: bool,
@@ -71,6 +75,7 @@ class BasicInferencer(Inferencer):
             dataset,
             model,
             device,
+            encoding,
             batch_size,
             shuffle,
             drop_last,
@@ -111,6 +116,10 @@ class BasicInferencer(Inferencer):
             end_time = time.perf_counter()
 
             predictions = self.batch_processor.prediction_preparation(batch, predictions)
+
+            # Decode predictions from the model's encoded space back to spectra.
+            elements = self.batch_processor.element_preparation(batch)
+            predictions = self.encoding.decode(predictions, elements)
 
             # Two timing fields, both broadcast to ``[n_absorbers]`` so they
             # follow the writer's per-absorber leading-dim contract:

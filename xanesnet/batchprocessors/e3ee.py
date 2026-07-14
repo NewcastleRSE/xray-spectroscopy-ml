@@ -80,6 +80,22 @@ class E3EEBatchProcessor(BatchProcessor):
         """
         return batch.intensities
 
+    def element_preparation(self, batch: E3EEBatch) -> torch.Tensor | None:
+        """Extract absorber atomic numbers from the batch.
+
+        Node atomic numbers ``x`` are padded to ``(B, N_max)`` and
+        ``absorber_index`` gives the absorber's position within each sample, so
+        gathering along the node axis aligns the result row-wise with
+        :meth:`target_preparation`.
+
+        Args:
+            batch: Collated E3EE batch carrying ``x`` and ``absorber_index``.
+
+        Returns:
+            Absorber atomic numbers. ``(batch_size,)``
+        """
+        return batch.x[torch.arange(batch.x.size(0), device=batch.x.device), batch.absorber_index]
+
     def file_name_extraction(self, batch: E3EEBatch) -> np.ndarray:
         """Extract file names from the batch.
 

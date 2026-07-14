@@ -29,6 +29,9 @@ dataset:
   # mp
   num_workers: 4
 
+encodings:
+  - encoding_type: identity
+
 model:
   # general:
   model_type: e3ee

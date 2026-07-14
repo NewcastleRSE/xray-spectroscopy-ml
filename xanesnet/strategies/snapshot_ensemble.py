@@ -25,6 +25,7 @@ from pathlib import Path
 import torch
 
 from xanesnet.datasets import Dataset
+from xanesnet.encodings import SpectraEncoding
 from xanesnet.models import Model
 from xanesnet.serialization.config import Config
 
@@ -45,6 +46,7 @@ class SnapshotEnsemble(Strategy):
         strategy_type: Strategy identifier.
         dataset: Dataset used for training or inference.
         model_config: Configuration for the model.
+        encoding: Composed spectra encoding.
         weight_init: Weight initialization scheme name.
         weight_init_params: Additional weight-initializer parameters.
         bias_init: Bias initialization scheme name.
@@ -60,6 +62,7 @@ class SnapshotEnsemble(Strategy):
         strategy_type: str,
         dataset: Dataset,
         model_config: Config,
+        encoding: SpectraEncoding,
         weight_init: str,
         weight_init_params: Config,
         bias_init: str,
@@ -74,6 +77,7 @@ class SnapshotEnsemble(Strategy):
             strategy_type,
             dataset,
             model_config,
+            encoding,
             weight_init,
             weight_init_params,
             bias_init,

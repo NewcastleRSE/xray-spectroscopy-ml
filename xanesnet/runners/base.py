@@ -28,6 +28,7 @@ import torch
 
 from xanesnet.batchprocessors import BatchProcessor, BatchProcessorRegistry
 from xanesnet.datasets import Dataset
+from xanesnet.encodings import SpectraEncoding
 from xanesnet.models import Model
 
 
@@ -38,6 +39,8 @@ class Runner(ABC):
         dataset: Dataset to iterate over.
         model: Model to run.
         device: Device identifier (e.g. ``'cpu'``, ``'cuda'``) or :class:`torch.device` instance.
+        encoding: Composed spectra encoding used to encode targets before the
+            loss and decode predictions afterwards.
         batch_size: Number of samples per batch.
         shuffle: Whether to shuffle the data at each epoch.
         drop_last: Whether to drop the last incomplete batch.
@@ -49,6 +52,7 @@ class Runner(ABC):
         dataset: Dataset,
         model: Model,
         device: str | torch.device,
+        encoding: SpectraEncoding,
         # runner params:
         batch_size: int,
         shuffle: bool,
@@ -59,6 +63,7 @@ class Runner(ABC):
         self.dataset = dataset
         self.model = model
         self.device = device
+        self.encoding = encoding
 
         self.batch_size = batch_size
         self.shuffle = shuffle

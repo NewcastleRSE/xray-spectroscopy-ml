@@ -29,6 +29,7 @@ from xanesnet.analysis.plotters import PlotterRegistry
 from xanesnet.analysis.reporters import ReporterRegistry
 from xanesnet.analysis.selectors import SelectorRegistry
 from xanesnet.core_analyze import analyze
+from xanesnet.losses import LossRegistry
 from xanesnet.serialization.config import (
     Config,
     ConfigRaw,
@@ -121,6 +122,7 @@ def main(args: list[str]) -> None:
     logging.debug(f"\tAggregators: {AggregatorRegistry.list()}")
     logging.debug(f"\tPlotters: {PlotterRegistry.list()}")
     logging.debug(f"\tReporters: {ReporterRegistry.list()}")
+    logging.debug(f"\tLosses: {LossRegistry.list()}")
 
     # Parsing command line arguments
     args_namespace = parse_args(args)

@@ -29,6 +29,7 @@ import torch
 from xanesnet.checkpointing import Checkpointer
 from xanesnet.components import LRSchedulerRegistry, OptimizerRegistry
 from xanesnet.datasets import Dataset
+from xanesnet.encodings import SpectraEncoding
 from xanesnet.losses import CombinedLoss, Loss, LossRegistry
 from xanesnet.models import Model
 from xanesnet.regularizers import Regularizer, RegularizerRegistry
@@ -47,6 +48,8 @@ class Trainer(Runner):
         model: Model to train.
         device: Device identifier or :class:`torch.device` instance.
         checkpointer: Checkpoint manager for saving model states.
+        encoding: Composed spectra encoding applied to targets before the loss
+            is computed.
         batch_size: Number of samples per training batch.
         shuffle: Whether to shuffle training data each epoch.
         drop_last: Whether to drop the last incomplete training batch.
@@ -72,6 +75,7 @@ class Trainer(Runner):
         model: Model,
         device: str | torch.device,
         checkpointer: Checkpointer,
+        encoding: SpectraEncoding,
         # runner params:
         batch_size: int,
         shuffle: bool,
@@ -92,7 +96,7 @@ class Trainer(Runner):
         warmup_steps: int,
     ) -> None:
         """Initialize ``Trainer``."""
-        super().__init__(dataset, model, device, batch_size, shuffle, drop_last, num_workers)
+        super().__init__(dataset, model, device, encoding, batch_size, shuffle, drop_last, num_workers)
 
         self.checkpointer = checkpointer
 
@@ -185,6 +189,7 @@ class Trainer(Runner):
             single epoch.
         """
         self.model.to(self.device)
+        self.loss.to(self.device)
 
         # Log model graph (once, using first training batch as example input)
         sample_batch = next(iter(self.dataloader))

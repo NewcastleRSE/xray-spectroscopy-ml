@@ -27,6 +27,7 @@ from typing import Any
 import torch
 
 from xanesnet.datasets import Dataset
+from xanesnet.encodings import SpectraEncoding
 from xanesnet.models import Model, ModelRegistry
 from xanesnet.runners.inferencers import InferencerRegistry
 from xanesnet.runners.trainers import TrainerRegistry
@@ -48,6 +49,8 @@ class Single(Strategy):
         strategy_type: Registry key identifying this strategy type.
         dataset: Dataset used for training or inference.
         model_config: Configuration for the managed model.
+        encoding: Composed spectra encoding forwarded to the trainer and
+            inferencer.
         weight_init: Weight initialization scheme name.
         weight_init_params: Additional parameters for the weight initializer.
         bias_init: Bias initialization scheme name.
@@ -66,6 +69,7 @@ class Single(Strategy):
         strategy_type: str,
         dataset: Dataset,
         model_config: Config,
+        encoding: SpectraEncoding,
         weight_init: str,
         weight_init_params: Config,
         bias_init: str,
@@ -80,6 +84,7 @@ class Single(Strategy):
             strategy_type,
             dataset,
             model_config,
+            encoding,
             weight_init,
             weight_init_params,
             bias_init,
@@ -156,6 +161,7 @@ class Single(Strategy):
             model=self.model,
             device=device,
             checkpointer=self.checkpointer,
+            encoding=self.encoding,
         )
 
         self.trainer = trainer
@@ -218,6 +224,7 @@ class Single(Strategy):
             dataset=self.dataset,
             model=self.model,
             device=device,
+            encoding=self.encoding,
         )
 
         self.inferencer = inferencer

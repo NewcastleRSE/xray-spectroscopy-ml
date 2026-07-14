@@ -30,7 +30,10 @@ from xanesnet.core_train import train
 from xanesnet.datasets import DatasetRegistry
 from xanesnet.datasources import DataSourceRegistry
 from xanesnet.descriptors import DescriptorRegistry
+from xanesnet.encodings import SpectraEncodingRegistry
+from xanesnet.losses import LossRegistry
 from xanesnet.models import ModelRegistry
+from xanesnet.regularizers import RegularizerRegistry
 from xanesnet.runners.trainers import TrainerRegistry
 from xanesnet.serialization.config import (
     Config,
@@ -132,6 +135,9 @@ def main(args: list[str]) -> None:
     logging.debug(f"\tTrainers: {TrainerRegistry.list()}")
     logging.debug(f"\tBatchProcessers: {BatchProcessorRegistry.list()}")
     logging.debug(f"\tStrategies: {StrategyRegistry.list()}")
+    logging.debug(f"\tSpectraEncodings: {SpectraEncodingRegistry.list()}")
+    logging.debug(f"\tLosses: {LossRegistry.list()}")
+    logging.debug(f"\tRegularizers: {RegularizerRegistry.list()}")
 
     # Parsing command line arguments
     args_namespace = parse_args(args)

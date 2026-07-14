@@ -93,6 +93,23 @@ def _require_concrete_inference_model(config: ConfigRaw) -> None:
         )
 
 
+def _require_concrete_inference_encodings(config: ConfigRaw) -> None:
+    """Validate that merged inference encoding values are concrete.
+
+    Args:
+        config: Schema-valid merged inference configuration.
+
+    Raises:
+        ConfigError: If the encodings section still contains an ``"auto"`` token.
+    """
+    encodings_config = config.get("encodings")
+    for path in _auto_token_paths(encodings_config, ("encodings",)):
+        raise ConfigError(
+            f"Inference config contains unresolved automatic encoding value at {path}. "
+            "Checkpoint signatures must provide concrete encoding dimensions."
+        )
+
+
 def _require_ensemble_inferencer_for_deep_ensemble(config: ConfigRaw) -> None:
     """Validate deep-ensemble inference runner selection.
 
@@ -151,6 +168,7 @@ _RUNTIME_CONTRACTS_BY_MODE: dict[ConfigMode, tuple[_RuntimeContract, ...]] = {
     "infer": (
         _require_registered_batch_processor,
         _require_concrete_inference_model,
+        _require_concrete_inference_encodings,
         _require_ensemble_inferencer_for_deep_ensemble,
     ),
     "analyze": (),
