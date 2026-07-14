@@ -39,6 +39,10 @@ properties:
     $ref: strategies/strategies.schema.yaml#/$defs/strategy
     description: Optional in user-authored inference YAML because the checkpoint signature normally supplies it. After the
       checkpoint-signature merge, core setup instantiates ``StrategyRegistry.get(strategy_type)``.
+  encodings:
+    $ref: encodings/encodings.schema.yaml#/$defs/encodingList
+    description: Optional in user-authored inference YAML because the checkpoint signature normally supplies the
+      spectra-encoding pipeline used to decode predictions back to spectra.
 not:
   required:
   - trainer

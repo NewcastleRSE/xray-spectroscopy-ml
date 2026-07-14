@@ -3,8 +3,8 @@ import { dump as dumpYaml } from 'js-yaml'
 import type { ConfigMode, JsonObject, JsonSchema, JsonValue } from './schemaRegistry'
 
 const TOP_LEVEL_ORDER: Record<ConfigMode, string[]> = {
-  train: ['seed', 'device', 'datasource', 'dataset', 'model', 'trainer', 'strategy'],
-  infer: ['seed', 'device', 'datasource', 'dataset', 'model', 'inferencer', 'strategy'],
+  train: ['seed', 'device', 'datasource', 'dataset', 'encodings', 'model', 'trainer', 'strategy'],
+  infer: ['seed', 'device', 'datasource', 'dataset', 'encodings', 'model', 'inferencer', 'strategy'],
   analyze: ['seed', 'selectors', 'collectors', 'aggregators', 'reporters', 'plotters'],
 }
 
@@ -22,6 +22,7 @@ const DISCRIMINATOR_KEYS = [
   'plotter_type',
   'descriptor_type',
   'loss_type',
+  'encoding_type',
   'regularizer_type',
   'early_stopper_type',
   'lr_scheduler_type',

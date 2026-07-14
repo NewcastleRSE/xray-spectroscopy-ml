@@ -9,6 +9,7 @@ required:
 - model
 - inferencer
 - strategy
+- encodings
 $comment: Runtime inference configs are the result of merging user inference YAML with the checkpoint signature before
   validate_config_infer() runs. The checkpoint must provide the model, strategy, and dataset_type details needed to construct
   the trained architecture. Concrete model dimensions and dataset/model/inferencer compatibility are checked by the Python
@@ -39,6 +40,10 @@ properties:
   strategy:
     $ref: strategies/strategies.schema.yaml#/$defs/strategy
     description: Strategy configuration restored from the checkpoint signature and used by core setup code.
+  encodings:
+    $ref: encodings/encodings.schema.yaml#/$defs/encodingList
+    description: Spectra-encoding pipeline restored from the checkpoint signature and used to decode predictions back to
+      spectra. ``"auto"`` values are rejected at inference time.
 not:
   required:
   - trainer

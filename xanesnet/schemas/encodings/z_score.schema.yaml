@@ -1,0 +1,42 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: z_score.schema.yaml
+title: 'XANESNET encoding schema: z_score'
+$defs:
+  encodingZScore:
+    type: object
+    additionalProperties: false
+    required:
+    - encoding_type
+    - mean
+    - std
+    properties:
+      encoding_type:
+        const: z_score
+        description: Identifier string for this encoding type.
+      mean:
+        $ref: ../shared/value_types.schema.yaml#/$defs/autoNumberArrayOrMatrix
+        description: Means used to centre the spectra. A flat list (per-point when ``per_point`` is
+          true, otherwise a single global mean) when ``per_element`` is false, or one row per element
+          aligned with ``elements`` when true. May be the training-time ``auto`` token, which is
+          resolved from the training data.
+      std:
+        $ref: ../shared/value_types.schema.yaml#/$defs/autoNumberArrayOrMatrix
+        description: Standard deviations used to scale the spectra, shaped like ``mean``. May be the
+          training-time ``auto`` token, which is resolved from the training data.
+      per_point:
+        type: boolean
+        default: true
+        description: Whether standardization is applied per spectrum point (true) or globally with a
+          single mean and standard deviation (false).
+      per_element:
+        type: boolean
+        default: false
+        description: Whether statistics are selected per absorbing element (true) or shared across all
+          elements (false). When true, ``mean`` and ``std`` hold one row per entry of ``elements``.
+      elements:
+        $ref: ../shared/value_types.schema.yaml#/$defs/positiveIntegerArrayOrAuto
+        description: Absorber atomic numbers aligned row-wise with ``mean`` and ``std`` when
+          ``per_element`` is true; may be the training-time ``auto`` token, which resolves to all
+          elements observed in the training data. Omit when ``per_element`` is false.
+    description: Per-point or global z-score standardization encoding, optionally keyed by absorbing element.
+description: Encoding schemas backed by ``SpectraEncodingRegistry`` classes and encoding constructor signatures.

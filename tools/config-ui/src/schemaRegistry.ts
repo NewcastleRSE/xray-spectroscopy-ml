@@ -27,6 +27,7 @@ const TYPE_KEYS = [
   'plotter_type',
   'descriptor_type',
   'loss_type',
+  'encoding_type',
   'regularizer_type',
   'early_stopper_type',
   'lr_scheduler_type',
@@ -268,7 +269,7 @@ export const CONFIG_SCHEMA_OPTIONS = [
   {
     id: 'train',
     label: 'Train',
-    description: 'Build a training configuration with datasource, dataset, model, trainer, and strategy sections.',
+    description: 'Build a training configuration with datasource, dataset, encodings, model, trainer, and strategy sections.',
     schema: trainSchema,
   },
   {

@@ -1,0 +1,15 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: none.schema.yaml
+title: 'XANESNET encoding schema: identity'
+$defs:
+  encodingNone:
+    type: object
+    additionalProperties: false
+    required:
+    - encoding_type
+    properties:
+      encoding_type:
+        const: identity
+        description: Identifier string for this encoding type.
+    description: Identity encoding that leaves spectra unchanged.
+description: Encoding schemas backed by ``SpectraEncodingRegistry`` classes and encoding constructor signatures.

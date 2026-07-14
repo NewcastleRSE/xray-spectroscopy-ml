@@ -1,0 +1,16 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: encoding_types.schema.yaml
+title: XANESNET encoding value types
+$defs:
+  encodingType:
+    type: string
+    enum:
+    - identity
+    - scale
+    - fourier
+    - gaussian
+    - z_score
+    - min_max
+    - subtract_average
+    description: Encoding registry key accepted by ``SpectraEncodingRegistry.get``.
+description: Encoding schemas backed by ``SpectraEncodingRegistry`` classes and encoding constructor signatures.

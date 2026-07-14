@@ -112,4 +112,39 @@ $defs:
       type: string
       pattern: ^[Aa][Uu][Tt][Oo]$
     description: Array of positive integers or training-time ``auto`` token.
+  autoNumberArrayOrMatrix:
+    default: auto
+    oneOf:
+    - title: List
+      type: array
+      minItems: 1
+      items:
+        type: number
+    - title: Rows
+      type: array
+      minItems: 1
+      items:
+        type: array
+        minItems: 1
+        items:
+          type: number
+    - title: Auto
+      type: string
+      pattern: ^[Aa][Uu][Tt][Oo]$
+    description: Non-empty numeric array (shared parameters), non-empty array of non-empty numeric rows
+      (one row per element when ``per_element`` is true), or training-time ``auto`` token resolved from
+      the training data.
+  positiveIntegerArrayOrAuto:
+    oneOf:
+    - title: List
+      type: array
+      items:
+        type: integer
+        minimum: 1
+    - title: Auto
+      type: string
+      pattern: ^[Aa][Uu][Tt][Oo]$
+    description: Array of positive integers or training-time ``auto`` token. Unlike
+      ``autoPositiveIntegerArray`` this type carries no default, so it is materialized only when
+      present in the config.
 description: Generic JSON/YAML value schemas reused by component schemas.

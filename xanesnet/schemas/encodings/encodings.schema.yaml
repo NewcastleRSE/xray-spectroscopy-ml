@@ -1,0 +1,23 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: encodings.schema.yaml
+title: XANESNET encoding configuration schemas
+$defs:
+  encoding:
+    oneOf:
+    - $ref: none.schema.yaml#/$defs/encodingNone
+    - $ref: scale.schema.yaml#/$defs/encodingScale
+    - $ref: fourier.schema.yaml#/$defs/encodingFourier
+    - $ref: gaussian.schema.yaml#/$defs/encodingGaussian
+    - $ref: z_score.schema.yaml#/$defs/encodingZScore
+    - $ref: min_max.schema.yaml#/$defs/encodingMinMax
+    - $ref: subtract_average.schema.yaml#/$defs/encodingSubtractAverage
+    description: Union of encoding configuration objects instantiated by ``SpectraEncodingRegistry``.
+  encodingList:
+    type: array
+    minItems: 1
+    items:
+      $ref: "#/$defs/encoding"
+    description: Non-empty, ordered list of encoding configurations. Encodings are applied in order
+      to map raw spectra into the model prediction space and inverted in reverse order to decode
+      predictions back to spectra.
+description: Encoding schemas backed by ``SpectraEncodingRegistry`` classes and encoding constructor signatures.

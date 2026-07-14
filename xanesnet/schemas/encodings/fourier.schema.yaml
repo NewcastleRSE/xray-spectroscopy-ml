@@ -1,0 +1,20 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: fourier.schema.yaml
+title: 'XANESNET encoding schema: fourier'
+$defs:
+  encodingFourier:
+    type: object
+    additionalProperties: false
+    required:
+    - encoding_type
+    - concat
+    properties:
+      encoding_type:
+        const: fourier
+        description: Identifier string for this encoding type.
+      concat:
+        type: boolean
+        description: Whether the encoded representation concatenates the original signal in front
+          of the Fourier coefficients.
+    description: Symmetric-extension Fourier (DCT-like) encoding.
+description: Encoding schemas backed by ``SpectraEncodingRegistry`` classes and encoding constructor signatures.

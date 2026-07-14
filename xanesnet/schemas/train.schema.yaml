@@ -9,6 +9,7 @@ required:
 - model
 - trainer
 - strategy
+- encodings
 $comment: 'Training configs are validated by validate_config_train(). Exactly one runner section is allowed here: trainer
   is required and inferencer is forbidden. Selected top-level model dimensions may be the case-insensitive token "auto"; they
   are resolved from the prepared dataset before model construction. Dataset/model compatibility is checked against
@@ -41,6 +42,10 @@ properties:
   strategy:
     $ref: strategies/strategies.schema.yaml#/$defs/strategy
     description: Configuration section used by core setup code to instantiate ``StrategyRegistry.get(strategy_type)``.
+  encodings:
+    $ref: encodings/encodings.schema.yaml#/$defs/encodingList
+    description: Ordered spectra-encoding pipeline applied to targets before training; the Gaussian
+      ``num_points`` field may use ``"auto"`` and is resolved from the prepared dataset.
 not:
   required:
   - inferencer
