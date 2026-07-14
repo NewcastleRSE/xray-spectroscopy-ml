@@ -133,15 +133,14 @@ class BasicTrainer(Trainer):
 
             self.optimizer.zero_grad()
 
-            # Forward pass
             inputs = self.batchprocessor.input_preparation(batch)
+            elements = self.batchprocessor.element_preparation(batch)
+            inputs = self.batchprocessor.encode_input(inputs, elements)
+            targets = self.batchprocessor.target_preparation(batch)
+            targets = self.batchprocessor.encode_target(targets, elements)
+
             predictions = self.model(**inputs)
             predictions = self.batchprocessor.prediction_preparation(batch, predictions)
-
-            # Target (encoded into the model's prediction space)
-            targets = self.batchprocessor.target_preparation(batch)
-            elements = self.batchprocessor.element_preparation(batch)
-            targets = self.encoding.encode(targets, elements)
 
             # Loss and regularization
             loss = self.loss(predictions, targets)
@@ -184,15 +183,14 @@ class BasicTrainer(Trainer):
             for batch in self.valid_dataloader:
                 batch.to(self.device)
 
-                # Forward pass
                 inputs = self.batchprocessor.input_preparation(batch)
+                elements = self.batchprocessor.element_preparation(batch)
+                inputs = self.batchprocessor.encode_input(inputs, elements)
+                targets = self.batchprocessor.target_preparation(batch)
+                targets = self.batchprocessor.encode_target(targets, elements)
+
                 predictions = self.model(**inputs)
                 predictions = self.batchprocessor.prediction_preparation(batch, predictions)
-
-                # Target (encoded into the model's prediction space)
-                targets = self.batchprocessor.target_preparation(batch)
-                elements = self.batchprocessor.element_preparation(batch)
-                targets = self.encoding.encode(targets, elements)
 
                 # Loss and regularization
                 loss = self.loss(predictions, targets)

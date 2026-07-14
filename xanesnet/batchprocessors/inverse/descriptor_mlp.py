@@ -18,45 +18,52 @@
 # Citations:
 #   ...
 
-"""Batch processor for the descriptor + MLP model combination."""
+"""Batch processor for the descriptor + MLP model combination (inverse prediction)."""
 
 import numpy as np
 import torch
 
 from xanesnet.datasets import DescriptorData
 
-from .base import BatchProcessor
-from .registry import BatchProcessorRegistry
+from ..registry import BatchProcessorRegistry
+from .base import InverseBatchProcessor
 
 
-@BatchProcessorRegistry.register(("descriptor", "mlp"))
-@BatchProcessorRegistry.register(("descriptor_mp", "mlp"))
-class DescriptorMLPBatchProcessor(BatchProcessor):
-    """Batch processor for ``DescriptorData`` feeding the MLP model.
+@BatchProcessorRegistry.register(("descriptor_inverse", "mlp"))
+@BatchProcessorRegistry.register(("descriptor_inverse_mp", "mlp"))
+class InverseDescriptorMLPBatchProcessor(InverseBatchProcessor):
+    """Batch processor for ``DescriptorData`` + MLP (inverse prediction).
 
-    Extracts the precomputed descriptor vector ``x`` as model input and the
-    spectral intensity array ``y`` as the target.
+    Inverse: spectra -> descriptors. The spectral input (stored under ``x``)
+    is encoded by
+    :class:`~xanesnet.batchprocessors.inverse.base.InverseBatchProcessor` via
+    :meth:`~xanesnet.batchprocessors.inverse.base.InverseBatchProcessor.encode_input`;
+    targets and predictions are structural descriptors and pass through
+    unchanged.
     """
 
     def input_preparation(self, batch: DescriptorData) -> dict[str, torch.Tensor]:
-        """Prepare MLP inputs from a descriptor batch.
+        """Prepare raw spectral inputs for the MLP model.
 
         Args:
-            batch: Collated descriptor batch.
+            batch: Collated descriptor batch where ``x`` holds spectral
+                intensities in inverse mode.
 
         Returns:
-            Dict with ``"x"`` containing the descriptor tensor. ``(batch_size, n_features)``.
+            Dict with ``"x"`` containing the raw spectral tensor.
+            ``(batch_size, n_energies)``.
         """
         return {"x": batch.x}  # type: ignore[dict-item]
 
     def target_preparation(self, batch: DescriptorData) -> torch.Tensor:
-        """Prepare targets from a descriptor batch.
+        """Prepare descriptor targets from a descriptor batch.
 
         Args:
-            batch: Collated descriptor batch.
+            batch: Collated descriptor batch (``y`` holds descriptor features
+                in inverse mode).
 
         Returns:
-            Spectral intensity tensor. ``(batch_size, n_energies)``.
+            Descriptor feature tensor. ``(batch_size, n_descriptor_features)``.
         """
         return batch.y  # type: ignore[return-value]
 
@@ -67,8 +74,8 @@ class DescriptorMLPBatchProcessor(BatchProcessor):
             batch: Collated descriptor batch.
 
         Returns:
-            Per-sample absorber atomic numbers ``(batch_size,)``, or ``None`` if
-            the dataset was built without element information.
+            Per-sample absorber atomic numbers ``(batch_size,)``, or
+            ``None`` if the dataset was built without element information.
         """
         return batch.element
 
@@ -79,7 +86,6 @@ class DescriptorMLPBatchProcessor(BatchProcessor):
             batch: Collated descriptor batch.
 
         Returns:
-            Array of file name strings. ``(batch_size,)``
-
+            Array of file name strings. ``(batch_size,)``.
         """
         return np.array(batch.file_name, dtype=str)

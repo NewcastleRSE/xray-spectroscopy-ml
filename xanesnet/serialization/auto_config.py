@@ -34,7 +34,21 @@ from xanesnet.utils.exceptions import ConfigError
 from .config import Config
 
 AUTO_VALUE = "auto"
+_INVERSE_DATASET_SUFFIX = "_inverse"
 AutoResolver = Callable[[dict[str, Any], Any], dict[str, Any]]
+
+
+def _is_inverse_dataset(dataset_type: str) -> bool:
+    """Return ``True`` if ``dataset_type`` identifies an inverse prediction dataset.
+
+    Args:
+        dataset_type: Registered dataset type name.
+
+    Returns:
+        ``True`` when the dataset type ends with ``"_inverse"``.
+    """
+    # TODO This is not optimal! Will miss for example _mp!
+    return dataset_type.endswith(_INVERSE_DATASET_SUFFIX)
 
 
 def resolve_auto_encoding_config(config: Config, dataset: Dataset) -> Config:
@@ -48,6 +62,13 @@ def resolve_auto_encoding_config(config: Config, dataset: Dataset) -> Config:
     encoding-specific resolver for concrete values (e.g. per-point statistics
     over the training spectra), and returns a new ``Config`` without mutating
     the input config.
+
+    .. note::
+
+        For inverse prediction datasets the targets are structural
+        descriptors or properties, not spectra. Auto-resolution of encoding
+        fields is skipped for inverse datasets; use an explicit
+        ``encoding_type: identity`` or manually specify encoding parameters.
 
     Args:
         config: Validated training configuration.
@@ -67,6 +88,15 @@ def resolve_auto_encoding_config(config: Config, dataset: Dataset) -> Config:
     model_type = config_raw["model"]["model_type"]
 
     if not any(_requested_auto_fields(item) for item in encodings):
+        return Config(config_raw)
+
+    if _is_inverse_dataset(dataset.dataset_type):
+        logging.warning(
+            "Skipping auto-encoding resolution for inverse dataset '%s'. "
+            "Encoding fields set to 'auto' in an inverse config must be "
+            "resolved manually or use encoding_type: identity.",
+            dataset.dataset_type,
+        )
         return Config(config_raw)
 
     batchprocessor = BatchProcessorRegistry.create((dataset.dataset_type, model_type))
@@ -105,17 +135,26 @@ def resolve_auto_model_config(config: Config, dataset: Dataset, encoding: Spectr
     validation, including validation that ``"auto"`` is used only for supported
     top-level model fields. This function only performs the dataset-dependent
     finalization: it uses the registered batch processor for the dataset/model
-    pair to prepare one sample, encodes the target into the model's prediction
-    space, asks the model-specific resolver for concrete dimensions, and returns
-    a new ``Config`` without mutating the input config.
+    pair to prepare one sample, maps the raw input and target into the spaces
+    the model consumes and predicts via the batch processor's
+    :meth:`~xanesnet.batchprocessors.base.BatchProcessor.encode_input` and
+    :meth:`~xanesnet.batchprocessors.base.BatchProcessor.encode_target`, asks
+    the model-specific resolver for concrete dimensions, and returns a new
+    ``Config`` without mutating the input config.
+
+    The batch processor is created *with* the resolved encoding so that
+    resolved input and output dimensions match the tensors the model actually
+    receives at train time: for forward datasets the encoding shapes the target
+    (and thus the output size), while for inverse datasets the encoding shapes
+    the spectral input (and thus the input size).
 
     Args:
         config: Validated training configuration.
         dataset: Prepared training dataset used to derive automatic model
             values.
-        encoding: Spectra encoding applied to the prepared target so that
-            resolved output dimensions match the model's encoded prediction
-            space.
+        encoding: Spectra encoding forwarded to the batch processor so that
+            resolved dimensions match the model's encoded prediction space
+            (forward) or encoded input space (inverse).
 
     Returns:
         New configuration with requested automatic model fields replaced by
@@ -135,11 +174,16 @@ def resolve_auto_model_config(config: Config, dataset: Dataset, encoding: Spectr
 
     resolver = _resolver_for(model_type)
 
-    batchprocessor = BatchProcessorRegistry.create((dataset.dataset_type, model_type))
+    batchprocessor = BatchProcessorRegistry.create((dataset.dataset_type, model_type), encoding=encoding)
     inputs = batchprocessor.input_preparation_single(dataset, 0)
     target = batchprocessor.target_preparation_single(dataset, 0)
     element = batchprocessor.element_preparation_single(dataset, 0)
-    target = encoding.encode(target, element)
+    # Map raw inputs/target into the spaces the model actually consumes and
+    # predicts. Forward processors encode the target (spectrum) and leave the
+    # input untouched; inverse processors encode the input (spectrum) and
+    # leave the descriptor target untouched.
+    inputs = batchprocessor.encode_input(inputs, element)
+    target = batchprocessor.encode_target(target, element)
     resolved_fields = resolver(inputs, target)
 
     for field in sorted(auto_fields):

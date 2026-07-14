@@ -25,17 +25,18 @@ import torch
 
 from xanesnet.datasets import GeometryGraphBatch
 
-from .base import BatchProcessor
-from .registry import BatchProcessorRegistry
+from ..registry import BatchProcessorRegistry
+from .base import ForwardBatchProcessor
 
 
 @BatchProcessorRegistry.register(("geometrygraph", "schnet"))
 @BatchProcessorRegistry.register(("geometrygraph_mp", "schnet"))
-class GeometryGraphSchNetBatchProcessor(BatchProcessor):
-    """Batch processor for the ``GeometryGraphDataset`` feeding SchNet.
+class GeometryGraphSchNetBatchProcessor(ForwardBatchProcessor):
+    """Batch processor for ``GeometryGraphDataset`` + SchNet.
 
-    Forwards the minimal set of graph tensors required by SchNet (no triplet
-    indices needed).
+    Forwards the minimal set of graph tensors required by SchNet (atomic
+    numbers, edge index, edge weight, batch). Absorber-site predictions
+    are selected via ``absorber_mask``.
     """
 
     def input_preparation(self, batch: GeometryGraphBatch) -> dict[str, torch.Tensor]:
@@ -67,7 +68,7 @@ class GeometryGraphSchNetBatchProcessor(BatchProcessor):
         return predictions[batch.absorber_mask]
 
     def target_preparation(self, batch: GeometryGraphBatch) -> torch.Tensor:
-        """Prepare target spectra from the batch.
+        """Prepare target spectra from a geometry-graph batch.
 
         Args:
             batch: Collated geometry-graph batch.
@@ -78,15 +79,12 @@ class GeometryGraphSchNetBatchProcessor(BatchProcessor):
         return batch.intensities
 
     def element_preparation(self, batch: GeometryGraphBatch) -> torch.Tensor | None:
-        """Extract absorber atomic numbers from the batch.
+        """Extract absorber atomic numbers from a geometry-graph batch.
 
-        The atomic numbers ``x`` cover every atom in the batched graph; the
-        ``absorber_mask`` selects the absorbing atoms, aligning the result
-        row-wise with :meth:`target_preparation`.
+        Selects atomic numbers at absorber positions via ``absorber_mask``.
 
         Args:
-            batch: Collated geometry-graph batch carrying ``x`` and
-                ``absorber_mask``.
+            batch: Collated geometry-graph batch.
 
         Returns:
             Absorber atomic numbers. ``(n_abs,)``
@@ -94,12 +92,12 @@ class GeometryGraphSchNetBatchProcessor(BatchProcessor):
         return batch.x[batch.absorber_mask]
 
     def file_name_extraction(self, batch: GeometryGraphBatch) -> np.ndarray:
-        """Extract file names from the batch.
+        """Extract file names from a geometry-graph batch.
 
         Args:
             batch: Collated geometry-graph batch.
 
         Returns:
-            Array of file name strings aligned with absorber targets. ``(n_abs,)``
+            Array of file name strings. ``(n_abs,)``
         """
         return np.array(batch.file_name, dtype=str)

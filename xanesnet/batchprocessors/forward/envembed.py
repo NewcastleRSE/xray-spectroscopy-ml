@@ -26,22 +26,17 @@ import torch
 from xanesnet.datasets import EnvEmbedData
 from xanesnet.utils.math import SpectralBasis
 
-from .base import BatchProcessor
-from .registry import BatchProcessorRegistry
+from ..registry import BatchProcessorRegistry
+from .base import ForwardBatchProcessor
 
 
 @BatchProcessorRegistry.register(("envembed", "envembed"))
 @BatchProcessorRegistry.register(("envembed_mp", "envembed"))
-class EnvEmbedBatchProcessor(BatchProcessor):
-    """Batch processor for the EnvEmbed dataset + EnvEmbed model combination.
+class EnvEmbedBatchProcessor(ForwardBatchProcessor):
+    """Batch processor for EnvEmbed dataset + EnvEmbed model.
 
-    The EnvEmbed dataset collate_fn produces an ``EnvEmbedData`` batch with:
-
-    - ``descriptor_features``: ``(B, N, H)`` padded descriptor features
-    - ``distance_features``: ``(B, N)`` distances from absorber
-    - ``lengths``: ``(B,)`` number of real atoms per sample
-    - ``file_name``: ``list[str]`` sample identifiers
-    - ``basis``: ``SpectralBasis`` spectral basis object (not a tensor, not collated)
+    Forwards padded descriptor features, distance features, sample lengths,
+    and the shared :class:`~xanesnet.utils.math.SpectralBasis` object.
     """
 
     def input_preparation(self, batch: EnvEmbedData) -> dict[str, torch.Tensor | SpectralBasis]:
@@ -61,7 +56,7 @@ class EnvEmbedBatchProcessor(BatchProcessor):
         }
 
     def target_preparation(self, batch: EnvEmbedData) -> torch.Tensor:
-        """Prepare target spectra from the batch.
+        """Prepare target spectra from an EnvEmbed batch.
 
         Args:
             batch: Collated EnvEmbed batch.
@@ -72,19 +67,19 @@ class EnvEmbedBatchProcessor(BatchProcessor):
         return batch.intensities  # type: ignore[return-value]
 
     def element_preparation(self, batch: EnvEmbedData) -> torch.Tensor | None:
-        """Extract absorber atomic numbers from the batch.
+        """Extract absorber atomic numbers from an EnvEmbed batch.
 
         Args:
             batch: Collated EnvEmbed batch.
 
         Returns:
-            Per-sample absorber atomic numbers ``(batch_size,)``, or ``None`` if
-            the dataset was built without element information.
+            Per-sample absorber atomic numbers ``(batch_size,)``, or
+            ``None`` if the dataset was built without element information.
         """
         return batch.element
 
     def file_name_extraction(self, batch: EnvEmbedData) -> np.ndarray:
-        """Extract file names from the batch.
+        """Extract file names from an EnvEmbed batch.
 
         Args:
             batch: Collated EnvEmbed batch.

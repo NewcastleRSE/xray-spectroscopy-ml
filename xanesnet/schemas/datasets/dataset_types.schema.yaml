@@ -6,7 +6,9 @@ $defs:
     type: string
     enum:
     - descriptor
+    - descriptor_inverse
     - descriptor_mp
+    - descriptor_inverse_mp
     - envembed
     - envembed_mp
     - geometrygraph
@@ -21,13 +23,4 @@ $defs:
     - e3ee_full_mp
     - richgraph
     description: Dataset registry key accepted by ``DatasetRegistry.get``.
-  descriptorMode:
-    type: string
-    enum:
-    - forward
-    - reverse
-    description: Descriptor dataset spectrum direction mode documented by ``DescriptorDataset``.
-  descriptorModeForward:
-    const: forward
-    description: Forward descriptor dataset mode required when Fourier or Gaussian transforms are enabled.
 description: Dataset schemas backed by ``DatasetRegistry`` classes and dataset constructor signatures.

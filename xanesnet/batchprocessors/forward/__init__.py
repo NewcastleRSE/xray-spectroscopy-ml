@@ -18,38 +18,26 @@
 # Citations:
 #   ...
 
-"""Public API for all XANESNET batch processors."""
+"""Public API for forward XANESNET batch processors."""
 
-from .base import BatchProcessor
-from .forward import (
-    DescriptorMLPBatchProcessor,
-    E3EEBatchProcessor,
-    E3EEFullBatchProcessor,
-    EnvEmbedBatchProcessor,
-    ForwardBatchProcessor,
-    GemNetBatchProcessor,
-    GemNetOCBatchProcessor,
-    GeometryGraphDimeNetBatchProcessor,
-    GeometryGraphSchNetBatchProcessor,
-)
-from .inverse import (
-    InverseBatchProcessor,
-    InverseDescriptorMLPBatchProcessor,
-)
-from .registry import BatchProcessorRegistry
+from .base import ForwardBatchProcessor
+from .descriptor_mlp import DescriptorMLPBatchProcessor
+from .e3ee import E3EEBatchProcessor
+from .e3ee_full import E3EEFullBatchProcessor
+from .envembed import EnvEmbedBatchProcessor
+from .gemnet import GemNetBatchProcessor
+from .gemnet_oc import GemNetOCBatchProcessor
+from .geometrygraph_dimenet import GeometryGraphDimeNetBatchProcessor
+from .geometrygraph_schnet import GeometryGraphSchNetBatchProcessor
 
 __all__ = [
-    "BatchProcessor",
     "ForwardBatchProcessor",
-    "InverseBatchProcessor",
-    "BatchProcessorRegistry",
     "DescriptorMLPBatchProcessor",
-    "InverseDescriptorMLPBatchProcessor",
-    "GemNetBatchProcessor",
-    "GemNetOCBatchProcessor",
     "E3EEBatchProcessor",
     "E3EEFullBatchProcessor",
     "EnvEmbedBatchProcessor",
+    "GemNetBatchProcessor",
+    "GemNetOCBatchProcessor",
     "GeometryGraphDimeNetBatchProcessor",
     "GeometryGraphSchNetBatchProcessor",
 ]

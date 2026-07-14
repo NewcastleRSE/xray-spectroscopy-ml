@@ -169,10 +169,6 @@ $defs:
         minimum: 1
         default: 128
         description: Maximum absorber paths saved per structure.
-      mode:
-        $ref: dataset_types.schema.yaml#/$defs/descriptorMode
-        default: forward
-        description: '``forward`` for descriptor-to-spectrum or ``reverse`` for spectrum-to-descriptor.'
       fourier:
         type: boolean
         default: false

@@ -13,7 +13,6 @@ dataset:
   skip_prepare: False
   split_ratios: [0.8, 0.2]
   # params:
-  mode: forward
   # descriptors:
   descriptors:
     - descriptor_type: wacsf

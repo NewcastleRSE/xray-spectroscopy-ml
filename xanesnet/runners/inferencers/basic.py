@@ -98,8 +98,9 @@ class BasicInferencer(Inferencer):
         for batch in self.dataloader:
             batch.to(self.device)
 
-            # Prepare inputs
             inputs = self.batch_processor.input_preparation(batch)
+            elements = self.batch_processor.element_preparation(batch)
+            inputs = self.batch_processor.encode_input(inputs, elements)
 
             # Time the forward pass start
             if torch.device(self.device).type == "cuda":
@@ -117,9 +118,7 @@ class BasicInferencer(Inferencer):
 
             predictions = self.batch_processor.prediction_preparation(batch, predictions)
 
-            # Decode predictions from the model's encoded space back to spectra.
-            elements = self.batch_processor.element_preparation(batch)
-            predictions = self.encoding.decode(predictions, elements)
+            predictions = self.batch_processor.decode_target(predictions, elements)
 
             # Two timing fields, both broadcast to ``[n_absorbers]`` so they
             # follow the writer's per-absorber leading-dim contract:

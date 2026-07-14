@@ -25,21 +25,18 @@ import torch
 
 from xanesnet.datasets import GemNetBatch
 
-from .base import BatchProcessor
-from .registry import BatchProcessorRegistry
+from ..registry import BatchProcessorRegistry
+from .base import ForwardBatchProcessor
 
 
 @BatchProcessorRegistry.register(("gemnet_oc", "gemnet_oc"))
 @BatchProcessorRegistry.register(("gemnet_oc_mp", "gemnet_oc"))
-class GemNetOCBatchProcessor(BatchProcessor):
-    """Batch processor for the PyG-based ``GemNetDataset`` feeding GemNet-OC.
+class GemNetOCBatchProcessor(ForwardBatchProcessor):
+    """Batch processor for ``GemNetDataset`` + GemNet-OC.
 
-    GemNet-OC reads a large set of precomputed tensors (main/qint/a2ee2a/a2a
-    graphs plus triplet, mixed-triplet and quadruplet indices). All are
-    produced offline by ``GemNetDataset.prepare()`` and forwarded here as
-    individual ``torch.Tensor`` kwargs (consistent with the GemNet processor).
-    Optional fields are looked up with ``getattr(batch, name, None)`` so that
-    downstream toggles on the model side can gate their use.
+    Forwards a large set of precomputed tensors (main graph, triplets,
+    quadruplets, a2ee2a, a2a, mixed triplets). Optional fields are fetched
+    with ``getattr`` so downstream model toggles can gate their use.
     """
 
     _OPTIONAL_KEYS: tuple[str, ...] = (
@@ -108,7 +105,7 @@ class GemNetOCBatchProcessor(BatchProcessor):
         return predictions[batch.absorber_mask]
 
     def target_preparation(self, batch: GemNetBatch) -> torch.Tensor:
-        """Prepare target spectra from the batch.
+        """Prepare target spectra from a GemNet-OC batch.
 
         Args:
             batch: Collated GemNet-OC batch.
@@ -119,14 +116,12 @@ class GemNetOCBatchProcessor(BatchProcessor):
         return batch.intensities
 
     def element_preparation(self, batch: GemNetBatch) -> torch.Tensor | None:
-        """Extract absorber atomic numbers from the batch.
+        """Extract absorber atomic numbers from a GemNet-OC batch.
 
-        The atomic numbers ``x`` cover every atom in the batched graph; the
-        ``absorber_mask`` selects the absorbing atoms, aligning the result
-        row-wise with :meth:`target_preparation`.
+        Selects atomic numbers at absorber positions via ``absorber_mask``.
 
         Args:
-            batch: Collated GemNet-OC batch carrying ``x`` and ``absorber_mask``.
+            batch: Collated GemNet-OC batch.
 
         Returns:
             Absorber atomic numbers. ``(n_abs,)``
@@ -134,12 +129,12 @@ class GemNetOCBatchProcessor(BatchProcessor):
         return batch.x[batch.absorber_mask]
 
     def file_name_extraction(self, batch: GemNetBatch) -> np.ndarray:
-        """Extract file names from the batch.
+        """Extract file names from a GemNet-OC batch.
 
         Args:
             batch: Collated GemNet-OC batch.
 
         Returns:
-            Array of file name strings aligned with absorber targets. ``(n_abs,)``
+            Array of file name strings. ``(n_abs,)``
         """
         return np.array(batch.file_name, dtype=str)

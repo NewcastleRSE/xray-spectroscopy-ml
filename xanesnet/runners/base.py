@@ -71,12 +71,19 @@ class Runner(ABC):
         self.num_workers = num_workers
 
     def _setup_batchprocessor(self) -> BatchProcessor:
-        """Instantiate the batch processor appropriate for the current dataset/model pair.
+        """Instantiate the batch processor appropriate for the current
+        dataset/model pair.
+
+        The stored encoding is forwarded so the batch processor can apply
+        it internally in its preparation methods.
 
         Returns:
             A configured :class:`BatchProcessor` instance.
         """
-        batchprocessor = BatchProcessorRegistry.create((self.dataset.dataset_type, self.model.model_type))
+        batchprocessor = BatchProcessorRegistry.create(
+            (self.dataset.dataset_type, self.model.model_type),
+            encoding=self.encoding,
+        )
         return batchprocessor
 
     def _build_dataloader(self, data: Any, shuffle: bool, drop_last: bool) -> Any:

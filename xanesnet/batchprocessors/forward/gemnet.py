@@ -25,17 +25,17 @@ import torch
 
 from xanesnet.datasets import GemNetBatch
 
-from .base import BatchProcessor
-from .registry import BatchProcessorRegistry
+from ..registry import BatchProcessorRegistry
+from .base import ForwardBatchProcessor
 
 
 @BatchProcessorRegistry.register(("gemnet", "gemnet"))
 @BatchProcessorRegistry.register(("gemnet_mp", "gemnet"))
-class GemNetBatchProcessor(BatchProcessor):
-    """Batch processor for the PyG-based ``GemNetDataset`` feeding the GemNet model.
+class GemNetBatchProcessor(ForwardBatchProcessor):
+    """Batch processor for ``GemNetDataset`` + GemNet.
 
-    All graph indices are precomputed in the dataset; this processor just forwards them
-    and applies ``absorber_mask`` on the model's per-atom predictions.
+    Forwards precomputed graph indices (triplet, optional quadruplet) and
+    selects absorber-site predictions via ``absorber_mask``.
     """
 
     def input_preparation(self, batch: GemNetBatch) -> dict[str, torch.Tensor | None]:
@@ -87,7 +87,7 @@ class GemNetBatchProcessor(BatchProcessor):
         return predictions[batch.absorber_mask]
 
     def target_preparation(self, batch: GemNetBatch) -> torch.Tensor:
-        """Prepare target spectra from the batch.
+        """Prepare target spectra from a GemNet batch.
 
         Args:
             batch: Collated GemNet batch.
@@ -98,14 +98,12 @@ class GemNetBatchProcessor(BatchProcessor):
         return batch.intensities
 
     def element_preparation(self, batch: GemNetBatch) -> torch.Tensor | None:
-        """Extract absorber atomic numbers from the batch.
+        """Extract absorber atomic numbers from a GemNet batch.
 
-        The atomic numbers ``x`` cover every atom in the batched graph; the
-        ``absorber_mask`` selects the absorbing atoms, aligning the result
-        row-wise with :meth:`target_preparation`.
+        Selects atomic numbers at absorber positions via ``absorber_mask``.
 
         Args:
-            batch: Collated GemNet batch carrying ``x`` and ``absorber_mask``.
+            batch: Collated GemNet batch.
 
         Returns:
             Absorber atomic numbers. ``(n_abs,)``
@@ -113,12 +111,12 @@ class GemNetBatchProcessor(BatchProcessor):
         return batch.x[batch.absorber_mask]
 
     def file_name_extraction(self, batch: GemNetBatch) -> np.ndarray:
-        """Extract file names from the batch.
+        """Extract file names from a GemNet batch.
 
         Args:
             batch: Collated GemNet batch.
 
         Returns:
-            Array of file name strings aligned with absorber targets. ``(n_abs,)``
+            Array of file name strings. ``(n_abs,)``
         """
         return np.array(batch.file_name, dtype=str)

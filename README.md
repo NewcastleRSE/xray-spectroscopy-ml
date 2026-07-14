@@ -109,7 +109,7 @@ npm run dev
 
 Vite prints the local URL, usually `http://127.0.0.1:5173/` or the next free port. Save the generated YAML into [configs/](configs/) or another working directory, then pass it to the CLI.
 
-For supported descriptor workflows, keep `dataset.mode: forward`. Reverse-mode configuration is not part of the current documented workflow and is planned for a later stage.
+For descriptor workflows, set `dataset.dataset_type` to `descriptor` for forward prediction (descriptors -> spectra) or `descriptor_inverse` for inverse prediction (spectra -> descriptors); the multiprocessing variants are `descriptor_mp` and `descriptor_inverse_mp`.
 
 Common config UI commands:
 
@@ -188,7 +188,7 @@ At a high level, a config contains:
 
 - `seed` and `device`
 - `datasource`: input structure and spectrum source
-- `dataset`: preprocessing, storage, split, and descriptor or graph settings; use `mode: forward` for supported descriptor workflows
+- `dataset`: preprocessing, storage, split, and descriptor or graph settings; set `dataset_type` to `descriptor` (forward) or `descriptor_inverse` (inverse) for descriptor workflows
 - `model`: model family and hyperparameters
 - exactly one runner section: `trainer`, `inferencer`, or analysis settings depending on workflow
 - `strategy`: single model or ensemble training/inference behavior

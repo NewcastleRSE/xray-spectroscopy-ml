@@ -25,18 +25,18 @@ import torch
 
 from xanesnet.datasets import E3EEBatch
 
-from .base import BatchProcessor
-from .registry import BatchProcessorRegistry
+from ..registry import BatchProcessorRegistry
+from .base import ForwardBatchProcessor
 
 
 @BatchProcessorRegistry.register(("e3ee", "e3ee"))
 @BatchProcessorRegistry.register(("e3ee_mp", "e3ee"))
-class E3EEBatchProcessor(BatchProcessor):
-    """Batch processor for the E3EE dataset + E3EE model combination.
+class E3EEBatchProcessor(ForwardBatchProcessor):
+    """Batch processor for E3EE dataset + E3EE model.
 
-    Node features are padded to ``(B, N_max, ...)``; edge and absorber-path
-    tensors are flat and carry indices into the padded ``B * N_max`` layout
-    (already offset by the dataset collate_fn).
+    Forwards padded node features, edge tensors, and absorber-path indices to
+    the model. Targets are per-sample spectra (no per-atom masking needed
+    since the dataset already provides one spectrum per sample).
     """
 
     def input_preparation(self, batch: E3EEBatch) -> dict[str, torch.Tensor]:
@@ -70,7 +70,7 @@ class E3EEBatchProcessor(BatchProcessor):
         }
 
     def target_preparation(self, batch: E3EEBatch) -> torch.Tensor:
-        """Prepare target spectra from the batch.
+        """Prepare target spectra from an E3EE batch.
 
         Args:
             batch: Collated E3EE batch.
@@ -81,15 +81,13 @@ class E3EEBatchProcessor(BatchProcessor):
         return batch.intensities
 
     def element_preparation(self, batch: E3EEBatch) -> torch.Tensor | None:
-        """Extract absorber atomic numbers from the batch.
+        """Extract absorber atomic numbers from an E3EE batch.
 
-        Node atomic numbers ``x`` are padded to ``(B, N_max)`` and
-        ``absorber_index`` gives the absorber's position within each sample, so
-        gathering along the node axis aligns the result row-wise with
-        :meth:`target_preparation`.
+        Gathers the atomic number at each sample's absorber index from the
+        padded node features ``x``.
 
         Args:
-            batch: Collated E3EE batch carrying ``x`` and ``absorber_index``.
+            batch: Collated E3EE batch.
 
         Returns:
             Absorber atomic numbers. ``(batch_size,)``
@@ -97,7 +95,7 @@ class E3EEBatchProcessor(BatchProcessor):
         return batch.x[torch.arange(batch.x.size(0), device=batch.x.device), batch.absorber_index]
 
     def file_name_extraction(self, batch: E3EEBatch) -> np.ndarray:
-        """Extract file names from the batch.
+        """Extract file names from an E3EE batch.
 
         Args:
             batch: Collated E3EE batch.

@@ -29,18 +29,19 @@ from ..descriptor import DescriptorDataset
 
 
 @DatasetRegistry.register("descriptor_mp")
+@DatasetRegistry.register("descriptor_inverse_mp")
 class DescriptorDatasetMp(MpDatasetMixin, DescriptorDataset):
     """Multiprocessing variant of :class:`DescriptorDataset`.
 
     Args:
-        dataset_type: Registered dataset type name.
+        dataset_type: Registered dataset type name (``"descriptor_mp"`` for
+            forward or ``"descriptor_inverse_mp"`` for inverse prediction).
         datasource: Raw datasource used during preparation.
         root: Directory that stores processed ``.pth`` files.
         preload: Whether to preload processed samples.
         skip_prepare: Whether to reuse existing processed files.
         split_ratios: Optional split ratios.
         split_indexfile: Optional path to split indices.
-        mode: ``forward`` for descriptor-to-spectrum or ``reverse`` for spectrum-to-descriptor.
         descriptors: Descriptor configuration objects.
         num_workers: Requested worker process count.
     """
@@ -55,7 +56,6 @@ class DescriptorDatasetMp(MpDatasetMixin, DescriptorDataset):
         split_ratios: list[float] | None,
         split_indexfile: str | None,
         # params:
-        mode: str,
         descriptors: list[Config],
         num_workers: int | None,
     ) -> None:
@@ -68,7 +68,6 @@ class DescriptorDatasetMp(MpDatasetMixin, DescriptorDataset):
             skip_prepare=skip_prepare,
             split_ratios=split_ratios,
             split_indexfile=split_indexfile,
-            mode=mode,
             descriptors=descriptors,
         )
         self.num_workers = num_workers

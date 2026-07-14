@@ -30,7 +30,6 @@ import torch
 from xanesnet.datasources import DataSource
 from xanesnet.descriptors import Descriptor, DescriptorRegistry
 from xanesnet.serialization.config import Config
-from xanesnet.utils.exceptions import ConfigError
 
 from ..base import SavePathFn, TorchDataset
 from ..registry import DatasetRegistry
@@ -132,20 +131,23 @@ class DescriptorData:
 
 
 @DatasetRegistry.register("descriptor")
+@DatasetRegistry.register("descriptor_inverse")
 class DescriptorDataset(TorchDataset):
     """Dataset that converts structures to descriptor tensors.
 
     Args:
-        dataset_type: Registered dataset type name.
+        dataset_type: Registered dataset type name (``"descriptor"`` for
+            forward or ``"descriptor_inverse"`` for inverse prediction).
         datasource: Raw datasource of pymatgen structures or molecules.
         root: Directory that stores processed ``.pth`` files.
         preload: Whether to preload processed samples.
         skip_prepare: Whether to reuse existing processed files.
         split_ratios: Optional split ratios.
         split_indexfile: Optional path to split indices.
-        mode: ``forward`` for descriptor-to-spectrum or ``reverse`` for spectrum-to-descriptor.
         descriptors: Descriptor configuration objects.
     """
+
+    _INVERSE_SUFFIX = "_inverse"
 
     def __init__(
         self,
@@ -157,14 +159,13 @@ class DescriptorDataset(TorchDataset):
         split_ratios: list[float] | None,
         split_indexfile: str | None,
         # params:
-        mode: str,
         # descriptors
         descriptors: list[Config],
     ) -> None:
         """Initialize the descriptor dataset."""
         super().__init__(dataset_type, datasource, root, preload, skip_prepare, split_ratios, split_indexfile)
 
-        self.mode = mode
+        self._inverse = dataset_type.endswith(self._INVERSE_SUFFIX)
 
         # Create descriptors
         self.descriptor_configs = descriptors
@@ -217,15 +218,13 @@ class DescriptorDataset(TorchDataset):
             energies = torch.tensor(spectrum["energies"], dtype=torch.float32)
             intensities = torch.tensor(spectrum["intensities"], dtype=torch.float32)
 
-            # Mode
-            if self.mode == "forward":
-                x = df
-                y = intensities
-            elif self.mode == "reverse":
+            # Assign x (input) and y (target) based on direction
+            if self._inverse:
                 x = intensities
                 y = df
             else:
-                raise ConfigError(f"Invalid mode: {self.mode}")
+                x = df
+                y = intensities
 
             # Create Data object
             data = DescriptorData(
@@ -288,7 +287,6 @@ class DescriptorDataset(TorchDataset):
         signature.update_with_dict(
             {
                 "descriptors": self.descriptor_configs,
-                "mode": self.mode,
             }
         )
         return signature

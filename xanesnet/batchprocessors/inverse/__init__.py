@@ -18,38 +18,12 @@
 # Citations:
 #   ...
 
-"""Public API for all XANESNET batch processors."""
+"""Public API for inverse XANESNET batch processors."""
 
-from .base import BatchProcessor
-from .forward import (
-    DescriptorMLPBatchProcessor,
-    E3EEBatchProcessor,
-    E3EEFullBatchProcessor,
-    EnvEmbedBatchProcessor,
-    ForwardBatchProcessor,
-    GemNetBatchProcessor,
-    GemNetOCBatchProcessor,
-    GeometryGraphDimeNetBatchProcessor,
-    GeometryGraphSchNetBatchProcessor,
-)
-from .inverse import (
-    InverseBatchProcessor,
-    InverseDescriptorMLPBatchProcessor,
-)
-from .registry import BatchProcessorRegistry
+from .base import InverseBatchProcessor
+from .descriptor_mlp import InverseDescriptorMLPBatchProcessor
 
 __all__ = [
-    "BatchProcessor",
-    "ForwardBatchProcessor",
     "InverseBatchProcessor",
-    "BatchProcessorRegistry",
-    "DescriptorMLPBatchProcessor",
     "InverseDescriptorMLPBatchProcessor",
-    "GemNetBatchProcessor",
-    "GemNetOCBatchProcessor",
-    "E3EEBatchProcessor",
-    "E3EEFullBatchProcessor",
-    "EnvEmbedBatchProcessor",
-    "GeometryGraphDimeNetBatchProcessor",
-    "GeometryGraphSchNetBatchProcessor",
 ]

@@ -25,18 +25,18 @@ import torch
 
 from xanesnet.datasets import E3EEFullBatch
 
-from .base import BatchProcessor
-from .registry import BatchProcessorRegistry
+from ..registry import BatchProcessorRegistry
+from .base import ForwardBatchProcessor
 
 
 @BatchProcessorRegistry.register(("e3ee_full", "e3ee_full"))
 @BatchProcessorRegistry.register(("e3ee_full_mp", "e3ee_full"))
-class E3EEFullBatchProcessor(BatchProcessor):
-    """Batch processor for the E3EEFull dataset + E3EEFull model combination.
+class E3EEFullBatchProcessor(ForwardBatchProcessor):
+    """Batch processor for E3EEFull dataset + E3EEFull model.
 
-    The model emits spectra for every atom in the padded layout
-    (``(B, N_max, nE)``); this processor selects only the rows flagged by
-    ``absorber_mask`` for loss computation (identical pattern to SchNet / DimeNet).
+    The model emits per-atom spectra ``(B, N_max, nE)``; this processor
+    selects absorber-site rows via ``absorber_mask`` for loss computation
+    (same pattern as SchNet/DimeNet).
     """
 
     def input_preparation(self, batch: E3EEFullBatch) -> dict[str, torch.Tensor]:
@@ -83,7 +83,7 @@ class E3EEFullBatchProcessor(BatchProcessor):
         return predictions[batch.absorber_mask]
 
     def target_preparation(self, batch: E3EEFullBatch) -> torch.Tensor:
-        """Prepare target spectra from the batch.
+        """Prepare target spectra from an E3EEFull batch.
 
         Args:
             batch: Collated E3EEFull batch.
@@ -94,14 +94,12 @@ class E3EEFullBatchProcessor(BatchProcessor):
         return batch.intensities
 
     def element_preparation(self, batch: E3EEFullBatch) -> torch.Tensor | None:
-        """Extract absorber atomic numbers from the batch.
+        """Extract absorber atomic numbers from an E3EEFull batch.
 
-        The atomic numbers ``x`` cover every atom in the padded layout; the
-        ``absorber_mask`` selects the absorbing atoms, aligning the result
-        row-wise with :meth:`target_preparation`.
+        Selects atomic numbers at absorber positions via ``absorber_mask``.
 
         Args:
-            batch: Collated E3EEFull batch carrying ``x`` and ``absorber_mask``.
+            batch: Collated E3EEFull batch.
 
         Returns:
             Absorber atomic numbers. ``(n_abs,)``
@@ -109,12 +107,12 @@ class E3EEFullBatchProcessor(BatchProcessor):
         return batch.x[batch.absorber_mask]
 
     def file_name_extraction(self, batch: E3EEFullBatch) -> np.ndarray:
-        """Extract file names from the batch.
+        """Extract file names from an E3EEFull batch.
 
         Args:
             batch: Collated E3EEFull batch.
 
         Returns:
-            Array of file name strings aligned with absorber targets. ``(n_abs,)``
+            Array of file name strings. ``(n_abs,)``
         """
         return np.array(batch.file_name, dtype=str)

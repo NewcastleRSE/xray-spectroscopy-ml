@@ -131,6 +131,7 @@ class EnsembleInferencer(Inferencer):
             batch.to(self.device)
             inputs = self.batch_processor.input_preparation(batch)
             elements = self.batch_processor.element_preparation(batch)
+            inputs = self.batch_processor.encode_input(inputs, elements)
 
             if torch.device(self.device).type == "cuda":
                 torch.cuda.synchronize()
@@ -144,9 +145,7 @@ class EnsembleInferencer(Inferencer):
 
                     predictions = model(**inputs)
                     predictions = self.batch_processor.prediction_preparation(batch, predictions)
-                    # Decode each member from the encoded space so the mean and
-                    # standard deviation are computed over decoded spectra.
-                    predictions = self.encoding.decode(predictions, elements)
+                    predictions = self.batch_processor.decode_target(predictions, elements)
                     if self.model_device_policy == "sequential":
                         member_predictions.append(predictions.detach().cpu())
                         del predictions
