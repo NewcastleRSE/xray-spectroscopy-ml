@@ -57,7 +57,6 @@ class GeometryGraphDimeNetBatchProcessor(ForwardBatchProcessor):
             "angle": batch.angle,
             "idx_kj": batch.idx_kj,
             "idx_ji": batch.idx_ji,
-            "batch": batch.batch,
         }
 
     def prediction_preparation(self, batch: GeometryGraphBatch, predictions: torch.Tensor) -> torch.Tensor:

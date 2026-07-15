@@ -23,6 +23,7 @@
 import time
 
 import torch
+from tqdm import tqdm
 
 from xanesnet.datasets import Dataset
 from xanesnet.encodings import SpectraEncoding
@@ -93,9 +94,7 @@ class BasicInferencer(Inferencer):
         """
         self.model.eval()
 
-        # TODO some progress bar?
-
-        for batch in self.dataloader:
+        for batch in tqdm(self.dataloader, desc="Inference"):
             batch.to(self.device)
 
             inputs = self.batch_processor.input_preparation(batch)

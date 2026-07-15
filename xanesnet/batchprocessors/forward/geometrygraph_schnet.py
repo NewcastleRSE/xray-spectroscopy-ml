@@ -52,7 +52,6 @@ class GeometryGraphSchNetBatchProcessor(ForwardBatchProcessor):
             "z": batch.x,
             "edge_index": batch.edge_index,
             "edge_weight": batch.edge_weight,
-            "batch": batch.batch,
         }
 
     def prediction_preparation(self, batch: GeometryGraphBatch, predictions: torch.Tensor) -> torch.Tensor:

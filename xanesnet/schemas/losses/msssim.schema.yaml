@@ -47,11 +47,6 @@ $defs:
         - 0.01
         - 0.03
         description: Stability constants ``(K1, K2)`` for luminance and contrast-structure terms. Defaults to ``(0.01, 0.03)``.
-      device:
-        type: string
-        default: cpu
-        description: Compatibility argument retained for configuration parity. Kernels are moved to the device of ``preds``
-          during ``forward``. Defaults to ``'cpu'``.
       use_weighted_sum:
         type: boolean
         default: false

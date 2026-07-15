@@ -295,7 +295,6 @@ class EnvEmbedDataset(TorchDataset):
         else:
             logging.info("Creating spectral basis from datasource")
             first_data = next(iter(self.datasource))
-            # TODO requires same energy grid for all samples!
             for key in SPECTRUM_KEYS:
                 if key in first_data.site_properties.keys():
                     break

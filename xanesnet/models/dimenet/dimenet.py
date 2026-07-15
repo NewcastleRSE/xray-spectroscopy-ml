@@ -33,7 +33,6 @@ import sympy as sp
 import torch
 from torch_geometric.nn.inits import glorot_orthogonal
 from torch_geometric.nn.resolver import activation_resolver
-from torch_geometric.typing import OptTensor
 from torch_geometric.utils import scatter
 
 from xanesnet.serialization.config import Config
@@ -156,7 +155,6 @@ class DimeNet(Model):
         angle: torch.Tensor,
         idx_kj: torch.Tensor,
         idx_ji: torch.Tensor,
-        batch: OptTensor = None,  # TODO can we remove ?!?
     ) -> torch.Tensor:
         """Compute per-atom output predictions.
 
@@ -170,8 +168,6 @@ class DimeNet(Model):
             angle: Triplet angles in **rad**, shape ``(num_triplets,)``.
             idx_kj: Index of the k->j edge for each triplet, shape ``(num_triplets,)``.
             idx_ji: Index of the j->i edge for each triplet, shape ``(num_triplets,)``.
-            batch: Atom-to-sample assignments, shape ``(num_atoms,)``. Not used
-                internally; accepted for interface compatibility.
 
         Returns:
             Per-atom predictions of shape ``(num_atoms, out_channels)``.

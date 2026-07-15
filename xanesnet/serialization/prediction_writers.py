@@ -200,7 +200,7 @@ class PredictionWriter(ABC):
         Called once during ``__init__``.  Subclasses should call
         ``super()._init_storage()`` and then set up format-specific resources.
         """
-        self.path.mkdir(parents=True, exist_ok=True)  # TODO not sure if needed
+        self.path.mkdir(parents=True, exist_ok=True)
 
         info_file = self.path / "WRITER_INFO.txt"
         if not info_file.exists():

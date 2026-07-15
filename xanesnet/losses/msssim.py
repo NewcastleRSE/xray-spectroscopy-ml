@@ -44,9 +44,6 @@ class MultiScale_SSIM(Loss):
             Defaults to ``1.0``.
         K: Stability constants ``(K1, K2)`` for luminance and
             contrast-structure terms. Defaults to ``(0.01, 0.03)``.
-        device: Compatibility argument retained for configuration parity.
-            Kernels are moved to the device of ``preds`` during ``forward``.
-            Defaults to ``'cpu'``.
         use_weighted_sum: If ``True``, combine scales via weighted sum
             instead of the default multiplicative combination.
             Defaults to ``False``.
@@ -65,7 +62,6 @@ class MultiScale_SSIM(Loss):
         fractions: list[float] | tuple[float, ...] = (0.01, 0.05, 0.10, 0.15, 0.2, 0.25),
         data_range: float = 1.0,  # max - min
         K: tuple[float, float] = (0.01, 0.03),
-        device: str | torch.device = "cpu",  # TODO do we still need this argument?
         use_weighted_sum: bool = False,
         weights: list[float] | None = None,
         final_combine: bool = True,
@@ -94,7 +90,6 @@ class MultiScale_SSIM(Loss):
             g = g.view(1, 1, -1)
             g_masks.append(g)
         self.g_masks = tuple(g_masks)
-        self.device = device
 
         # Weights for weighted sum
         if use_weighted_sum:

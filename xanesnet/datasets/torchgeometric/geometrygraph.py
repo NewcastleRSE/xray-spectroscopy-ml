@@ -36,7 +36,7 @@ from xanesnet.utils.graph import build_edges, compute_triplets_and_angles
 from ..base import SavePathFn, TorchGeometricDataset
 from ..registry import DatasetRegistry
 
-SPECTRUM_KEYS = ["XANES", "XANES_K"]  # TODO maybe put this somewhere more central?
+SPECTRUM_KEYS = ["XANES", "XANES_K"]
 
 
 class GeometryGraphData(Data):

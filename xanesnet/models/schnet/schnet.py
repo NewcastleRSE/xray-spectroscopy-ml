@@ -25,7 +25,6 @@ import math
 import torch
 import torch.nn.functional as F
 import torch_geometric.nn as tgnn
-from torch_geometric.typing import OptTensor
 
 from xanesnet.components import BiasInitRegistry, WeightInitRegistry
 from xanesnet.serialization.config import Config
@@ -122,7 +121,6 @@ class SchNet(Model):
         z: torch.Tensor,
         edge_index: torch.Tensor,
         edge_weight: torch.Tensor,
-        batch: OptTensor = None,  # TODO we might be able to remove this
     ) -> torch.Tensor:
         """Run a forward pass through SchNet.
 
@@ -130,9 +128,6 @@ class SchNet(Model):
             z: Atomic numbers. ``(num_atoms,)``
             edge_index: Edge indices (source, target). ``(2, num_edges)``
             edge_weight: Interatomic distances. ``(num_edges,)`` **Angstrom**.
-            batch: Batch assignment indices mapping each atom to a graph. ``(num_atoms,)``
-                Accepted for interface compatibility with batched PyG models, but ignored by
-                this node-level SchNet variant because it returns per-atom outputs.
 
         Returns:
             Per-atom output vectors. ``(num_atoms, reduce_channels_2)``
