@@ -34,14 +34,14 @@ class InverseBatchProcessor(BatchProcessor):
     (descriptors, properties, ...). The spectral encoding is therefore applied
     to the input, while targets and predictions -- structural quantities --
     pass through unchanged. Concrete inverse processors only implement the
-    data-shaping methods and may override :attr:`_spectra_input_key` when the
+    data-shaping methods and may override :attr:`spectra_input_key` when the
     spectral input is not stored under ``"x"``.
     """
 
-    _spectra_input_key: str = "x"
+    spectra_input_key: str = "x"
 
     def encode_input(self, inputs: dict[str, Any], elements: torch.Tensor | None = None) -> dict[str, Any]:
-        """Encode the spectral input under :attr:`_spectra_input_key`.
+        """Encode the spectral input under :attr:`spectra_input_key`.
 
         Args:
             inputs: Input dict returned by :meth:`input_preparation`.
@@ -54,7 +54,7 @@ class InverseBatchProcessor(BatchProcessor):
         if self._encoding is None:
             return inputs
         encoded = dict(inputs)
-        encoded[self._spectra_input_key] = self._encoding.encode(inputs[self._spectra_input_key], elements)
+        encoded[self.spectra_input_key] = self._encoding.encode(inputs[self.spectra_input_key], elements)
         return encoded
 
     def encode_target(self, targets: torch.Tensor, elements: torch.Tensor | None = None) -> torch.Tensor:

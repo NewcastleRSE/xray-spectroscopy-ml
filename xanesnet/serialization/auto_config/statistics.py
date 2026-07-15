@@ -196,7 +196,7 @@ def collect_spectral_statistics(dataset: Dataset, batchprocessor: BatchProcessor
     per-absorbing-element statistics.  For forward batch processors the
     spectrum is the model target; for inverse batch processors it is the
     spectral input (under
-    :attr:`~xanesnet.batchprocessors.InverseBatchProcessor._spectra_input_key`).
+    :attr:`~xanesnet.batchprocessors.InverseBatchProcessor.spectra_input_key`).
     Only fixed-size accumulators are held in memory, so the full spectral
     matrix is never materialized.
 
@@ -213,7 +213,7 @@ def collect_spectral_statistics(dataset: Dataset, batchprocessor: BatchProcessor
     collector = SpectralStatisticsCollector()
     for index in tqdm(indices, desc="Collecting spectral statistics"):
         if isinstance(batchprocessor, InverseBatchProcessor):
-            spectra = batchprocessor.input_preparation_single(dataset, index)[batchprocessor._spectra_input_key]
+            spectra = batchprocessor.input_preparation_single(dataset, index)[batchprocessor.spectra_input_key]
         else:
             spectra = batchprocessor.target_preparation_single(dataset, index)
         elements = batchprocessor.element_preparation_single(dataset, index)
