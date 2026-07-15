@@ -21,14 +21,14 @@
 """Runtime config contracts that are clearer in Python than JSON Schema."""
 
 from collections.abc import Callable, Iterator
-from typing import Any, Literal
+from typing import Any
 
 from xanesnet.utils.exceptions import ConfigError
 
+from ._types import ConfigMode, ConfigRaw
+
 __all__ = ["validate_runtime_contracts"]
 
-ConfigMode = Literal["train", "infer", "analyze"]
-ConfigRaw = dict[str, Any]
 _RuntimeContract = Callable[[ConfigRaw], None]
 
 

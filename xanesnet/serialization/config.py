@@ -30,14 +30,12 @@ import yaml
 from xanesnet.utils.exceptions import ConfigError
 from xanesnet.utils.filesystem import copy_file
 
+from ._types import ConfigMode, ConfigRaw
 from .schema_validation import validate_config_schema
 
 ###############################################################################
 ##################################### RAW #####################################
 ###############################################################################
-
-# Type alias for raw config data loaded from YAML files.
-ConfigRaw = dict[str, Any]
 
 
 def load_raw_config(file_path: str | Path) -> ConfigRaw:

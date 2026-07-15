@@ -20,8 +20,6 @@
 
 """Lazy JSONL stream reader and JSON serialization helpers for XANESNET."""
 
-from __future__ import annotations
-
 import json
 import logging
 from collections.abc import Iterable, Iterator

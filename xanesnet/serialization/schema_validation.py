@@ -24,7 +24,7 @@ import copy
 from functools import lru_cache
 from importlib import resources
 from importlib.resources.abc import Traversable
-from typing import Any, Literal
+from typing import Any
 from urllib.parse import unquote
 
 import yaml
@@ -33,10 +33,9 @@ from jsonschema.validators import Draft202012Validator
 
 from xanesnet.utils.exceptions import ConfigError
 
+from ._types import ConfigMode, ConfigRaw
 from .runtime_contracts import validate_runtime_contracts
 
-ConfigMode = Literal["train", "infer", "analyze"]
-ConfigRaw = dict[str, Any]
 SchemaRaw = dict[str, Any]
 
 SCHEMA_ENTRY_POINTS: dict[ConfigMode, str] = {
