@@ -39,8 +39,8 @@ from xanesnet.serialization.config import (
     load_raw_config,
     merge_raw_configs,
     save_raw_config,
-    validate_config_infer,
 )
+from xanesnet.serialization.schema_validation import validate_config_schema
 from xanesnet.strategies import StrategyRegistry
 from xanesnet.utils.filesystem import create_run_dir, create_subfolders
 from xanesnet.utils.logger import setup_file_logging, setup_logging
@@ -161,7 +161,8 @@ def main(args: list[str]) -> None:
         logging.info(f"Merged configuration file saved to: {merged_config_save_path}.")
 
         # Config validation
-        config: Config = validate_config_infer(config_raw)
+        validated = validate_config_schema(config_raw, "infer")
+        config: Config = Config(validated)
         validate_config_save_path = config.save(save_dir / "validated_infer_config.yaml")
         logging.info(f"Validated config file saved to: {validate_config_save_path}.")
 

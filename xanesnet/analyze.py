@@ -35,8 +35,8 @@ from xanesnet.serialization.config import (
     ConfigRaw,
     copy_raw_config,
     load_raw_config,
-    validate_config_analyze,
 )
+from xanesnet.serialization.schema_validation import validate_config_schema
 from xanesnet.utils.filesystem import create_run_dir, create_subfolders
 from xanesnet.utils.logger import setup_file_logging, setup_logging
 from xanesnet.utils.prompts import auto_yes
@@ -146,7 +146,8 @@ def main(args: list[str]) -> None:
         logging.info(f"Configuration file saved to: {config_save_path}")
 
         # Config validation
-        config: Config = validate_config_analyze(config_raw)
+        validated = validate_config_schema(config_raw, "analyze")
+        config: Config = Config(validated)
         validate_config_save_path = config.save(save_dir / "validated_analyze_config.yaml")
         logging.info(f"Validated config file saved to: {validate_config_save_path}.")
 

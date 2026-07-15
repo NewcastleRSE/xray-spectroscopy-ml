@@ -40,8 +40,8 @@ from xanesnet.serialization.config import (
     ConfigRaw,
     copy_raw_config,
     load_raw_config,
-    validate_config_train,
 )
+from xanesnet.serialization.schema_validation import validate_config_schema
 from xanesnet.serialization.tensorboard import tb_logger
 from xanesnet.strategies import StrategyRegistry
 from xanesnet.utils.filesystem import create_run_dir, create_subfolders
@@ -162,7 +162,8 @@ def main(args: list[str]) -> None:
         logging.info(f"Configuration file saved to: {config_save_path}")
 
         # Config validation
-        config: Config = validate_config_train(config_raw)
+        validated = validate_config_schema(config_raw, "train")
+        config: Config = Config(validated)
         if args_namespace.dry_run:
             logging.info(f"Dry run enabled: trainer epochs will be overridden to 1 for a quick test run.")
             config_dict = config.as_dict()

@@ -21,7 +21,6 @@
 """Configuration loading, validation, and type-safe access for XANESNET."""
 
 import copy
-import logging
 from pathlib import Path
 from typing import Any
 
@@ -30,8 +29,7 @@ import yaml
 from xanesnet.utils.exceptions import ConfigError
 from xanesnet.utils.filesystem import copy_file
 
-from ._types import ConfigMode, ConfigRaw
-from .schema_validation import validate_config_schema
+from ._types import ConfigRaw
 
 ###############################################################################
 ##################################### RAW #####################################
@@ -472,78 +470,3 @@ class Config:
         if isinstance(value, list):
             return [Config._normalize_raw(v) for v in value]
         return value
-
-
-###############################################################################
-################################# VALIDATION ##################################
-###############################################################################
-
-
-def validate_config_train(config: ConfigRaw) -> Config:
-    """Validate a config dict for a training run.
-
-    Validation is driven by ``xanesnet/schemas/train.schema.yaml``. Missing
-    schema defaults are materialized into ``config`` in place. Training configs
-    may set selected top-level model fields to ``"auto"``; the train schema
-    validates those fields and ``auto_config.resolve_auto_model_config``
-    resolves them later from the prepared dataset.
-
-    Args:
-        config: Raw configuration dictionary to validate and update.
-
-    Returns:
-        A validated ``Config`` object.
-
-    Raises:
-        ConfigError: If the configuration does not satisfy the training schema.
-    """
-    logging.info("Validating the raw input training config file...")
-    validated = validate_config_schema(config, "train")
-    logging.info("Config: OK")
-    return Config(validated)
-
-
-def validate_config_infer(config: ConfigRaw) -> Config:
-    """Validate a config dict for an inference run.
-
-    Validation is driven by ``xanesnet/schemas/infer_runtime.schema.yaml`` and
-    is intended for the merged user/checkpoint configuration. Missing schema
-    defaults are materialized into ``config`` in place. Inference model
-    architecture comes from the checkpoint signature, so runtime validation
-    rejects unresolved ``"auto"`` model values after schema validation.
-
-    Args:
-        config: Raw configuration dictionary to validate and update.
-
-    Returns:
-        A validated ``Config`` object.
-
-    Raises:
-        ConfigError: If the configuration does not satisfy the merged inference
-            schema.
-    """
-    logging.info("Validating the merged inference config file...")
-    validated = validate_config_schema(config, "infer")
-    logging.info("Config: OK")
-    return Config(validated)
-
-
-def validate_config_analyze(config: ConfigRaw) -> Config:
-    """Validate a config dict for an analysis run.
-
-    Validation is driven by ``xanesnet/schemas/analyze.schema.yaml``. Missing
-    schema defaults are materialized into ``config`` in place.
-
-    Args:
-        config: Raw configuration dictionary to validate and update.
-
-    Returns:
-        A validated ``Config`` object.
-
-    Raises:
-        ConfigError: If the configuration does not satisfy the analysis schema.
-    """
-    logging.info("Validating the raw input analysis config file...")
-    validated = validate_config_schema(config, "analyze")
-    logging.info("Config: OK")
-    return Config(validated)
