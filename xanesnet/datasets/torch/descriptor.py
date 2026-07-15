@@ -135,9 +135,15 @@ class DescriptorData:
 class DescriptorDataset(TorchDataset):
     """Dataset that converts structures to descriptor tensors.
 
+    The prediction direction is detected from the dataset type: types
+    containing ``"_inverse"`` (e.g. ``"descriptor_inverse"``,
+    ``"descriptor_inverse_mp"``) swap inputs and targets so that spectra are
+    the model input and structural descriptors are the prediction target.
+
     Args:
-        dataset_type: Registered dataset type name (``"descriptor"`` for
-            forward or ``"descriptor_inverse"`` for inverse prediction).
+        dataset_type: Registered dataset type name (``"descriptor"`` or
+            ``"descriptor_mp"`` for forward prediction; ``"descriptor_inverse"``
+            or ``"descriptor_inverse_mp"`` for inverse prediction).
         datasource: Raw datasource of pymatgen structures or molecules.
         root: Directory that stores processed ``.pth`` files.
         preload: Whether to preload processed samples.
@@ -147,7 +153,7 @@ class DescriptorDataset(TorchDataset):
         descriptors: Descriptor configuration objects.
     """
 
-    _INVERSE_SUFFIX = "_inverse"
+    _INVERSE_MARKER = "_inverse"
 
     def __init__(
         self,
@@ -165,7 +171,7 @@ class DescriptorDataset(TorchDataset):
         """Initialize the descriptor dataset."""
         super().__init__(dataset_type, datasource, root, preload, skip_prepare, split_ratios, split_indexfile)
 
-        self._inverse = dataset_type.endswith(self._INVERSE_SUFFIX)
+        self._inverse = self._INVERSE_MARKER in dataset_type
 
         # Create descriptors
         self.descriptor_configs = descriptors

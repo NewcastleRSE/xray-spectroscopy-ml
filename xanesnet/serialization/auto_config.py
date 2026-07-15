@@ -26,7 +26,11 @@ from typing import Any
 
 import torch
 
-from xanesnet.batchprocessors import BatchProcessor, BatchProcessorRegistry
+from xanesnet.batchprocessors import (
+    BatchProcessor,
+    BatchProcessorRegistry,
+    InverseBatchProcessor,
+)
 from xanesnet.datasets import Dataset
 from xanesnet.encodings import SpectraEncoding
 from xanesnet.utils.exceptions import ConfigError
@@ -34,21 +38,7 @@ from xanesnet.utils.exceptions import ConfigError
 from .config import Config
 
 AUTO_VALUE = "auto"
-_INVERSE_DATASET_SUFFIX = "_inverse"
 AutoResolver = Callable[[dict[str, Any], Any], dict[str, Any]]
-
-
-def _is_inverse_dataset(dataset_type: str) -> bool:
-    """Return ``True`` if ``dataset_type`` identifies an inverse prediction dataset.
-
-    Args:
-        dataset_type: Registered dataset type name.
-
-    Returns:
-        ``True`` when the dataset type ends with ``"_inverse"``.
-    """
-    # TODO This is not optimal! Will miss for example _mp!
-    return dataset_type.endswith(_INVERSE_DATASET_SUFFIX)
 
 
 def resolve_auto_encoding_config(config: Config, dataset: Dataset) -> Config:
@@ -57,18 +47,17 @@ def resolve_auto_encoding_config(config: Config, dataset: Dataset) -> Config:
     The input config is expected to have passed schema-backed training
     validation. This function performs only the dataset-dependent finalization
     for the top-level ``encodings`` list: it accumulates overall and
-    per-absorbing-element statistics of the training targets in a single
-    streaming pass (so the full target matrix is never materialized), asks the
+    per-absorbing-element spectral statistics in a single streaming pass (so
+    the full spectral matrix is never materialized), asks the
     encoding-specific resolver for concrete values (e.g. per-point statistics
     over the training spectra), and returns a new ``Config`` without mutating
     the input config.
 
-    .. note::
-
-        For inverse prediction datasets the targets are structural
-        descriptors or properties, not spectra. Auto-resolution of encoding
-        fields is skipped for inverse datasets; use an explicit
-        ``encoding_type: identity`` or manually specify encoding parameters.
+    For forward datasets the encoding is applied to the model target (spectra),
+    so statistics are collected from target spectra. For inverse datasets the
+    encoding is applied to the spectral model input, so statistics are
+    collected from input spectra. Both prediction directions are handled
+    uniformly.
 
     Args:
         config: Validated training configuration.
@@ -90,17 +79,8 @@ def resolve_auto_encoding_config(config: Config, dataset: Dataset) -> Config:
     if not any(_requested_auto_fields(item) for item in encodings):
         return Config(config_raw)
 
-    if _is_inverse_dataset(dataset.dataset_type):
-        logging.warning(
-            "Skipping auto-encoding resolution for inverse dataset '%s'. "
-            "Encoding fields set to 'auto' in an inverse config must be "
-            "resolved manually or use encoding_type: identity.",
-            dataset.dataset_type,
-        )
-        return Config(config_raw)
-
     batchprocessor = BatchProcessorRegistry.create((dataset.dataset_type, model_type))
-    statistics = _collect_target_statistics(dataset, batchprocessor)
+    statistics = _collect_spectral_statistics(dataset, batchprocessor)
 
     for item in encodings:
         auto_fields = _requested_auto_fields(item)
@@ -356,13 +336,13 @@ MODEL_AUTO_RESOLVERS: dict[str, AutoResolver] = {
 ###############################################################################
 
 
-def _resolve_gaussian_encoding(item: dict[str, Any], statistics: "_TargetStatisticsCollector") -> dict[str, Any]:
+def _resolve_gaussian_encoding(item: dict[str, Any], statistics: "_SpectralStatisticsCollector") -> dict[str, Any]:
     """Resolve the Gaussian-encoding spectral grid size.
 
     Args:
         item: Raw Gaussian encoding configuration dictionary. Included for
             resolver interface consistency.
-        statistics: Streaming statistics of the training targets.
+        statistics: Streaming statistics of the training spectra.
 
     Returns:
         Mapping with Gaussian-encoding automatic fields.
@@ -370,8 +350,8 @@ def _resolve_gaussian_encoding(item: dict[str, Any], statistics: "_TargetStatist
     return {"num_points": statistics.overall.num_points}
 
 
-def _resolve_zscore_encoding(item: dict[str, Any], statistics: "_TargetStatisticsCollector") -> dict[str, Any]:
-    """Resolve z-score statistics from the training targets.
+def _resolve_zscore_encoding(item: dict[str, Any], statistics: "_SpectralStatisticsCollector") -> dict[str, Any]:
+    """Resolve z-score statistics from the training spectra.
 
     Args:
         item: Raw z-score encoding configuration dictionary. The ``per_point``
@@ -379,7 +359,7 @@ def _resolve_zscore_encoding(item: dict[str, Any], statistics: "_TargetStatistic
             ``per_element`` selects per-element statistics keyed by absorbing
             element; when ``per_element`` is true ``elements`` may be an
             explicit list or ``"auto"``.
-        statistics: Streaming statistics of the training targets.
+        statistics: Streaming statistics of the training spectra.
 
     Returns:
         Mapping with ``mean`` and population ``std``. When ``per_element`` is
@@ -408,8 +388,8 @@ def _resolve_zscore_encoding(item: dict[str, Any], statistics: "_TargetStatistic
     return {"mean": [stats.global_mean], "std": [stats.global_std]}
 
 
-def _resolve_minmax_encoding(item: dict[str, Any], statistics: "_TargetStatisticsCollector") -> dict[str, Any]:
-    """Resolve minima and maxima from the training targets.
+def _resolve_minmax_encoding(item: dict[str, Any], statistics: "_SpectralStatisticsCollector") -> dict[str, Any]:
+    """Resolve minima and maxima from the training spectra.
 
     Args:
         item: Raw min-max encoding configuration dictionary. The ``per_point``
@@ -417,7 +397,7 @@ def _resolve_minmax_encoding(item: dict[str, Any], statistics: "_TargetStatistic
             ``per_element`` selects per-element bounds keyed by absorbing
             element; when ``per_element`` is true ``elements`` may be an
             explicit list or ``"auto"``.
-        statistics: Streaming statistics of the training targets.
+        statistics: Streaming statistics of the training spectra.
 
     Returns:
         Mapping with ``minimum`` and ``maximum``. When ``per_element`` is false
@@ -446,8 +426,8 @@ def _resolve_minmax_encoding(item: dict[str, Any], statistics: "_TargetStatistic
     return {"minimum": [stats.global_minimum], "maximum": [stats.global_maximum]}
 
 
-def _resolve_scale_encoding(item: dict[str, Any], statistics: "_TargetStatisticsCollector") -> dict[str, Any]:
-    """Resolve the scaling factor from the training targets.
+def _resolve_scale_encoding(item: dict[str, Any], statistics: "_SpectralStatisticsCollector") -> dict[str, Any]:
+    """Resolve the scaling factor from the training spectra.
 
     The factor is the population standard deviation, so encoding divides the
     spectra to unit variance.
@@ -458,7 +438,7 @@ def _resolve_scale_encoding(item: dict[str, Any], statistics: "_TargetStatistics
             ``per_element`` selects per-element factors keyed by absorbing
             element; when ``per_element`` is true ``elements`` may be an
             explicit list or ``"auto"``.
-        statistics: Streaming statistics of the training targets.
+        statistics: Streaming statistics of the training spectra.
 
     Returns:
         Mapping with ``factor``. When ``per_element`` is false this is a
@@ -482,16 +462,16 @@ def _resolve_scale_encoding(item: dict[str, Any], statistics: "_TargetStatistics
 
 
 def _resolve_subtract_average_encoding(
-    item: dict[str, Any], statistics: "_TargetStatisticsCollector"
+    item: dict[str, Any], statistics: "_SpectralStatisticsCollector"
 ) -> dict[str, Any]:
-    """Resolve the per-point average spectrum from the training targets.
+    """Resolve the per-point average spectrum from the training spectra.
 
     Args:
         item: Raw subtract-average encoding configuration dictionary. The
             ``per_element`` flag selects per-element averages keyed by absorbing
             element; when true ``elements`` may be an explicit list or
             ``"auto"``.
-        statistics: Streaming statistics of the training targets.
+        statistics: Streaming statistics of the training spectra.
 
     Returns:
         Mapping with the per-point ``average``. When ``per_element`` is false
@@ -645,42 +625,48 @@ def _last_dim(value: Any) -> int:
     return int(value.shape[-1])
 
 
-def _collect_target_statistics(dataset: Dataset, batchprocessor: BatchProcessor) -> "_TargetStatisticsCollector":
-    """Accumulate training-target statistics in a single pass.
+def _collect_spectral_statistics(dataset: Dataset, batchprocessor: BatchProcessor) -> "_SpectralStatisticsCollector":
+    """Accumulate training spectral statistics in a single pass.
 
     Iterates the training subset (or the whole dataset when no split is
-    configured) and folds each prepared target into a running
-    :class:`_TargetStatisticsCollector`, which maintains both overall
-    statistics and per-absorbing-element statistics. Only fixed-size
-    accumulators are held in memory, so the full target matrix is never
-    materialized.
+    configured) and folds each spectral sample into a running
+    :class:`_SpectralStatisticsCollector`, which maintains both overall and
+    per-absorbing-element statistics. For forward batch processors the
+    spectrum is the model target; for inverse batch processors it is the
+    spectral input (under
+    :attr:`~xanesnet.batchprocessors.InverseBatchProcessor._spectra_input_key`).
+    Only fixed-size accumulators are held in memory, so the full spectral
+    matrix is never materialized.
 
     Args:
         dataset: Prepared training dataset.
         batchprocessor: Batch processor for the dataset/model pair.
 
     Returns:
-        Streaming statistics over the training targets.
+        Streaming statistics over the training spectra.
     """
     subset = dataset.train_subset
     indices = list(subset.indices) if subset is not None else range(len(dataset))
 
-    collector = _TargetStatisticsCollector()
+    collector = _SpectralStatisticsCollector()
     for index in indices:
-        targets = batchprocessor.target_preparation_single(dataset, index)
+        if isinstance(batchprocessor, InverseBatchProcessor):
+            spectra = batchprocessor.input_preparation_single(dataset, index)[batchprocessor._spectra_input_key]
+        else:
+            spectra = batchprocessor.target_preparation_single(dataset, index)
         elements = batchprocessor.element_preparation_single(dataset, index)
-        collector.update(targets, elements)
+        collector.update(spectra, elements)
     return collector
 
 
-def _target_elements(item: dict[str, Any], statistics: "_TargetStatisticsCollector") -> list[int]:
+def _target_elements(item: dict[str, Any], statistics: "_SpectralStatisticsCollector") -> list[int]:
     """Return the atomic numbers an element-aware encoding should cover.
 
     Args:
         item: Raw element-aware encoding configuration dictionary. When
             ``elements`` is an explicit list it is used verbatim; otherwise all
-            elements observed in the training targets are used.
-        statistics: Streaming statistics of the training targets.
+            elements observed in the training spectra are used.
+        statistics: Streaming statistics of the training spectra.
 
     Returns:
         Atomic numbers, sorted ascending when derived automatically.
@@ -692,12 +678,12 @@ def _target_elements(item: dict[str, Any], statistics: "_TargetStatisticsCollect
 
 
 def _require_element_stats(
-    statistics: "_TargetStatisticsCollector", element: int, encoding_type: str
-) -> "_TargetStatistics":
+    statistics: "_SpectralStatisticsCollector", element: int, encoding_type: str
+) -> "_SpectralStatistics":
     """Return per-element statistics or raise when the element is absent.
 
     Args:
-        statistics: Streaming statistics of the training targets.
+        statistics: Streaming statistics of the training spectra.
         element: Atomic number to look up.
         encoding_type: Encoding identifier used in the error message.
 
@@ -705,57 +691,58 @@ def _require_element_stats(
         Statistics accumulated for the requested element.
 
     Raises:
-        ConfigError: If no training target carries the requested element.
+        ConfigError: If no training spectrum carries the requested element.
     """
     stats = statistics.per_element.get(int(element))
     if stats is None:
-        raise ConfigError(f"{encoding_type} requested element {element} but no training targets carry it.")
+        raise ConfigError(f"{encoding_type} requested element {element} but no training spectra carry it.")
     return stats
 
 
-class _TargetStatisticsCollector:
-    """Overall and per-element streaming statistics over training targets.
+class _SpectralStatisticsCollector:
+    """Overall and per-element streaming statistics over training spectra.
 
-    Maintains one :class:`_TargetStatistics` accumulator across all targets and
-    one accumulator per absorbing element. Target rows are routed to their
-    element bucket using the atomic numbers supplied alongside each batch; when
-    no element information is available only the overall accumulator is updated.
+    Maintains one :class:`_SpectralStatistics` accumulator across all spectra
+    and one accumulator per absorbing element. Spectral rows are routed to
+    their element bucket using the atomic numbers supplied alongside each
+    batch; when no element information is available only the overall
+    accumulator is updated.
     """
 
     def __init__(self) -> None:
         """Initialize empty overall and per-element accumulators."""
-        self.overall = _TargetStatistics()
-        self.per_element: dict[int, _TargetStatistics] = {}
+        self.overall = _SpectralStatistics()
+        self.per_element: dict[int, _SpectralStatistics] = {}
 
-    def update(self, targets: torch.Tensor, elements: torch.Tensor | None = None) -> None:
-        """Fold one batch of target spectra into the accumulators.
+    def update(self, spectra: torch.Tensor, elements: torch.Tensor | None = None) -> None:
+        """Fold one batch of training spectra into the accumulators.
 
         Args:
-            targets: Prepared target spectra ``(B, N)``.
+            spectra: Training spectra ``(B, N)``.
             elements: Per-row absorber atomic numbers ``(B,)``, or ``None`` when
                 the batch carries no element information.
         """
-        self.overall.update(targets)
+        self.overall.update(spectra)
         if elements is None:
             return
 
         atomic_numbers = elements.to(dtype=torch.int64).reshape(-1)
         for z in torch.unique(atomic_numbers).tolist():
             mask = atomic_numbers == z
-            self.per_element.setdefault(int(z), _TargetStatistics()).update(targets[mask])
+            self.per_element.setdefault(int(z), _SpectralStatistics()).update(spectra[mask])
 
     def sorted_elements(self) -> list[int]:
         """Return the observed atomic numbers in ascending order."""
         return sorted(self.per_element)
 
 
-class _TargetStatistics:
-    """Streaming per-point statistics over training target spectra.
+class _SpectralStatistics:
+    """Streaming per-point statistics over training spectra.
 
-    Folds batches of target spectra ``(B, N)`` into fixed-size per-point
+    Folds batches of spectra ``(B, N)`` into fixed-size per-point
     accumulators (count, sum, sum of squares, running minimum, and running
     maximum), so dataset-dependent encoding parameters can be derived in a
-    single pass without materializing the full target matrix. Sums are
+    single pass without materializing the full spectral matrix. Sums are
     accumulated in double precision for numerical stability.
     """
 
@@ -767,13 +754,13 @@ class _TargetStatistics:
         self._minimum = torch.empty(0, dtype=torch.float64)
         self._maximum = torch.empty(0, dtype=torch.float64)
 
-    def update(self, targets: torch.Tensor) -> None:
-        """Fold one batch of target spectra into the accumulators.
+    def update(self, spectra: torch.Tensor) -> None:
+        """Fold one batch of training spectra into the accumulators.
 
         Args:
-            targets: Prepared target spectra ``(B, N)``.
+            spectra: Training spectra ``(B, N)``.
         """
-        values = targets.to(dtype=torch.float64)
+        values = spectra.to(dtype=torch.float64)
         batch_sum = values.sum(dim=0)
         batch_sum_sq = values.square().sum(dim=0)
         batch_min = values.amin(dim=0)
