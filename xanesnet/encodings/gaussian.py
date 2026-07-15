@@ -22,7 +22,9 @@
 
 import torch
 
-from xanesnet.serialization.config import Config
+from xanesnet.serialization.auto_config.registries import EncodingAutoResolver
+from xanesnet.serialization.auto_config.statistics import SpectralStatisticsCollector
+from xanesnet.serialization.config import Config, ConfigRaw
 from xanesnet.utils.exceptions import ConfigError
 from xanesnet.utils.math import SpectralBasis, gaussian_fit, gaussian_inverse
 
@@ -138,3 +140,18 @@ class GaussianEncoding(SpectraEncoding):
             }
         )
         return [sig]
+
+
+@EncodingAutoResolver.register("gaussian")
+def resolve_gaussian_encoding(item: ConfigRaw, statistics: SpectralStatisticsCollector) -> ConfigRaw:
+    """Resolve the Gaussian-encoding spectral grid size.
+
+    Args:
+        item: Raw Gaussian encoding configuration dictionary.
+        statistics: Streaming statistics of the training spectra
+            (:class:`~xanesnet.serialization.auto_config.statistics.SpectralStatisticsCollector`).
+
+    Returns:
+        Mapping with Gaussian-encoding automatic field ``num_points``.
+    """
+    return {"num_points": statistics.overall.num_points}

@@ -8,8 +8,8 @@ datasource:
 dataset:
   # general:
   dataset_type: descriptor
-  root: ./data/omnixas/processed_train_mlp/  # Where should the processed data be stored
-  preload: True                    # Preload dataset into RAM if True; otherwise load on-the-fly
+  root: ./data/tmQM_xas/processed_train_mlp/  # Where should the processed data be stored
+  preload: False                    # Preload dataset into RAM if True; otherwise load on-the-fly
   skip_prepare: True
   split_ratios: [0.8, 0.2]
   # params:

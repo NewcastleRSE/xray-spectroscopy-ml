@@ -8,9 +8,9 @@ datasource:
 dataset:
   # general:
   dataset_type: descriptor_inverse
-  root: ./data/omnixas/processed_train_mlp_inverse/  # Where should the processed data be stored
-  preload: True                    # Preload dataset into RAM if True; otherwise load on-the-fly
-  skip_prepare: False
+  root: ./data/tmQM_xas/processed_train_mlp_inverse/  # Where should the processed data be stored
+  preload: False                    # Preload dataset into RAM if True; otherwise load on-the-fly
+  skip_prepare: True
   split_ratios: [0.8, 0.2]
   # params:
   # descriptors:
@@ -22,7 +22,10 @@ dataset:
       n_g4: 32
 
 encodings:
-  - encoding_type: identity
+  - encoding_type: subtract_average
+    average: auto
+    per_element: true
+    elements: auto
 
 model:
   # general:

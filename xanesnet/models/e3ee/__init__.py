@@ -21,6 +21,7 @@
 """E3EE: absorber-centred E3-equivariant model."""
 
 from .e3ee import E3EE
+from .resolver import resolve_e3ee  # <- triggers resolver registration
 
 __all__ = [
     "E3EE",

@@ -74,10 +74,12 @@ def train(config: Config, args_namespace: Namespace, save_dir: Path) -> None:
     datasource = _setup_datasource(config)
     dataset = _setup_dataset(config, datasource)
 
+    logging.info("Resolving 'auto' encoding fields...")
     config = resolve_auto_encoding_config(config, dataset)
 
     encoding = _setup_encoding(config)
 
+    logging.info("Resolving 'auto' model fields...")
     config = resolve_auto_model_config(config, dataset, encoding)
     resolved_config_save_path = config.save(save_dir / "resolved_train_config.yaml")
     logging.info(f"Resolved training config saved to: {resolved_config_save_path}.")

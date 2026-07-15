@@ -18,11 +18,28 @@
 # Citations:
 #   ...
 
-"""E3EEFull: multi-absorber E3-equivariant model."""
+"""Automatic configuration resolver for the MLP model."""
 
-from .e3ee_full import E3EEFull
-from .resolver import resolve_e3ee_full  # <- triggers resolver registration
+from typing import Any
 
-__all__ = [
-    "E3EEFull",
-]
+import torch
+
+from xanesnet.serialization.auto_config.registries import ModelAutoResolver
+from xanesnet.serialization.config import ConfigRaw
+
+
+@ModelAutoResolver.register("mlp")
+def resolve_mlp(inputs: dict[str, Any], target: torch.Tensor) -> ConfigRaw:
+    """Resolve MLP input and output dimensions.
+
+    Args:
+        inputs: Prepared model input dictionary.
+        target: Prepared target tensor.
+
+    Returns:
+        Mapping with MLP automatic fields ``in_size`` and ``out_size``.
+    """
+    return {
+        "in_size": int(inputs["x"].shape[-1]),
+        "out_size": int(target.shape[-1]),
+    }

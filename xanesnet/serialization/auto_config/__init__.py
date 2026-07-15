@@ -18,11 +18,17 @@
 # Citations:
 #   ...
 
-"""E3EEFull: multi-absorber E3-equivariant model."""
+"""Automatic model and encoding configuration resolution from prepared datasets.
 
-from .e3ee_full import E3EEFull
-from .resolver import resolve_e3ee_full  # <- triggers resolver registration
+Model resolvers live in each model subpackage (``models/<name>/resolver.py``)
+and are imported by the model subpackage ``__init__.py``, which triggers their
+registration with :data:`~xanesnet.serialization.auto_config.registries.ModelAutoResolver`
+as a side effect.  Encoding resolvers are defined in each encoding module
+(``encodings/<name>.py``) and are registered with
+:data:`~xanesnet.serialization.auto_config.registries.EncodingAutoResolver`
+when the encoding module is imported.
+"""
 
-__all__ = [
-    "E3EEFull",
-]
+from .core import resolve_auto_encoding_config, resolve_auto_model_config
+
+__all__ = ["resolve_auto_encoding_config", "resolve_auto_model_config"]

@@ -21,6 +21,7 @@
 """Public API for the SchNet model."""
 
 from .schnet import SchNet
+from .resolver import resolve_schnet  # <- triggers resolver registration
 
 __all__ = [
     "SchNet",

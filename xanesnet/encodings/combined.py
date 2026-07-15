@@ -20,8 +20,6 @@
 
 """Sequential composition of multiple XANESNET spectra encodings."""
 
-from __future__ import annotations
-
 import torch
 
 from xanesnet.serialization.config import Config

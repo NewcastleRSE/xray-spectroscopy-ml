@@ -22,7 +22,9 @@
 
 import torch
 
-from xanesnet.serialization.config import Config
+from xanesnet.serialization.auto_config.registries import EncodingAutoResolver
+from xanesnet.serialization.auto_config.statistics import SpectralStatisticsCollector
+from xanesnet.serialization.config import Config, ConfigRaw
 from xanesnet.utils.exceptions import ConfigError
 
 from .affine import AffineEncoding, build_parameter_rows
@@ -130,3 +132,40 @@ class ZScoreEncoding(AffineEncoding):
             values["elements"] = list(self.elements or [])
         sig.update_with_dict(values)
         return [sig]
+
+
+@EncodingAutoResolver.register("z_score")
+def resolve_zscore_encoding(item: ConfigRaw, statistics: SpectralStatisticsCollector) -> ConfigRaw:
+    """Resolve z-score statistics from the training spectra.
+
+    Args:
+        item: Raw z-score encoding configuration dictionary.
+        statistics: Streaming statistics of the training spectra
+            (:class:`~xanesnet.serialization.auto_config.statistics.SpectralStatisticsCollector`).
+
+    Returns:
+        Mapping with ``mean`` and population ``std``.  When ``per_element`` is
+        false these are per-point lists (or single-element lists when
+        ``per_point`` is false); when true they are one row per element
+        together with the resolved ``elements``.
+    """
+    per_point = item.get("per_point", True)
+    if item.get("per_element", False):
+        requested = item.get("elements")
+        elements = [int(z) for z in requested] if isinstance(requested, list) else statistics.sorted_elements()
+        mean_rows: list[list[float]] = []
+        std_rows: list[list[float]] = []
+        for z in elements:
+            stats = statistics.element_stats(z)
+            if per_point:
+                mean_rows.append(stats.mean.tolist())
+                std_rows.append(stats.std.tolist())
+            else:
+                mean_rows.append([stats.global_mean])
+                std_rows.append([stats.global_std])
+        return {"elements": list(elements), "mean": mean_rows, "std": std_rows}
+
+    stats = statistics.overall
+    if per_point:
+        return {"mean": stats.mean.tolist(), "std": stats.std.tolist()}
+    return {"mean": [stats.global_mean], "std": [stats.global_std]}

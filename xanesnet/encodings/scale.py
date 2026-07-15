@@ -22,7 +22,9 @@
 
 import torch
 
-from xanesnet.serialization.config import Config
+from xanesnet.serialization.auto_config.registries import EncodingAutoResolver
+from xanesnet.serialization.auto_config.statistics import SpectralStatisticsCollector
+from xanesnet.serialization.config import Config, ConfigRaw
 from xanesnet.utils.exceptions import ConfigError
 
 from .affine import AffineEncoding, build_parameter_rows
@@ -118,3 +120,37 @@ class ScaleEncoding(AffineEncoding):
             values["elements"] = list(self.elements or [])
         sig.update_with_dict(values)
         return [sig]
+
+
+@EncodingAutoResolver.register("scale")
+def resolve_scale_encoding(item: ConfigRaw, statistics: SpectralStatisticsCollector) -> ConfigRaw:
+    """Resolve the scaling factor from the training spectra.
+
+    The factor is the population standard deviation, so encoding divides the
+    spectra to unit variance.
+
+    Args:
+        item: Raw scale encoding configuration dictionary.
+        statistics: Streaming statistics of the training spectra
+            (:class:`~xanesnet.serialization.auto_config.statistics.SpectralStatisticsCollector`).
+
+    Returns:
+        Mapping with ``factor``.  When ``per_element`` is false this is a
+        per-point list (or single-element list when ``per_point`` is false);
+        when true it is one row per element together with the resolved
+        ``elements``.
+    """
+    per_point = item.get("per_point", True)
+    if item.get("per_element", False):
+        requested = item.get("elements")
+        elements = [int(z) for z in requested] if isinstance(requested, list) else statistics.sorted_elements()
+        factor_rows: list[list[float]] = []
+        for z in elements:
+            stats = statistics.element_stats(z)
+            factor_rows.append(stats.std.tolist() if per_point else [stats.global_std])
+        return {"elements": list(elements), "factor": factor_rows}
+
+    stats = statistics.overall
+    if per_point:
+        return {"factor": stats.std.tolist()}
+    return {"factor": [stats.global_std]}

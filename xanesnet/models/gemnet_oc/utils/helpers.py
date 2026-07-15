@@ -20,8 +20,6 @@
 
 """Geometry helper functions for GemNet-OC."""
 
-from __future__ import annotations
-
 import torch
 
 

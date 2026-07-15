@@ -21,6 +21,7 @@
 """Public API for the EnvEmbed model."""
 
 from .envembed import EnvEmbed
+from .resolver import resolve_envembed  # <- triggers resolver registration
 
 __all__ = [
     "EnvEmbed",

@@ -22,7 +22,9 @@
 
 import torch
 
-from xanesnet.serialization.config import Config
+from xanesnet.serialization.auto_config.registries import EncodingAutoResolver
+from xanesnet.serialization.auto_config.statistics import SpectralStatisticsCollector
+from xanesnet.serialization.config import Config, ConfigRaw
 from xanesnet.utils.exceptions import ConfigError
 
 from .affine import AffineEncoding, build_parameter_rows
@@ -137,3 +139,40 @@ class MinMaxEncoding(AffineEncoding):
             values["elements"] = list(self.elements or [])
         sig.update_with_dict(values)
         return [sig]
+
+
+@EncodingAutoResolver.register("min_max")
+def resolve_minmax_encoding(item: ConfigRaw, statistics: SpectralStatisticsCollector) -> ConfigRaw:
+    """Resolve minima and maxima from the training spectra.
+
+    Args:
+        item: Raw min-max encoding configuration dictionary.
+        statistics: Streaming statistics of the training spectra
+            (:class:`~xanesnet.serialization.auto_config.statistics.SpectralStatisticsCollector`).
+
+    Returns:
+        Mapping with ``minimum`` and ``maximum``.  When ``per_element`` is
+        false these are per-point lists (or single-element lists when
+        ``per_point`` is false); when true they are one row per element
+        together with the resolved ``elements``.
+    """
+    per_point = item.get("per_point", True)
+    if item.get("per_element", False):
+        requested = item.get("elements")
+        elements = [int(z) for z in requested] if isinstance(requested, list) else statistics.sorted_elements()
+        minimum_rows: list[list[float]] = []
+        maximum_rows: list[list[float]] = []
+        for z in elements:
+            stats = statistics.element_stats(z)
+            if per_point:
+                minimum_rows.append(stats.minimum.tolist())
+                maximum_rows.append(stats.maximum.tolist())
+            else:
+                minimum_rows.append([stats.global_minimum])
+                maximum_rows.append([stats.global_maximum])
+        return {"elements": list(elements), "minimum": minimum_rows, "maximum": maximum_rows}
+
+    stats = statistics.overall
+    if per_point:
+        return {"minimum": stats.minimum.tolist(), "maximum": stats.maximum.tolist()}
+    return {"minimum": [stats.global_minimum], "maximum": [stats.global_maximum]}

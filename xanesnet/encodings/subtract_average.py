@@ -22,7 +22,9 @@
 
 import torch
 
-from xanesnet.serialization.config import Config
+from xanesnet.serialization.auto_config.registries import EncodingAutoResolver
+from xanesnet.serialization.auto_config.statistics import SpectralStatisticsCollector
+from xanesnet.serialization.config import Config, ConfigRaw
 from xanesnet.utils.exceptions import ConfigError
 
 from .affine import AffineEncoding, build_parameter_rows
@@ -93,3 +95,29 @@ class SubtractAverageEncoding(AffineEncoding):
             values["elements"] = list(self.elements or [])
         sig.update_with_dict(values)
         return [sig]
+
+
+@EncodingAutoResolver.register("subtract_average")
+def resolve_subtract_average_encoding(item: ConfigRaw, statistics: SpectralStatisticsCollector) -> ConfigRaw:
+    """Resolve the per-point average spectrum from the training spectra.
+
+    Args:
+        item: Raw subtract-average encoding configuration dictionary.
+        statistics: Streaming statistics of the training spectra
+            (:class:`~xanesnet.serialization.auto_config.statistics.SpectralStatisticsCollector`).
+
+    Returns:
+        Mapping with the per-point ``average``.  When ``per_element`` is false
+        this is a single per-point list; when true it is one row per element
+        together with the resolved ``elements``.
+    """
+    if item.get("per_element", False):
+        requested = item.get("elements")
+        elements = [int(z) for z in requested] if isinstance(requested, list) else statistics.sorted_elements()
+        average_rows: list[list[float]] = []
+        for z in elements:
+            stats = statistics.element_stats(z)
+            average_rows.append(stats.mean.tolist())
+        return {"elements": list(elements), "average": average_rows}
+
+    return {"average": statistics.overall.mean.tolist()}

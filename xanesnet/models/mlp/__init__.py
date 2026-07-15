@@ -21,6 +21,7 @@
 """Public API for the MLP model."""
 
 from .mlp import MLP
+from .resolver import resolve_mlp  # <- triggers resolver registration
 
 __all__ = [
     "MLP",

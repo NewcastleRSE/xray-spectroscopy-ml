@@ -22,6 +22,10 @@
 
 from .dimenet import DimeNet
 from .dimenet_pp import DimeNetPlusPlus
+from .resolver import (  # <- triggers resolver registration
+    resolve_dimenet,
+    resolve_dimenet_pp,
+)
 
 __all__ = [
     "DimeNet",

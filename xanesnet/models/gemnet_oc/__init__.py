@@ -21,5 +21,6 @@
 """Public API for the GemNet-OC directional graph neural network model."""
 
 from .gemnet_oc import GemNetOC
+from .resolver import resolve_gemnet_oc  # <- triggers resolver registration
 
 __all__ = ["GemNetOC"]

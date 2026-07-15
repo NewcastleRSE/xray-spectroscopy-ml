@@ -21,6 +21,7 @@
 """Public API for the GemNet directional graph neural network model."""
 
 from .gemnet import GemNet
+from .resolver import resolve_gemnet  # <- triggers resolver registration
 
 __all__ = [
     "GemNet",
