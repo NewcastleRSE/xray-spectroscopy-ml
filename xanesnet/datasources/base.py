@@ -18,7 +18,20 @@
 # Citations:
 #   ...
 
-"""Abstract base class for all XANESNET data sources."""
+"""Abstract base class defining the uniform data-loading interface for all XANESNET data sources.
+
+Every ``DataSource`` returns a :class:`pymatgen.core.Molecule` or
+:class:`pymatgen.core.Structure` with the following normalised shape:
+
+* ``properties["file_name"]`` — the identifying file stem, always present.
+* When the datasource carries spectral data, the spectrum is attached via
+  ``add_site_property("XANES", …)`` as a **per-site** list where the
+  absorbing sites hold ``{"energies": ndarray, "intensities": ndarray}`` and
+  every non-absorbing site holds ``None``.
+"""
+
+# TODO 'XANES' mentioned explicitely above. Can we make this agnostic to
+# TODO spectroscopic technique?
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
@@ -42,16 +55,17 @@ class DataSource(ABC):
 
     @abstractmethod
     def __iter__(self) -> Iterator[Molecule | Structure]:
-        """Iterate over all entries in the datasource.
+        """Iterate over all entries in the datasource in index order.
 
         Returns:
-            Iterator over the datasource entries.
+            Iterator yielding :class:`~pymatgen.core.Molecule` or
+            :class:`~pymatgen.core.Structure` entries.
         """
         ...
 
     @abstractmethod
     def __len__(self) -> int:
-        """Return the total number of entries in the datasource.
+        """Return the total number of entries available in the datasource.
 
         Returns:
             Number of available datasource entries.
@@ -60,12 +74,17 @@ class DataSource(ABC):
 
     @abstractmethod
     def __getitem__(self, idx: int) -> Molecule | Structure:
-        """Return the entry at the given index.
+        """Load and return the entry at the given zero-based index.
 
         Args:
             idx: Zero-based index into the datasource.
 
         Returns:
-            The pymatgen ``Molecule`` or ``Structure`` at position ``idx``.
+            The pymatgen :class:`~pymatgen.core.Molecule` or
+            :class:`~pymatgen.core.Structure` at position ``idx``.
+
+        Raises:
+            IndexError: If *idx* is out of range.
+            ResourceError: If the underlying file cannot be read or parsed.
         """
         ...

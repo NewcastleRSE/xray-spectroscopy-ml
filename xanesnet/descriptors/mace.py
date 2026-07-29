@@ -32,7 +32,7 @@ from .registry import DescriptorRegistry
 class MACE(Descriptor):
     """MACE foundation-model descriptor.
 
-    Uses the MACE-MP-0 universal potential to compute per-atom equivariant
+    Uses the MACE model to compute per-atom equivariant
     features as the structural descriptor.
 
     Args:

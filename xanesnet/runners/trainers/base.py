@@ -126,55 +126,6 @@ class Trainer(Runner):
         self.loss = self._setup_loss()
         self.regularizer = self._setup_regularizer()
 
-    def _setup_loss(self) -> Loss:
-        """Instantiate a :class:`~xanesnet.losses.CombinedLoss` from the list of loss
-        configurations.
-
-        Each entry in the configuration list must provide ``loss_type`` and may
-        provide ``loss_weight`` (a positive number).  Missing weights default to
-        ``1.0``; all weights are normalized to sum to one before constructing
-        :class:`~xanesnet.losses.CombinedLoss`.
-
-        Returns:
-            A configured :class:`~xanesnet.losses.CombinedLoss` instance.
-
-        Raises:
-            ValueError: If the loss configuration list is empty or not provided.
-        """
-        loss_configs = self.loss_config
-        if not loss_configs:
-            raise ValueError("Loss config list is required but was not provided.")
-
-        losses: list[Loss] = []
-        raw_weights: list[float] = []
-
-        for item_config in loss_configs:
-            loss_type = item_config.get_str("loss_type")
-            raw_weight = item_config.get_optional_float("loss_weight")
-            raw_weights.append(raw_weight if raw_weight is not None else 1.0)
-            kwargs = {k: v for k, v in item_config.as_kwargs().items() if k != "loss_weight"}
-            losses.append(LossRegistry.create(loss_type, **kwargs))
-
-        return CombinedLoss(losses, raw_weights)
-
-    def _setup_regularizer(self) -> Regularizer:
-        """Instantiate the regularizer from configuration.
-
-        Returns:
-            A configured :class:`Regularizer` instance.
-
-        Raises:
-            ValueError: If the regularizer configuration is not provided.
-        """
-        regularizer_config = self.regularizer_config
-        if regularizer_config is None:
-            raise ValueError("Regularizer config is required but was not provided.")
-        regularizer_type = regularizer_config.get_str("regularizer_type")
-
-        regularizer = RegularizerRegistry.create(regularizer_type, **regularizer_config.as_kwargs())
-
-        return regularizer
-
     def train(self) -> float | None:
         """Run the full training loop.
 
@@ -302,6 +253,55 @@ class Trainer(Runner):
             Tuple of ``(mean_loss, mean_regularization, mean_total)`` for the epoch.
         """
         ...
+
+    def _setup_loss(self) -> Loss:
+        """Instantiate a :class:`~xanesnet.losses.CombinedLoss` from the list of loss
+        configurations.
+
+        Each entry in the configuration list must provide ``loss_type`` and may
+        provide ``loss_weight`` (a positive number).  Missing weights default to
+        ``1.0``; all weights are normalized to sum to one before constructing
+        :class:`~xanesnet.losses.CombinedLoss`.
+
+        Returns:
+            A configured :class:`~xanesnet.losses.CombinedLoss` instance.
+
+        Raises:
+            ValueError: If the loss configuration list is empty or not provided.
+        """
+        loss_configs = self.loss_config
+        if not loss_configs:
+            raise ValueError("Loss config list is required but was not provided.")
+
+        losses: list[Loss] = []
+        raw_weights: list[float] = []
+
+        for item_config in loss_configs:
+            loss_type = item_config.get_str("loss_type")
+            raw_weight = item_config.get_optional_float("loss_weight")
+            raw_weights.append(raw_weight if raw_weight is not None else 1.0)
+            kwargs = {k: v for k, v in item_config.as_kwargs().items() if k != "loss_weight"}
+            losses.append(LossRegistry.create(loss_type, **kwargs))
+
+        return CombinedLoss(losses, raw_weights)
+
+    def _setup_regularizer(self) -> Regularizer:
+        """Instantiate the regularizer from configuration.
+
+        Returns:
+            A configured :class:`Regularizer` instance.
+
+        Raises:
+            ValueError: If the regularizer configuration is not provided.
+        """
+        regularizer_config = self.regularizer_config
+        if regularizer_config is None:
+            raise ValueError("Regularizer config is required but was not provided.")
+        regularizer_type = regularizer_config.get_str("regularizer_type")
+
+        regularizer = RegularizerRegistry.create(regularizer_type, **regularizer_config.as_kwargs())
+
+        return regularizer
 
     def _setup_train_dataloader(self) -> Any:
         """Build a data loader over the training subset.

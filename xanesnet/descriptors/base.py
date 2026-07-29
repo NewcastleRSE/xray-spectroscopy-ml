@@ -52,7 +52,7 @@ class Descriptor(ABC):
         Args:
             pmg_structure: Pymatgen ``Structure`` or ``Molecule`` for the atomic system.
             site_index: Site index, list of site indices, or ``None`` for all sites.
-                Defaults to ``0`` (the absorber site).
+                Defaults to ``0``.
 
         Returns:
             Descriptor feature array. Shape depends on the concrete descriptor.
@@ -72,7 +72,7 @@ class Descriptor(ABC):
         Args:
             system: The atomic system.
             site_index: Site index, list of site indices, or ``None`` for all sites.
-                Defaults to ``0`` (the absorber site).
+                Defaults to ``0``.
 
         Returns:
             Descriptor feature array. Shape depends on the concrete descriptor.
