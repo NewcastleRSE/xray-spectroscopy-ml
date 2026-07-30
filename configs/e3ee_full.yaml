@@ -1,40 +1,40 @@
+# Example configuration for E3EE-Full training with toy data.
+
 seed: 2025
 device: cuda
 
 datasource:
   datasource_type: pmgjson
-  json_path: /media/hendrik/ExternalSSD/final_data/omnixas_test/
-
+  json_path: ./data/toy_data/
 
 dataset:
   # general:
-  dataset_type: e3ee_mp
-  root: ./data/omnixas/processed_train_e3ee/  # Where should the processed data be stored
-  preload: True                           # Preload dataset into RAM if True; otherwise load on-the-fly
+  dataset_type: e3ee_full
+  root: ./data/processed/toy_data_e3ee_full/ # Where should the processed data be stored
+  preload: True # Preload dataset into RAM if True; otherwise load on-the-fly
   skip_prepare: False
   split_ratios: [0.8, 0.2]
-  # params:
-  cutoff: 6.0
-  max_num_neighbors: 32
-  use_path_branch: False
-  max_paths_per_structure: 128
-  graph_method: voronoi
-  min_facet_area: 5%
+  graph_builder:
+    graph_builder_type: cov_radius
+    cutoff: 5.0
+    cov_radii_scale: 2.5
+    max_num_neighbors: 50
   # attention graph (used by attention branches):
-  att_cutoff: 10.0
-  att_max_num_neighbors: 128
-  att_graph_method: radius
-  att_min_facet_area: null
-  att_cov_radii_scale: 1.5
-  # mp
-  num_workers: 4
+  att_graph_builder:
+    graph_builder_type: cov_radius
+    cutoff: 5.0
+    cov_radii_scale: 3.5
+    max_num_neighbors: 50
+  use_path_branch: False
+  max_paths_per_site: 32
+  use_absorber_mask: True
 
 encodings:
   - encoding_type: identity
 
 model:
   # general:
-  model_type: e3ee
+  model_type: e3ee_full
   # params:
   out_size: auto
   max_z: 100
@@ -53,12 +53,13 @@ model:
   out_mlp_layers: 3
   use_invariant_branch: True
   use_attention_branch: True
-  use_equivariant_branch: True
   use_eq_attention_branch: True
-  use_conv_branch: False
-  use_eq_conv_branch: False
+  use_conv_branch: True
+  use_eq_conv_branch: True
+  use_equivariant_branch: True
   use_path_branch: False
   fusion_mode: cat
+  use_absorber_mask: True
   residual_scale_init: 0.1
   attention_heads: 4
   attention_rbf_dim: 16
@@ -70,12 +71,12 @@ model:
 trainer:
   # general:
   trainer_type: basic
-  batch_size: 16
+  batch_size: 4
   shuffle: True
   drop_last: False
   num_workers: 0
   # params:
-  epochs: 500
+  epochs: 50
   learning_rate: 0.001
   optimizer: Adam
   max_norm: null

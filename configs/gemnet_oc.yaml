@@ -1,45 +1,45 @@
+# Example configuration for GemNet-OC training with toy data.
+
 seed: 2025
 device: cuda
 
 datasource:
   datasource_type: pmgjson
-  json_path: /media/hendrik/ExternalSSD/final_data/omnixas_test/
+  json_path: ./data/toy_data/
 
 dataset:
   # general:
-  dataset_type: gemnet_oc_mp
-  root: ./data/omnixas/processed_train_gemnet_oc/  # Where should the processed data be stored
+  dataset_type: gemnet_oc
+  root: ./data/processed/toy_data_gemnet_oc/  # Where should the processed data be stored
   preload: True                   # Preload dataset into RAM if True; otherwise load on-the-fly
-  skip_prepare: True
-  split_ratios: null
-  split_indexfile: ./data/scales/split_indices_gemnet_oc.json
+  skip_prepare: False
+  split_ratios: [0.8, 0.2]
   # params:
-  cutoff: 5.0
-  max_num_neighbors: 50
-  graph_method: voronoi
-  min_facet_area: 5.0%
-  cov_radii_scale: 1.5
+  graph_builder:
+    graph_builder_type: cov_radius
+    cutoff: 5.0
+    cov_radii_scale: 2.5
+    max_num_neighbors: 50
   # Quadruplets:
   quadruplets: True
-  int_cutoff: 10.0
-  int_max_neighbors: 50
-  int_graph_method: radius
-  int_min_facet_area: null
-  int_cov_radii_scale: null
+  int_graph_builder:
+    graph_builder_type: cov_radius
+    cutoff: 5.0
+    cov_radii_scale: 3.5
+    max_num_neighbors: 50
   # OC-specific params:
   oc_mode: True
-  oc_cutoff_aeaint: 5.0
-  oc_max_neighbors_aeaint: 50
-  oc_graph_method_aeaint: voronoi
-  oc_min_facet_area_aeaint: 5.0%
-  oc_cov_radii_scale_aeaint: null
-  oc_cutoff_aint: 10.0
-  oc_max_neighbors_aint: 50
-  oc_graph_method_aint: radius
-  oc_min_facet_area_aint: null
-  oc_cov_radii_scale_aint: null
-  # mp
-  num_workers: 2
+  oc_aeaint_graph_builder:
+    graph_builder_type: cov_radius
+    cutoff: 5.0
+    cov_radii_scale: 2.5
+    max_num_neighbors: 50
+  oc_aint_graph_builder:
+  graph_builder:
+    graph_builder_type: cov_radius
+    cutoff: 5.0
+    cov_radii_scale: 3.5
+    max_num_neighbors: 50
   
 encodings:
   - encoding_type: identity
@@ -50,10 +50,10 @@ model:
   # params:
   num_targets: auto
   num_spherical: 7
-  num_radial: 128
+  num_radial: 6
   num_blocks: 4
-  emb_size_atom: 256
-  emb_size_edge: 512
+  emb_size_atom: 128
+  emb_size_edge: 128
   emb_size_trip_in: 64
   emb_size_trip_out: 64
   emb_size_quad_in: 32
@@ -92,21 +92,20 @@ model:
   edge_atom_interaction: True # Edge messages update atom embeddings directly (reverse of a2e, same a2ee2a graph)
   atom_interaction: True # Pure atom-to-atom message passing without angular information (cheaper, long-range, a2a graph).
   scale_basis: False
-  scale_file: ./data/scales/scales_gemnet_oc.json
   num_elements: 100
 
 trainer:
   # general:
   trainer_type: basic
-  batch_size: 10
+  batch_size: 4
   shuffle: True
   drop_last: False
   num_workers: 0
   # params:
-  epochs: 500
+  epochs: 50
   learning_rate: 0.001
   optimizer: Adam
-  max_norm: 5.0 # Tries to prevent unstable gemnet_oc training
+  max_norm: null
   validation_interval: 10
   lr_warmup: True
   warmup_steps: 500

@@ -1,43 +1,36 @@
+# Example configuration for GemNet training with toy data.
+
 seed: 2025
 device: cuda
 
 datasource:
   datasource_type: pmgjson
-  json_path: /media/hendrik/ExternalSSD/final_data/omnixas_test/
+  json_path: ./data/toy_data/
 
 dataset:
   # general:
   dataset_type: gemnet
-  root: ./data/omnixas/processed_train_gemnet/  # Where should the processed data be stored
+  root: ./data/processed/toy_data_gemnet/  # Where should the processed data be stored
   preload: True                    # Preload dataset into RAM if True; otherwise load on-the-fly
-  skip_prepare: True
-  split_ratios: null
-  split_indexfile: ./data/scales/split_indices_gemnet.json
+  skip_prepare: False
+  split_ratios: [0.8, 0.2]
   # params:
-  cutoff: 5.0
-  max_num_neighbors: 32
-  graph_method: voronoi
-  min_facet_area: 5.0%
-  cov_radii_scale: 1.5
+  graph_builder:
+    graph_builder_type: cov_radius
+    cutoff: 5.0
+    cov_radii_scale: 2.5
+    max_num_neighbors: 50
   # Quadruplets:
   quadruplets: True
-  int_cutoff: 10.0
-  int_max_neighbors: 50
-  int_graph_method: radius
-  int_min_facet_area: null
-  int_cov_radii_scale: null
+  int_graph_builder:
+    graph_builder_type: cov_radius
+    cutoff: 5.0
+    cov_radii_scale: 3.5
+    max_num_neighbors: 50
   # OC-specific params (ignored for non-OC gemnet):
   oc_mode: False
-  oc_cutoff_aeaint: null
-  oc_max_neighbors_aeaint: null
-  oc_graph_method_aeaint: null
-  oc_min_facet_area_aeaint: null
-  oc_cov_radii_scale_aeaint: null
-  oc_cutoff_aint: null
-  oc_max_neighbors_aint: null
-  oc_graph_method_aint: null
-  oc_min_facet_area_aint: null
-  oc_cov_radii_scale_aint: null
+  oc_aeaint_graph_builder: null
+  oc_aint_graph_builder: null
 
 encodings:
   - encoding_type: identity
@@ -69,18 +62,17 @@ model:
   envelope_exponent: 5
   output_init: HeOrthogonal
   activation: swish
-  scale_file: ./data/scales/scales_gemnet.json
   num_elements: 100
 
 trainer:
   # general:
   trainer_type: basic
-  batch_size: 16
+  batch_size: 4
   shuffle: True
   drop_last: False
   num_workers: 0
   # params:
-  epochs: 500
+  epochs: 50
   learning_rate: 0.001
   optimizer: Adam
   max_norm: null
@@ -106,7 +98,8 @@ strategy:
   # general:
   strategy_type: single
   weight_init: xavier_uniform
-  weight_init_params: {}
   bias_init: zeros
+  checkpoint_interval: 25
+  # params:
   checkpoint_interval: 25
   # params:

@@ -1,37 +1,42 @@
+# Example configuration for MLP training with toy data.
+
 seed: 2025
 device: cuda
 
 datasource:
   datasource_type: pmgjson
-  json_path: ./data/test_data/json/
+  json_path: ./data/toy_data/
 
-
-dataset: 
+dataset:
   # general:
-  dataset_type: geometrygraph
-  root: ./data/test_data/processed_train/  # Where should the processed data be stored
-  preload: True                           # Preload dataset into RAM if True; otherwise load on-the-fly
+  dataset_type: descriptor
+  root: ./data/processed/toy_data_mlp/  # Where should the processed data be stored
+  preload: True                    # Preload dataset into RAM if True; otherwise load on-the-fly
   skip_prepare: False
   split_ratios: [0.8, 0.2]
   # params:
-  cutoff: 5.0
-  max_num_neighbors: 32
-  graph_method: radius
+  # descriptors:
+  descriptors:
+    - descriptor_type: wacsf
+      r_min: 1.0
+      r_max: 6.0
+      n_g2: 16
+      n_g4: 32
 
 encodings:
   - encoding_type: identity
 
 model:
   # general:
-  model_type: schnet
+  model_type: mlp
   # params:
-  hidden_channels: 128
-  reduce_channels_1: 64
-  reduce_channels_2: auto
-  num_filters: 128
-  num_interactions: 6
-  num_gaussians: 50
-  cutoff: 5.0
+  in_size: auto
+  out_size: auto
+  hidden_size: 256
+  dropout: 0.1
+  num_hidden_layers: 3
+  shrink_rate: 0.5
+  activation: prelu
 
 trainer:
   # general:
@@ -41,7 +46,7 @@ trainer:
   drop_last: False
   num_workers: 0
   # params:
-  epochs: 500
+  epochs: 50
   learning_rate: 0.001
   optimizer: Adam
   max_norm: null
@@ -70,3 +75,6 @@ strategy:
   bias_init: zeros
   checkpoint_interval: 25
   # params:
+
+
+

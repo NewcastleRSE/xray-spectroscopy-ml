@@ -1,22 +1,26 @@
+# Example configuration for SchNet training with toy data.
+
 seed: 2025
 device: cuda
 
 datasource:
-  datasource_type: xyzspec
-  xyz_path: ./data/fe/xyz_train
-  xanes_path: ./data/fe/xanes_train
+  datasource_type: pmgjson
+  json_path: ./data/toy_data/
 
 
 dataset: 
   # general:
   dataset_type: geometrygraph
-  root: ./data/fe/processed_train/  # Where should the processed data be stored
-  preload: True                     # Preload dataset into RAM if True; otherwise load on-the-fly
+  root: ./data/processed/toy_data_schnet/  # Where should the processed data be stored
+  preload: True                           # Preload dataset into RAM if True; otherwise load on-the-fly
   skip_prepare: False
   split_ratios: [0.8, 0.2]
-  cutoff: 5.0
-  max_num_neighbors: 32
-  graph_method: radius
+  # params:
+  graph_builder:
+    graph_builder_type: cov_radius
+    cutoff: 5.0
+    cov_radii_scale: 2.5
+    max_num_neighbors: 50
 
 encodings:
   - encoding_type: identity

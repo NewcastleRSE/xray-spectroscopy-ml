@@ -1,18 +1,23 @@
-seed: 20260001
+# Example configuration for EnvEmbed training with toy data.
+
+seed: 2025
 device: cuda
 
 datasource:
   datasource_type: pmgjson
-  json_path: /media/hendrik/ExternalSSD/final_data/tmQM_xas_constgrid/
+  json_path: ./data/toy_data/
 
 dataset:
   # general:
-  dataset_type: descriptor_inverse
-  root: ./data/tmQM_xas/processed_train_mlp_inverse/  # Where should the processed data be stored
-  preload: False                    # Preload dataset into RAM if True; otherwise load on-the-fly
-  skip_prepare: True
+  dataset_type: envembed
+  root: ./data/processed/toy_data_envembed/  # Where should the processed data be stored
+  preload: True                    # Preload dataset into RAM if True; otherwise load on-the-fly
+  skip_prepare: False
   split_ratios: [0.8, 0.2]
   # params:
+  widths_eV: [0.2, 1.0, 2.0, 4.0]
+  basis_stride: 4
+  env_radius: 6.0
   # descriptors:
   descriptors:
     - descriptor_type: wacsf
@@ -22,32 +27,24 @@ dataset:
       n_g4: 32
 
 encodings:
-  - encoding_type: subtract_average
-    average: auto
-    per_element: true
-    elements: auto
+  - encoding_type: identity
 
 model:
   # general:
-  model_type: mlp
+  model_type: envembed
   # params:
-  in_size: auto
-  out_size: auto
-  hidden_size: 256
-  dropout: 0.1
-  num_hidden_layers: 3
-  shrink_rate: 0.5
-  activation: prelu
+  in_size: auto # dimensionality of the descriptor features
+  kgroups: auto # output gaussian dimensions from the dataset spectral basis
 
 trainer:
   # general:
   trainer_type: basic
-  batch_size: 100
+  batch_size: 4
   shuffle: True
   drop_last: False
-  num_workers: 4
+  num_workers: 0
   # params:
-  epochs: 100000
+  epochs: 50
   learning_rate: 0.001
   optimizer: Adam
   max_norm: null
@@ -62,10 +59,11 @@ trainer:
     lr_scheduler_type: linear
     start_factor: 1.0 
     end_factor: 0.1
-    total_iters: 100
+    total_iters: 40
   early_stopper:
-    early_stopper_type: time 
-    time_limit_seconds: 28800  # 8 hours
+    early_stopper_type: basic 
+    patience: 25
+    min_delta: 0.001
     restore_best: True
   
 strategy:
@@ -75,3 +73,6 @@ strategy:
   bias_init: zeros
   checkpoint_interval: 25
   # params:
+
+
+

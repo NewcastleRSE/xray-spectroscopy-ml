@@ -1,21 +1,22 @@
-# Use with a checkpoint trained from configs/in_mlp_deep_ensemble.yaml.
+# Example configuration for MLP deep ensemble inference with toy data.
 
 seed: 2025
 device: cuda
 
 datasource:
   datasource_type: pmgjson
-  json_path: /media/hendrik/ExternalSSD/final_data/omnixas_test/
+  json_path: ./data/toy_data/
 
 dataset:
-  root: ./data/fe/processed_test/ # Where should the processed data be stored
+  root: ./data/processed/toy_data_mlp_deep_ensemble/  # Where should the processed data be stored
   preload: True                    # Preload dataset into RAM if True; otherwise load on-the-fly
+  skip_prepare: False
 
 inferencer:
   inferencer_type: ensemble
-  batch_size: 3
+  batch_size: 4
   shuffle: False
   drop_last: False
   num_workers: 0
-  buffer_size: 100000
+  buffer_size: 1000
   model_device_policy: sequential

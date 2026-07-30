@@ -1,0 +1,21 @@
+# Example configuration for MLP inference with toy data.
+
+seed: 2025
+device: cuda
+
+datasource:
+  datasource_type: pmgjson
+  json_path: ./data/toy_data/
+
+dataset:
+  root: ./data/processed/toy_data_mlp/  # Where should the processed data be stored
+  preload: True                    # Preload dataset into RAM if True; otherwise load on-the-fly
+  skip_prepare: False
+
+inferencer:
+  inferencer_type: basic
+  batch_size: 4
+  shuffle: False
+  drop_last: False
+  num_workers: 0
+  buffer_size: 1000
