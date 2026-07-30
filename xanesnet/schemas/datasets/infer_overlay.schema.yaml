@@ -21,111 +21,24 @@ $defs:
         type: boolean
         default: false
         description: Whether to precompute GemNet-OC auxiliary graphs and mixed triplets.
-      oc_cutoff_aeaint:
-        type:
-        - number
-        - 'null'
+      graph_builder:
+        $ref: graph_types.schema.yaml#/$defs/graphBuilder
+        description: Main graph builder configuration.
+      int_graph_builder:
+        $ref: graph_types.schema.yaml#/$defs/nullableGraphBuilder
         default: null
-        description: Atom-edge-atom graph cutoff in **Angstrom**.
-      oc_max_neighbors_aeaint:
-        type:
-        - integer
-        - 'null'
+        description: Interaction graph builder configuration. ``null`` reuses ``graph_builder``.
+      oc_aeaint_graph_builder:
+        $ref: graph_types.schema.yaml#/$defs/nullableGraphBuilder
         default: null
-        description: Atom-edge-atom graph per-source neighbor cap.
-      oc_cutoff_aint:
-        type:
-        - number
-        - 'null'
+        description: Atom-edge-atom graph builder configuration. ``null`` reuses ``graph_builder``.
+      oc_aint_graph_builder:
+        $ref: graph_types.schema.yaml#/$defs/nullableGraphBuilder
         default: null
-        description: Atom-atom graph cutoff in **Angstrom**.
-      oc_max_neighbors_aint:
-        type:
-        - integer
-        - 'null'
-        default: null
-        description: Atom-atom graph per-source neighbor cap.
-      cutoff:
-        type: number
-        default: 5.0
-        description: Main graph cutoff in **Angstrom**.
-      max_num_neighbors:
-        type: integer
-        minimum: 1
-        default: 32
-        description: Main graph per-source neighbor cap.
-      graph_method:
-        $ref: graph_types.schema.yaml#/$defs/graphMethod
-        default: radius
-        description: Main graph construction method.
-      min_facet_area:
-        $ref: graph_types.schema.yaml#/$defs/minFacetArea
-        default: null
-        description: Numeric area threshold or strings such as "5%".
-      cov_radii_scale:
-        type: number
-        default: 1.5
-        description: Covalent-radii scale for graph construction.
-      int_cutoff:
-        type:
-        - number
-        - 'null'
-        default: 10.0
-        description: Interaction graph cutoff in **Angstrom**.
-      int_max_neighbors:
-        type:
-        - integer
-        - 'null'
-        default: null
-        description: Optional interaction graph per-source neighbor cap.
-      int_graph_method:
-        oneOf:
-        - $ref: graph_types.schema.yaml#/$defs/graphMethod
-        - type: 'null'
-        default: null
-        description: Optional interaction graph construction method.
-      int_min_facet_area:
-        $ref: graph_types.schema.yaml#/$defs/minFacetArea
-        default: null
-        description: Numeric area threshold or strings such as "5%".
-      int_cov_radii_scale:
-        type:
-        - number
-        - 'null'
-        default: null
-        description: Optional interaction covalent-radii scale.
-      oc_graph_method_aeaint:
-        oneOf:
-        - $ref: graph_types.schema.yaml#/$defs/graphMethod
-        - type: 'null'
-        default: null
-        description: Atom-edge-atom graph construction method override.
-      oc_min_facet_area_aeaint:
-        $ref: graph_types.schema.yaml#/$defs/minFacetArea
-        default: null
-        description: Numeric area threshold or strings such as "5%".
-      oc_cov_radii_scale_aeaint:
-        type:
-        - number
-        - 'null'
-        default: null
-        description: Atom-edge-atom covalent-radii scale.
-      oc_graph_method_aint:
-        oneOf:
-        - $ref: graph_types.schema.yaml#/$defs/graphMethod
-        - type: 'null'
-        default: null
-        description: Atom-atom graph construction method override.
-      oc_min_facet_area_aint:
-        $ref: graph_types.schema.yaml#/$defs/minFacetArea
-        default: null
-        description: Numeric area threshold or strings such as "5%".
-      oc_cov_radii_scale_aint:
-        type:
-        - number
-        - 'null'
-        default: null
-        description: Atom-atom covalent-radii scale.
+        description: Atom-atom graph builder configuration. ``null`` reuses ``graph_builder``.
+      att_graph_builder:
+        $ref: graph_types.schema.yaml#/$defs/graphBuilder
+        description: Attention graph builder configuration.
       compute_angles:
         type: boolean
         default: false
@@ -139,27 +52,6 @@ $defs:
         minimum: 1
         default: 128
         description: Maximum paths saved per site.
-      att_cutoff:
-        type: number
-        default: 10.0
-        description: Attention graph cutoff in **Angstrom**.
-      att_max_num_neighbors:
-        type: integer
-        minimum: 1
-        default: 64
-        description: Attention graph per-source neighbor cap.
-      att_graph_method:
-        $ref: graph_types.schema.yaml#/$defs/graphMethod
-        default: radius
-        description: Attention graph construction method.
-      att_min_facet_area:
-        $ref: graph_types.schema.yaml#/$defs/minFacetArea
-        default: null
-        description: Numeric area threshold or strings such as "5%".
-      att_cov_radii_scale:
-        type: number
-        default: 1.5
-        description: Attention graph covalent-radii scale.
       use_absorber_mask:
         type: boolean
         default: false

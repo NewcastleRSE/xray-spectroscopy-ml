@@ -1,6 +1,6 @@
 $schema: https://json-schema.org/draft/2020-12/schema
 $id: e3ee.schema.yaml
-title: 'XANESNET dataset schema: e3ee'
+title: 'XANESNET dataset schema: e3ee_mp'
 $defs:
   datasetE3EEMP:
     type: object
@@ -8,23 +8,15 @@ $defs:
     required:
     - dataset_type
     - root
+    - graph_builder
+    - att_graph_builder
     properties:
-      num_workers:
-        type:
-        - integer
-        - 'null'
-        default: null
-        $comment: null or non-positive means use os.cpu_count() in the multiprocessing mixin.
-        description: Requested worker process count.
-      cutoff:
-        type: number
-        default: 5.0
-        description: Main graph cutoff in **Angstrom**.
-      max_num_neighbors:
-        type: integer
-        minimum: 1
-        default: 32
-        description: Main graph per-source neighbor cap.
+      graph_builder:
+        $ref: ../../graph_types.schema.yaml#/$defs/graphBuilder
+        description: Main graph builder configuration.
+      att_graph_builder:
+        $ref: ../../graph_types.schema.yaml#/$defs/graphBuilder
+        description: Attention graph builder configuration.
       use_path_branch:
         type: boolean
         default: false
@@ -34,39 +26,13 @@ $defs:
         minimum: 1
         default: 128
         description: Maximum absorber paths saved per structure.
-      graph_method:
-        $ref: ../../graph_types.schema.yaml#/$defs/graphMethod
-        default: radius
-        description: Main graph construction method.
-      min_facet_area:
-        $ref: ../../graph_types.schema.yaml#/$defs/minFacetArea
+      num_workers:
+        type:
+        - integer
+        - 'null'
         default: null
-        description: Numeric area threshold or strings such as "5%".
-      cov_radii_scale:
-        type: number
-        default: 1.5
-        description: Covalent-radii scale for graph construction.
-      att_cutoff:
-        type: number
-        default: 10.0
-        description: Attention graph cutoff in **Angstrom**.
-      att_max_num_neighbors:
-        type: integer
-        minimum: 1
-        default: 64
-        description: Attention graph per-source neighbor cap.
-      att_graph_method:
-        $ref: ../../graph_types.schema.yaml#/$defs/graphMethod
-        default: radius
-        description: Attention graph construction method.
-      att_min_facet_area:
-        $ref: ../../graph_types.schema.yaml#/$defs/minFacetArea
-        default: null
-        description: Numeric area threshold or strings such as "5%".
-      att_cov_radii_scale:
-        type: number
-        default: 1.5
-        description: Attention graph covalent-radii scale.
+        $comment: null or non-positive means use os.cpu_count() in the multiprocessing mixin.
+        description: Requested worker process count.
       root:
         type: string
         description: Directory that stores processed ``.pth`` files.

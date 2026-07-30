@@ -7,10 +7,22 @@ $defs:
     additionalProperties: false
     required:
     - descriptor_type
+    - source_dir
     properties:
       descriptor_type:
         const: direct
         description: Identifier string for this descriptor type.
-    $comment: Registered but currently raises NotImplementedError.
-    description: Descriptor that reads pre-computed features directly without transformation.
+      source_dir:
+        type: string
+        description: Path to the directory holding ``.txt`` descriptor
+          files (absolute or relative to cwd).  Files are named
+          ``{file_stem}.txt`` with whitespace-delimited floats,
+          one row per site.
+      preload:
+        type: boolean
+        default: false
+        description: If ``true``, load all ``.txt`` files into memory at
+          init time.
+    description: Reads pre-computed descriptor vectors from ``.txt``
+      files on disk.
 description: Descriptor schemas backed by ``DescriptorRegistry`` classes imported by ``xanesnet.descriptors``.

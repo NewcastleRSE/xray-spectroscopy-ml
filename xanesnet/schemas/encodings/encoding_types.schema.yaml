@@ -6,11 +6,13 @@ $defs:
     type: string
     enum:
     - identity
+    - none
     - scale
     - fourier
     - gaussian
     - z_score
     - min_max
     - subtract_average
+    - concat
     description: Encoding registry key accepted by ``SpectraEncodingRegistry.get``.
 description: Encoding schemas backed by ``SpectraEncodingRegistry`` classes and encoding constructor signatures.

@@ -147,4 +147,20 @@ $defs:
     description: Array of positive integers or training-time ``auto`` token. Unlike
       ``autoPositiveIntegerArray`` this type carries no default, so it is materialized only when
       present in the config.
+  nullablePositiveIntegerArrayOrAuto:
+    default: null
+    oneOf:
+    - title: List
+      type: array
+      items:
+        type: integer
+        minimum: 1
+    - title: Auto
+      type: string
+      pattern: ^[Aa][Uu][Tt][Oo]$
+    - title: 'Null'
+      type: 'null'
+    description: Array of positive integers, training-time ``auto`` token, or ``null``.
+      Defaults to ``null`` so that ``elements`` is always materialized (as ``null`` when
+      element-aware encoding is disabled).
 description: Generic JSON/YAML value schemas reused by component schemas.

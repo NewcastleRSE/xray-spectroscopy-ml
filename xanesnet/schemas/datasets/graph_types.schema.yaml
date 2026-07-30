@@ -2,22 +2,6 @@ $schema: https://json-schema.org/draft/2020-12/schema
 $id: graph_types.schema.yaml
 title: XANESNET graph dataset value types
 $defs:
-  graphMethod:
-    type: string
-    enum:
-    - radius
-    - voronoi
-    - cov_radius
-    description: Graph construction method accepted by graph dataset constructors.
-  nullableGraphMethod:
-    oneOf:
-    - type: string
-      enum:
-      - radius
-      - voronoi
-      - cov_radius
-    - type: 'null'
-    description: Graph construction method or ``null`` for dataset-specific fallback behavior.
   minFacetArea:
     description: Numeric area threshold or strings such as "5%".
     type:
@@ -25,4 +9,74 @@ $defs:
     - string
     - 'null'
     default: null
+  graphBuilder:
+    description: >-
+      Graph builder configuration. ``graph_builder_type`` selects the
+      registered :class:`xanesnet.graphs.base.GraphBuilder` subclass, and
+      the remaining keys are its per-type constructor parameters.
+    oneOf:
+    - type: object
+      additionalProperties: false
+      required:
+      - graph_builder_type
+      properties:
+        graph_builder_type:
+          const: radius
+          description: Radius-graph builder identifier.
+        cutoff:
+          type: number
+          default: 6.0
+          description: Maximum edge length in **Angstrom**.
+        max_num_neighbors:
+          type: integer
+          minimum: 1
+          default: 32
+          description: Per-source neighbor cap.
+    - type: object
+      additionalProperties: false
+      required:
+      - graph_builder_type
+      properties:
+        graph_builder_type:
+          const: cov_radius
+          description: Covalent-radius graph builder identifier.
+        cutoff:
+          type: number
+          default: 6.0
+          description: Maximum edge length in **Angstrom**.
+        max_num_neighbors:
+          type: integer
+          minimum: 1
+          default: 32
+          description: Per-source neighbor cap.
+        cov_radii_scale:
+          type: number
+          default: 1.5
+          description: Covalent-radii scale for graph construction.
+    - type: object
+      additionalProperties: false
+      required:
+      - graph_builder_type
+      properties:
+        graph_builder_type:
+          const: voronoi
+          description: Voronoi-graph builder identifier.
+        cutoff:
+          type: number
+          default: 6.0
+          description: Maximum edge length in **Angstrom**.
+        max_num_neighbors:
+          type: integer
+          minimum: 1
+          default: 32
+          description: Per-source neighbor cap.
+        min_facet_area:
+          $ref: '#/$defs/minFacetArea'
+          default: null
+          description: Optional Voronoi facet-area threshold.
+  nullableGraphBuilder:
+    oneOf:
+    - $ref: '#/$defs/graphBuilder'
+    - type: 'null'
+    description: Graph builder configuration or ``null`` to reuse the main ``graph_builder``.
 description: Dataset schemas backed by ``DatasetRegistry`` classes and dataset constructor signatures.

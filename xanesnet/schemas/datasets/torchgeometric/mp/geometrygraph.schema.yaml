@@ -1,6 +1,6 @@
 $schema: https://json-schema.org/draft/2020-12/schema
 $id: geometrygraph.schema.yaml
-title: 'XANESNET dataset schema: geometrygraph'
+title: 'XANESNET dataset schema: geometrygraph_mp'
 $defs:
   datasetGeometryGraphMP:
     type: object
@@ -8,7 +8,15 @@ $defs:
     required:
     - dataset_type
     - root
+    - graph_builder
     properties:
+      graph_builder:
+        $ref: ../../graph_types.schema.yaml#/$defs/graphBuilder
+        description: Graph builder configuration.
+      compute_angles:
+        type: boolean
+        default: false
+        description: Whether to precompute triplet angles.
       num_workers:
         type:
         - integer
@@ -16,31 +24,6 @@ $defs:
         default: null
         $comment: null or non-positive means use os.cpu_count() in the multiprocessing mixin.
         description: Requested worker process count.
-      cutoff:
-        type: number
-        default: 6.0
-        description: Graph cutoff in **Angstrom**.
-      max_num_neighbors:
-        type: integer
-        minimum: 1
-        default: 32
-        description: Per-source neighbor cap.
-      compute_angles:
-        type: boolean
-        default: false
-        description: Whether to precompute triplet angles.
-      graph_method:
-        $ref: ../../graph_types.schema.yaml#/$defs/graphMethod
-        default: radius
-        description: Graph construction method.
-      min_facet_area:
-        $ref: ../../graph_types.schema.yaml#/$defs/minFacetArea
-        default: null
-        description: Numeric area threshold or strings such as "5%".
-      cov_radii_scale:
-        type: number
-        default: 1.5
-        description: Covalent-radii scale for graph construction.
       root:
         type: string
         description: Directory that stores processed ``.pth`` files.

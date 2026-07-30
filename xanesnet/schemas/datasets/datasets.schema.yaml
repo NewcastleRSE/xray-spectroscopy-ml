@@ -21,7 +21,6 @@ $defs:
     - $ref: torchgeometric/mp/e3ee.schema.yaml#/$defs/datasetE3EEMP
     - $ref: torchgeometric/e3ee_full.schema.yaml#/$defs/datasetE3EEFull
     - $ref: torchgeometric/mp/e3ee_full.schema.yaml#/$defs/datasetE3EEFullMP
-    - $ref: torchgeometric/richgraph.schema.yaml#/$defs/datasetRichGraph
     description: Union of dataset configuration objects instantiated by ``DatasetRegistry`` for training.
   datasetInferUser:
     anyOf:

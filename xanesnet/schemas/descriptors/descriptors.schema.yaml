@@ -8,6 +8,8 @@ $defs:
     - $ref: rdc.schema.yaml#/$defs/descriptorRDC
     - $ref: mace.schema.yaml#/$defs/descriptorMACE
     - $ref: direct.schema.yaml#/$defs/descriptorDirect
+    - $ref: soap.schema.yaml#/$defs/descriptorSOAP
+    - $ref: pdos.schema.yaml#/$defs/descriptorPDOS
     description: Union of descriptor configuration objects instantiated by ``DescriptorRegistry``.
   descriptorList:
     type: array

@@ -8,16 +8,15 @@ $defs:
     required:
     - dataset_type
     - root
+    - graph_builder
+    - att_graph_builder
     properties:
-      cutoff:
-        type: number
-        default: 5.0
-        description: Main graph cutoff in **Angstrom**.
-      max_num_neighbors:
-        type: integer
-        minimum: 1
-        default: 32
-        description: Main graph per-source neighbor cap.
+      graph_builder:
+        $ref: ../graph_types.schema.yaml#/$defs/graphBuilder
+        description: Main graph builder configuration.
+      att_graph_builder:
+        $ref: ../graph_types.schema.yaml#/$defs/graphBuilder
+        description: Attention graph builder configuration.
       use_path_branch:
         type: boolean
         default: false
@@ -27,39 +26,6 @@ $defs:
         minimum: 1
         default: 128
         description: Maximum paths saved per site.
-      graph_method:
-        $ref: ../graph_types.schema.yaml#/$defs/graphMethod
-        default: radius
-        description: Main graph construction method.
-      min_facet_area:
-        $ref: ../graph_types.schema.yaml#/$defs/minFacetArea
-        default: null
-        description: Numeric area threshold or strings such as "5%".
-      cov_radii_scale:
-        type: number
-        default: 1.5
-        description: Covalent-radii scale for graph construction.
-      att_cutoff:
-        type: number
-        default: 10.0
-        description: Attention graph cutoff in **Angstrom**.
-      att_max_num_neighbors:
-        type: integer
-        minimum: 1
-        default: 64
-        description: Attention graph per-source neighbor cap.
-      att_graph_method:
-        $ref: ../graph_types.schema.yaml#/$defs/graphMethod
-        default: radius
-        description: Attention graph construction method.
-      att_min_facet_area:
-        $ref: ../graph_types.schema.yaml#/$defs/minFacetArea
-        default: null
-        description: Numeric area threshold or strings such as "5%".
-      att_cov_radii_scale:
-        type: number
-        default: 1.5
-        description: Attention graph covalent-radii scale.
       use_absorber_mask:
         type: boolean
         default: false

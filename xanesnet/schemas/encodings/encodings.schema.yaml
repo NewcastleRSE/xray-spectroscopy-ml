@@ -11,6 +11,7 @@ $defs:
     - $ref: z_score.schema.yaml#/$defs/encodingZScore
     - $ref: min_max.schema.yaml#/$defs/encodingMinMax
     - $ref: subtract_average.schema.yaml#/$defs/encodingSubtractAverage
+    - $ref: concat.schema.yaml#/$defs/encodingConcat
     description: Union of encoding configuration objects instantiated by ``SpectraEncodingRegistry``.
   encodingList:
     type: array
@@ -20,4 +21,6 @@ $defs:
     description: Non-empty, ordered list of encoding configurations. Encodings are applied in order
       to map raw spectra into the model prediction space and inverted in reverse order to decode
       predictions back to spectra.
+    default:
+    - encoding_type: identity
 description: Encoding schemas backed by ``SpectraEncodingRegistry`` classes and encoding constructor signatures.

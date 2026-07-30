@@ -1,0 +1,76 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: soap.schema.yaml
+title: 'XANESNET descriptor schema: soap'
+$defs:
+  descriptorSOAP:
+    type: object
+    additionalProperties: false
+    required:
+    - descriptor_type
+    properties:
+      descriptor_type:
+        const: soap
+        description: Identifier string for this descriptor type.
+      r_cut:
+        type: number
+        exclusiveMinimum: 0
+        default: 6.0
+        description: Local environment cutoff radius. **A**.
+      n_max:
+        type: integer
+        minimum: 1
+        default: 8
+        description: Number of radial basis functions.
+      l_max:
+        type: integer
+        minimum: 0
+        default: 6
+        description: Maximum angular momentum quantum number.
+      sigma:
+        type: number
+        exclusiveMinimum: 0
+        default: 1.0
+        description: Gaussian broadening width. **A**.
+      species:
+        oneOf:
+        - title: List
+          type: array
+          items:
+            type: integer
+        - title: 'Null'
+          type: 'null'
+        default: null
+        description: Atomic numbers to include as distinct species.
+          ``null`` for all elements H (1) through Lr (103).
+      average:
+        type: string
+        enum: [off, inner, outer]
+        default: outer
+        description: Averaging mode across atomic centres.
+      compression_mode:
+        type: string
+        enum: [off, mu2, crossover, mu1nu1]
+        default: off
+        description: SOAP compression mode.  ``"mu2"`` gives a compact
+          moment-tensor representation (~3-4x feature reduction).
+      compression_species_weighting:
+        oneOf:
+        - title: Object
+          type: object
+        - title: 'Null'
+          type: 'null'
+        default: null
+        description: Species-weighting dictionary for
+          ``compression_mode="species_weighting"``.  ``null`` to use
+          dscribe defaults.
+      use_charge:
+        type: boolean
+        default: false
+        description: Append charge state scalar to the descriptor.
+      use_spin:
+        type: boolean
+        default: false
+        description: Append spin state scalar to the descriptor.
+    description: Smooth overlap of atomic positions (SOAP) descriptor using the
+      dscribe library.
+description: Descriptor schemas backed by ``DescriptorRegistry`` classes imported by ``xanesnet.descriptors``.

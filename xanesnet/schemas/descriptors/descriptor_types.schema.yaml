@@ -9,6 +9,8 @@ $defs:
     - rdc
     - mace
     - direct
+    - soap
+    - pdos
     description: Descriptor registry key accepted by ``DescriptorRegistry.get``.
   wacsfParameterisation:
     type: string

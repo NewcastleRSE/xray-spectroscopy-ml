@@ -1,0 +1,82 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: pdos.schema.yaml
+title: 'XANESNET descriptor schema: pdos'
+$defs:
+  descriptorPDOS:
+    type: object
+    additionalProperties: false
+    required:
+    - descriptor_type
+    properties:
+      descriptor_type:
+        const: pdos
+        description: Identifier string for this descriptor type.
+      code:
+        type: string
+        enum:
+        - xtb
+        - pyscf
+        default: xtb
+        description: Backend electronic-structure code.
+      method:
+        type: string
+        default: GFN2-xTB
+        description: xTB Hamiltonian.
+      e_min:
+        type: number
+        default: 20.0
+        description: Lower energy bound for the pDOS grid. **eV**.
+      e_max:
+        type: number
+        default: 20.0
+        description: Upper energy bound for the pDOS grid. **eV**.
+      sigma:
+        type: number
+        default: 0.7
+        description: Gaussian broadening width (FWHM). **eV**.
+      orb_type:
+        type: string
+        default: p
+        description: AO type string for the primary DOS channel.
+      quad_orb_type:
+        type: string
+        default: d
+        description: AO type string for the quadrupole channel.
+      num_points:
+        type: integer
+        default: 200
+        description: Number of grid points.
+      basis:
+        type: string
+        default: 3-21g
+        description: Basis set for pySCF.
+      init_guess:
+        type: string
+        default: minao
+        description: Initial-guess method for pySCF SCF.
+      max_cycles:
+        type: integer
+        default: 0
+        description: Maximum SCF iterations.
+      use_charge:
+        type: boolean
+        default: false
+        description: Read and apply the charge state from ``system.info``.
+      use_spin:
+        type: boolean
+        default: false
+        description: Read and apply the spin state from ``system.info``.
+      use_quad:
+        type: boolean
+        default: false
+        description: Also compute and append d-channel pDOS.
+      use_occupied:
+        type: boolean
+        default: false
+        description: Project onto occupied MOs instead of unoccupied.
+      verbosity:
+        type: integer
+        default: 0
+        description: Printout verbosity for xTB.
+    description: Projected density of states (pDOS) descriptor using xTB or pySCF.
+description: Descriptor schemas backed by ``DescriptorRegistry`` classes imported by ``xanesnet.descriptors``.
