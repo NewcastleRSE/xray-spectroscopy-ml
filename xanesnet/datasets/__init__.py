@@ -45,7 +45,6 @@ from .torchgeometric import (
     GeometryGraphData,
     GeometryGraphDataset,
     GeometryGraphDatasetMp,
-    RichGraphDataset,
 )
 
 __all__ = [
@@ -64,7 +63,6 @@ __all__ = [
     "E3EEBatch",
     "E3EEFullBatch",
     "E3EEFullDataset",
-    "RichGraphDataset",
     "GeometryGraphBatch",
     "GeometryGraphData",
     "GeometryGraphDataset",

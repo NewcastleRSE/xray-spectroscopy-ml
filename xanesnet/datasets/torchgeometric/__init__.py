@@ -30,7 +30,6 @@ from .mp import (
     GemNetDatasetMp,
     GeometryGraphDatasetMp,
 )
-from .richgraph import RichGraphDataset
 
 __all__ = [
     "E3EEBatch",
@@ -40,7 +39,6 @@ __all__ = [
     "GemNetBatch",
     "GemNetData",
     "GemNetDataset",
-    "RichGraphDataset",
     "GeometryGraphBatch",
     "GeometryGraphData",
     "GeometryGraphDataset",
