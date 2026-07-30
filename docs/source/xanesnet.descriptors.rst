@@ -15,7 +15,8 @@ Submodules
    xanesnet.descriptors.base
    xanesnet.descriptors.direct
    xanesnet.descriptors.mace
-   xanesnet.descriptors.pdos_deprecated
+   xanesnet.descriptors.pdos
    xanesnet.descriptors.rdc
    xanesnet.descriptors.registry
+   xanesnet.descriptors.soap
    xanesnet.descriptors.wacsf

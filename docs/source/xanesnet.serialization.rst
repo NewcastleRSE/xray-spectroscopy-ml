@@ -6,13 +6,20 @@ xanesnet.serialization package
    :show-inheritance:
    :undoc-members:
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   xanesnet.serialization.auto_config
+
 Submodules
 ----------
 
 .. toctree::
    :maxdepth: 4
 
-   xanesnet.serialization.auto_config
    xanesnet.serialization.checkpoints
    xanesnet.serialization.config
    xanesnet.serialization.jsonl_stream

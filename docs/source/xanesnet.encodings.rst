@@ -15,6 +15,7 @@ Submodules
    xanesnet.encodings.affine
    xanesnet.encodings.base
    xanesnet.encodings.combined
+   xanesnet.encodings.concat
    xanesnet.encodings.fourier
    xanesnet.encodings.gaussian
    xanesnet.encodings.minmax

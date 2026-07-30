@@ -22,3 +22,4 @@ Submodules
    :maxdepth: 4
 
    xanesnet.models.e3ee_full.e3ee_full
+   xanesnet.models.e3ee_full.resolver

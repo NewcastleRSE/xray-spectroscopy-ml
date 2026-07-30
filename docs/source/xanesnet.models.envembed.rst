@@ -21,3 +21,4 @@ Submodules
    :maxdepth: 4
 
    xanesnet.models.envembed.envembed
+   xanesnet.models.envembed.resolver

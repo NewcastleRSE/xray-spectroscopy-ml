@@ -20,6 +20,7 @@ Subpackages
    xanesnet.datasources
    xanesnet.descriptors
    xanesnet.encodings
+   xanesnet.graphs
    xanesnet.losses
    xanesnet.models
    xanesnet.regularizers

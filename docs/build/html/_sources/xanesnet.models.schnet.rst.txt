@@ -12,4 +12,5 @@ Submodules
 .. toctree::
    :maxdepth: 4
 
+   xanesnet.models.schnet.resolver
    xanesnet.models.schnet.schnet

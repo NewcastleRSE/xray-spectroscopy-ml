@@ -22,3 +22,4 @@ Submodules
    :maxdepth: 4
 
    xanesnet.models.gemnet_oc.gemnet_oc
+   xanesnet.models.gemnet_oc.resolver

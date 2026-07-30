@@ -14,3 +14,4 @@ Submodules
 
    xanesnet.models.dimenet.dimenet
    xanesnet.models.dimenet.dimenet_pp
+   xanesnet.models.dimenet.resolver

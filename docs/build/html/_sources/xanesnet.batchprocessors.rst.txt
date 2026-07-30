@@ -6,6 +6,15 @@ xanesnet.batchprocessors package
    :show-inheritance:
    :undoc-members:
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   xanesnet.batchprocessors.forward
+   xanesnet.batchprocessors.inverse
+
 Submodules
 ----------
 
@@ -13,12 +22,4 @@ Submodules
    :maxdepth: 4
 
    xanesnet.batchprocessors.base
-   xanesnet.batchprocessors.descriptor_mlp
-   xanesnet.batchprocessors.e3ee
-   xanesnet.batchprocessors.e3ee_full
-   xanesnet.batchprocessors.envembed
-   xanesnet.batchprocessors.gemnet
-   xanesnet.batchprocessors.gemnet_oc
-   xanesnet.batchprocessors.geometrygraph_dimenet
-   xanesnet.batchprocessors.geometrygraph_schnet
    xanesnet.batchprocessors.registry

@@ -13,3 +13,4 @@ Submodules
    :maxdepth: 4
 
    xanesnet.models.mlp.mlp
+   xanesnet.models.mlp.resolver

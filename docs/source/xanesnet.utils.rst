@@ -12,7 +12,6 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   xanesnet.utils.graph
    xanesnet.utils.math
 
 Submodules

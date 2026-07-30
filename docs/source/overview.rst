@@ -53,6 +53,13 @@ Where to look
 - :mod:`xanesnet.serialization.config`,
   :mod:`xanesnet.serialization.schema_validation` — config loading and
   validation.
+- :mod:`xanesnet.descriptors` — structural descriptors:
+  :mod:`~xanesnet.descriptors.wacsf`,
+  :mod:`~xanesnet.descriptors.rdc`,
+  :mod:`~xanesnet.descriptors.mace`,
+  :mod:`~xanesnet.descriptors.soap` (dscribe-based, mu2 compression),
+  :mod:`~xanesnet.descriptors.pdos` (xTB/pySCF), and
+  :mod:`~xanesnet.descriptors.direct` (pre-computed ``.txt`` files).
 - :mod:`xanesnet.models`, :mod:`xanesnet.datasets`,
   :mod:`xanesnet.datasources`, :mod:`xanesnet.descriptors`,
   :mod:`xanesnet.runners`, :mod:`xanesnet.strategies`,

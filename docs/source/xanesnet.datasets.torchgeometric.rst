@@ -24,4 +24,3 @@ Submodules
    xanesnet.datasets.torchgeometric.e3ee_full
    xanesnet.datasets.torchgeometric.gemnet
    xanesnet.datasets.torchgeometric.geometrygraph
-   xanesnet.datasets.torchgeometric.richgraph
