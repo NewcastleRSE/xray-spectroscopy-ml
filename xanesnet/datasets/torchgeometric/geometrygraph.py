@@ -30,8 +30,9 @@ from torch_geometric.data import Batch, Data
 from torch_geometric.data.data import BaseData
 
 from xanesnet.datasources import DataSource
+from xanesnet.graphs import GraphBuilder, GraphBuilderRegistry
+from xanesnet.graphs.utils.triplets import compute_triplets_and_angles
 from xanesnet.serialization.config import Config
-from xanesnet.utils.graph import build_edges, compute_triplets_and_angles
 
 from ..base import SavePathFn, TorchGeometricDataset
 from ..registry import DatasetRegistry
@@ -76,22 +77,17 @@ class GeometryGraphBatch(Protocol):
     energies: torch.Tensor
     intensities: torch.Tensor
     absorber_mask: torch.Tensor
-    file_name: list[str]
+    sample_id: list[str]
 
 
 @DatasetRegistry.register("geometrygraph")
 class GeometryGraphDataset(TorchGeometricDataset):
     """Geometry-based graph dataset.
 
-    Supports two edge construction methods:
-
-    - ``graph_method="radius"``: distance-cutoff radius graph.
-    - ``graph_method="voronoi"``: Voronoi-tessellation graph (still bounded
-      by ``cutoff``; Voronoi neighbors with distances above ``cutoff`` are
-      dropped).
-
-    In both cases ``edge_weight`` is the Cartesian edge length, and the
-    returned graph is bidirectional (see ``xanesnet.utils.graph``).
+    The graph is constructed by a :class:`~xanesnet.graphs.base.GraphBuilder`
+    resolved from the ``graph_builder`` nested config. Every registered
+    builder (``radius``, ``cov_radius``, ``voronoi``) guarantees a
+    bidirectional edge list with Cartesian edge lengths in ``edge_weight``.
 
     Args:
         dataset_type: Registered dataset type name.
@@ -101,12 +97,10 @@ class GeometryGraphDataset(TorchGeometricDataset):
         skip_prepare: Whether to reuse existing processed files.
         split_ratios: Optional split ratios.
         split_indexfile: Optional path to split indices.
-        cutoff: Graph cutoff in **Angstrom**.
-        max_num_neighbors: Per-source neighbor cap.
+        graph_builder: Graph builder configuration (contains
+            ``graph_builder_type`` plus per-type parameters such as
+            ``cutoff`` and ``max_num_neighbors``).
         compute_angles: Whether to precompute triplet angles.
-        graph_method: Graph construction method.
-        min_facet_area: Optional Voronoi facet-area threshold.
-        cov_radii_scale: Covalent-radii scale for graph construction.
     """
 
     def __init__(
@@ -119,22 +113,17 @@ class GeometryGraphDataset(TorchGeometricDataset):
         split_ratios: list[float] | None,
         split_indexfile: str | None,
         # params
-        cutoff: float,
-        max_num_neighbors: int,
+        graph_builder: Config,
         compute_angles: bool,
-        graph_method: str,
-        min_facet_area: float | str | None,
-        cov_radii_scale: float,
     ) -> None:
         """Initialize the geometry graph dataset."""
         super().__init__(dataset_type, datasource, root, preload, skip_prepare, split_ratios, split_indexfile)
 
-        self.cutoff = cutoff
-        self.max_num_neighbors = max_num_neighbors
+        self.graph_builder_config = graph_builder
+        self.graph_builder = GraphBuilderRegistry.create(
+            graph_builder.get_str("graph_builder_type"), **graph_builder.as_kwargs()
+        )
         self.compute_angles = compute_angles
-        self.graph_method = graph_method
-        self.min_facet_area = min_facet_area
-        self.cov_radii_scale = cov_radii_scale
 
     def _prepare_single(self, idx: int, save_path_fn: SavePathFn) -> int:
         """Process one datasource item into one geometry graph sample.
@@ -151,7 +140,7 @@ class GeometryGraphDataset(TorchGeometricDataset):
             if key in pmg_obj.site_properties.keys():
                 break
         else:
-            logging.warning(f"No XANES spectrum found for sample {idx} ({pmg_obj.properties['file_name']}); skipping.")
+            logging.warning(f"No XANES spectrum found for sample {idx} ({pmg_obj.properties['sample_id']}); skipping.")
             return 0
 
         xanes = np.array(pmg_obj.site_properties[key], dtype=object)
@@ -169,12 +158,8 @@ class GeometryGraphDataset(TorchGeometricDataset):
 
         edge_index, edge_weight, angle, idx_kj, idx_ji = self._build_edges(
             pmg_obj,
-            self.cutoff,
-            self.max_num_neighbors,
+            self.graph_builder,
             self.compute_angles,
-            self.graph_method,
-            self.min_facet_area,
-            self.cov_radii_scale,
         )
 
         struct = GeometryGraphData(
@@ -189,7 +174,7 @@ class GeometryGraphDataset(TorchGeometricDataset):
             energies=energies,
             intensities=intensities,
             absorber_mask=absorber_mask,
-            file_name=pmg_obj.properties["file_name"],
+            sample_id=pmg_obj.properties["sample_id"],
         )
 
         self._save_data(struct, save_path_fn(0))
@@ -203,47 +188,40 @@ class GeometryGraphDataset(TorchGeometricDataset):
 
         Returns:
             PyG batch with target tensors concatenated over absorber sites.
+            ``sample_id`` is expanded per absorber so every row in
+            ``intensities`` / ``absorber_mask`` has a corresponding
+            identifier.
         """
         fields_to_cat = ["energies", "intensities", "absorber_mask"]
-        batched = Batch.from_data_list(batch, exclude_keys=fields_to_cat)
+        batched = Batch.from_data_list(batch, exclude_keys=[*fields_to_cat, "sample_id"])
         for field in fields_to_cat:
             setattr(batched, field, torch.cat([getattr(d, field) for d in batch], dim=0))
+        batched.sample_id = [
+            str(getattr(data, "sample_id"))
+            for data in batch
+            for _ in range(int(getattr(data, "absorber_mask").sum().item()))
+        ]
         return batched
 
     @staticmethod
     def _build_edges(
         pmg_obj: Structure | Molecule,
-        cutoff: float,
-        max_num_neighbors: int,
+        graph_builder: GraphBuilder,
         compute_angles: bool,
-        graph_method: str,
-        min_facet_area: float | str | None,
-        cov_radii_scale: float,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor | None, torch.Tensor | None, torch.Tensor | None]:
         """Build graph edges and optional triplet-angle tensors.
 
         Args:
             pmg_obj: Structure or molecule to convert to a graph.
-            cutoff: Edge cutoff in **Angstrom**.
-            max_num_neighbors: Per-source neighbor cap.
+            graph_builder: Fully initialized graph builder used to construct
+                the edge list.
             compute_angles: Whether to compute triplet angle tensors.
-            graph_method: Graph construction method.
-            min_facet_area: Optional Voronoi facet-area threshold.
-            cov_radii_scale: Covalent-radii scale for graph construction.
 
         Returns:
             ``(edge_index, edge_weight, angle, idx_kj, idx_ji)``. Angle and
             triplet index tensors are ``None`` when ``compute_angles`` is false.
         """
-        edge_index, edge_weight, edge_vec, _edge_attr = build_edges(
-            pmg_obj,
-            cutoff,
-            max_num_neighbors,
-            compute_vectors=compute_angles,
-            method=graph_method,
-            min_facet_area=min_facet_area,
-            cov_radii_scale=cov_radii_scale,
-        )
+        edge_index, edge_weight, edge_vec, _edge_attr = graph_builder.build(pmg_obj, compute_vectors=compute_angles)
 
         if not compute_angles:
             return edge_index, edge_weight, None, None, None
@@ -288,12 +266,8 @@ class GeometryGraphDataset(TorchGeometricDataset):
         signature = super().signature
         signature.update_with_dict(
             {
-                "cutoff": self.cutoff,
-                "max_num_neighbors": self.max_num_neighbors,
+                "graph_builder": self.graph_builder_config,
                 "compute_angles": self.compute_angles,
-                "graph_method": self.graph_method,
-                "min_facet_area": self.min_facet_area,
-                "cov_radii_scale": self.cov_radii_scale,
             }
         )
         return signature

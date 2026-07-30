@@ -25,7 +25,9 @@ import torch
 from pymatgen.core import Molecule, Structure
 from scipy.spatial import QhullError, Voronoi
 
-from .symmetrize import symmetrize_directed_edges, truncate_per_source
+from .base import GraphBuilder
+from .registry import GraphBuilderRegistry
+from .utils.symmetrize import symmetrize_directed_edges, truncate_per_source
 
 
 def _polygon_area_3d(verts: np.ndarray) -> float:
@@ -55,25 +57,25 @@ def _build_periodic_supercell(
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Replicate a periodic structure into a supercell for Voronoi tessellation.
 
-    The supercell is sized so that the Voronoi cells of central-image atoms are
-    bounded by replica atoms rather than the supercell boundary, up to
+    The supercell is sized so that the Voronoi cells of central-image atoms
+    are bounded by replica atoms rather than the supercell boundary, up to
     ``cutoff``. The number of replicas per direction is determined from the
-    perpendicular lattice-plane spacings (not the lattice vector lengths), so
-    oblique cells are handled correctly.
+    perpendicular lattice-plane spacings (not the lattice vector lengths),
+    so oblique cells are handled correctly.
 
     Args:
         structure: Periodic pymatgen ``Structure``.
-        cutoff: Maximum edge length considered in **angstroms**. Controls the
-            minimum supercell extent.
+        cutoff: Maximum edge length considered in **angstroms**. Controls
+            the minimum supercell extent.
 
     Returns:
         A 3-tuple ``(points, orig_idx, is_center)``:
 
-                - ``points``: ``(M, 3)`` float64 -- Cartesian coordinates of all
+        - ``points``: ``(M, 3)`` float64 -- Cartesian coordinates of all
           replicated atoms.
-                - ``orig_idx``: ``(M,)`` int64 -- atom index in the original unit
+        - ``orig_idx``: ``(M,)`` int64 -- atom index in the original unit
           cell.
-                - ``is_center``: ``(M,)`` bool -- ``True`` for atoms in the central
+        - ``is_center``: ``(M,)`` bool -- ``True`` for atoms in the central
           image ``(0, 0, 0)``.
     """
     lat = np.array(structure.lattice.matrix, dtype=np.float64)
@@ -134,10 +136,10 @@ def _voronoi_edges(
     are skipped.
 
     Args:
-                points: ``(M, 3)`` float64 -- Cartesian coordinates of all atoms
-          (including supercell replicas).
-                is_center: ``(M,)`` bool -- ``True`` for central-image atoms.
-                orig_idx: ``(M,)`` int64 -- original unit-cell atom index per point.
+        points: ``(M, 3)`` float64 -- Cartesian coordinates of all atoms
+            (including supercell replicas).
+        is_center: ``(M,)`` bool -- ``True`` for central-image atoms.
+        orig_idx: ``(M,)`` int64 -- original unit-cell atom index per point.
         cutoff: Maximum edge length in **angstroms**; longer ridges are
             dropped.
 
@@ -226,18 +228,18 @@ def _resolve_min_facet_area(
     return float(min_facet_area)
 
 
-def build_edges_voronoi(
+def _build_voronoi_edges(
     pmg_obj: Structure | Molecule,
     cutoff: float,
     max_num_neighbors: int,
     min_facet_area: float | str | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Voronoi-tessellation edge construction.
+    """Voronoi-tessellation edge construction (functional core).
 
     Two atoms are connected iff their Voronoi cells share a facet. For
-    periodic structures, the tessellation is computed on a supercell so that
-    facets with periodic images are resolved correctly. ``edge_weight`` is
-    always the Cartesian distance of the edge, which equals the correct
+    periodic structures, the tessellation is computed on a supercell so
+    that facets with periodic images are resolved correctly. ``edge_weight``
+    is always the Cartesian distance of the edge, which equals the correct
     minimum-image distance for periodic graphs.
 
     After optional facet-area filtering, edges are truncated to
@@ -251,9 +253,9 @@ def build_edges_voronoi(
         max_num_neighbors: Maximum outgoing edges retained per source node
             (shortest first).
         min_facet_area: Optional lower bound on the Voronoi facet area.
-            ``None`` disables the filter. A ``float`` is an absolute threshold
-            in **angstroms squared**. A ``str`` like ``"1.0%"`` is a fraction
-            of the largest facet area in the structure.
+            ``None`` disables the filter. A ``float`` is an absolute
+            threshold in **angstroms squared**. A ``str`` like ``"1.0%"``
+            is a fraction of the largest facet area in the structure.
 
     Returns:
         A 4-tuple ``(edge_index, edge_weight, edge_vec, edge_attr)``:
@@ -306,3 +308,65 @@ def build_edges_voronoi(
     # edge_attr is never dropped by the helpers when a Tensor is passed in.
     assert edge_attr is not None
     return edge_index, edge_weight, edge_vec, edge_attr
+
+
+@GraphBuilderRegistry.register("voronoi")
+class VoronoiGraphBuilder(GraphBuilder):
+    """Voronoi-tessellation graph builder.
+
+    Two atoms are connected iff their Voronoi cells share a facet. For
+    periodic structures, the tessellation is computed on a supercell so
+    that facets with periodic images are resolved correctly. ``edge_weight``
+    is always the Cartesian distance of the edge, which equals the correct
+    minimum-image distance for periodic graphs.
+
+    Compared to the radius method, Voronoi graphs are typically sparser and
+    invariant to small perturbations of the cutoff.
+
+    Args:
+        graph_builder_type: Registered builder identifier (``"voronoi"``).
+        cutoff: Maximum edge length in **angstroms**. Facets between atoms
+            farther apart are dropped.
+        max_num_neighbors: Maximum outgoing edges retained per source node
+            (shortest first).
+        min_facet_area: Optional lower bound on the Voronoi facet area.
+            ``None`` disables the filter. A ``float`` is an absolute
+            threshold in **angstroms squared**. A ``str`` like ``"1.0%"``
+            is a fraction of the largest facet area in the structure.
+    """
+
+    def __init__(
+        self,
+        graph_builder_type: str,
+        cutoff: float,
+        max_num_neighbors: int,
+        min_facet_area: float | str | None = None,
+    ) -> None:
+        """Initialize ``VoronoiGraphBuilder``."""
+        super().__init__(graph_builder_type, cutoff, max_num_neighbors)
+        self.min_facet_area = min_facet_area
+
+    def build(
+        self,
+        pmg_obj: Structure | Molecule,
+        compute_vectors: bool = True,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor | None, torch.Tensor | None]:
+        """Build a Voronoi graph for ``pmg_obj``.
+
+        Args:
+            pmg_obj: Periodic ``Structure`` or non-periodic ``Molecule``.
+            compute_vectors: If ``False``, ``edge_vec`` is returned as
+                ``None`` in the output tuple. Displacement vectors are still
+                required internally for symmetrisation.
+
+        Returns:
+            ``(edge_index, edge_weight, edge_vec, edge_attr)`` where
+            ``edge_attr`` holds the Voronoi facet areas in **angstroms
+            squared**.
+        """
+        edge_index, edge_weight, edge_vec, edge_attr = _build_voronoi_edges(
+            pmg_obj, self.cutoff, self.max_num_neighbors, min_facet_area=self.min_facet_area
+        )
+        if not compute_vectors:
+            edge_vec = None
+        return edge_index, edge_weight, edge_vec, edge_attr

@@ -18,7 +18,12 @@
 # Citations:
 #   ...
 
-"""GemNet triplet, quadruplet, and mixed-triplet index computation."""
+"""Direction-aware triplet, quadruplet, and mixed-triplet index computation.
+
+These utilities enumerate directed higher-order structures on already-built
+directed graphs. They are used by direction-aware GNNs (such as GemNet /
+GemNet-OC).
+"""
 
 import torch
 from torch_geometric.typing import SparseTensor
@@ -165,7 +170,7 @@ def compute_triplets(
     edge_index: torch.Tensor,
     num_nodes: int,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Compute GemNet triplet indices ``c -> a <- b`` sharing target atom ``a``.
+    """Compute direction-aware triplet indices ``c -> a <- b`` sharing target atom ``a``.
 
     Args:
         edge_index: ``(2, E)`` int64 -- directed edge list.
@@ -237,7 +242,7 @@ def compute_quadruplets(
     num_nodes: int,
     eps: float = 1e-4,
 ) -> dict[str, torch.Tensor]:
-    """Compute GemNet-Q / GemNet-OC quadruplet indices.
+    """Compute quadruplet indices for direction-aware GNNs (e.g. GemNet-Q / GemNet-OC).
 
     Quadruplets have the form ``c -> a - b <- d`` where:
 
@@ -267,7 +272,7 @@ def compute_quadruplets(
             identical (used for degeneracy filtering).
 
     Returns:
-        Dictionary with the standard GemNet index tensors:
+        Dictionary with the standard direction-aware quadruplet index tensors:
         ``id4_reduce_ca``, ``id4_expand_db``, ``id4_reduce_cab``,
         ``id4_expand_abd``, ``id4_reduce_intm_ca``, ``id4_expand_intm_db``,
         ``id4_reduce_intm_ab``, ``id4_expand_intm_ab``, ``Kidx4``.
@@ -430,7 +435,7 @@ def compute_mixed_triplets(
     to_outedge: bool,
     eps: float = 1e-4,
 ) -> dict[str, torch.Tensor]:
-    """Compute mixed-triplet indices for GemNet-OC atom-edge / edge-atom interactions.
+    """Compute mixed-triplet indices across two directed graphs (e.g. GemNet-OC atom-edge / edge-atom interactions).
 
     For each "output" edge ``(c -> a)`` in ``main_edge_index``, enumerates all
     "input" edges in ``other_edge_index`` that connect to the same atom (either

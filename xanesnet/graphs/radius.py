@@ -26,7 +26,9 @@ from ase.data import covalent_radii
 from pymatgen.core import Molecule, Structure
 from torch_geometric.nn import radius_graph
 
-from .symmetrize import symmetrize_directed_edges, truncate_per_source
+from .base import GraphBuilder
+from .registry import GraphBuilderRegistry
+from .utils.symmetrize import symmetrize_directed_edges, truncate_per_source
 
 
 def _pair_cov_cutoff(z_src: np.ndarray, z_dst: np.ndarray, cov_radii_scale: float) -> np.ndarray:
@@ -48,7 +50,7 @@ def _pair_cov_cutoff(z_src: np.ndarray, z_dst: np.ndarray, cov_radii_scale: floa
     return cov_radii_scale * (cr[z_src] + cr[z_dst])
 
 
-def edges_from_structure(
+def _edges_from_structure(
     structure: Structure,
     cutoff: float,
     max_num_neighbors: int,
@@ -129,7 +131,7 @@ def edges_from_structure(
     return edge_index, edge_weight, edge_vec
 
 
-def edges_from_molecule(
+def _edges_from_molecule(
     molecule: Molecule,
     cutoff: float,
     max_num_neighbors: int,
@@ -180,59 +182,110 @@ def edges_from_molecule(
     return edge_index, edge_weight, edge_vec
 
 
-def build_edges_radius(
-    pmg_obj: Structure | Molecule,
-    cutoff: float,
-    max_num_neighbors: int,
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor | None]:
-    """Radius-graph edge construction.
+@GraphBuilderRegistry.register("radius")
+class RadiusGraphBuilder(GraphBuilder):
+    """Radius-graph builder.
+
+    Two atoms are connected iff their Cartesian distance is at most
+    ``cutoff``. For periodic structures this uses pymatgen's PBC-aware
+    neighbor search, which correctly handles cutoffs larger than the unit
+    cell by expanding images. For non-periodic molecules this uses PyG's
+    ``radius_graph``.
 
     Args:
-        pmg_obj: Periodic ``Structure`` or non-periodic ``Molecule``.
+        graph_builder_type: Registered builder identifier (``"radius"``).
         cutoff: Maximum edge length in **angstroms**.
-        max_num_neighbors: Maximum outgoing edges per source node.
-
-    Returns:
-        ``(edge_index, edge_weight, edge_vec, edge_attr)`` where ``edge_attr``
-        is always ``None`` for the radius method.
+        max_num_neighbors: Maximum outgoing edges retained per source node
+            (shortest first). Bidirectionality is enforced afterwards.
     """
-    if isinstance(pmg_obj, Structure):
-        edge_index, edge_weight, edge_vec = edges_from_structure(pmg_obj, cutoff, max_num_neighbors)
-    else:
-        edge_index, edge_weight, edge_vec = edges_from_molecule(pmg_obj, cutoff, max_num_neighbors)
-    return edge_index, edge_weight, edge_vec, None
+
+    def __init__(
+        self,
+        graph_builder_type: str,
+        cutoff: float,
+        max_num_neighbors: int,
+    ) -> None:
+        """Initialize ``RadiusGraphBuilder``."""
+        super().__init__(graph_builder_type, cutoff, max_num_neighbors)
+
+    def build(
+        self,
+        pmg_obj: Structure | Molecule,
+        compute_vectors: bool = True,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor | None, torch.Tensor | None]:
+        """Build a radius graph for ``pmg_obj``.
+
+        Args:
+            pmg_obj: Periodic ``Structure`` or non-periodic ``Molecule``.
+            compute_vectors: If ``False``, ``edge_vec`` is returned as
+                ``None`` in the output tuple.
+
+        Returns:
+            ``(edge_index, edge_weight, edge_vec, edge_attr)`` where
+            ``edge_attr`` is always ``None`` for the radius method.
+        """
+        if isinstance(pmg_obj, Structure):
+            edge_index, edge_weight, edge_vec = _edges_from_structure(pmg_obj, self.cutoff, self.max_num_neighbors)
+        else:
+            edge_index, edge_weight, edge_vec = _edges_from_molecule(pmg_obj, self.cutoff, self.max_num_neighbors)
+        if not compute_vectors:
+            edge_vec = None
+        return edge_index, edge_weight, edge_vec, None
 
 
-def build_edges_cov_radius(
-    pmg_obj: Structure | Molecule,
-    cutoff: float,
-    max_num_neighbors: int,
-    cov_radii_scale: float,
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor | None]:
+@GraphBuilderRegistry.register("cov_radius")
+class CovRadiusGraphBuilder(GraphBuilder):
     """Covalent-radius edge construction.
 
     An edge ``(i, j)`` is kept iff
     ``d(i, j) <= min(cutoff, cov_radii_scale * (r_cov_i + r_cov_j))``,
-    where ``r_cov`` values are taken from ASE's Cordero covalent-radii table.
-    ``cutoff`` acts as a hard maximum (useful for speed and for capping
-    extreme element combinations).
+    where ``r_cov`` values are taken from ASE's Cordero covalent-radii
+    table. ``cutoff`` acts as a hard maximum (useful for speed and for
+    capping extreme element combinations).
 
     Args:
-        pmg_obj: Periodic ``Structure`` or non-periodic ``Molecule``.
+        graph_builder_type: Registered builder identifier (``"cov_radius"``).
         cutoff: Hard maximum edge length in **angstroms**.
-        max_num_neighbors: Maximum outgoing edges per source node.
+        max_num_neighbors: Maximum outgoing edges retained per source node
+            (shortest first).
         cov_radii_scale: Scale factor applied to the sum of covalent radii.
-
-    Returns:
-        ``(edge_index, edge_weight, edge_vec, edge_attr)`` where ``edge_attr``
-        is always ``None``.
     """
-    if isinstance(pmg_obj, Structure):
-        edge_index, edge_weight, edge_vec = edges_from_structure(
-            pmg_obj, cutoff, max_num_neighbors, cov_radii_scale=cov_radii_scale
-        )
-    else:
-        edge_index, edge_weight, edge_vec = edges_from_molecule(
-            pmg_obj, cutoff, max_num_neighbors, cov_radii_scale=cov_radii_scale
-        )
-    return edge_index, edge_weight, edge_vec, None
+
+    def __init__(
+        self,
+        graph_builder_type: str,
+        cutoff: float,
+        max_num_neighbors: int,
+        cov_radii_scale: float,
+    ) -> None:
+        """Initialize ``CovRadiusGraphBuilder``."""
+        super().__init__(graph_builder_type, cutoff, max_num_neighbors)
+        self.cov_radii_scale = cov_radii_scale
+
+    def build(
+        self,
+        pmg_obj: Structure | Molecule,
+        compute_vectors: bool = True,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor | None, torch.Tensor | None]:
+        """Build a covalent-radius graph for ``pmg_obj``.
+
+        Args:
+            pmg_obj: Periodic ``Structure`` or non-periodic ``Molecule``.
+            compute_vectors: If ``False``, ``edge_vec`` is returned as
+                ``None`` in the output tuple.
+
+        Returns:
+            ``(edge_index, edge_weight, edge_vec, edge_attr)`` where
+            ``edge_attr`` is always ``None`` for the covalent-radius method.
+        """
+        if isinstance(pmg_obj, Structure):
+            edge_index, edge_weight, edge_vec = _edges_from_structure(
+                pmg_obj, self.cutoff, self.max_num_neighbors, cov_radii_scale=self.cov_radii_scale
+            )
+        else:
+            edge_index, edge_weight, edge_vec = _edges_from_molecule(
+                pmg_obj, self.cutoff, self.max_num_neighbors, cov_radii_scale=self.cov_radii_scale
+            )
+        if not compute_vectors:
+            edge_vec = None
+        return edge_index, edge_weight, edge_vec, None

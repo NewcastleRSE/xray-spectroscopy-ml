@@ -40,12 +40,8 @@ class GeometryGraphDatasetMp(MpDatasetMixin, GeometryGraphDataset):
         skip_prepare: Whether to reuse existing processed files.
         split_ratios: Optional split ratios.
         split_indexfile: Optional path to split indices.
-        cutoff: Graph cutoff in **Angstrom**.
-        max_num_neighbors: Per-source neighbor cap.
+        graph_builder: Graph builder configuration (see the parent class).
         compute_angles: Whether to precompute triplet angles.
-        graph_method: Graph construction method.
-        min_facet_area: Optional Voronoi facet-area threshold.
-        cov_radii_scale: Covalent-radii scale for graph construction.
         num_workers: Requested worker process count.
     """
 
@@ -59,12 +55,8 @@ class GeometryGraphDatasetMp(MpDatasetMixin, GeometryGraphDataset):
         split_ratios: list[float] | None,
         split_indexfile: str | None,
         # params
-        cutoff: float,
-        max_num_neighbors: int,
+        graph_builder: Config,
         compute_angles: bool,
-        graph_method: str,
-        min_facet_area: float | str | None,
-        cov_radii_scale: float,
         num_workers: int | None,
     ) -> None:
         """Initialize a multiprocessing geometry graph dataset."""
@@ -76,11 +68,7 @@ class GeometryGraphDatasetMp(MpDatasetMixin, GeometryGraphDataset):
             skip_prepare=skip_prepare,
             split_ratios=split_ratios,
             split_indexfile=split_indexfile,
-            cutoff=cutoff,
-            max_num_neighbors=max_num_neighbors,
+            graph_builder=graph_builder,
             compute_angles=compute_angles,
-            graph_method=graph_method,
-            min_facet_area=min_facet_area,
-            cov_radii_scale=cov_radii_scale,
         )
         self.num_workers = num_workers

@@ -31,8 +31,9 @@ from torch_geometric.data.data import BaseData
 
 from xanesnet.datasets.base import SavePathFn, TorchGeometricDataset
 from xanesnet.datasources import DataSource
+from xanesnet.graphs import GraphBuilderRegistry
+from xanesnet.graphs.utils.absorber_paths import build_absorber_paths
 from xanesnet.serialization.config import Config
-from xanesnet.utils.graph import build_absorber_paths, build_edges
 
 from ..registry import DatasetRegistry
 
@@ -72,7 +73,7 @@ class E3EEFullBatch(Protocol):
     # Targets, concatenated over absorbers across the batch
     energies: torch.Tensor
     intensities: torch.Tensor
-    file_name: list[str]
+    sample_id: list[str]
 
 
 @DatasetRegistry.register("e3ee_full")
@@ -97,18 +98,11 @@ class E3EEFullDataset(TorchGeometricDataset):
         skip_prepare: Whether to reuse existing processed files.
         split_ratios: Optional split ratios.
         split_indexfile: Optional path to split indices.
-        cutoff: Main graph cutoff in **Angstrom**.
-        max_num_neighbors: Main graph per-source neighbor cap.
-        use_path_branch: Whether to precompute site-centered paths.
+        graph_builder: Main graph builder configuration.
+        att_graph_builder: Attention graph builder configuration.
+        use_path_branch: Whether to precompute site-centered paths. The path
+            cutoff is taken from ``graph_builder.cutoff``.
         max_paths_per_site: Maximum paths saved per site.
-        graph_method: Main graph construction method.
-        min_facet_area: Optional Voronoi facet-area threshold.
-        cov_radii_scale: Covalent-radii scale for graph construction.
-        att_cutoff: Attention graph cutoff in **Angstrom**.
-        att_max_num_neighbors: Attention graph per-source neighbor cap.
-        att_graph_method: Attention graph construction method.
-        att_min_facet_area: Optional attention Voronoi facet-area threshold.
-        att_cov_radii_scale: Attention graph covalent-radii scale.
         use_absorber_mask: Whether attention/path data are limited to absorber sites.
     """
 
@@ -122,35 +116,25 @@ class E3EEFullDataset(TorchGeometricDataset):
         split_ratios: list[float] | None,
         split_indexfile: str | None,
         # params
-        cutoff: float,
-        max_num_neighbors: int,
+        graph_builder: Config,
+        att_graph_builder: Config,
         use_path_branch: bool,
         max_paths_per_site: int,
-        graph_method: str,
-        min_facet_area: float | str | None,
-        cov_radii_scale: float,
-        att_cutoff: float,
-        att_max_num_neighbors: int,
-        att_graph_method: str,
-        att_min_facet_area: float | str | None,
-        att_cov_radii_scale: float,
         use_absorber_mask: bool,
     ) -> None:
         """Initialize the full-structure E3EE dataset."""
         super().__init__(dataset_type, datasource, root, preload, skip_prepare, split_ratios, split_indexfile)
 
-        self.cutoff = cutoff
-        self.max_num_neighbors = max_num_neighbors
+        self.graph_builder_config = graph_builder
+        self.graph_builder = GraphBuilderRegistry.create(
+            graph_builder.get_str("graph_builder_type"), **graph_builder.as_kwargs()
+        )
+        self.att_graph_builder_config = att_graph_builder
+        self.att_graph_builder = GraphBuilderRegistry.create(
+            att_graph_builder.get_str("graph_builder_type"), **att_graph_builder.as_kwargs()
+        )
         self.use_path_branch = use_path_branch
         self.max_paths_per_site = max_paths_per_site
-        self.graph_method = graph_method
-        self.min_facet_area = min_facet_area
-        self.cov_radii_scale = cov_radii_scale
-        self.att_cutoff = att_cutoff
-        self.att_max_num_neighbors = att_max_num_neighbors
-        self.att_graph_method = att_graph_method
-        self.att_min_facet_area = att_min_facet_area
-        self.att_cov_radii_scale = att_cov_radii_scale
         self.use_absorber_mask = use_absorber_mask
 
     def _prepare_single(self, idx: int, save_path_fn: SavePathFn) -> int:
@@ -168,7 +152,7 @@ class E3EEFullDataset(TorchGeometricDataset):
             if key in pmg_obj.site_properties.keys():
                 break
         else:
-            logging.warning(f"No XANES spectrum found for sample {idx} ({pmg_obj.properties['file_name']}); skipping.")
+            logging.warning(f"No XANES spectrum found for sample {idx} ({pmg_obj.properties['sample_id']}); skipping.")
             return 0
 
         xanes = np.array(pmg_obj.site_properties[key], dtype=object)
@@ -190,26 +174,10 @@ class E3EEFullDataset(TorchGeometricDataset):
             dtype=torch.float32,
         )
 
-        edge_index, edge_weight, edge_vec, _edge_attr = build_edges(
-            pmg_obj,
-            cutoff=self.cutoff,
-            max_num_neighbors=self.max_num_neighbors,
-            compute_vectors=True,
-            method=self.graph_method,
-            min_facet_area=self.min_facet_area,
-            cov_radii_scale=self.cov_radii_scale,
-        )
+        edge_index, edge_weight, edge_vec, _edge_attr = self.graph_builder.build(pmg_obj, compute_vectors=True)
         assert edge_vec is not None
 
-        att_edge_index, att_edge_weight, att_edge_vec, _ = build_edges(
-            pmg_obj,
-            cutoff=self.att_cutoff,
-            max_num_neighbors=self.att_max_num_neighbors,
-            compute_vectors=True,
-            method=self.att_graph_method,
-            min_facet_area=self.att_min_facet_area,
-            cov_radii_scale=self.att_cov_radii_scale,
-        )
+        att_edge_index, att_edge_weight, att_edge_vec, _ = self.att_graph_builder.build(pmg_obj, compute_vectors=True)
         assert att_edge_vec is not None
         if self.use_absorber_mask:
             abs_self_idx = torch.tensor(absorber_idxs, dtype=torch.int64)
@@ -260,7 +228,7 @@ class E3EEFullDataset(TorchGeometricDataset):
             "att_vec": att_vec,
             "energies": energies_stack,
             "intensities": intensities_stack,
-            "file_name": pmg_obj.properties["file_name"],
+            "sample_id": pmg_obj.properties["sample_id"],
         }
 
         if self.use_path_branch:
@@ -277,7 +245,7 @@ class E3EEFullDataset(TorchGeometricDataset):
                 paths = build_absorber_paths(
                     pmg_obj,
                     absorber_idx=site_idx,
-                    cutoff=self.cutoff,
+                    cutoff=self.graph_builder.cutoff,
                     max_paths=self.max_paths_per_site,
                 )
                 n_p = paths["path_j"].shape[0]
@@ -399,9 +367,9 @@ class E3EEFullDataset(TorchGeometricDataset):
             path_rjk = torch.cat([s.path_rjk for s in batch], dim=0)
             path_cosangle = torch.cat([s.path_cosangle for s in batch], dim=0)
 
-        file_name: list[str] = []
+        sample_id: list[str] = []
         for s in batch:
-            file_name.extend([s.file_name] * int(s.absorber_mask.sum().item()))
+            sample_id.extend([s.sample_id] * int(s.absorber_mask.sum().item()))
 
         batched = Batch.from_data_list(
             batch,
@@ -425,7 +393,7 @@ class E3EEFullDataset(TorchGeometricDataset):
                 "path_r0k",
                 "path_rjk",
                 "path_cosangle",
-                "file_name",
+                "sample_id",
             ],
         )
 
@@ -449,7 +417,7 @@ class E3EEFullDataset(TorchGeometricDataset):
         setattr(batched, "path_cosangle", path_cosangle)
         setattr(batched, "energies", energies)
         setattr(batched, "intensities", intensities)
-        setattr(batched, "file_name", file_name)
+        setattr(batched, "sample_id", sample_id)
 
         return batched
 
@@ -486,18 +454,10 @@ class E3EEFullDataset(TorchGeometricDataset):
         signature = super().signature
         signature.update_with_dict(
             {
-                "cutoff": self.cutoff,
-                "max_num_neighbors": self.max_num_neighbors,
+                "graph_builder": self.graph_builder_config,
+                "att_graph_builder": self.att_graph_builder_config,
                 "use_path_branch": self.use_path_branch,
                 "max_paths_per_site": self.max_paths_per_site,
-                "graph_method": self.graph_method,
-                "min_facet_area": self.min_facet_area,
-                "cov_radii_scale": self.cov_radii_scale,
-                "att_cutoff": self.att_cutoff,
-                "att_max_num_neighbors": self.att_max_num_neighbors,
-                "att_graph_method": self.att_graph_method,
-                "att_min_facet_area": self.att_min_facet_area,
-                "att_cov_radii_scale": self.att_cov_radii_scale,
                 "use_absorber_mask": self.use_absorber_mask,
             }
         )

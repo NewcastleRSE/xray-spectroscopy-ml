@@ -31,8 +31,9 @@ from torch_geometric.data.data import BaseData
 
 from xanesnet.datasets.base import SavePathFn, TorchGeometricDataset
 from xanesnet.datasources import DataSource
+from xanesnet.graphs import GraphBuilderRegistry
+from xanesnet.graphs.utils.absorber_paths import build_absorber_paths
 from xanesnet.serialization.config import Config
-from xanesnet.utils.graph import build_absorber_paths, build_edges
 
 from ..registry import DatasetRegistry
 
@@ -70,7 +71,7 @@ class E3EEBatch(Protocol):
     # Targets
     energies: torch.Tensor
     intensities: torch.Tensor
-    file_name: list[str]
+    sample_id: list[str]
 
 
 @DatasetRegistry.register("e3ee")
@@ -83,6 +84,10 @@ class E3EEDataset(TorchGeometricDataset):
     shared graph utilities, so the model does not need to rebuild geometry at
     forward time.
 
+    Both the main and attention graphs are constructed by
+    :class:`~xanesnet.graphs.base.GraphBuilder` instances resolved from the
+    ``graph_builder`` and ``att_graph_builder`` nested configs.
+
     Args:
         dataset_type: Registered dataset type name.
         datasource: Raw datasource of pymatgen structures or molecules.
@@ -91,18 +96,11 @@ class E3EEDataset(TorchGeometricDataset):
         skip_prepare: Whether to reuse existing processed files.
         split_ratios: Optional split ratios.
         split_indexfile: Optional path to split indices.
-        cutoff: Main graph cutoff in **Angstrom**.
-        max_num_neighbors: Main graph per-source neighbor cap.
-        use_path_branch: Whether to precompute absorber-centered paths.
+        graph_builder: Main graph builder configuration.
+        att_graph_builder: Attention graph builder configuration.
+        use_path_branch: Whether to precompute absorber-centered paths. The
+            path cutoff is taken from ``graph_builder.cutoff``.
         max_paths_per_structure: Maximum absorber paths saved per structure.
-        graph_method: Main graph construction method.
-        min_facet_area: Optional Voronoi facet-area threshold.
-        cov_radii_scale: Covalent-radii scale for graph construction.
-        att_cutoff: Attention graph cutoff in **Angstrom**.
-        att_max_num_neighbors: Attention graph per-source neighbor cap.
-        att_graph_method: Attention graph construction method.
-        att_min_facet_area: Optional attention Voronoi facet-area threshold.
-        att_cov_radii_scale: Attention graph covalent-radii scale.
     """
 
     def __init__(
@@ -115,34 +113,24 @@ class E3EEDataset(TorchGeometricDataset):
         split_ratios: list[float] | None,
         split_indexfile: str | None,
         # params
-        cutoff: float,
-        max_num_neighbors: int,
+        graph_builder: Config,
+        att_graph_builder: Config,
         use_path_branch: bool,
         max_paths_per_structure: int,
-        graph_method: str,
-        min_facet_area: float | str | None,
-        cov_radii_scale: float,
-        att_cutoff: float,
-        att_max_num_neighbors: int,
-        att_graph_method: str,
-        att_min_facet_area: float | str | None,
-        att_cov_radii_scale: float,
     ) -> None:
         """Initialize the E3EE dataset."""
         super().__init__(dataset_type, datasource, root, preload, skip_prepare, split_ratios, split_indexfile)
 
-        self.cutoff = cutoff
-        self.max_num_neighbors = max_num_neighbors
+        self.graph_builder_config = graph_builder
+        self.graph_builder = GraphBuilderRegistry.create(
+            graph_builder.get_str("graph_builder_type"), **graph_builder.as_kwargs()
+        )
+        self.att_graph_builder_config = att_graph_builder
+        self.att_graph_builder = GraphBuilderRegistry.create(
+            att_graph_builder.get_str("graph_builder_type"), **att_graph_builder.as_kwargs()
+        )
         self.use_path_branch = use_path_branch
         self.max_paths_per_structure = max_paths_per_structure
-        self.graph_method = graph_method
-        self.min_facet_area = min_facet_area
-        self.cov_radii_scale = cov_radii_scale
-        self.att_cutoff = att_cutoff
-        self.att_max_num_neighbors = att_max_num_neighbors
-        self.att_graph_method = att_graph_method
-        self.att_min_facet_area = att_min_facet_area
-        self.att_cov_radii_scale = att_cov_radii_scale
 
     def _prepare_single(self, idx: int, save_path_fn: SavePathFn) -> int:
         """Process one datasource item into absorber-centered graph samples.
@@ -159,7 +147,7 @@ class E3EEDataset(TorchGeometricDataset):
             if key in pmg_obj.site_properties.keys():
                 break
         else:
-            logging.warning(f"No XANES spectrum found for sample {idx} ({pmg_obj.properties['file_name']}); skipping.")
+            logging.warning(f"No XANES spectrum found for sample {idx} ({pmg_obj.properties['sample_id']}); skipping.")
             return 0
 
         xanes = np.array(pmg_obj.site_properties[key], dtype=object)
@@ -167,26 +155,10 @@ class E3EEDataset(TorchGeometricDataset):
 
         atomic_numbers = torch.tensor(pmg_obj.atomic_numbers, dtype=torch.int64)
 
-        edge_index, edge_weight, edge_vec, _ = build_edges(
-            pmg_obj,
-            cutoff=self.cutoff,
-            max_num_neighbors=self.max_num_neighbors,
-            compute_vectors=True,
-            method=self.graph_method,
-            min_facet_area=self.min_facet_area,
-            cov_radii_scale=self.cov_radii_scale,
-        )
+        edge_index, edge_weight, edge_vec, _ = self.graph_builder.build(pmg_obj, compute_vectors=True)
         assert edge_vec is not None
 
-        att_edge_index, att_edge_weight, att_edge_vec, _ = build_edges(
-            pmg_obj,
-            cutoff=self.att_cutoff,
-            max_num_neighbors=self.att_max_num_neighbors,
-            compute_vectors=True,
-            method=self.att_graph_method,
-            min_facet_area=self.att_min_facet_area,
-            cov_radii_scale=self.att_cov_radii_scale,
-        )
+        att_edge_index, att_edge_weight, att_edge_vec, _ = self.att_graph_builder.build(pmg_obj, compute_vectors=True)
         assert att_edge_vec is not None
         att_src_all = att_edge_index[0]
         att_dst_all = att_edge_index[1]
@@ -232,14 +204,14 @@ class E3EEDataset(TorchGeometricDataset):
                 "att_vec": att_vec_site,
                 "energies": energies,
                 "intensities": intensities,
-                "file_name": pmg_obj.properties["file_name"],
+                "sample_id": pmg_obj.properties["sample_id"],
             }
 
             if self.use_path_branch:
                 paths = build_absorber_paths(
                     pmg_obj,
                     absorber_idx=site_idx,
-                    cutoff=self.cutoff,
+                    cutoff=self.graph_builder.cutoff,
                     max_paths=self.max_paths_per_structure,
                 )
                 data_kwargs.update(paths)
@@ -318,7 +290,7 @@ class E3EEDataset(TorchGeometricDataset):
             path_rjk = torch.cat([s.path_rjk for s in batch], dim=0)
             path_cosangle = torch.cat([s.path_cosangle for s in batch], dim=0)
 
-        file_name: list[str] = [s.file_name for s in batch]
+        sample_id: list[str] = [s.sample_id for s in batch]
 
         batched = Batch.from_data_list(
             batch,
@@ -337,7 +309,7 @@ class E3EEDataset(TorchGeometricDataset):
                 "path_r0k",
                 "path_rjk",
                 "path_cosangle",
-                "file_name",
+                "sample_id",
             ],
         )
 
@@ -357,7 +329,7 @@ class E3EEDataset(TorchGeometricDataset):
         setattr(batched, "path_batch", path_batch)
         setattr(batched, "energies", energies)
         setattr(batched, "intensities", intensities)
-        setattr(batched, "file_name", file_name)
+        setattr(batched, "sample_id", sample_id)
 
         return batched
 
@@ -394,18 +366,10 @@ class E3EEDataset(TorchGeometricDataset):
         signature = super().signature
         signature.update_with_dict(
             {
-                "cutoff": self.cutoff,
-                "max_num_neighbors": self.max_num_neighbors,
+                "graph_builder": self.graph_builder_config,
+                "att_graph_builder": self.att_graph_builder_config,
                 "use_path_branch": self.use_path_branch,
                 "max_paths_per_structure": self.max_paths_per_structure,
-                "graph_method": self.graph_method,
-                "min_facet_area": self.min_facet_area,
-                "cov_radii_scale": self.cov_radii_scale,
-                "att_cutoff": self.att_cutoff,
-                "att_max_num_neighbors": self.att_max_num_neighbors,
-                "att_graph_method": self.att_graph_method,
-                "att_min_facet_area": self.att_min_facet_area,
-                "att_cov_radii_scale": self.att_cov_radii_scale,
             }
         )
         return signature
