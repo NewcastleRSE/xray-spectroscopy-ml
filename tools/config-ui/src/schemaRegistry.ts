@@ -106,6 +106,14 @@ function mergeSchemaObjects(base: JsonValue, override: JsonValue): JsonValue {
   return { ...base, ...override }
 }
 
+// Cache for already-resolved $ref targets (refKey → resolved schema).  The same
+// schema file may be referenced from multiple places (e.g. encoding sub-schemas
+// are referenced both from the top-level encoding oneOf and from concat's inner
+// oneOf) — caching avoids re-resolution and, more importantly, prevents the
+// cycle-detection fallback from returning an unresolved $ref object for a
+// legitimate DAG edge.
+const refCache = new Map<string, JsonValue>()
+
 function resolveSchemaNode(value: JsonValue, currentPath: string, seenRefs = new Set<string>()): JsonValue {
   if (Array.isArray(value)) {
     return value.map((item) => resolveSchemaNode(item, currentPath, seenRefs))
@@ -121,8 +129,17 @@ function resolveSchemaNode(value: JsonValue, currentPath: string, seenRefs = new
     const targetPath = filePart ? normalizeRelativePath(currentPath, filePart) : currentPath
     const refKey = `${targetPath}#${pointerPart}`
 
+    // Return cached result when the same target has already been resolved.
+    // Deep-clone to prevent shared mutable references across the schema tree.
+    if (refCache.has(refKey)) {
+      return JSON.parse(JSON.stringify(refCache.get(refKey))) as JsonValue
+    }
+
+    // Cycle detection: if we are already resolving this ref higher up the stack
+    // bail out and leave the $ref in place (RJSF handles it natively).
+    // Deep-clone to prevent shared mutable references.
     if (seenRefs.has(refKey)) {
-      return { ...value }
+      return JSON.parse(JSON.stringify(value)) as JsonValue
     }
 
     const targetSchema = rawSchemas[targetPath]
@@ -137,11 +154,13 @@ function resolveSchemaNode(value: JsonValue, currentPath: string, seenRefs = new
     const resolvedTarget = resolveSchemaNode(target, targetPath, nextSeenRefs)
     const siblings = Object.fromEntries(Object.entries(value).filter(([key]) => key !== '$ref')) as JsonObject
 
-    if (Object.keys(siblings).length === 0) {
-      return resolvedTarget
-    }
+    const result =
+      Object.keys(siblings).length === 0
+        ? resolvedTarget
+        : mergeSchemaObjects(resolvedTarget, resolveSchemaNode(siblings, currentPath, seenRefs))
 
-    return mergeSchemaObjects(resolvedTarget, resolveSchemaNode(siblings, currentPath, seenRefs))
+    refCache.set(refKey, result)
+    return result
   }
 
   const resolvedEntries = Object.entries(value).map(([key, entry]) => [

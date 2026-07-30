@@ -422,6 +422,16 @@ function scoreSignatureOption(schema: JsonObject, value: JsonValue): number {
     return 0
   }
 
+  // When additionalProperties is false, extra keys in the value that are not
+  // declared in the schema's properties make the value invalid for this option.
+  if (schema.additionalProperties === false) {
+    for (const key of Object.keys(value)) {
+      if (!(key in schema.properties)) {
+        return -1
+      }
+    }
+  }
+
   let score = 0
   for (const [key, entry] of Object.entries(value)) {
     const propertySchema = schema.properties[key]
@@ -433,9 +443,9 @@ function scoreSignatureOption(schema: JsonObject, value: JsonValue): number {
     if (acceptedValues.length > 0) {
       if (acceptedValues.some((acceptedValue) => valuesEqual(acceptedValue, entry))) {
         score += SUMMARY_KEYS.includes(key) ? 100 : 8
-      } else {
-        return -1
       }
+      // Discriminator mismatch: don't penalise — the value may be transitional
+      // during a oneOf option switch (old discriminator + new properties).
     } else if (valueMatchesSchema(propertySchema, entry)) {
       score += 1
     }
@@ -479,7 +489,12 @@ function sanitizeSignatureForSchema(schema: JsonObject | undefined, value: JsonV
     return sanitizeSignatureForSchema(selectedOption, value, path)
   }
   if (getSchemaOptions(schema).length > 0) {
-    return { rejectedLeafPaths: collectSignaturePaths(value, path, false), loadedLeafPaths: [] }
+    // No oneOf/anyOf option matched the current value — this can happen
+    // legitimately while the form is transitioning between options (e.g.
+    // the discriminator field still carries the old value while new
+    // properties from the incoming option have already been added).
+    // Preserve the value as-is rather than discarding it.
+    return { value: cloneValue(value), loadedLeafPaths: [], rejectedLeafPaths: [] }
   }
 
   if (Array.isArray(value)) {
@@ -519,6 +534,12 @@ function sanitizeSignatureForSchema(schema: JsonObject | undefined, value: JsonV
       const sanitizedProperty = sanitizeSignatureForSchema(propertySchema, entry, [...path, key])
       if (sanitizedProperty.value !== undefined) {
         sanitizedValue[key] = sanitizedProperty.value
+      } else {
+        // The value didn't match — try the schema's const/default/enum fallback.
+        const fallback = fixedSchemaValue(propertySchema)
+        if (fallback !== undefined) {
+          sanitizedValue[key] = fallback
+        }
       }
       loadedLeafPaths.push(...sanitizedProperty.loadedLeafPaths)
       rejectedLeafPaths.push(...sanitizedProperty.rejectedLeafPaths)
@@ -531,9 +552,16 @@ function sanitizeSignatureForSchema(schema: JsonObject | undefined, value: JsonV
     }
   }
 
-  return valueMatchesSchema(schema, value)
-    ? { value: cloneValue(value), loadedLeafPaths: [fieldPathKey(path)], rejectedLeafPaths: [] }
-    : { rejectedLeafPaths: [fieldPathKey(path)], loadedLeafPaths: [] }
+  // For simple values, when the value doesn't match the schema, try to fall
+  // back to a const, default, or first enum value instead of rejecting.
+  if (!valueMatchesSchema(schema, value)) {
+    const fallback = fixedSchemaValue(schema)
+    if (fallback !== undefined) {
+      return { value: cloneValue(fallback), loadedLeafPaths: [fieldPathKey(path)], rejectedLeafPaths: [] }
+    }
+    return { rejectedLeafPaths: [fieldPathKey(path)], loadedLeafPaths: [] }
+  }
+  return { value: cloneValue(value), loadedLeafPaths: [fieldPathKey(path)], rejectedLeafPaths: [] }
 }
 
 function useSignatureContext() {
@@ -604,6 +632,13 @@ function buildUiSchema(schema: JsonObject | undefined): UiSchema {
     const itemUiSchema = buildUiSchema(schema.items)
     if (hasEntries(itemUiSchema)) {
       uiSchemaRecord.items = itemUiSchema
+    }
+  }
+
+  if (schemaTypeIncludes(schema, 'array')) {
+    uiSchemaRecord['ui:options'] = {
+      ...(uiSchemaRecord['ui:options'] as Record<string, unknown> || {}),
+      copyable: true,
     }
   }
 
@@ -1533,8 +1568,6 @@ function App() {
               fields={rjsfFields}
               templates={rjsfTemplates}
               experimental_defaultFormStateBehavior={rjsfDefaultFormStateBehavior}
-              omitExtraData
-              liveOmit="onChange"
               noHtml5Validate
               showErrorList="top"
               onChange={(event: IChangeEvent) => {
