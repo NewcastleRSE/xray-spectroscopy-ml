@@ -26,6 +26,8 @@ import torch
 from torch_geometric.nn.inits import glorot_orthogonal
 from torch_geometric.utils import scatter
 
+from xanesnet.serialization.config import Config
+
 from ..registry import ModelRegistry
 from .dimenet import DimeNet
 
@@ -143,6 +145,31 @@ class DimeNetPlusPlus(DimeNet):
                 for _ in range(num_blocks)
             ]
         )
+
+    @property
+    def signature(self) -> Config:
+        """Return the model signature."""
+        signature = Config({"model_type": self.model_type})
+        signature.update_with_dict(
+            {
+                "hidden_channels": self.hidden_channels,
+                "out_channels": self.out_channels,
+                "num_blocks": self.num_blocks,
+                "int_emb_size": self.int_emb_size,
+                "basis_emb_size": self.basis_emb_size,
+                "out_emb_channels": self.out_emb_channels,
+                "num_spherical": self.num_spherical,
+                "num_radial": self.num_radial,
+                "cutoff": self.cutoff,
+                "envelope_exponent": self.envelope_exponent,
+                "num_before_skip": self.num_before_skip,
+                "num_after_skip": self.num_after_skip,
+                "num_output_layers": self.num_output_layers,
+                "act": self.act.__name__ if callable(self.act) else str(self.act),
+                "output_initializer": self.output_initializer,
+            }
+        )
+        return signature
 
 
 class InteractionBlock(torch.nn.Module):
