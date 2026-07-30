@@ -107,6 +107,9 @@ class SpectralBasis(nn.Module):
         reused for all subsequent calls, so repeated batch transfers share
         the same GPU basis.
 
+        # TODO this is not ideal. Maybe we can somehow rework the SpectraBasis stuff?
+        # TODO maybe such that the SpectralBasis lives in the model?
+
         Args:
             device: Target device.
 
