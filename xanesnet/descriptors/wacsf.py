@@ -41,33 +41,33 @@ class WACSF(Descriptor):
 
     Args:
         descriptor_type: Identifier string for this descriptor type.
-        r_min: Minimum radial distance. **A**. Defaults to ``1.0``.
-        r_max: Maximum radial cutoff distance. **A**. Defaults to ``6.0``.
-        n_g2: Number of G2 (radial) symmetry functions. Defaults to ``16``.
-        n_g4: Number of G4 (angular) symmetry functions. Defaults to ``32``.
-        l: Lambda values for G4 encoding. Defaults to ``[1.0, -1.0]``.
-        z: Zeta values for G4 encoding. Defaults to ``[1.0]``.
+        r_min: Minimum radial distance. **A**.
+        r_max: Maximum radial cutoff distance. **A**.
+        n_g2: Number of G2 (radial) symmetry functions.
+        n_g4: Number of G4 (angular) symmetry functions.
+        l: Lambda values for G4 encoding. ``None`` to use the default
+            ``[1.0, -1.0]``.
+        z: Zeta values for G4 encoding. ``None`` to use the default
+            ``[1.0]``.
         g2_parameterisation: G2 grid strategy - ``'shifted'`` or ``'centred'``.
-            Defaults to ``'shifted'``.
         g4_parameterisation: G4 grid strategy - ``'shifted'`` or ``'centred'``.
-            Defaults to ``'centred'``.
-        use_charge: Append charge state scalar to the descriptor. Defaults to ``False``.
-        use_spin: Append spin state scalar to the descriptor. Defaults to ``False``.
+        use_charge: Append charge state scalar to the descriptor.
+        use_spin: Append spin state scalar to the descriptor.
     """
 
     def __init__(
         self,
         descriptor_type: str,
-        r_min: float = 1.0,
-        r_max: float = 6.0,
-        n_g2: int = 16,
-        n_g4: int = 32,
-        l: list[float] | None = None,
-        z: list[float] | None = None,
-        g2_parameterisation: str = "shifted",
-        g4_parameterisation: str = "centred",
-        use_charge: bool = False,
-        use_spin: bool = False,
+        r_min: float,
+        r_max: float,
+        n_g2: int,
+        n_g4: int,
+        l: list[float] | None,
+        z: list[float] | None,
+        g2_parameterisation: str,
+        g4_parameterisation: str,
+        use_charge: bool,
+        use_spin: bool,
     ) -> None:
         """Initialize ``WACSF``."""
         super().__init__(descriptor_type)

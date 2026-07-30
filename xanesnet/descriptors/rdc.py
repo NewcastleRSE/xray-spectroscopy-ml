@@ -39,23 +39,23 @@ class RDC(Descriptor):
 
     Args:
         descriptor_type: Identifier string for this descriptor type.
-        r_min: Minimum radial grid distance. **A**. Defaults to ``0.0``.
-        r_max: Maximum radial cutoff distance. **A**. Defaults to ``8.0``.
-        dr: Grid spacing of the auxiliary real-space grid. **A**. Defaults to ``0.01``.
-        alpha: Gaussian exponent (smoothing parameter). Defaults to ``10.0``.
-        use_charge: Append the charge state scalar to the descriptor. Defaults to ``False``.
-        use_spin: Append the spin state scalar to the descriptor. Defaults to ``False``.
+        r_min: Minimum radial grid distance. **A**.
+        r_max: Maximum radial cutoff distance. **A**.
+        dr: Grid spacing of the auxiliary real-space grid. **A**.
+        alpha: Gaussian exponent (smoothing parameter).
+        use_charge: Append the charge state scalar to the descriptor.
+        use_spin: Append the spin state scalar to the descriptor.
     """
 
     def __init__(
         self,
         descriptor_type: str,
-        r_min: float = 0.0,
-        r_max: float = 8.0,
-        dr: float = 0.01,
-        alpha: float = 10.0,
-        use_charge: bool = False,
-        use_spin: bool = False,
+        r_min: float,
+        r_max: float,
+        dr: float,
+        alpha: float,
+        use_charge: bool,
+        use_spin: bool,
     ) -> None:
         """Initialize the RDC descriptor."""
         super().__init__(descriptor_type)

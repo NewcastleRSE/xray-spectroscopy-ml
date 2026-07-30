@@ -23,15 +23,19 @@
 from .base import Descriptor
 from .direct import DIRECT
 from .mace import MACE
+from .pdos import PDOS
 from .rdc import RDC
 from .registry import DescriptorRegistry
+from .soap import SOAP
 from .wacsf import WACSF
 
 __all__ = [
     "Descriptor",
     "DIRECT",
     "MACE",
+    "PDOS",
     "RDC",
+    "SOAP",
     "WACSF",
     "DescriptorRegistry",
 ]

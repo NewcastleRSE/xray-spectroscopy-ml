@@ -18,7 +18,9 @@
 # Citations:
 #   ...
 
-"""Pass-through descriptor that uses pre-computed features directly."""
+"""Pass-through descriptor that reads pre-computed features from disk."""
+
+from pathlib import Path
 
 import numpy as np
 from ase import Atoms
@@ -29,38 +31,62 @@ from .registry import DescriptorRegistry
 
 @DescriptorRegistry.register("direct")
 class DIRECT(Descriptor):
-    """Descriptor that reads pre-computed features directly without transformation.
+    """Reads pre-computed descriptor vectors from ``.txt`` files on disk.
+
+    Expects one ``.txt`` file per structure in ``source_dir``, named
+    ``{file_stem}.txt`` where ``file_stem`` is the structure's
+    ``info["sample_id"]`` (set by the datasource).  Each file contains
+    whitespace-delimited floats with one row per site.
 
     Args:
         descriptor_type: Identifier string for this descriptor type.
+        source_dir: Path to the directory holding ``.txt`` descriptor
+            files (absolute or relative to cwd).
+        preload: If ``True``, load all files into memory at init time.
     """
-
-    # TODO NOT IMPLEMENTED YET
 
     def __init__(
         self,
         descriptor_type: str,
+        source_dir: str,
+        preload: bool,
     ) -> None:
-        """Initialize ``DIRECT``."""
         super().__init__(descriptor_type)
+        self.source_dir = Path(source_dir)
 
-        raise NotImplementedError("DIRECT descriptor not implemented yet.")
+        self._cache: dict[str, np.ndarray] = {}
+        if preload:
+            for path in sorted(self.source_dir.glob("*.txt")):
+                self._cache[path.stem] = np.loadtxt(path)
 
     def transform(
         self,
         system: Atoms,
         site_index: int | list[int] | None = 0,
     ) -> np.ndarray:
-        """Raise ``NotImplementedError`` because the descriptor is not implemented.
+        """Read pre-computed features for one or more sites.
 
         Args:
-            system: The atomic system.
-            site_index: Site index, list of site indices, or ``None`` for all sites.
+            system: The atomic system.  Must carry ``info["sample_id"]``.
+            site_index: Site index, list of site indices, or ``None`` for
+                all sites.  Defaults to ``0`` (the absorber site).
 
         Returns:
-            Precomputed descriptor array once implemented.
+            Descriptor array ``(S, F)`` with one row per selected site.
 
         Raises:
-            NotImplementedError: Always, because ``DIRECT`` is not implemented yet.
+            KeyError: If ``info["sample_id"]`` is missing.
+            FileNotFoundError: If the ``.txt`` file does not exist.
         """
-        raise NotImplementedError("DIRECT descriptor not implemented yet.")
+        stem = system.info["sample_id"]
+        features = self._cache.get(stem)
+        if features is None:
+            path = self.source_dir / f"{stem}.txt"
+            features = np.loadtxt(path)
+
+        features = np.atleast_2d(features)
+        if isinstance(site_index, int):
+            site_index = [site_index]
+        if site_index is not None:
+            features = features[site_index, :]
+        return features

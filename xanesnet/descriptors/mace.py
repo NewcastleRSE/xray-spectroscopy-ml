@@ -37,17 +37,17 @@ class MACE(Descriptor):
 
     Args:
         descriptor_type: Identifier string for this descriptor type.
-        invariants_only: If ``True``, return only rotationally invariant features.
-            Defaults to ``False``.
-        num_layers: Number of MACE message-passing layers to use (``-1`` for all).
-            Defaults to ``-1``.
+        invariants_only: If ``True``, return only rotationally invariant
+            features.
+        num_layers: Number of MACE message-passing layers to use (``-1`` for
+            all).
     """
 
     def __init__(
         self,
         descriptor_type: str,
-        invariants_only: bool = False,
-        num_layers: int = -1,
+        invariants_only: bool,
+        num_layers: int,
     ) -> None:
         """Initialize ``MACE``."""
         super().__init__(descriptor_type)
