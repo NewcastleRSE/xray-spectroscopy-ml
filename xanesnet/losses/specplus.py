@@ -42,24 +42,24 @@ class SpectralLossPlus(Loss):
     Args:
         loss_type: Identifier string for this loss type.
         blur_sigma_bins: Gaussian blur width in spectral bins for the coarse
-            component. Defaults to ``5.0``.
-        alpha: Weight for the coarse loss ``Lc``. Defaults to ``0.4``.
-        beta: Weight for the detail loss ``Ld``. Defaults to ``0.6``.
-        gamma: Weight for the gradient loss ``Lg``. Defaults to ``0.2``.
-        huber_delta: Transition point for the Huber loss. Defaults to ``0.01``.
-        kappa_peak: Amplitude of the peak-aware weight boost applied to ``Ld``.
-            Defaults to ``0.15``.
+            component.
+        alpha: Weight for the coarse loss ``Lc``.
+        beta: Weight for the detail loss ``Ld``.
+        gamma: Weight for the gradient loss ``Lg``.
+        huber_delta: Transition point for the Huber loss.
+        kappa_peak: Amplitude of the peak-aware weight boost applied to
+            ``Ld``.
     """
 
     def __init__(
         self,
         loss_type: str,
-        blur_sigma_bins: float = 5.0,
-        alpha: float = 0.4,
-        beta: float = 0.6,
-        gamma: float = 0.2,
-        huber_delta: float = 0.01,
-        kappa_peak: float = 0.15,
+        blur_sigma_bins: float,
+        alpha: float,
+        beta: float,
+        gamma: float,
+        huber_delta: float,
+        kappa_peak: float,
     ) -> None:
         """Initialize ``SpectralLossPlus``."""
         super().__init__(loss_type)

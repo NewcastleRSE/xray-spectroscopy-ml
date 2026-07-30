@@ -44,13 +44,13 @@ class WCCLoss(Loss):
     Args:
         loss_type: Identifier string for this loss type.
         gaussian_hwhm: Half-width at half-maximum of the Gaussian weight
-            function in spectral bins. Defaults to ``10``.
+            function in spectral bins.
     """
 
     def __init__(
         self,
         loss_type: str,
-        gaussian_hwhm: int = 10,
+        gaussian_hwhm: int,
     ) -> None:
         """Initialize ``WCCLoss``."""
         super().__init__(loss_type)
