@@ -21,6 +21,7 @@
 """Model profiling helpers for training runs."""
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -64,6 +65,35 @@ def build_model_profile(
     }
 
 
+def _prepare_torchinfo_inputs(
+    model: Model, inputs: dict[str, Any]
+) -> tuple[dict[str, torch.Tensor], Callable[..., Any]]:
+    """Filter non-tensor inputs and wrap ``model.forward`` if needed.
+
+    Args:
+        model: Model to summarize.
+        inputs: Raw input dict from the batch processor.
+
+    Returns:
+        ``(tensor_inputs, original_forward)`` — the filtered kwargs for
+        ``torchinfo`` and the original ``model.forward`` that must be
+        restored after ``torchinfo.summary`` completes.
+    """
+    tensor_inputs: dict[str, torch.Tensor] = {}
+    extra_kwargs: dict[str, Any] = {}
+    for k, v in inputs.items():
+        if isinstance(v, torch.Tensor):
+            tensor_inputs[k] = v
+        else:
+            extra_kwargs[k] = v
+
+    _forward = model.forward
+    if extra_kwargs:
+        model.forward = lambda *a, **kw: _forward(*a, **kw, **extra_kwargs)  # type: ignore[method-assign]
+
+    return tensor_inputs, _forward
+
+
 def create_model_summary(model: Model, dataset: Dataset, verbose: int | None = None) -> Any:
     """Create a ``torchinfo`` summary for a model and dataset sample.
 
@@ -78,10 +108,14 @@ def create_model_summary(model: Model, dataset: Dataset, verbose: int | None = N
     """
     batchprocessor = BatchProcessorRegistry.create((dataset.dataset_type, model.model_type))
     inputs = batchprocessor.input_preparation_single(dataset, 0)
-    if verbose is None:
-        return summary(model, input_data=inputs)
 
-    return summary(model, input_data=inputs, verbose=verbose)
+    tensor_inputs, _forward = _prepare_torchinfo_inputs(model, inputs)
+    try:
+        if verbose is None:
+            return summary(model, input_data=tensor_inputs)
+        return summary(model, input_data=tensor_inputs, verbose=verbose)
+    finally:
+        model.forward = _forward
 
 
 def reset_peak_memory_stats(device: str | torch.device) -> bool:
