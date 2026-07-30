@@ -164,6 +164,14 @@ class Checkpointer:
 
         return len(self._checkpoint)
 
+    def set_signature(self, signature: Config) -> None:
+        """Replace the checkpoint's signature with a new one.
+
+        Args:
+            signature: signature ``Config``.
+        """
+        self._checkpoint.signature = signature
+
 
 def _state_to_cpu(value: Any) -> Any:
     """Recursively copy tensors in a state object to CPU.
