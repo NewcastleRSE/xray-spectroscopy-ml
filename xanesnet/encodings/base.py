@@ -94,9 +94,12 @@ class SpectraEncoding(ABC):
     def signature(self) -> list[Config]:
         """Return the encoding signature as a list.
 
-        Every encoding returns a :class:`list` of :class:`Config` objects —
-        a single-element list for leaf encodings, or a multi-element list for
-        :class:`~xanesnet.encodings.CombinedEncoding`.  The list format mirrors
+        Every encoding returns a :class:`list` of :class:`Config` objects:
+        a single-element list for leaf encodings, a multi-element list for
+        :class:`~xanesnet.encodings.CombinedEncoding`, or a single-element
+        list whose value contains nested sub-encoding configs for
+        :class:`~xanesnet.encodings.ConcatEncoding`.
+        The list format mirrors
         the ``encodings`` configuration section so that the signature can be
         stored directly under the ``"encodings"`` key in a checkpoint.
 

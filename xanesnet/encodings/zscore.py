@@ -83,8 +83,8 @@ class ZScoreEncoding(AffineEncoding):
         mean: list[float] | list[list[float]],
         std: list[float] | list[list[float]],
         per_point: bool,
-        per_element: bool = False,
-        elements: list[int] | None = None,
+        per_element: bool,
+        elements: list[int] | None,
     ) -> None:
         """Initialize ``ZScoreEncoding``."""
         if per_element:

@@ -101,8 +101,8 @@ class AffineEncoding(SpectraEncoding):
         encoding_type: str,
         shift: torch.Tensor,
         scale: torch.Tensor,
-        per_element: bool = False,
-        elements: list[int] | None = None,
+        per_element: bool,
+        elements: list[int] | None,
     ) -> None:
         """Initialize ``AffineEncoding``."""
         super().__init__(encoding_type)

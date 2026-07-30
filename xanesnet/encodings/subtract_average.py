@@ -66,8 +66,8 @@ class SubtractAverageEncoding(AffineEncoding):
         self,
         encoding_type: str,
         average: list[float] | list[list[float]],
-        per_element: bool = False,
-        elements: list[int] | None = None,
+        per_element: bool,
+        elements: list[int] | None,
     ) -> None:
         """Initialize ``SubtractAverageEncoding``."""
         if per_element:

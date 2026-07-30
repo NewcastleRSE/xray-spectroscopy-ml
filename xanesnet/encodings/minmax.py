@@ -83,8 +83,8 @@ class MinMaxEncoding(AffineEncoding):
         minimum: list[float] | list[list[float]],
         maximum: list[float] | list[list[float]],
         per_point: bool,
-        per_element: bool = False,
-        elements: list[int] | None = None,
+        per_element: bool,
+        elements: list[int] | None,
     ) -> None:
         """Initialize ``MinMaxEncoding``."""
         if per_element:

@@ -23,6 +23,7 @@
 from .affine import AffineEncoding
 from .base import SpectraEncoding
 from .combined import CombinedEncoding
+from .concat import ConcatEncoding
 from .fourier import FourierEncoding
 from .gaussian import GaussianEncoding
 from .minmax import MinMaxEncoding
@@ -37,6 +38,7 @@ __all__ = [
     "SpectraEncodingRegistry",
     "AffineEncoding",
     "CombinedEncoding",
+    "ConcatEncoding",
     "FourierEncoding",
     "GaussianEncoding",
     "MinMaxEncoding",

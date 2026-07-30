@@ -80,8 +80,8 @@ class ScaleEncoding(AffineEncoding):
         encoding_type: str,
         factor: list[float] | list[list[float]],
         per_point: bool,
-        per_element: bool = False,
-        elements: list[int] | None = None,
+        per_element: bool,
+        elements: list[int] | None,
     ) -> None:
         """Initialize ``ScaleEncoding``."""
         if per_element:
