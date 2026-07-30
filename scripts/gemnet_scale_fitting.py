@@ -20,8 +20,6 @@
 
 """Fit GemNet scale factors from forward-pass variance statistics."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import logging
@@ -39,7 +37,8 @@ from xanesnet.datasources import DataSourceRegistry
 from xanesnet.models import ModelRegistry
 from xanesnet.models.gemnet.layers.scaling import ScaleFactor as GemNetScaleFactor
 from xanesnet.models.gemnet_oc.layers.scaling import ScaleFactor as GemNetOcScaleFactor
-from xanesnet.serialization.config import Config, load_raw_config, validate_config_train
+from xanesnet.serialization.config import Config, load_raw_config
+from xanesnet.serialization.schema_validation import validate_config_schema
 from xanesnet.serialization.splits import save_split_indices
 from xanesnet.utils.logger import setup_logging
 from xanesnet.utils.random import set_global_seed
@@ -522,7 +521,7 @@ def main(argv: list[str]) -> None:
 
     logging.info("Loading config: %s", args.config)
     config_raw = load_raw_config(args.config)
-    config = validate_config_train(config_raw)
+    config = Config(validate_config_schema(config_raw, "train"))
 
     seed = args.seed if args.seed is not None else config.get_optional_int("seed")
     seed = set_global_seed(seed)

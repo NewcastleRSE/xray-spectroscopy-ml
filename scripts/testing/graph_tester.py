@@ -20,8 +20,6 @@
 
 """Visualize molecular graph construction diagnostics for PMGJSON samples."""
 
-from __future__ import annotations
-
 import argparse
 import itertools
 import sys
@@ -34,17 +32,14 @@ from matplotlib.patches import Patch
 from mpl_toolkits.mplot3d.art3d import Line3DCollection, Poly3DCollection
 from pymatgen.core import Element, Molecule, Structure
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from xanesnet.datasources.pmgjson import PMGJSONSource
-from xanesnet.utils.graph import (
-    GRAPH_METHODS,
-    build_absorber_paths,
-    build_edges,
-    compute_triplets_and_angles,
-)
+from xanesnet.graphs import GraphBuilderRegistry
+from xanesnet.graphs.utils.absorber_paths import build_absorber_paths
+from xanesnet.graphs.utils.triplets import compute_triplets_and_angles
 
 PMGObject: TypeAlias = Structure | Molecule
 RGBColor: TypeAlias = tuple[float, float, float]
@@ -68,9 +63,9 @@ def load_sample(json_dir: Path, index: int | None, file_stem: str | None) -> Str
 
     ds = PMGJSONSource(datasource_type="pmgjson", json_path=str(json_dir))
     if file_stem is not None:
-        if file_stem not in ds.file_names:
+        if file_stem not in ds.sample_ids:
             raise SystemExit(f"file stem {file_stem!r} not found in {json_dir}")
-        target_idx = ds.file_names.index(file_stem)
+        target_idx = ds.sample_ids.index(file_stem)
     else:
         target_idx = 0 if index is None else int(index)
         if not (0 <= target_idx < len(ds)):
@@ -500,8 +495,8 @@ def main() -> None:
         "--graph-method",
         type=str,
         default="radius",
-        choices=list(GRAPH_METHODS),
-        help="Edge construction method (matches xanesnet.utils.graph.build_edges)",
+        choices=list(GraphBuilderRegistry.list()),
+        help="Edge construction method (matches xanesnet.graphs.GraphBuilderRegistry)",
     )
     p.add_argument(
         "--min-facet-area",
@@ -531,7 +526,7 @@ def main() -> None:
     args = p.parse_args()
 
     pmg_obj = load_sample(args.json_dir, args.index, args.file)
-    stem = pmg_obj.properties.get("file_name", "<unknown>")
+    stem = pmg_obj.properties.get("sample_id", "<unknown>")
     is_periodic = isinstance(pmg_obj, Structure)
     coords = np.array(pmg_obj.cart_coords, dtype=np.float64)
     atomic_numbers = np.array(pmg_obj.atomic_numbers, dtype=np.int64)
@@ -544,15 +539,17 @@ def main() -> None:
     if min_facet_area is not None and not min_facet_area.endswith("%"):
         min_facet_area = float(min_facet_area)
 
-    edge_index, edge_weight, edge_vec, edge_attr = build_edges(
-        pmg_obj,
-        cutoff=args.cutoff,
-        max_num_neighbors=args.max_neighbors,
-        compute_vectors=True,
-        method=args.graph_method,
-        min_facet_area=min_facet_area,
-        cov_radii_scale=args.cov_radii_scale,
-    )
+    builder_kwargs: dict[str, object] = {
+        "graph_builder_type": args.graph_method,
+        "cutoff": args.cutoff,
+        "max_num_neighbors": args.max_neighbors,
+    }
+    if args.graph_method == "cov_radius":
+        builder_kwargs["cov_radii_scale"] = args.cov_radii_scale
+    if args.graph_method == "voronoi":
+        builder_kwargs["min_facet_area"] = min_facet_area
+    builder = GraphBuilderRegistry.create(args.graph_method, **builder_kwargs)
+    edge_index, edge_weight, edge_vec, edge_attr = builder.build(pmg_obj, compute_vectors=True)
     assert edge_vec is not None
     edge_src = edge_index[0].numpy()
     edge_dst = edge_index[1].numpy()

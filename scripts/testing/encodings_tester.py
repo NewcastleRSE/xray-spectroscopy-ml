@@ -48,8 +48,6 @@ Usage::
         [--max-samples 8] [--save my_plot.pdf] [--no-show]
 """
 
-from __future__ import annotations
-
 import argparse
 import sys
 from pathlib import Path
@@ -62,7 +60,7 @@ from matplotlib.axes import Axes
 from matplotlib.colors import to_rgba
 from matplotlib.figure import Figure
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
@@ -76,7 +74,8 @@ from xanesnet.encodings import (
     SubtractAverageEncoding,
 )
 from xanesnet.serialization.auto_config import resolve_auto_encoding_config
-from xanesnet.serialization.config import Config, load_raw_config, validate_config_train
+from xanesnet.serialization.config import Config, load_raw_config
+from xanesnet.serialization.schema_validation import validate_config_schema
 from xanesnet.utils.exceptions import ConfigError
 
 ###############################################################################
@@ -1006,7 +1005,7 @@ def main() -> None:
     raw = load_raw_config(config_path)
     if args.data_dir is not None:
         raw["datasource"]["json_path"] = args.data_dir
-    config = validate_config_train(raw)
+    config = Config(validate_config_schema(raw, "train"))
 
     # 2. Build datasource + dataset.
     print(f"Loading dataset from config: {config_path}")

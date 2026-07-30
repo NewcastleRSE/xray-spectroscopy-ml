@@ -1,18 +1,32 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# XANESNET
+#
+# Authors:  Hendrik Junkawitsch, Tom J. Penfold, Tom W. Pope, C. D. Rankine, B. Li
+#
+# This program is free software: you can redistribute it and/or modify it under the terms of the
+# GNU General Public License as published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with this program.
+# If not, see <https://www.gnu.org/licenses/>.
+#
+# Citations:
+#   ...
+
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 cd "$REPO_ROOT"
 
-# -----------------------------------------------------------------------------
-# e3ee_tester dispatcher
-# Edit values below, then run:
-#   bash scripts/dispatchers/e3ee_tester.sh
-# -----------------------------------------------------------------------------
-
 # Required
-JSON_DIR="/media/hendrik/ExternalSSD/final_data/omnixas_test/"
+JSON_DIR="./data/toy_data/"
 
 # Exactly one of these should be used. If FILE_STEM is non-empty, it wins.
 SAMPLE_INDEX=0
@@ -22,7 +36,7 @@ FILE_STEM=""
 CUTOFF=5.0
 MAX_NEIGHBORS=32
 GRAPH_METHOD="voronoi"        # radius | voronoi | cov_radius
-MIN_FACET_AREA="5.0%"          # e.g. "0.25" or "1.0%"
+MIN_FACET_AREA="0.01%"          # e.g. "0.25" or "1.0%"
 COV_RADII_SCALE=1.5
 SHOW_VORONOI=false
 
@@ -40,7 +54,7 @@ SAVE_PATH=""
 NO_SHOW=false
 
 args=(
-	"scripts/e3ee_tester.py"
+	"scripts/testing/e3ee_tester.py"
 	"--json-dir" "$JSON_DIR"
 	"--cutoff" "$CUTOFF"
 	"--max-neighbors" "$MAX_NEIGHBORS"

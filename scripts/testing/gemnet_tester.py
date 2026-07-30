@@ -20,8 +20,6 @@
 
 """Visualize GemNet and GemNet-OC graph-index diagnostics for PMGJSON samples."""
 
-from __future__ import annotations
-
 import argparse
 import sys
 from pathlib import Path
@@ -34,12 +32,9 @@ from matplotlib.patches import Patch
 from mpl_toolkits.mplot3d.art3d import Line3DCollection, Poly3DCollection
 from pymatgen.core import Element, Molecule, Structure
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-SCRIPTS_DIR = Path(__file__).resolve().parent
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
-if str(SCRIPTS_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS_DIR))
 
 from graph_tester import (
     _cell_corner_coords,
@@ -50,8 +45,8 @@ from graph_tester import (
     setup_axis,
 )
 
-from xanesnet.utils.graph import GRAPH_METHODS, build_edges
-from xanesnet.utils.graph.gemnet_indices import (
+from xanesnet.graphs import GraphBuilderRegistry
+from xanesnet.graphs.utils.directional_indices import (
     compute_id_swap,
     compute_mixed_triplets,
     compute_quadruplets,
@@ -82,7 +77,7 @@ def build_main_edges(
         pmg_obj: Pymatgen object containing atom coordinates.
         cutoff: Maximum edge distance in **angstrom**.
         max_nbrs: Maximum number of outgoing neighbours per atom.
-        method: Graph construction method accepted by ``build_edges``.
+        method: Graph construction method accepted by ``GraphBuilderRegistry``.
         min_facet_area: Voronoi facet area threshold in **angstrom squared** or percent.
         cov_radii_scale: Scale factor for covalent-radius graph construction.
 
@@ -91,14 +86,17 @@ def build_main_edges(
         in **angstrom**, and optional edge attributes.
     """
 
-    edge_index, edge_weight, edge_vec, edge_attr = build_edges(
-        pmg_obj,
-        cutoff=cutoff,
-        max_num_neighbors=max_nbrs,
-        compute_vectors=True,
-        method=method,
-        min_facet_area=min_facet_area,
-        cov_radii_scale=cov_radii_scale,
+    kwargs: dict[str, object] = {
+        "graph_builder_type": method,
+        "cutoff": cutoff,
+        "max_num_neighbors": max_nbrs,
+    }
+    if method == "cov_radius":
+        kwargs["cov_radii_scale"] = cov_radii_scale
+    if method == "voronoi":
+        kwargs["min_facet_area"] = min_facet_area
+    edge_index, edge_weight, edge_vec, edge_attr = GraphBuilderRegistry.create(method, **kwargs).build(
+        pmg_obj, compute_vectors=True
     )
     assert edge_vec is not None
     return edge_index, edge_weight, edge_vec, edge_attr
@@ -415,7 +413,7 @@ def main() -> None:
     # Main graph params
     p.add_argument("--cutoff", type=float, default=6.0)
     p.add_argument("--max-neighbors", type=int, default=32)
-    p.add_argument("--graph-method", type=str, default="radius", choices=list(GRAPH_METHODS))
+    p.add_argument("--graph-method", type=str, default="radius", choices=list(GraphBuilderRegistry.list()))
     p.add_argument("--min-facet-area", type=str, default=None)
     p.add_argument("--cov-radii-scale", type=float, default=1.5)
     p.add_argument("--show-voronoi", action="store_true", help="Overlay Voronoi facets on the main edges panel")
@@ -433,7 +431,7 @@ def main() -> None:
         "--int-graph-method",
         type=str,
         default=None,
-        choices=list(GRAPH_METHODS),
+        choices=list(GraphBuilderRegistry.list()),
         help="Method for the interaction graph; defaults to --graph-method",
     )
     p.add_argument(
@@ -459,7 +457,7 @@ def main() -> None:
         "--oc-graph-method-aeaint",
         type=str,
         default=None,
-        choices=list(GRAPH_METHODS),
+        choices=list(GraphBuilderRegistry.list()),
         help="Method for the a2ee2a graph; defaults to --graph-method",
     )
     p.add_argument("--oc-min-facet-area-aeaint", type=str, default=None)
@@ -468,7 +466,7 @@ def main() -> None:
         "--oc-graph-method-aint",
         type=str,
         default=None,
-        choices=list(GRAPH_METHODS),
+        choices=list(GraphBuilderRegistry.list()),
         help="Method for the a2a graph; defaults to --graph-method",
     )
     p.add_argument("--oc-min-facet-area-aint", type=str, default=None)
@@ -485,7 +483,7 @@ def main() -> None:
     args = p.parse_args()
 
     pmg_obj = load_sample(args.json_dir, args.index, args.file)
-    stem = pmg_obj.properties.get("file_name", "<unknown>")
+    stem = pmg_obj.properties.get("sample_id", "<unknown>")
     is_periodic = isinstance(pmg_obj, Structure)
     coords = np.array(pmg_obj.cart_coords, dtype=np.float64)
     atomic_numbers = np.array(pmg_obj.atomic_numbers, dtype=np.int64)

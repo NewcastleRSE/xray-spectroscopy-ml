@@ -20,8 +20,6 @@
 
 """Visualize E3EE encoder and attention graph diagnostics for PMGJSON samples."""
 
-from __future__ import annotations
-
 import argparse
 import sys
 from pathlib import Path
@@ -34,12 +32,9 @@ from matplotlib.patches import Patch
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
 from pymatgen.core import Element
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-SCRIPTS_DIR = Path(__file__).resolve().parent
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
-if str(SCRIPTS_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS_DIR))
 
 from graph_tester import (
     compute_voronoi_facets,
@@ -49,7 +44,7 @@ from graph_tester import (
     setup_axis,
 )
 
-from xanesnet.utils.graph import GRAPH_METHODS, build_edges
+from xanesnet.graphs import GraphBuilderRegistry
 
 VoronoiFacet: TypeAlias = tuple[np.ndarray, float, float]
 
@@ -190,7 +185,7 @@ def main() -> None:
     # Main graph params (encoder graph).
     p.add_argument("--cutoff", type=float, default=6.0)
     p.add_argument("--max-neighbors", type=int, default=32)
-    p.add_argument("--graph-method", type=str, default="radius", choices=list(GRAPH_METHODS))
+    p.add_argument("--graph-method", type=str, default="radius", choices=list(GraphBuilderRegistry.list()))
     p.add_argument("--min-facet-area", type=str, default=None)
     p.add_argument("--cov-radii-scale", type=float, default=1.5)
     p.add_argument("--show-voronoi", action="store_true", help="Overlay Voronoi facets on the main edges panel")
@@ -198,7 +193,7 @@ def main() -> None:
     # Attention graph params.
     p.add_argument("--att-cutoff", type=float, default=10.0)
     p.add_argument("--att-max-neighbors", type=int, default=64)
-    p.add_argument("--att-graph-method", type=str, default="radius", choices=list(GRAPH_METHODS))
+    p.add_argument("--att-graph-method", type=str, default="radius", choices=list(GraphBuilderRegistry.list()))
     p.add_argument("--att-min-facet-area", type=str, default=None)
     p.add_argument("--att-cov-radii-scale", type=float, default=1.5)
 
@@ -210,7 +205,7 @@ def main() -> None:
     args = p.parse_args()
 
     pmg_obj = load_sample(args.json_dir, args.index, args.file)
-    stem = pmg_obj.properties.get("file_name", "<unknown>")
+    stem = pmg_obj.properties.get("sample_id", "<unknown>")
     is_periodic = hasattr(pmg_obj, "lattice")
     coords = np.array(pmg_obj.cart_coords, dtype=np.float64)
     atomic_numbers = np.array(pmg_obj.atomic_numbers, dtype=np.int64)
@@ -221,14 +216,17 @@ def main() -> None:
     main_mfa = _coerce_min_facet_area(args.min_facet_area)
     att_mfa = _coerce_min_facet_area(args.att_min_facet_area)
 
-    edge_index, edge_weight, edge_vec, edge_attr = build_edges(
-        pmg_obj,
-        cutoff=args.cutoff,
-        max_num_neighbors=args.max_neighbors,
-        compute_vectors=True,
-        method=args.graph_method,
-        min_facet_area=main_mfa,
-        cov_radii_scale=args.cov_radii_scale,
+    main_kwargs: dict[str, object] = {
+        "graph_builder_type": args.graph_method,
+        "cutoff": args.cutoff,
+        "max_num_neighbors": args.max_neighbors,
+    }
+    if args.graph_method == "cov_radius":
+        main_kwargs["cov_radii_scale"] = args.cov_radii_scale
+    if args.graph_method == "voronoi":
+        main_kwargs["min_facet_area"] = main_mfa
+    edge_index, edge_weight, edge_vec, edge_attr = GraphBuilderRegistry.create(args.graph_method, **main_kwargs).build(
+        pmg_obj, compute_vectors=True
     )
     assert edge_vec is not None
     edge_src = edge_index[0].numpy()
@@ -236,15 +234,18 @@ def main() -> None:
     edge_vec_np = edge_vec.numpy()
     edge_w_np = edge_weight.numpy()
 
-    att_edge_index, att_edge_weight, att_edge_vec, _ = build_edges(
-        pmg_obj,
-        cutoff=args.att_cutoff,
-        max_num_neighbors=args.att_max_neighbors,
-        compute_vectors=True,
-        method=args.att_graph_method,
-        min_facet_area=att_mfa,
-        cov_radii_scale=args.att_cov_radii_scale,
-    )
+    att_kwargs: dict[str, object] = {
+        "graph_builder_type": args.att_graph_method,
+        "cutoff": args.att_cutoff,
+        "max_num_neighbors": args.att_max_neighbors,
+    }
+    if args.att_graph_method == "cov_radius":
+        att_kwargs["cov_radii_scale"] = args.att_cov_radii_scale
+    if args.att_graph_method == "voronoi":
+        att_kwargs["min_facet_area"] = att_mfa
+    att_edge_index, att_edge_weight, att_edge_vec, _ = GraphBuilderRegistry.create(
+        args.att_graph_method, **att_kwargs
+    ).build(pmg_obj, compute_vectors=True)
     assert att_edge_vec is not None
     att_src_np = att_edge_index[0].numpy()
     att_dst_np = att_edge_index[1].numpy()

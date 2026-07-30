@@ -20,7 +20,6 @@
 
 """Inspect saved prediction files with the available XANESNET prediction readers."""
 
-from __future__ import annotations
 
 import argparse
 import time
