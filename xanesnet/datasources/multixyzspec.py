@@ -40,7 +40,7 @@ class MultiXYZSpecSource(DataSource):
 
     Expects a root directory containing subdirectories, each with an ``xyz/``
     and a ``spectra/`` subdirectory. Within each subdirectory, ``.xyz`` and
-    ``.txt`` file stems must match one-to-one.
+    ``.txt`` sample identifiers must match one-to-one.
 
     Args:
         datasource_type: Identifier string for this datasource type.
@@ -57,9 +57,9 @@ class MultiXYZSpecSource(DataSource):
 
         self.root_path = root_path
 
-        self.file_names: dict[str, list[str]] = self._get_file_dictionary()
+        self.sample_ids: dict[str, list[str]] = self._get_file_dictionary()
         self._flat_index: list[tuple[str, str]] = [
-            (subdir, file) for subdir, files in self.file_names.items() for file in files
+            (subdir, file) for subdir, files in self.sample_ids.items() for file in files
         ]
 
     def __iter__(self) -> Iterator[Molecule]:
@@ -86,7 +86,7 @@ class MultiXYZSpecSource(DataSource):
             idx: Zero-based flat index across all subdirectories.
 
         Returns:
-            A ``Molecule`` with ``XANES`` site property and ``file_name``
+            A ``Molecule`` with ``XANES`` site property and ``sample_id``
             stored in ``properties``.
         """
         subdir, file = self._flat_index[idx]
@@ -101,17 +101,17 @@ class MultiXYZSpecSource(DataSource):
             "intensities": intensities,
         }
         molecule.add_site_property("XANES", spectra_list)
-        molecule.properties["file_name"] = file
+        molecule.properties["sample_id"] = file
         return molecule
 
     def _get_file_dictionary(self) -> dict[str, list[str]]:
-        """Build a mapping from subdirectory names to their matched file stems.
+        """Build a mapping from subdirectory names to their matched sample identifiers.
 
         Only stems that have both a ``.xyz`` file in ``xyz/`` and a ``.txt``
         file in ``spectra/`` are included. Unrelated files are ignored.
 
         Returns:
-            Mapping from subdirectory name to sorted list of matched file stems.
+            Mapping from subdirectory name to sorted list of matched sample identifiers.
 
         Raises:
             ResourceError: If the root path does not exist, no subdirectories
@@ -137,13 +137,13 @@ class MultiXYZSpecSource(DataSource):
 
             xyz_files = set(list_filestems(xyz_dir, suffixes=".xyz"))
             spectra_files = set(list_filestems(spectra_dir, suffixes=".txt"))
-            file_names = sorted(list(xyz_files & spectra_files))
+            sample_ids = sorted(list(xyz_files & spectra_files))
 
-            if not file_names:
+            if not sample_ids:
                 logging.warning(f"No matching .xyz and .txt files found in subdirectory: {subdir}")
                 continue
 
-            files_dict[subdir] = file_names
+            files_dict[subdir] = sample_ids
 
         if not files_dict:
             raise ResourceError(f"No valid file pairs found in any subdirectories of root path: {self.root_path}")

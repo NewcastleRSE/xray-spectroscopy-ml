@@ -53,7 +53,7 @@ class EnvEmbedData:
         energies: Energy grid tensor with shape ``(n_energies,)`` or ``(batch, n_energies)``.
         c_star: Gaussian basis coefficient tensor.
         lengths: Original per-sample site counts for padded batches.
-        file_name: Source file name metadata for one sample or a batch.
+        sample_id: Sample identifier metadata for one sample or a batch.
         element: Absorber atomic number as a scalar tensor for one sample, or
             ``(batch,)`` for a batch. Consumed by element-aware spectra
             encodings.
@@ -66,7 +66,7 @@ class EnvEmbedData:
     energies: torch.Tensor | None = None
     c_star: torch.Tensor | None = None
     lengths: torch.Tensor | None = None
-    file_name: str | list[Any] | None = None
+    sample_id: str | list[Any] | None = None
     element: torch.Tensor | None = None
     basis: SpectralBasis | None = None  # not saved in state dict
 
@@ -107,7 +107,7 @@ class EnvEmbedData:
             "energies": self.energies,
             "c_star": self.c_star,
             "lengths": self.lengths,
-            "file_name": self.file_name,
+            "sample_id": self.sample_id,
             "element": self.element,
         }
 
@@ -128,7 +128,7 @@ class EnvEmbedData:
             energies=state.get("energies"),
             c_star=state.get("c_star"),
             lengths=state.get("lengths"),
-            file_name=state.get("file_name"),
+            sample_id=state.get("sample_id"),
             element=state.get("element"),
             basis=None,
         )
@@ -234,7 +234,7 @@ class EnvEmbedDataset(TorchDataset):
             if key in pmg_obj.site_properties.keys():
                 break
         else:
-            logging.warning(f"No XANES spectrum found for sample {idx} ({pmg_obj.properties['file_name']}); skipping.")
+            logging.warning(f"No XANES spectrum found for sample {idx} ({pmg_obj.properties['sample_id']}); skipping.")
             return 0
 
         xanes = np.array(pmg_obj.site_properties[key], dtype=object)
@@ -275,7 +275,7 @@ class EnvEmbedDataset(TorchDataset):
                 intensities=intensities,
                 energies=energies,
                 c_star=c_star,
-                file_name=pmg_obj.properties["file_name"],
+                sample_id=pmg_obj.properties["sample_id"],
                 element=element,
                 basis=self.basis,
             )
@@ -391,7 +391,7 @@ class EnvEmbedDataset(TorchDataset):
         energies_list = cast(list[torch.Tensor], [sample.energies for sample in batch])
         c_list = cast(list[torch.Tensor], [sample.c_star for sample in batch])
         lengths = torch.tensor([d.size(0) for d in desc_list], dtype=torch.long)
-        file_name_list = [sample.file_name for sample in batch]
+        sample_id_list = [sample.sample_id for sample in batch]
 
         element_samples = [sample.element for sample in batch]
         element = (
@@ -413,7 +413,7 @@ class EnvEmbedDataset(TorchDataset):
             energies=energies,
             c_star=c_star,
             lengths=lengths,
-            file_name=file_name_list,
+            sample_id=sample_id_list,
             element=element,
             basis=batch[0].basis,
         )

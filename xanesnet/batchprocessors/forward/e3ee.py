@@ -94,7 +94,7 @@ class E3EEBatchProcessor(ForwardBatchProcessor):
         """
         return batch.x[torch.arange(batch.x.size(0), device=batch.x.device), batch.absorber_index]
 
-    def file_name_extraction(self, batch: E3EEBatch) -> np.ndarray:
+    def sample_id_extraction(self, batch: E3EEBatch) -> np.ndarray:
         """Extract file names from an E3EE batch.
 
         Args:
@@ -103,4 +103,4 @@ class E3EEBatchProcessor(ForwardBatchProcessor):
         Returns:
             Array of file name strings. ``(batch_size,)``
         """
-        return np.array(batch.file_name, dtype=str)
+        return np.array(batch.sample_id, dtype=str)

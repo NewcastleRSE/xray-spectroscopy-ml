@@ -56,7 +56,7 @@ class PMGJSONSource(DataSource):
 
         self.json_path = json_path
 
-        self.file_names: list[str] = self._get_file_list()
+        self.sample_ids: list[str] = self._get_file_list()
 
     def __iter__(self) -> Iterator[Molecule | Structure]:
         """Iterate over all entries in the datasource.
@@ -64,7 +64,7 @@ class PMGJSONSource(DataSource):
         Returns:
             Iterator over loaded pymatgen entries.
         """
-        for i in range(len(self.file_names)):
+        for i in range(len(self.sample_ids)):
             yield self[i]
 
     def __len__(self) -> int:
@@ -73,7 +73,7 @@ class PMGJSONSource(DataSource):
         Returns:
             Number of JSON files available for loading.
         """
-        return len(self.file_names)
+        return len(self.sample_ids)
 
     def __getitem__(self, idx: int) -> Molecule | Structure:
         """Return the structure or molecule at the given index.
@@ -83,22 +83,22 @@ class PMGJSONSource(DataSource):
 
         Returns:
             The deserialised pymatgen ``Molecule`` or ``Structure`` at
-            position ``idx``, with ``file_name`` stored in ``properties``.
+            position ``idx``, with ``sample_id`` stored in ``properties``.
         """
-        file = self.file_names[idx]
+        file = self.sample_ids[idx]
         json_file = Path(self.json_path) / f"{file}.json"
         structure = self.load_json(json_file)
-        structure.properties["file_name"] = file
+        structure.properties["sample_id"] = file
         return structure
 
     def _get_file_list(self) -> list[str]:
-        """Build the sorted list of JSON file stems in ``json_path``.
+        """Build the sorted list of JSON sample identifiers in ``json_path``.
 
         Only files ending in ``.json`` are considered. Unrelated files are
         ignored.
 
         Returns:
-            Sorted list of file stems found in ``json_path``.
+            Sorted list of sample identifiers found in ``json_path``.
 
         Raises:
             ResourceError: If ``json_path`` is not a directory or no JSON
@@ -109,12 +109,12 @@ class PMGJSONSource(DataSource):
         if not json_path.is_dir():
             raise ResourceError(f"JSON directory does not exist: {json_path}")
 
-        file_names = sorted(list_filestems(json_path, suffixes=".json"))
+        sample_ids = sorted(list_filestems(json_path, suffixes=".json"))
 
-        if not file_names:
+        if not sample_ids:
             raise ResourceError(f"No JSON files found in directory: {json_path}")
 
-        return file_names
+        return sample_ids
 
     @staticmethod
     def load_json(json_file: Path) -> Molecule | Structure:

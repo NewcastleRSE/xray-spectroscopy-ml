@@ -295,7 +295,7 @@ def _run_collectors(
     """Execute all collectors for each selector and persist results to disk.
 
     Results are written as JSONL files under ``<save_dir>/aux/``. Each sample
-    record contains a ``"file_name"`` key plus one entry per collector output key.
+    record contains a ``"sample_id"`` key plus one entry per collector output key.
 
     Args:
         collectors: Collector instances to run on each sample.
@@ -329,15 +329,15 @@ def _run_collectors(
             with open(aux_path, "w") as f:
                 # Iterating over all samples in selector
                 for sample in selector:
-                    file_name = sample["file_name"]
+                    sample_id = sample["sample_id"]
 
                     # Iterating over all collectors
-                    sample_result: dict[str, Any] = {"file_name": file_name}
+                    sample_result: dict[str, Any] = {"sample_id": sample_id}
                     for collector in collectors:
                         collector_result = collector.process(sample)  # run collector on the sample
                         for key, value in collector_result.items():
                             if key in sample_result:
-                                logging.warning(f"Duplicate key '{key}' for sample {file_name}. Overwriting!")
+                                logging.warning(f"Duplicate key '{key}' for sample {sample_id}. Overwriting!")
                             sample_result[key] = json_friendly(value)
                     f.write(json.dumps(sample_result) + "\n")
                     count += 1

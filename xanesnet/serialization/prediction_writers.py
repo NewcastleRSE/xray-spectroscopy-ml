@@ -53,7 +53,7 @@ class PredictionBatch(TypedDict):
 
     # Optional:
     prediction_std: NotRequired[np.ndarray | torch.Tensor]
-    file_name: NotRequired[np.ndarray]
+    sample_id: NotRequired[np.ndarray]
     forward_time: NotRequired[np.ndarray | torch.Tensor]
     forward_time_pass: NotRequired[np.ndarray | torch.Tensor]
 

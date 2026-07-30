@@ -162,7 +162,7 @@ class SpectraPlotter(Plotter):
 
         Args:
             sample: Prediction sample containing ``prediction`` and ``target`` spectra, and
-                ``file_name`` for the title. It may also contain ``prediction_std`` uncertainty.
+                ``sample_id`` for the title. It may also contain ``prediction_std`` uncertainty.
                 Spectra values are flattened to one-dimensional arrays with shape ``(N,)``.
             col_scalars: Collector scalar values aligned with ``sample``.
             subtitle: Subtitle text describing prediction and selector context.
@@ -176,7 +176,7 @@ class SpectraPlotter(Plotter):
         pred_std = np.asarray(pred_std_value).ravel() if pred_std_value is not None else None
         residual = pred - target
         x = np.arange(len(pred))
-        file_name = sample["file_name"]
+        sample_id = sample["sample_id"]
 
         fig, (ax_spec, ax_res) = plt.subplots(
             nrows=2,
@@ -206,15 +206,15 @@ class SpectraPlotter(Plotter):
                 )
         ax_spec.plot(x, pred, label="Prediction", linewidth=2.0, color="#005186", linestyle="--")
         ax_spec.set_ylabel("Intensity")
-        ax_spec.set_title(f"Sample: {file_name}")
+        ax_spec.set_title(f"Sample: {sample_id}")
         ax_spec.legend(fontsize=10, loc="upper right")
 
         scalars: dict[str, ScalarValue] = {}
         for key, value in sample.items():
-            if key not in ("prediction", "target", "file_name") and is_scalar_value(value):
+            if key not in ("prediction", "target", "sample_id") and is_scalar_value(value):
                 scalars[key] = cast(ScalarValue, value)
         for key, value in col_scalars.items():
-            if key != "file_name" and is_scalar_value(value):
+            if key != "sample_id" and is_scalar_value(value):
                 scalars[key] = cast(ScalarValue, value)
 
         if scalars:

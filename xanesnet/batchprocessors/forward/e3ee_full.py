@@ -106,7 +106,7 @@ class E3EEFullBatchProcessor(ForwardBatchProcessor):
         """
         return batch.x[batch.absorber_mask]
 
-    def file_name_extraction(self, batch: E3EEFullBatch) -> np.ndarray:
+    def sample_id_extraction(self, batch: E3EEFullBatch) -> np.ndarray:
         """Extract file names from an E3EEFull batch.
 
         Args:
@@ -115,4 +115,4 @@ class E3EEFullBatchProcessor(ForwardBatchProcessor):
         Returns:
             Array of file name strings. ``(n_abs,)``
         """
-        return np.array(batch.file_name, dtype=str)
+        return np.array(batch.sample_id, dtype=str)

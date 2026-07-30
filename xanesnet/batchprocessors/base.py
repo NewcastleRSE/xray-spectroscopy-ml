@@ -37,7 +37,7 @@ class BatchProcessor(ABC):
     Converts a dataset batch into model inputs and targets for a specific
     model architecture. Subclasses must implement the data-shaping methods
     :meth:`input_preparation`, :meth:`target_preparation`, and
-    :meth:`file_name_extraction`, plus the three encoding hooks
+    :meth:`sample_id_extraction`, plus the three encoding hooks
     :meth:`encode_input`, :meth:`encode_target`, and :meth:`decode_target`.
 
     **Spectra encoding.** The stored
@@ -244,7 +244,7 @@ class BatchProcessor(ABC):
         ...
 
     @abstractmethod
-    def file_name_extraction(self, batch: Any) -> np.ndarray:
+    def sample_id_extraction(self, batch: Any) -> np.ndarray:
         """Extract file name identifiers from a batch.
 
         Args:

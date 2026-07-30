@@ -128,7 +128,7 @@ class GemNetOCBatchProcessor(ForwardBatchProcessor):
         """
         return batch.x[batch.absorber_mask]
 
-    def file_name_extraction(self, batch: GemNetBatch) -> np.ndarray:
+    def sample_id_extraction(self, batch: GemNetBatch) -> np.ndarray:
         """Extract file names from a GemNet-OC batch.
 
         Args:
@@ -137,4 +137,4 @@ class GemNetOCBatchProcessor(ForwardBatchProcessor):
         Returns:
             Array of file name strings. ``(n_abs,)``
         """
-        return np.array(batch.file_name, dtype=str)
+        return np.array(batch.sample_id, dtype=str)

@@ -23,14 +23,14 @@
 Every ``DataSource`` returns a :class:`pymatgen.core.Molecule` or
 :class:`pymatgen.core.Structure` with the following normalised shape:
 
-* ``properties["file_name"]`` — the identifying file stem, always present.
+* ``properties["sample_id"]`` -- the unique sample identifier, always present.
 * When the datasource carries spectral data, the spectrum is attached via
-  ``add_site_property("XANES", …)`` as a **per-site** list where the
+  ``add_site_property("XANES", ...)`` as a **per-site** list where the
   absorbing sites hold ``{"energies": ndarray, "intensities": ndarray}`` and
   every non-absorbing site holds ``None``.
 """
 
-# TODO 'XANES' mentioned explicitely above. Can we make this agnostic to
+# TODO 'XANES' mentioned explicitly above. Can we make this agnostic to
 # TODO spectroscopic technique?
 
 from abc import ABC, abstractmethod

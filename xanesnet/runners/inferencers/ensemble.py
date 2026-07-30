@@ -188,7 +188,7 @@ class EnsembleInferencer(Inferencer):
                         "prediction": predictions_mean,
                         "prediction_std": predictions_std,
                         "target": targets,
-                        "file_name": self.batch_processor.file_name_extraction(batch),
+                        "sample_id": self.batch_processor.sample_id_extraction(batch),
                         "forward_time": forward_time,
                         "forward_time_pass": forward_time_pass,
                     }

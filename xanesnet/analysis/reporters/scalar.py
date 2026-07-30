@@ -82,7 +82,7 @@ class ScalarReporter(Reporter):
     ) -> None:
         """Write one CSV per scalar field found in selected samples and collector values.
 
-        Each CSV uses ``file_name`` as the first column and one scalar field as the second column.
+        Each CSV uses ``sample_id`` as the first column and one scalar field as the second column.
 
         Args:
             selector: Selector over prediction samples for one prediction reader and selector pair.
@@ -93,19 +93,19 @@ class ScalarReporter(Reporter):
 
         if stream is not None:
             for sel_sample, col_sample in zip(selector, stream):
-                file_name = str(col_sample["file_name"])
+                sample_id = str(col_sample["sample_id"])
                 for key, value in sel_sample.items():
-                    if key != "file_name" and is_scalar_value(value):
-                        rows_by_key.setdefault(key, []).append((file_name, cast(float, value)))
+                    if key != "sample_id" and is_scalar_value(value):
+                        rows_by_key.setdefault(key, []).append((sample_id, cast(float, value)))
                 for key, value in col_sample.items():
-                    if key != "file_name" and is_scalar_value(value):
-                        rows_by_key.setdefault(key, []).append((file_name, cast(float, value)))
+                    if key != "sample_id" and is_scalar_value(value):
+                        rows_by_key.setdefault(key, []).append((sample_id, cast(float, value)))
         else:
             for sel_sample in selector:
-                file_name = str(sel_sample["file_name"])
+                sample_id = str(sel_sample["sample_id"])
                 for key, value in sel_sample.items():
-                    if key != "file_name" and is_scalar_value(value):
-                        rows_by_key.setdefault(key, []).append((file_name, cast(float, value)))
+                    if key != "sample_id" and is_scalar_value(value):
+                        rows_by_key.setdefault(key, []).append((sample_id, cast(float, value)))
 
         if not rows_by_key:
             logging.info("      No scalar data found, skipping.")
@@ -115,5 +115,5 @@ class ScalarReporter(Reporter):
             filepath = output_dir / f"{key}.csv"
             with open(filepath, "w", newline="") as f:
                 writer = csv.writer(f)
-                writer.writerow(["file_name", key])
+                writer.writerow(["sample_id", key])
                 writer.writerows(rows)

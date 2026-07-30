@@ -62,7 +62,7 @@ class XYZSpecSource(DataSource):
         self.xyz_path = xyz_path
         self.xanes_path = xanes_path
 
-        self.file_names: list[str] = self._get_file_list()
+        self.sample_ids: list[str] = self._get_file_list()
 
     def __iter__(self) -> Iterator[Molecule]:
         """Iterate over all molecule entries in the datasource.
@@ -70,7 +70,7 @@ class XYZSpecSource(DataSource):
         Returns:
             Iterator over loaded molecule entries.
         """
-        for i in range(len(self.file_names)):
+        for i in range(len(self.sample_ids)):
             yield self[i]
 
     def __len__(self) -> int:
@@ -79,7 +79,7 @@ class XYZSpecSource(DataSource):
         Returns:
             Number of matched XYZ/spectrum pairs.
         """
-        return len(self.file_names)
+        return len(self.sample_ids)
 
     def __getitem__(self, idx: int) -> Molecule:
         """Return the molecule at the given index.
@@ -88,10 +88,10 @@ class XYZSpecSource(DataSource):
             idx: Zero-based index into the datasource.
 
         Returns:
-            A ``Molecule`` with ``XANES`` site property and ``file_name``
+            A ``Molecule`` with ``XANES`` site property and ``sample_id``
             stored in ``properties``.
         """
-        file = self.file_names[idx]
+        file = self.sample_ids[idx]
         xyz_file = Path(self.xyz_path) / f"{file}.xyz"
         xanes_file = Path(self.xanes_path) / f"{file}.txt"
 
@@ -103,21 +103,21 @@ class XYZSpecSource(DataSource):
             "intensities": intensities,
         }
         molecule.add_site_property("XANES", spectra_list)
-        molecule.properties["file_name"] = file
+        molecule.properties["sample_id"] = file
         return molecule
 
     def _get_file_list(self) -> list[str]:
-        """Build the sorted list of file stems common to both ``xyz_path`` and ``xanes_path``.
+        """Build the sorted list of sample identifiers common to both ``xyz_path`` and ``xanes_path``.
 
         Only ``.xyz`` files from ``xyz_path`` and ``.txt`` files from
         ``xanes_path`` are considered. Unrelated files are ignored.
 
         Returns:
-            Sorted list of matched file stems.
+            Sorted list of matched sample identifiers.
 
         Raises:
             ResourceError: If either path is not a directory or no matching
-                ``.xyz``/``.txt`` file stems are found.
+                ``.xyz``/``.txt`` sample identifiers are found.
         """
         xyz_path = Path(self.xyz_path)
         xanes_path = Path(self.xanes_path)
@@ -129,12 +129,12 @@ class XYZSpecSource(DataSource):
 
         xyz_stems = set(list_filestems(xyz_path, suffixes=".xyz"))
         xanes_stems = set(list_filestems(xanes_path, suffixes=".txt"))
-        file_names = sorted(list(xyz_stems & xanes_stems))
+        sample_ids = sorted(list(xyz_stems & xanes_stems))
 
-        if not file_names:
+        if not sample_ids:
             raise ResourceError(f"No matching .xyz and .txt files found in: {xyz_path} and {xanes_path}")
 
-        return file_names
+        return sample_ids
 
     @staticmethod
     def load_xanes(file_path: Path) -> tuple[np.ndarray, np.ndarray]:

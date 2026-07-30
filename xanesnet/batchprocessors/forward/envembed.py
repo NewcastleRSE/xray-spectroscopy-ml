@@ -78,7 +78,7 @@ class EnvEmbedBatchProcessor(ForwardBatchProcessor):
         """
         return batch.element
 
-    def file_name_extraction(self, batch: EnvEmbedData) -> np.ndarray:
+    def sample_id_extraction(self, batch: EnvEmbedData) -> np.ndarray:
         """Extract file names from an EnvEmbed batch.
 
         Args:
@@ -87,4 +87,4 @@ class EnvEmbedBatchProcessor(ForwardBatchProcessor):
         Returns:
             Array of file name strings. ``(batch_size,)``.
         """
-        return np.array(batch.file_name, dtype=str)
+        return np.array(batch.sample_id, dtype=str)

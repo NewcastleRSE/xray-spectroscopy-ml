@@ -45,7 +45,7 @@ class DescriptorData:
         x: Model input tensor, commonly ``(n_features,)`` or ``(batch, n_features)``.
         y: Model target tensor, commonly ``(n_energies,)`` or ``(batch, n_energies)``.
         energies: Energy grid tensor with shape ``(n_energies,)`` or ``(batch, n_energies)``.
-        file_name: Source file name metadata for one sample or a batch.
+        sample_id: Sample identifier metadata for one sample or a batch.
         element: Absorber atomic number as a scalar tensor for one sample, or
             ``(batch,)`` for a batch. Consumed by element-aware spectra
             encodings.
@@ -54,7 +54,7 @@ class DescriptorData:
     x: torch.Tensor | None = None
     y: torch.Tensor | None = None
     energies: torch.Tensor | None = None
-    file_name: str | list[Any] | None = None
+    sample_id: str | list[Any] | None = None
     element: torch.Tensor | None = None
 
     def to(self, device: str | torch.device) -> "DescriptorData":
@@ -82,7 +82,7 @@ class DescriptorData:
             "x": self.x,
             "y": self.y,
             "energies": self.energies,
-            "file_name": self.file_name,
+            "sample_id": self.sample_id,
             "element": self.element,
         }
 
@@ -100,7 +100,7 @@ class DescriptorData:
             x=state.get("x"),
             y=state.get("y"),
             energies=state.get("energies"),
-            file_name=state.get("file_name"),
+            sample_id=state.get("sample_id"),
             element=state.get("element"),
         )
 
@@ -198,7 +198,7 @@ class DescriptorDataset(TorchDataset):
             if key in pmg_obj.site_properties.keys():
                 break
         else:
-            logging.warning(f"No XANES spectrum found for sample {idx} ({pmg_obj.properties['file_name']}); skipping.")
+            logging.warning(f"No XANES spectrum found for sample {idx} ({pmg_obj.properties['sample_id']}); skipping.")
             return 0
 
         xanes = np.array(pmg_obj.site_properties[key], dtype=object)
@@ -237,7 +237,7 @@ class DescriptorDataset(TorchDataset):
                 x=x,
                 y=y,
                 energies=energies,
-                file_name=pmg_obj.properties["file_name"],
+                sample_id=pmg_obj.properties["sample_id"],
                 element=element,
             )
 
@@ -267,7 +267,7 @@ class DescriptorDataset(TorchDataset):
             x=_stack([b.x for b in batch]),
             y=_stack([b.y for b in batch]),
             energies=_stack([b.energies for b in batch]),
-            file_name=[b.file_name for b in batch],
+            sample_id=[b.sample_id for b in batch],
             element=_stack([b.element for b in batch]),
         )
 
