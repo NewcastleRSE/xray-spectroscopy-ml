@@ -22,7 +22,7 @@
 
 import logging
 
-from xanesnet.batchprocessors import BatchProcessorRegistry
+from xanesnet.batchprocessors import BatchProcessor, BatchProcessorRegistry
 from xanesnet.datasets import Dataset
 from xanesnet.encodings import SpectraEncoding
 from xanesnet.utils.exceptions import ConfigError
@@ -33,51 +33,56 @@ from .helpers import (
     requested_auto_fields,
 )
 from .registries import EncodingAutoResolver, ModelAutoResolver
-from .statistics import collect_spectral_statistics
+from .statistics import SpectralStatisticsCollector, collect_spectral_statistics
 
 
-def resolve_auto_encoding_config(config: Config, dataset: Dataset) -> Config:
-    """Resolve encoding fields set to ``"auto"`` from a prepared dataset.
-
-    The input config is expected to have passed schema-backed training
-    validation.  This function performs only the dataset-dependent
-    finalization for the top-level ``encodings`` list: it accumulates overall
-    and per-absorbing-element spectral statistics in a single streaming pass
-    (so the full spectral matrix is never materialized), asks the
-    encoding-specific resolver for concrete values (e.g. per-point statistics
-    over the training spectra), and returns a new ``Config`` without mutating
-    the input config.
-
-    For forward datasets the encoding is applied to the model target (spectra),
-    so statistics are collected from target spectra.  For inverse datasets the
-    encoding is applied to the spectral model input, so statistics are
-    collected from input spectra.  Both prediction directions are handled
-    uniformly.
+def _any_auto_fields(encodings: list[dict]) -> bool:
+    """Check whether any encoding (including nested concat sub-encodings) has ``"auto"`` fields.
 
     Args:
-        config: Validated training configuration.
-        dataset: Prepared training dataset used to derive automatic encoding
-            values.
+        encodings: List of raw encoding configuration dictionaries.
 
     Returns:
-        New configuration with requested automatic encoding fields replaced by
-        concrete values.
+        ``True`` if at least one encoding or nested sub-encoding requests
+        automatic resolution.
+    """
+    for item in encodings:
+        if requested_auto_fields(item):
+            return True
+        if item.get("encoding_type") == "concat":
+            nested = item.get("encodings", [])
+            if isinstance(nested, list) and _any_auto_fields(nested):
+                return True
+    return False
+
+
+def _resolve_auto_fields_recursive(
+    encodings: list[dict],
+    statistics: SpectralStatisticsCollector,
+    batchprocessor: BatchProcessor,
+    dataset_type: str,
+) -> None:
+    """Recursively resolve ``"auto"`` fields in encodings, descending into concat sub-encodings.
+
+    Args:
+        encodings: List of raw encoding configuration dictionaries (mutated in
+            place).
+        statistics: Pre-computed spectral statistics collector.
+        batchprocessor: Batch processor used for statistics collection (for
+            logging only).
+        dataset_type: Dataset type string (for logging only).
 
     Raises:
-        ConfigError: If automatic fields are requested for an encoding that has
-            no resolver or if the resolver does not produce a requested field.
+        ConfigError: If an encoding with auto fields has no registered resolver
+            or the resolver does not produce a requested field.
     """
-    config_raw = config.as_dict()
-    encodings = config_raw.get("encodings", [])
-    model_type = config_raw["model"]["model_type"]
-
-    if not any(requested_auto_fields(item) for item in encodings):
-        return Config(config_raw)
-
-    batchprocessor = BatchProcessorRegistry.create((dataset.dataset_type, model_type))
-    statistics = collect_spectral_statistics(dataset, batchprocessor)
-
     for item in encodings:
+        if item.get("encoding_type") == "concat":
+            nested = item.get("encodings", [])
+            if isinstance(nested, list):
+                _resolve_auto_fields_recursive(nested, statistics, batchprocessor, dataset_type)
+            continue
+
         auto_fields = requested_auto_fields(item)
         if not auto_fields:
             continue
@@ -101,9 +106,62 @@ def resolve_auto_encoding_config(config: Config, dataset: Dataset) -> Config:
                 encoding_type,
                 field,
                 format_value(resolved_fields[field]),
-                dataset.dataset_type,
+                dataset_type,
                 type(batchprocessor).__name__,
             )
+
+
+def resolve_auto_encoding_config(config: Config, dataset: Dataset) -> Config:
+    """Resolve encoding fields set to ``"auto"`` from a prepared dataset.
+
+    The input config is expected to have passed schema-backed training
+    validation.  This function performs only the dataset-dependent
+    finalization for the top-level ``encodings`` list: it accumulates overall
+    and per-absorbing-element spectral statistics in a single streaming pass
+    (so the full spectral matrix is never materialized), asks the
+    encoding-specific resolver for concrete values (e.g. per-point statistics
+    over the training spectra), and returns a new ``Config`` without mutating
+    the input config.
+
+    For forward datasets the encoding is applied to the model target (spectra),
+    so statistics are collected from target spectra.  For inverse datasets the
+    encoding is applied to the spectral model input, so statistics are
+    collected from input spectra.  Both prediction directions are handled
+    uniformly.
+
+    Nested encodings inside a ``concat`` encoding are resolved recursively so
+    that auto fields (e.g. ``num_points`` for a Gaussian sub-encoding) are
+    filled in before the concat encoding is instantiated.
+
+    Args:
+        config: Validated training configuration.
+        dataset: Prepared training dataset used to derive automatic encoding
+            values.
+
+    Returns:
+        New configuration with requested automatic encoding fields replaced by
+        concrete values.
+
+    Raises:
+        ConfigError: If automatic fields are requested for an encoding that has
+            no resolver or if the resolver does not produce a requested field.
+    """
+    config_raw = config.as_dict()
+    encodings = config_raw.get("encodings", [])
+    model_type = config_raw["model"]["model_type"]
+
+    if not _any_auto_fields(encodings):
+        return Config(config_raw)
+
+    batchprocessor = BatchProcessorRegistry.create((dataset.dataset_type, model_type))
+    statistics = collect_spectral_statistics(dataset, batchprocessor)
+
+    _resolve_auto_fields_recursive(
+        encodings,
+        statistics,
+        batchprocessor,
+        dataset.dataset_type,
+    )
 
     return Config(config_raw)
 
