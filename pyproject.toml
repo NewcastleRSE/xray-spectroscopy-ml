@@ -79,3 +79,8 @@ include = ["xanesnet*"]
 
 [tool.setuptools.package-data]
 xanesnet = ["schemas/**/*.yaml"]
+
+[tool.pytest.ini_options]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]

@@ -1,0 +1,19 @@
+seed: 42
+
+selectors:
+  - selector_type: all
+
+collectors:
+  - collector_type: error_metric
+    loss_type: mse
+
+aggregators:
+  - aggregator_type: scalar
+    percentiles: [50]
+
+reporters:
+  - reporter_type: scalar
+
+plotters:
+  - plotter_type: spectra
+    max_pages: 1

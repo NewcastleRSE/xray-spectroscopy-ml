@@ -1,0 +1,91 @@
+seed: 2025
+device: cpu
+
+datasource:
+  datasource_type: pmgjson
+  json_path: ./data/toy_data_periodic/
+
+dataset:
+  dataset_type: e3ee_full
+  root: ./data/processed/toy_data_periodic_e3ee_full_test/
+  preload: True
+  skip_prepare: False
+  split_ratios: [0.8, 0.2]
+  graph_builder:
+    graph_builder_type: radius
+    cutoff: 6.0
+    max_num_neighbors: 32
+  att_graph_builder:
+    graph_builder_type: radius
+    cutoff: 10.0
+    max_num_neighbors: 32
+  use_path_branch: False
+  max_paths_per_site: 32
+  use_absorber_mask: True
+
+encodings:
+  - encoding_type: identity
+
+model:
+  model_type: e3ee_full
+  out_size: auto
+  max_z: 100
+  atom_emb_dim: 16
+  atom_hidden_dim: 32
+  atom_layers: 2
+  local_cutoff: 6.0
+  rbf_dim: 8
+  energy_rbf_dim: 8
+  scatter_dim: 32
+  latent_dim: 32
+  head_hidden_dim: 32
+  e3nn_irreps: "16x0e + 8x1o"
+  e3nn_irreps_message: "8x0e + 4x1o"
+  e3nn_lmax: 1
+  out_mlp_layers: 2
+  use_invariant_branch: True
+  use_attention_branch: True
+  use_eq_attention_branch: False
+  use_conv_branch: False
+  use_eq_conv_branch: False
+  use_equivariant_branch: True
+  use_path_branch: False
+  fusion_mode: cat
+  use_absorber_mask: True
+  residual_scale_init: 0.1
+  attention_heads: 2
+  attention_rbf_dim: 8
+  attention_lmax: 1
+  attention_irreps: "16x0e + 8x1o"
+  att_cutoff: 10.0
+  conv_use_gate: True
+
+trainer:
+  trainer_type: basic
+  batch_size: 4
+  shuffle: True
+  drop_last: False
+  num_workers: 0
+  epochs: 2
+  learning_rate: 0.001
+  optimizer: Adam
+  max_norm: null
+  validation_interval: 10
+  lr_warmup: False
+  loss:
+    - loss_type: mse
+  regularizer:
+    regularizer_type: none
+  lr_scheduler:
+    lr_scheduler_type: none
+  early_stopper:
+    early_stopper_type: basic
+    patience: 1
+    min_delta: 0.0
+    restore_best: False
+
+strategy:
+  strategy_type: single
+  weight_init: xavier_uniform
+  bias_init: zeros
+  checkpoint_interval: 1

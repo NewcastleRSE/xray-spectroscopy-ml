@@ -1,0 +1,112 @@
+seed: 2025
+device: cpu
+
+datasource:
+  datasource_type: pmgjson
+  json_path: ./data/toy_data_periodic/
+
+dataset:
+  dataset_type: gemnet_oc
+  root: ./data/processed/toy_data_periodic_gemnet_oc_test/
+  preload: True
+  skip_prepare: False
+  split_ratios: [0.8, 0.2]
+  graph_builder:
+    graph_builder_type: radius
+    cutoff: 5.0
+    max_num_neighbors: 32
+  quadruplets: True
+  int_graph_builder:
+    graph_builder_type: radius
+    cutoff: 10.0
+    max_num_neighbors: 32
+  oc_mode: True
+  oc_aeaint_graph_builder:
+    graph_builder_type: radius
+    cutoff: 5.0
+    max_num_neighbors: 32
+  oc_aint_graph_builder:
+    graph_builder_type: radius
+    cutoff: 10.0
+    max_num_neighbors: 32
+
+encodings:
+  - encoding_type: identity
+
+model:
+  model_type: gemnet_oc
+  num_targets: auto
+  num_spherical: 3
+  num_radial: 6
+  num_blocks: 2
+  emb_size_atom: 32
+  emb_size_edge: 32
+  emb_size_trip_in: 16
+  emb_size_trip_out: 16
+  emb_size_quad_in: 8
+  emb_size_quad_out: 8
+  emb_size_aint_in: 16
+  emb_size_aint_out: 16
+  emb_size_rbf: 8
+  emb_size_cbf: 8
+  emb_size_sbf: 8
+  num_before_skip: 1
+  num_after_skip: 1
+  num_concat: 1
+  num_atom: 2
+  num_output_afteratom: 2
+  num_atom_emb_layers: 1
+  num_global_out_layers: 1
+  cutoff: 5.0
+  cutoff_qint: 10.0
+  cutoff_aeaint: 5.0
+  cutoff_aint: 10.0
+  rbf:
+    name: gaussian
+  rbf_spherical:
+    name: gaussian
+  envelope:
+    name: polynomial
+    exponent: 5
+  cbf:
+    name: spherical_harmonics
+  sbf:
+    name: spherical_harmonics
+  output_init: HeOrthogonal
+  activation: silu
+  quad_interaction: True
+  atom_edge_interaction: True
+  edge_atom_interaction: True
+  atom_interaction: True
+  scale_basis: False
+  num_elements: 100
+
+trainer:
+  trainer_type: basic
+  batch_size: 4
+  shuffle: True
+  drop_last: False
+  num_workers: 0
+  epochs: 2
+  learning_rate: 0.001
+  optimizer: Adam
+  max_norm: null
+  validation_interval: 10
+  lr_warmup: False
+  loss:
+    - loss_type: mse
+  regularizer:
+    regularizer_type: none
+  lr_scheduler:
+    lr_scheduler_type: none
+  early_stopper:
+    early_stopper_type: basic
+    patience: 1
+    min_delta: 0.0
+    restore_best: False
+
+strategy:
+  strategy_type: single
+  weight_init: xavier_uniform
+  bias_init: zeros
+  checkpoint_interval: 1

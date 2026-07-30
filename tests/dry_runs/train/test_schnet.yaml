@@ -1,0 +1,63 @@
+seed: 2025
+device: cpu
+
+datasource:
+  datasource_type: pmgjson
+  json_path: ./data/toy_data/
+
+dataset:
+  dataset_type: geometrygraph
+  root: ./data/processed/toy_data_schnet_test/
+  preload: True
+  skip_prepare: False
+  split_ratios: [0.8, 0.2]
+  graph_builder:
+    graph_builder_type: radius
+    cutoff: 5.0
+    max_num_neighbors: 32
+
+encodings:
+  - encoding_type: identity
+
+model:
+  model_type: schnet
+  hidden_channels: 32
+  reduce_channels_1: 16
+  reduce_channels_2: auto
+  num_filters: 32
+  num_interactions: 2
+  num_gaussians: 25
+  cutoff: 5.0
+
+trainer:
+  trainer_type: basic
+  batch_size: 4
+  shuffle: True
+  drop_last: False
+  num_workers: 0
+  epochs: 2
+  learning_rate: 0.001
+  optimizer: Adam
+  max_norm: null
+  validation_interval: 10
+  lr_warmup: False
+  loss:
+    - loss_type: l1
+  regularizer:
+    regularizer_type: none
+  lr_scheduler:
+    lr_scheduler_type: linear
+    start_factor: 1.0
+    end_factor: 0.1
+    total_iters: 2
+  early_stopper:
+    early_stopper_type: basic
+    patience: 1
+    min_delta: 0.0
+    restore_best: False
+
+strategy:
+  strategy_type: single
+  weight_init: xavier_uniform
+  bias_init: zeros
+  checkpoint_interval: 1
