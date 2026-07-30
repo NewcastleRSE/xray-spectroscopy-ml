@@ -91,7 +91,11 @@ class EnvEmbedData:
         ]:
             val = getattr(self, attr)
             if val is not None:
-                setattr(self, attr, val.to(device))
+                if attr == "basis":
+                    val = val.device_copy(torch.device(device))
+                else:
+                    val = val.to(device)
+                setattr(self, attr, val)
         return self
 
     def to_state_dict(self) -> dict[str, Any]:

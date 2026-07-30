@@ -99,6 +99,32 @@ class SpectralBasis(nn.Module):
         """
         return coeffs @ self.Phi.T
 
+    def device_copy(self, device: torch.device) -> "SpectralBasis":
+        """Return this basis (or a cached copy) on ``device``.
+
+        When ``device`` is CPU the original instance is returned directly.
+        For non-CPU devices a single clone is created on first access and
+        reused for all subsequent calls, so repeated batch transfers share
+        the same GPU basis.
+
+        Args:
+            device: Target device.
+
+        Returns:
+            A ``SpectralBasis`` on ``device``.
+        """
+        if device.type == "cpu":
+            return self
+        if not hasattr(self, "_gpu_clone") or self._gpu_clone is None:
+            self._gpu_clone = SpectralBasis(
+                energies=self.E.clone(),
+                widths_eV=self.widths_eV,
+                normalize_atoms=self.normalize_atoms,
+                stride=self.stride,
+            )
+        self._gpu_clone.to(device)
+        return self._gpu_clone
+
 
 class SpectralPost(nn.Module):
     """Parameter-free synthesis module: reconstructs spectra from coefficients.
