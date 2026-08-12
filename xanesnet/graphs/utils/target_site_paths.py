@@ -34,8 +34,10 @@ def _target_site_neighbors(
 
     For periodic ``Structure`` objects, uses pymatgen's PBC-aware neighbour
     search so that ``neighbor_coords`` are the Cartesian coordinates of the
-    correct periodic images. For ``Molecule`` objects, uses plain Euclidean
-    distances.
+    correct periodic images. Zero-distance self-neighbours (the target site
+    in its own unit cell) are filtered out; periodic images of the target
+    site at finite distance are retained. For ``Molecule`` objects, uses
+    plain Euclidean distances and excludes the target site itself.
 
     Args:
         pmg_obj: The periodic structure or molecule.
@@ -58,7 +60,9 @@ def _target_site_neighbors(
             )
         idx = np.array([n.index for n in neighbors], dtype=np.int64)
         coords = np.array([n.coords for n in neighbors], dtype=np.float64)
-        return idx, coords
+        nn_dists = np.array([n.nn_distance for n in neighbors], dtype=np.float64)
+        keep = nn_dists > 1e-8
+        return idx[keep], coords[keep]
 
     # Molecule: filter by Euclidean distance, excluding the target site itself.
     all_coords = np.array(pmg_obj.cart_coords, dtype=np.float64)
