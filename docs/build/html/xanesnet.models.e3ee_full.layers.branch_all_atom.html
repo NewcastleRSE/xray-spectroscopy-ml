@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="xanesnet.models.e3ee_full.layers.branch_attention module" href="xanesnet.models.e3ee_full.layers.branch_attention.html"><link rel="prev" title="xanesnet.models.e3ee_full.layers.basic module" href="xanesnet.models.e3ee_full.layers.basic.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>xanesnet.models.e3ee_full.layers.branch_absorber module - XANESNET 0.1.0</title>
+        <title>xanesnet.models.e3ee_full.layers.branch_all_atom module - XANESNET 0.1.0</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -343,9 +343,9 @@
 </li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="xanesnet.graphs.html">xanesnet.graphs package</a><input aria-label="Toggle navigation of xanesnet.graphs package" class="toctree-checkbox" id="toctree-checkbox-23" name="toctree-checkbox-23" role="switch" type="checkbox"/><label for="toctree-checkbox-23"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l4 has-children"><a class="reference internal" href="xanesnet.graphs.utils.html">xanesnet.graphs.utils package</a><input aria-label="Toggle navigation of xanesnet.graphs.utils package" class="toctree-checkbox" id="toctree-checkbox-24" name="toctree-checkbox-24" role="switch" type="checkbox"/><label for="toctree-checkbox-24"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l5"><a class="reference internal" href="xanesnet.graphs.utils.absorber_paths.html">xanesnet.graphs.utils.absorber_paths module</a></li>
 <li class="toctree-l5"><a class="reference internal" href="xanesnet.graphs.utils.directional_indices.html">xanesnet.graphs.utils.directional_indices module</a></li>
 <li class="toctree-l5"><a class="reference internal" href="xanesnet.graphs.utils.symmetrize.html">xanesnet.graphs.utils.symmetrize module</a></li>
+<li class="toctree-l5"><a class="reference internal" href="xanesnet.graphs.utils.target_site_paths.html">xanesnet.graphs.utils.target_site_paths module</a></li>
 <li class="toctree-l5"><a class="reference internal" href="xanesnet.graphs.utils.triplets.html">xanesnet.graphs.utils.triplets module</a></li>
 </ul>
 </li>
@@ -379,13 +379,13 @@
 <li class="toctree-l5 has-children"><a class="reference internal" href="xanesnet.models.e3ee.layers.html">xanesnet.models.e3ee.layers package</a><input aria-label="Toggle navigation of xanesnet.models.e3ee.layers package" class="toctree-checkbox" id="toctree-checkbox-29" name="toctree-checkbox-29" role="switch" type="checkbox"/><label for="toctree-checkbox-29"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee.layers.atom_encoder.html">xanesnet.models.e3ee.layers.atom_encoder module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee.layers.basic.html">xanesnet.models.e3ee.layers.basic module</a></li>
-<li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee.layers.branch_absorber.html">xanesnet.models.e3ee.layers.branch_absorber module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee.layers.branch_attention.html">xanesnet.models.e3ee.layers.branch_attention module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee.layers.branch_convolution.html">xanesnet.models.e3ee.layers.branch_convolution module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee.layers.branch_eq_attention.html">xanesnet.models.e3ee.layers.branch_eq_attention module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee.layers.branch_equivariant.html">xanesnet.models.e3ee.layers.branch_equivariant module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee.layers.branch_fusion.html">xanesnet.models.e3ee.layers.branch_fusion module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee.layers.branch_path.html">xanesnet.models.e3ee.layers.branch_path module</a></li>
+<li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee.layers.branch_target_site.html">xanesnet.models.e3ee.layers.branch_target_site module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee.layers.interactions.html">xanesnet.models.e3ee.layers.interactions module</a></li>
 </ul>
 </li>
@@ -401,7 +401,7 @@
 <li class="toctree-l5 current has-children"><a class="reference internal" href="xanesnet.models.e3ee_full.layers.html">xanesnet.models.e3ee_full.layers package</a><input aria-label="Toggle navigation of xanesnet.models.e3ee_full.layers package" checked="" class="toctree-checkbox" id="toctree-checkbox-32" name="toctree-checkbox-32" role="switch" type="checkbox"/><label for="toctree-checkbox-32"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee_full.layers.atom_encoder.html">xanesnet.models.e3ee_full.layers.atom_encoder module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee_full.layers.basic.html">xanesnet.models.e3ee_full.layers.basic module</a></li>
-<li class="toctree-l6 current current-page"><a class="current reference internal" href="#">xanesnet.models.e3ee_full.layers.branch_absorber module</a></li>
+<li class="toctree-l6 current current-page"><a class="current reference internal" href="#">xanesnet.models.e3ee_full.layers.branch_all_atom module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee_full.layers.branch_attention.html">xanesnet.models.e3ee_full.layers.branch_attention module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee_full.layers.branch_convolution.html">xanesnet.models.e3ee_full.layers.branch_convolution module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee_full.layers.branch_eq_attention.html">xanesnet.models.e3ee_full.layers.branch_eq_attention module</a></li>
@@ -594,12 +594,12 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="https://github.com/NewcastleRSE/xray-spectroscopy-ml/blob/main/docs/source/xanesnet.models.e3ee_full.layers.branch_absorber.rst?plain=true" title="View this page">
+  <a class="muted-link" href="https://github.com/NewcastleRSE/xray-spectroscopy-ml/blob/main/docs/source/xanesnet.models.e3ee_full.layers.branch_all_atom.rst?plain=true" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
 </div><div class="edit-this-page">
-  <a class="muted-link" href="https://github.com/NewcastleRSE/xray-spectroscopy-ml/edit/main/docs/source/xanesnet.models.e3ee_full.layers.branch_absorber.rst" rel="edit" title="Edit this page">
+  <a class="muted-link" href="https://github.com/NewcastleRSE/xray-spectroscopy-ml/edit/main/docs/source/xanesnet.models.e3ee_full.layers.branch_all_atom.rst" rel="edit" title="Edit this page">
     <svg><use href="#svg-pencil"></use></svg>
     <span class="visually-hidden">Edit this page</span>
   </a>
@@ -616,37 +616,27 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="module-xanesnet.models.e3ee_full.layers.branch_absorber">
-<span id="xanesnet-models-e3ee-full-layers-branch-absorber-module"></span><h1>xanesnet.models.e3ee_full.layers.branch_absorber module<a class="headerlink" href="#module-xanesnet.models.e3ee_full.layers.branch_absorber" title="Link to this heading">¶</a></h1>
+          <section id="module-xanesnet.models.e3ee_full.layers.branch_all_atom">
+<span id="xanesnet-models-e3ee-full-layers-branch-all-atom-module"></span><h1>xanesnet.models.e3ee_full.layers.branch_all_atom module<a class="headerlink" href="#module-xanesnet.models.e3ee_full.layers.branch_all_atom" title="Link to this heading">¶</a></h1>
 <p>Dense invariant energy-dependent branch applied to every atom in E3EEFull.</p>
 <dl class="py class">
-<dt class="sig sig-object py" id="xanesnet.models.e3ee_full.layers.branch_absorber.AllAtomEnergyBranch">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">xanesnet.models.e3ee_full.layers.branch_absorber.</span></span><span class="sig-name descname"><span class="pre">AllAtomEnergyBranch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">atom_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dim</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xanesnet/models/e3ee_full/layers/branch_absorber.html#AllAtomEnergyBranch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xanesnet.models.e3ee_full.layers.branch_absorber.AllAtomEnergyBranch" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="xanesnet.models.e3ee_full.layers.branch_all_atom.AllAtomEnergyBranch">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">xanesnet.models.e3ee_full.layers.branch_all_atom.</span></span><span class="sig-name descname"><span class="pre">AllAtomEnergyBranch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">atom_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dim</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xanesnet/models/e3ee_full/layers/branch_all_atom.html#AllAtomEnergyBranch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xanesnet.models.e3ee_full.layers.branch_all_atom.AllAtomEnergyBranch" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></a></p>
 <p>Energy-dependent branch applied to every atom’s invariant features.</p>
-<p>Broadcasts the energy embedding over all atoms and passes the concatenation
-through an MLP to produce per-(atom, energy) latent vectors.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>atom_dim</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Dimension of invariant per-atom features.</p></li>
-<li><p><strong>e_dim</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Dimension of the energy RBF embedding.</p></li>
-<li><p><strong>hidden_dim</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Hidden dimension of the internal MLP.</p></li>
-<li><p><strong>out_dim</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Output (latent) dimension.</p></li>
-</ul>
-</dd>
 </dl>
 <dl class="py method">
-<dt class="sig sig-object py" id="xanesnet.models.e3ee_full.layers.branch_absorber.AllAtomEnergyBranch.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">atom_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dim</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xanesnet/models/e3ee_full/layers/branch_absorber.html#AllAtomEnergyBranch.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xanesnet.models.e3ee_full.layers.branch_absorber.AllAtomEnergyBranch.__init__" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="xanesnet.models.e3ee_full.layers.branch_all_atom.AllAtomEnergyBranch.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">atom_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dim</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xanesnet/models/e3ee_full/layers/branch_all_atom.html#AllAtomEnergyBranch.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xanesnet.models.e3ee_full.layers.branch_all_atom.AllAtomEnergyBranch.__init__" title="Link to this definition">¶</a></dt>
 <dd><p>Initialize <code class="docutils literal notranslate"><span class="pre">AllAtomEnergyBranch</span></code>.</p>
 <dl class="field-list simple">
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="xanesnet.models.e3ee_full.layers.branch_absorber.AllAtomEnergyBranch.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h_all</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e_feat</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xanesnet/models/e3ee_full/layers/branch_absorber.html#AllAtomEnergyBranch.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xanesnet.models.e3ee_full.layers.branch_absorber.AllAtomEnergyBranch.forward" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="xanesnet.models.e3ee_full.layers.branch_all_atom.AllAtomEnergyBranch.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h_all</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e_feat</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xanesnet/models/e3ee_full/layers/branch_all_atom.html#AllAtomEnergyBranch.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xanesnet.models.e3ee_full.layers.branch_all_atom.AllAtomEnergyBranch.forward" title="Link to this definition">¶</a></dt>
 <dd><p>Compute per-(atom, energy) latent vectors.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -726,10 +716,10 @@ through an MLP to produce per-(atom, energy) latent vectors.</p>
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">xanesnet.models.e3ee_full.layers.branch_absorber module</a><ul>
-<li><a class="reference internal" href="#xanesnet.models.e3ee_full.layers.branch_absorber.AllAtomEnergyBranch"><code class="docutils literal notranslate"><span class="pre">AllAtomEnergyBranch</span></code></a><ul>
-<li><a class="reference internal" href="#xanesnet.models.e3ee_full.layers.branch_absorber.AllAtomEnergyBranch.__init__"><code class="docutils literal notranslate"><span class="pre">AllAtomEnergyBranch.__init__()</span></code></a></li>
-<li><a class="reference internal" href="#xanesnet.models.e3ee_full.layers.branch_absorber.AllAtomEnergyBranch.forward"><code class="docutils literal notranslate"><span class="pre">AllAtomEnergyBranch.forward()</span></code></a></li>
+<li><a class="reference internal" href="#">xanesnet.models.e3ee_full.layers.branch_all_atom module</a><ul>
+<li><a class="reference internal" href="#xanesnet.models.e3ee_full.layers.branch_all_atom.AllAtomEnergyBranch"><code class="docutils literal notranslate"><span class="pre">AllAtomEnergyBranch</span></code></a><ul>
+<li><a class="reference internal" href="#xanesnet.models.e3ee_full.layers.branch_all_atom.AllAtomEnergyBranch.__init__"><code class="docutils literal notranslate"><span class="pre">AllAtomEnergyBranch.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#xanesnet.models.e3ee_full.layers.branch_all_atom.AllAtomEnergyBranch.forward"><code class="docutils literal notranslate"><span class="pre">AllAtomEnergyBranch.forward()</span></code></a></li>
 </ul>
 </li>
 </ul>
