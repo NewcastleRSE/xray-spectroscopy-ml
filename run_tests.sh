@@ -22,9 +22,8 @@
 # Run all project tests with pytest.
 #
 # Usage:
-#   ./run_tests.sh              # run all tests (including slow dry-runs)
+#   ./run_tests.sh              # run all tests (verbose, including slow dry-runs)
 #   ./run_tests.sh -q           # quick: skip slow tests
-#   ./run_tests.sh -v           # verbose output
 #   ./run_tests.sh -x           # stop on first failure
 #   ./run_tests.sh -s           # no capture (see print/log output)
 #   ./run_tests.sh -k "schnet"  # only tests matching "schnet"
@@ -36,7 +35,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-PYTEST_ARGS=()
+PYTEST_ARGS=("-v")
 
 while getopts "qvxsh" opt; do
     case "$opt" in
@@ -45,14 +44,14 @@ while getopts "qvxsh" opt; do
         x) PYTEST_ARGS+=("-x") ;;
         s) PYTEST_ARGS+=("-s") ;;
         h)
-            echo "Usage: $0 [-q] [-v] [-x] [-s] [-h] [-- <extra pytest args>]"
+            echo "Usage: $0 [-q] [-x] [-s] [-h] [-- <extra pytest args>]"
             echo ""
             echo "  -q   quick mode — skip slow tests (dry-run train/infer pipelines)"
-            echo "  -v   verbose output"
             echo "  -x   stop on first failure"
             echo "  -s   disable output capture (see prints/logs in real time)"
             echo "  -h   show this help"
             echo ""
+            echo "Output is verbose (-v) by default."
             echo "Everything after -- is forwarded to pytest directly."
             exit 0
             ;;

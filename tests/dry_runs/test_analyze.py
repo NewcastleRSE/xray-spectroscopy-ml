@@ -20,7 +20,6 @@
 
 """End-to-end dry-run test: train, infer, analyse."""
 
-
 import logging
 from pathlib import Path
 
@@ -34,6 +33,7 @@ from .conftest import (
     ANALYZE_DIR,
     INFER_DIR,
     TRAIN_DIR,
+    cleanup_processed_data,
     find_checkpoint,
 )
 
@@ -55,46 +55,66 @@ def test_full_pipeline(tmp_path: Path) -> None:
     """
     logging.info("Full pipeline dry run: SchNet + toy data")
 
-    # Train
-    train_cli.main([
-        "-i", str(PIPELINE_TRAIN),
-        "-o", str(tmp_path / "train"),
-        "-n", "test",
-        "--yes",
-    ])
-    train_run_dirs = sorted((tmp_path / "train").glob("train_test_*"))
-    assert train_run_dirs
-    train_run_dir = train_run_dirs[-1]
+    try:
+        # Train
+        train_cli.main(
+            [
+                "-i",
+                str(PIPELINE_TRAIN),
+                "-o",
+                str(tmp_path / "train"),
+                "-n",
+                "test",
+                "--yes",
+            ]
+        )
+        train_run_dirs = sorted((tmp_path / "train").glob("train_test_*"))
+        assert train_run_dirs
+        train_run_dir = train_run_dirs[-1]
 
-    ckpt_path = find_checkpoint(train_run_dir)
+        ckpt_path = find_checkpoint(train_run_dir)
 
-    # Infer
-    infer_cli.main([
-        "-i", str(PIPELINE_INFER),
-        "-m", str(ckpt_path),
-        "-o", str(tmp_path / "infer"),
-        "-n", "test",
-        "--yes",
-    ])
-    infer_run_dirs = sorted((tmp_path / "infer").glob("infer_test_*"))
-    assert infer_run_dirs
-    infer_run_dir = infer_run_dirs[-1]
+        # Infer
+        infer_cli.main(
+            [
+                "-i",
+                str(PIPELINE_INFER),
+                "-m",
+                str(ckpt_path),
+                "-o",
+                str(tmp_path / "infer"),
+                "-n",
+                "test",
+                "--yes",
+            ]
+        )
+        infer_run_dirs = sorted((tmp_path / "infer").glob("infer_test_*"))
+        assert infer_run_dirs
+        infer_run_dir = infer_run_dirs[-1]
 
-    predictions_dir = infer_run_dir / "predictions"
-    assert predictions_dir.is_dir()
-    assert (predictions_dir / "predictions.h5").exists()
+        predictions_dir = infer_run_dir / "predictions"
+        assert predictions_dir.is_dir()
+        assert (predictions_dir / "predictions.h5").exists()
 
-    # Analyse
-    analyze_cli.main([
-        "-i", str(PIPELINE_ANALYZE),
-        "-p", str(predictions_dir),
-        "-o", str(tmp_path / "analyze"),
-        "-n", "test",
-        "--yes",
-    ])
-    analyze_run_dirs = sorted((tmp_path / "analyze").glob("analyze_test_*"))
-    assert analyze_run_dirs
-    analyze_run_dir = analyze_run_dirs[-1]
+        # Analyse
+        analyze_cli.main(
+            [
+                "-i",
+                str(PIPELINE_ANALYZE),
+                "-p",
+                str(predictions_dir),
+                "-o",
+                str(tmp_path / "analyze"),
+                "-n",
+                "test",
+                "--yes",
+            ]
+        )
+        analyze_run_dirs = sorted((tmp_path / "analyze").glob("analyze_test_*"))
+        assert analyze_run_dirs
+        analyze_run_dir = analyze_run_dirs[-1]
 
-    assert (analyze_run_dir / "reports").is_dir()
-    assert (analyze_run_dir / "plots").is_dir()
+        assert (analyze_run_dir / "reports").is_dir()
+        assert (analyze_run_dir / "plots").is_dir()
+    finally:
+        cleanup_processed_data(PIPELINE_TRAIN)

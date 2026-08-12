@@ -20,8 +20,10 @@
 
 """Shared fixtures and helpers for XANESNET dry-run tests."""
 
-
+import shutil
 from pathlib import Path
+
+import yaml
 
 from xanesnet.utils.prompts import set_auto_yes
 
@@ -96,3 +98,26 @@ def collect_model_pairs() -> list[tuple[Path, Path]]:
             infer_path = INFER_DIR / f"{stem}.yaml"
             pairs.append((train_path, infer_path))
     return sorted(pairs, key=lambda x: x[0].stem)
+
+
+def cleanup_processed_data(config_path: Path) -> None:
+    """Remove the processed data directory referenced by a train config.
+
+    Reads ``dataset.root`` from the YAML file at *config_path* and deletes
+    the corresponding directory tree.  Errors during parsing or removal are
+    silently ignored so that cleanup never masks a test failure.
+
+    Args:
+        config_path: Path to a train-mode YAML config file.
+    """
+    if not config_path.exists():
+        return
+    try:
+        cfg = yaml.safe_load(config_path.read_text())
+        root = cfg.get("dataset", {}).get("root")
+        if root:
+            root_path = Path(root)
+            if root_path.exists():
+                shutil.rmtree(root_path)
+    except Exception:
+        pass

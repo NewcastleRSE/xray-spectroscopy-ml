@@ -188,6 +188,10 @@ At a high level, a config contains:
 
 The config UI reads the same schemas through [tools/config-ui/src/schemas](tools/config-ui/src/schemas), a symlink to [xanesnet/schemas/](xanesnet/schemas/).
 
+## Testing
+
+See [tests/README.md](tests/README.md) and [run_tests.sh](run_tests.sh).
+
 ## People and Attribution
 
 [Hendrik Junkawitsch](https://www.helmholtz-berlin.de/pubbin/vkart.pl?v=yyqxqn&sprache=de), Helmholtz-Zentrum Berlin and Humboldt University of Berlin - main code author and current maintainer

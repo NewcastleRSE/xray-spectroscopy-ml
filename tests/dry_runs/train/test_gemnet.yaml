@@ -14,14 +14,14 @@ dataset:
   split_ratios: [0.8, 0.2]
   graph_builder:
     graph_builder_type: voronoi
-    cutoff: 5.0
-    max_num_neighbors: 32
+    cutoff: 3.0
+    max_num_neighbors: 16
     min_facet_area: 1.0%
   quadruplets: True
   int_graph_builder:
     graph_builder_type: radius
-    cutoff: 10.0
-    max_num_neighbors: 32
+    cutoff: 6.0
+    max_num_neighbors: 16
   oc_mode: False
   oc_aeaint_graph_builder: null
   oc_aint_graph_builder: null
@@ -50,8 +50,8 @@ model:
   num_concat: 1
   num_atom: 2
   triplets_only: True
-  cutoff: 5.0
-  int_cutoff: 10.0
+  cutoff: 3.0
+  int_cutoff: 6.0
   envelope_exponent: 5
   output_init: HeOrthogonal
   activation: swish
