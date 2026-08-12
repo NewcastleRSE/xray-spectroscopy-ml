@@ -52,15 +52,15 @@ $defs:
         minimum: 1
         default: 128
         description: Maximum paths saved per site.
-      use_absorber_mask:
+      use_target_site_mask:
         type: boolean
         default: false
-        description: Whether attention/path data are limited to absorber sites.
+        description: Whether attention/path data are limited to target sites.
       max_paths_per_structure:
         type: integer
         minimum: 1
         default: 128
-        description: Maximum absorber paths saved per structure.
+        description: Maximum target-site paths saved per structure.
       fourier:
         type: boolean
         default: false

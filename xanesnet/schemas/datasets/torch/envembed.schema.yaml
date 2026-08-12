@@ -80,5 +80,5 @@ $defs:
           n_g2: 16
           n_g4: 32
         description: Descriptor configuration objects.
-    description: Dataset that creates absorber-centered environment embeddings.
+    description: Dataset that creates target-site-centered environment embeddings.
 description: Dataset schemas backed by ``DatasetRegistry`` classes and dataset constructor signatures.

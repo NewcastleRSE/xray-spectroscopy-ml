@@ -45,7 +45,7 @@ class InverseBatchProcessor(BatchProcessor):
 
         Args:
             inputs: Input dict returned by :meth:`input_preparation`.
-            elements: Optional per-sample absorber atomic numbers ``(B,)``.
+            elements: Optional per-sample target-site atomic numbers ``(B,)``.
 
         Returns:
             New input dict with the spectral entry encoded when an encoding is

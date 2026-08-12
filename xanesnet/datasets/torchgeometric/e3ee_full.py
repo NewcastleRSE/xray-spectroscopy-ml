@@ -32,26 +32,24 @@ from torch_geometric.data.data import BaseData
 from xanesnet.datasets.base import SavePathFn, TorchGeometricDataset
 from xanesnet.datasources import DataSource
 from xanesnet.graphs import GraphBuilderRegistry
-from xanesnet.graphs.utils.absorber_paths import build_absorber_paths
+from xanesnet.graphs.utils.target_site_paths import build_target_site_paths
 from xanesnet.serialization.config import Config
 
 from ..registry import DatasetRegistry
-
-SPECTRUM_KEYS = ["XANES", "XANES_K"]
 
 
 class E3EEFullBatch(Protocol):
     """Protocol for batches emitted by ``E3EEFullDataset.collate_fn``.
 
     Node fields are padded to ``(batch, max_nodes, ...)``. Targets are
-    concatenated over absorber sites across the batch.
+    concatenated over target sites across the batch.
     """
 
     # Padded per-sample node fields [B, N_max, ...]
     x: torch.Tensor
     mask: torch.Tensor
     # [B, N_max] bool; True at atoms that carry a ground-truth spectrum
-    absorber_mask: torch.Tensor
+    target_site_mask: torch.Tensor
     # Flat edge fields, already offset into the padded B*N_max layout
     edge_src: torch.Tensor
     edge_dst: torch.Tensor
@@ -70,7 +68,7 @@ class E3EEFullBatch(Protocol):
     path_r0k: torch.Tensor
     path_rjk: torch.Tensor
     path_cosangle: torch.Tensor
-    # Targets, concatenated over absorbers across the batch
+    # Targets, concatenated over target sites across the batch
     energies: torch.Tensor
     intensities: torch.Tensor
     sample_id: list[str]
@@ -82,10 +80,10 @@ class E3EEFullDataset(TorchGeometricDataset):
 
     The dataset supports periodic and non-periodic structures and predicts a
     spectrum for every atom. Atoms with a ground-truth spectrum are
-    flagged in ``absorber_mask``; the training loop selects those rows via the
-    mask (same pattern as SchNet / DimeNet).
+    flagged in ``target_site_mask``; the training loop selects those rows via
+    the mask (same pattern as SchNet / DimeNet).
 
-    All edges are computed once per structure. Absorber-centred triplet paths
+    All edges are computed once per structure. Target-site-centred triplet paths
     are computed for every site independently (with ``max_paths_per_site``
     paths each) and tagged with ``path_center`` so that the model can scatter
     them into the per-atom layout.
@@ -103,7 +101,7 @@ class E3EEFullDataset(TorchGeometricDataset):
         use_path_branch: Whether to precompute site-centered paths. The path
             cutoff is taken from ``graph_builder.cutoff``.
         max_paths_per_site: Maximum paths saved per site.
-        use_absorber_mask: Whether attention/path data are limited to absorber sites.
+        use_target_site_mask: Whether attention/path data are limited to target sites.
     """
 
     def __init__(
@@ -120,7 +118,7 @@ class E3EEFullDataset(TorchGeometricDataset):
         att_graph_builder: Config,
         use_path_branch: bool,
         max_paths_per_site: int,
-        use_absorber_mask: bool,
+        use_target_site_mask: bool,
     ) -> None:
         """Initialize the full-structure E3EE dataset."""
         super().__init__(dataset_type, datasource, root, preload, skip_prepare, split_ratios, split_indexfile)
@@ -135,7 +133,7 @@ class E3EEFullDataset(TorchGeometricDataset):
         )
         self.use_path_branch = use_path_branch
         self.max_paths_per_site = max_paths_per_site
-        self.use_absorber_mask = use_absorber_mask
+        self.use_target_site_mask = use_target_site_mask
 
     def _prepare_single(self, idx: int, save_path_fn: SavePathFn) -> int:
         """Process one datasource item into one full-structure graph sample.
@@ -148,29 +146,26 @@ class E3EEFullDataset(TorchGeometricDataset):
             ``1`` when the structure was saved, otherwise ``0`` when skipped.
         """
         pmg_obj = self.datasource[idx]
-        for key in SPECTRUM_KEYS:
-            if key in pmg_obj.site_properties.keys():
-                break
-        else:
-            logging.warning(f"No XANES spectrum found for sample {idx} ({pmg_obj.properties['sample_id']}); skipping.")
+        if "spectrum" not in pmg_obj.site_properties:
+            logging.warning(f"No spectrum found for sample {idx} ({pmg_obj.properties['sample_id']}); skipping.")
             return 0
 
-        xanes = np.array(pmg_obj.site_properties[key], dtype=object)
-        absorber_idxs: list[int] = np.where(xanes != None)[0].tolist()  # noqa: E711
+        spectra = np.array(pmg_obj.site_properties["spectrum"], dtype=object)
+        target_site_indices: list[int] = np.where(spectra != None)[0].tolist()  # noqa: E711
 
         n_atoms_total = len(pmg_obj)
         atomic_numbers = torch.tensor(pmg_obj.atomic_numbers, dtype=torch.int64)
 
-        absorber_mask = torch.zeros(n_atoms_total, dtype=torch.bool)
-        for si in absorber_idxs:
-            absorber_mask[si] = True
+        target_site_mask = torch.zeros(n_atoms_total, dtype=torch.bool)
+        for si in target_site_indices:
+            target_site_mask[si] = True
 
         energies_stack = torch.tensor(
-            np.array([xanes[si]["energies"] for si in absorber_idxs], dtype=np.float32),
+            np.array([spectra[si]["energies"] for si in target_site_indices], dtype=np.float32),
             dtype=torch.float32,
         )
         intensities_stack = torch.tensor(
-            np.array([xanes[si]["intensities"] for si in absorber_idxs], dtype=np.float32),
+            np.array([spectra[si]["intensities"] for si in target_site_indices], dtype=np.float32),
             dtype=torch.float32,
         )
 
@@ -179,25 +174,25 @@ class E3EEFullDataset(TorchGeometricDataset):
 
         att_edge_index, att_edge_weight, att_edge_vec, _ = self.att_graph_builder.build(pmg_obj, compute_vectors=True)
         assert att_edge_vec is not None
-        if self.use_absorber_mask:
-            abs_self_idx = torch.tensor(absorber_idxs, dtype=torch.int64)
+        if self.use_target_site_mask:
+            target_site_self_idx = torch.tensor(target_site_indices, dtype=torch.int64)
             src_full = att_edge_index[0].to(dtype=torch.int64)
-            keep = absorber_mask[src_full]
-            att_src = torch.cat([abs_self_idx, src_full[keep]], dim=0)
+            keep = target_site_mask[src_full]
+            att_src = torch.cat([target_site_self_idx, src_full[keep]], dim=0)
             att_dst = torch.cat(
-                [abs_self_idx, att_edge_index[1].to(dtype=torch.int64)[keep]],
+                [target_site_self_idx, att_edge_index[1].to(dtype=torch.int64)[keep]],
                 dim=0,
             )
             att_dist = torch.cat(
                 [
-                    torch.zeros(abs_self_idx.shape[0], dtype=torch.float32),
+                    torch.zeros(target_site_self_idx.shape[0], dtype=torch.float32),
                     att_edge_weight.to(dtype=torch.float32)[keep],
                 ],
                 dim=0,
             )
             att_vec = torch.cat(
                 [
-                    torch.zeros(abs_self_idx.shape[0], 3, dtype=torch.float32),
+                    torch.zeros(target_site_self_idx.shape[0], 3, dtype=torch.float32),
                     att_edge_vec.to(dtype=torch.float32)[keep],
                 ],
                 dim=0,
@@ -217,7 +212,7 @@ class E3EEFullDataset(TorchGeometricDataset):
 
         data_kwargs: dict[str, Any] = {
             "x": atomic_numbers,
-            "absorber_mask": absorber_mask,
+            "target_site_mask": target_site_mask,
             "edge_src": edge_index[0],
             "edge_dst": edge_index[1],
             "edge_weight": edge_weight,
@@ -240,11 +235,11 @@ class E3EEFullDataset(TorchGeometricDataset):
             rjk_list: list[torch.Tensor] = []
             cos_list: list[torch.Tensor] = []
 
-            site_iter = absorber_idxs if self.use_absorber_mask else range(n_atoms_total)
+            site_iter = target_site_indices if self.use_target_site_mask else range(n_atoms_total)
             for site_idx in site_iter:
-                paths = build_absorber_paths(
+                paths = build_target_site_paths(
                     pmg_obj,
-                    absorber_idx=site_idx,
+                    target_site_idx=site_idx,
                     cutoff=self.graph_builder.cutoff,
                     max_paths=self.max_paths_per_site,
                 )
@@ -303,11 +298,13 @@ class E3EEFullDataset(TorchGeometricDataset):
         mask_list = [torch.ones(xi.shape[0], dtype=torch.bool) for xi in x_list]
         mask = pad_sequence(mask_list, batch_first=True, padding_value=False).to(dtype=torch.bool)
 
-        absorber_mask_list = [s.absorber_mask.to(dtype=torch.bool) for s in batch]
-        absorber_mask = pad_sequence(absorber_mask_list, batch_first=True, padding_value=False).to(dtype=torch.bool)
+        target_site_mask_list = [s.target_site_mask.to(dtype=torch.bool) for s in batch]
+        target_site_mask = pad_sequence(target_site_mask_list, batch_first=True, padding_value=False).to(
+            dtype=torch.bool
+        )
 
-        # Concatenate per-absorber targets across the batch (align with
-        # absorber_mask.view(-1) order: sample-major, atom-minor).
+        # Concatenate per-target-site targets across the batch (align with
+        # target_site_mask.view(-1) order: sample-major, atom-minor).
         intensities = torch.cat([s.intensities.to(dtype=torch.float32) for s in batch], dim=0)
         energies = torch.cat([s.energies.to(dtype=torch.float32) for s in batch], dim=0)
 
@@ -369,7 +366,7 @@ class E3EEFullDataset(TorchGeometricDataset):
 
         sample_id: list[str] = []
         for s in batch:
-            sample_id.extend([s.sample_id] * int(s.absorber_mask.sum().item()))
+            sample_id.extend([s.sample_id] * int(s.target_site_mask.sum().item()))
 
         batched = Batch.from_data_list(
             batch,
@@ -377,7 +374,7 @@ class E3EEFullDataset(TorchGeometricDataset):
                 "x",
                 "energies",
                 "intensities",
-                "absorber_mask",
+                "target_site_mask",
                 "edge_src",
                 "edge_dst",
                 "edge_weight",
@@ -399,7 +396,7 @@ class E3EEFullDataset(TorchGeometricDataset):
 
         setattr(batched, "x", x)
         setattr(batched, "mask", mask)
-        setattr(batched, "absorber_mask", absorber_mask)
+        setattr(batched, "target_site_mask", target_site_mask)
         setattr(batched, "edge_src", edge_src)
         setattr(batched, "edge_dst", edge_dst)
         setattr(batched, "edge_weight", edge_weight)
@@ -458,7 +455,7 @@ class E3EEFullDataset(TorchGeometricDataset):
                 "att_graph_builder": self.att_graph_builder_config,
                 "use_path_branch": self.use_path_branch,
                 "max_paths_per_site": self.max_paths_per_site,
-                "use_absorber_mask": self.use_absorber_mask,
+                "use_target_site_mask": self.use_target_site_mask,
             }
         )
         return signature

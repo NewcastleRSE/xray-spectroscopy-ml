@@ -56,7 +56,7 @@ class ForwardBatchProcessor(BatchProcessor):
 
         Args:
             targets: Raw spectral target tensor.
-            elements: Optional per-sample absorber atomic numbers ``(B,)``.
+            elements: Optional per-sample target-site atomic numbers ``(B,)``.
 
         Returns:
             Encoded target when an encoding is configured, otherwise
@@ -71,7 +71,7 @@ class ForwardBatchProcessor(BatchProcessor):
 
         Args:
             predictions: Model output tensor in the encoded prediction space.
-            elements: Optional per-sample absorber atomic numbers ``(B,)``.
+            elements: Optional per-sample target-site atomic numbers ``(B,)``.
 
         Returns:
             Decoded predictions when an encoding is configured, otherwise

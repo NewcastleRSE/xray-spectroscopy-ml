@@ -212,7 +212,7 @@ $defs:
       num_targets:
         $ref: ../shared/value_types.schema.yaml#/$defs/autoPositiveInteger
         description: Number of output spectral channels predicted per atom.
-    description: GemNet-OC adapted for per-atom XANES spectrum prediction.
+    description: GemNet-OC adapted for per-atom spectrum prediction.
   modelTrainGemNetOC:
     $ref: '#/$defs/modelGemNetOC'
     description: Training view of modelGemNetOC; automatic dimension fields may use the case-insensitive auto token.

@@ -68,13 +68,13 @@ class InverseDescriptorMLPBatchProcessor(InverseBatchProcessor):
         return batch.y  # type: ignore[return-value]
 
     def element_preparation(self, batch: DescriptorData) -> torch.Tensor | None:
-        """Extract absorber atomic numbers from a descriptor batch.
+        """Extract target-site atomic numbers from a descriptor batch.
 
         Args:
             batch: Collated descriptor batch.
 
         Returns:
-            Per-sample absorber atomic numbers ``(batch_size,)``, or
+            Per-sample target-site atomic numbers ``(batch_size,)``, or
             ``None`` if the dataset was built without element information.
         """
         return batch.element

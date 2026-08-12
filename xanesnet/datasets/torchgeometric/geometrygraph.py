@@ -21,7 +21,7 @@
 """Geometry graph PyTorch Geometric dataset implementation."""
 
 import logging
-from typing import Any, Protocol
+from typing import Any
 
 import numpy as np
 import torch
@@ -36,8 +36,6 @@ from xanesnet.serialization.config import Config
 
 from ..base import SavePathFn, TorchGeometricDataset
 from ..registry import DatasetRegistry
-
-SPECTRUM_KEYS = ["XANES", "XANES_K"]
 
 
 class GeometryGraphData(Data):
@@ -61,8 +59,12 @@ class GeometryGraphData(Data):
         return super().__inc__(key, value, *args, **kwargs)
 
 
-class GeometryGraphBatch(Protocol):
-    """Protocol for batches emitted by ``GeometryGraphDataset.collate_fn``."""
+class GeometryGraphBatch(Batch):
+    """Typed PyG batch emitted by ``GeometryGraphDataset.collate_fn``.
+
+    Calling :meth:`~torch_geometric.data.Batch.from_data_list` on this class
+    preserves the concrete batch type while PyG adds its batching metadata.
+    """
 
     x: torch.Tensor
     pos: torch.Tensor
@@ -76,7 +78,7 @@ class GeometryGraphBatch(Protocol):
     # Targets
     energies: torch.Tensor
     intensities: torch.Tensor
-    absorber_mask: torch.Tensor
+    target_site_mask: torch.Tensor
     sample_id: list[str]
 
 
@@ -136,20 +138,17 @@ class GeometryGraphDataset(TorchGeometricDataset):
             ``1`` when the graph was saved, otherwise ``0`` when skipped.
         """
         pmg_obj = self.datasource[idx]
-        for key in SPECTRUM_KEYS:
-            if key in pmg_obj.site_properties.keys():
-                break
-        else:
-            logging.warning(f"No XANES spectrum found for sample {idx} ({pmg_obj.properties['sample_id']}); skipping.")
+        if "spectrum" not in pmg_obj.site_properties:
+            logging.warning(f"No spectrum found for sample {idx} ({pmg_obj.properties['sample_id']}); skipping.")
             return 0
 
-        xanes = np.array(pmg_obj.site_properties[key], dtype=object)
-        xanes_idxs: list[int] = np.where(xanes != None)[0].tolist()  # noqa: E711
-        xanes = xanes[xanes_idxs]
-        absorber_mask = torch.zeros(len(pmg_obj.labels), dtype=torch.bool)
-        absorber_mask[xanes_idxs] = True
-        intensities_np = np.array([x["intensities"] for x in xanes], dtype=np.float32)
-        energies_np = np.array([x["energies"] for x in xanes], dtype=np.float32)
+        spectra = np.array(pmg_obj.site_properties["spectrum"], dtype=object)
+        target_site_indices: list[int] = np.where(spectra != None)[0].tolist()  # noqa: E711
+        spectra = spectra[target_site_indices]
+        target_site_mask = torch.zeros(len(pmg_obj.labels), dtype=torch.bool)
+        target_site_mask[target_site_indices] = True
+        intensities_np = np.array([x["intensities"] for x in spectra], dtype=np.float32)
+        energies_np = np.array([x["energies"] for x in spectra], dtype=np.float32)
 
         atomic_numbers = torch.tensor(pmg_obj.atomic_numbers, dtype=torch.int64)
         cart_coords = torch.tensor(pmg_obj.cart_coords, dtype=torch.float32)
@@ -173,33 +172,33 @@ class GeometryGraphDataset(TorchGeometricDataset):
             idx_ji=idx_ji,
             energies=energies,
             intensities=intensities,
-            absorber_mask=absorber_mask,
+            target_site_mask=target_site_mask,
             sample_id=pmg_obj.properties["sample_id"],
         )
 
         self._save_data(struct, save_path_fn(0))
         return 1
 
-    def collate_fn(self, batch: list[BaseData]) -> Batch:
+    def collate_fn(self, batch: list[BaseData]) -> GeometryGraphBatch:
         """Collate geometry graph samples into one PyG batch.
 
         Args:
             batch: Geometry graph samples loaded by ``__getitem__``.
 
         Returns:
-            PyG batch with target tensors concatenated over absorber sites.
-            ``sample_id`` is expanded per absorber so every row in
-            ``intensities`` / ``absorber_mask`` has a corresponding
+            PyG batch with target tensors concatenated over target sites.
+            ``sample_id`` is expanded per target site so every row in
+            ``intensities`` / ``target_site_mask`` has a corresponding
             identifier.
         """
-        fields_to_cat = ["energies", "intensities", "absorber_mask"]
-        batched = Batch.from_data_list(batch, exclude_keys=[*fields_to_cat, "sample_id"])
+        fields_to_cat = ["energies", "intensities", "target_site_mask"]
+        batched = GeometryGraphBatch.from_data_list(batch, exclude_keys=[*fields_to_cat, "sample_id"])
         for field in fields_to_cat:
             setattr(batched, field, torch.cat([getattr(d, field) for d in batch], dim=0))
         batched.sample_id = [
             str(getattr(data, "sample_id"))
             for data in batch
-            for _ in range(int(getattr(data, "absorber_mask").sum().item()))
+            for _ in range(int(getattr(data, "target_site_mask").sum().item()))
         ]
         return batched
 

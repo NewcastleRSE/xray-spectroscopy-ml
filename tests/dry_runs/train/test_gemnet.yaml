@@ -4,6 +4,7 @@ device: cpu
 datasource:
   datasource_type: pmgjson
   json_path: ./data/toy_data/
+  spectrum_key: "XANES"
 
 dataset:
   dataset_type: gemnet

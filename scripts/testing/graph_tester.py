@@ -38,7 +38,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from xanesnet.datasources.pmgjson import PMGJSONSource
 from xanesnet.graphs import GraphBuilderRegistry
-from xanesnet.graphs.utils.absorber_paths import build_absorber_paths
+from xanesnet.graphs.utils.target_site_paths import build_target_site_paths
 from xanesnet.graphs.utils.triplets import compute_triplets_and_angles
 
 PMGObject: TypeAlias = Structure | Molecule
@@ -61,7 +61,7 @@ def load_sample(json_dir: Path, index: int | None, file_stem: str | None) -> Str
         SystemExit: If the requested sample is not available.
     """
 
-    ds = PMGJSONSource(datasource_type="pmgjson", json_path=str(json_dir))
+    ds = PMGJSONSource(datasource_type="pmgjson", json_path=str(json_dir), spectrum_key="spectrum")
     if file_stem is not None:
         if file_stem not in ds.sample_ids:
             raise SystemExit(f"file stem {file_stem!r} not found in {json_dir}")
@@ -131,16 +131,16 @@ def plot_atoms(
     ax: Any,
     coords: np.ndarray,
     atomic_numbers: np.ndarray,
-    absorber_idx: int,
+    target_site_idx: int,
     label: bool = True,
 ) -> None:
-    """Plot atoms and mark the absorber atom.
+    """Plot atoms and mark the target site.
 
     Args:
         ax: Matplotlib 3D axis to draw on.
         coords: Cartesian atom coordinates with shape ``(N, 3)`` in **angstrom**.
         atomic_numbers: Atomic numbers with shape ``(N,)``.
-        absorber_idx: Atom index highlighted as the absorber.
+        target_site_idx: Atom index highlighted as the target site.
         label: Whether to draw element/index labels beside atoms.
     """
 
@@ -150,9 +150,9 @@ def plot_atoms(
         coords[:, 0], coords[:, 1], coords[:, 2], c=colors, s=sizes, edgecolors="k", linewidths=0.4, depthshade=True
     )
     ax.scatter(
-        coords[absorber_idx, 0],
-        coords[absorber_idx, 1],
-        coords[absorber_idx, 2],
+        coords[target_site_idx, 0],
+        coords[target_site_idx, 1],
+        coords[target_site_idx, 2],
         s=220,
         facecolors="none",
         edgecolors="red",
@@ -252,63 +252,63 @@ def plot_triplets(
     ax.add_collection3d(poly)
 
 
-def absorber_neighbor_coords(pmg_obj: PMGObject, absorber_idx: int, cutoff: float) -> np.ndarray:
-    """Return neighbouring coordinates around the absorber.
+def target_site_neighbor_coords(pmg_obj: PMGObject, target_site_idx: int, cutoff: float) -> np.ndarray:
+    """Return neighbouring coordinates around the target site.
 
     Args:
-        pmg_obj: Pymatgen object containing the absorber and neighbours.
-        absorber_idx: Atom index used as the absorber.
+        pmg_obj: Pymatgen object containing the target site and neighbours.
+        target_site_idx: Atom index used as the target site.
         cutoff: Maximum neighbour distance in **angstrom**.
 
     Returns:
         Neighbour coordinates with shape ``(M, 3)`` in **angstrom**.
     """
 
-    abs_coord = np.array(pmg_obj.cart_coords[absorber_idx], dtype=np.float64)
+    target_site_coord = np.array(pmg_obj.cart_coords[target_site_idx], dtype=np.float64)
     if isinstance(pmg_obj, Structure):
-        neighbors = pmg_obj.get_neighbors(pmg_obj[absorber_idx], r=cutoff)
+        neighbors = pmg_obj.get_neighbors(pmg_obj[target_site_idx], r=cutoff)
         if not neighbors:
             return np.zeros((0, 3), dtype=np.float64)
         return np.array([n.coords for n in neighbors], dtype=np.float64)
     all_coords = np.array(pmg_obj.cart_coords, dtype=np.float64)
-    dists = np.linalg.norm(all_coords - abs_coord, axis=-1)
-    keep = (dists <= cutoff) & (np.arange(len(pmg_obj)) != absorber_idx)
+    dists = np.linalg.norm(all_coords - target_site_coord, axis=-1)
+    keep = (dists <= cutoff) & (np.arange(len(pmg_obj)) != target_site_idx)
     return all_coords[keep]
 
 
-def plot_absorber_paths(
+def plot_target_site_paths(
     ax: Any,
     pmg_obj: PMGObject,
-    absorber_idx: int,
+    target_site_idx: int,
     cutoff: float,
     max_paths: int,
     max_draw: int,
 ) -> None:
-    """Plot a deterministic sample of absorber-centred two-neighbour paths.
+    """Plot a deterministic sample of target-site-centred two-neighbour paths.
 
     Args:
         ax: Matplotlib 3D axis to draw on.
         pmg_obj: Pymatgen object containing atom coordinates.
-        absorber_idx: Atom index used as the absorber.
+        target_site_idx: Atom index used as the target site.
         cutoff: Maximum neighbour distance in **angstrom**.
         max_paths: Number of lowest-score paths retained before drawing.
         max_draw: Maximum number of retained paths to draw.
     """
 
-    abs_coord = np.array(pmg_obj.cart_coords[absorber_idx], dtype=np.float64)
-    neigh_coords = absorber_neighbor_coords(pmg_obj, absorber_idx, cutoff)
+    target_site_coord = np.array(pmg_obj.cart_coords[target_site_idx], dtype=np.float64)
+    neigh_coords = target_site_neighbor_coords(pmg_obj, target_site_idx, cutoff)
     n = neigh_coords.shape[0]
     if n < 2:
         return
     ii, jj = np.triu_indices(n, k=1)
     cj, ck = neigh_coords[ii], neigh_coords[jj]
-    r0j = np.linalg.norm(cj - abs_coord, axis=-1)
-    r0k = np.linalg.norm(ck - abs_coord, axis=-1)
+    r0j = np.linalg.norm(cj - target_site_coord, axis=-1)
+    r0k = np.linalg.norm(ck - target_site_coord, axis=-1)
     rjk = np.linalg.norm(ck - cj, axis=-1)
     score = r0j + r0k + 0.5 * rjk
     order = np.argsort(score)[:max_paths]
     draw_order = order[: min(max_draw, order.shape[0])]
-    tris = [np.stack([abs_coord, cj[t], ck[t]], axis=0) for t in draw_order]
+    tris = [np.stack([target_site_coord, cj[t], ck[t]], axis=0) for t in draw_order]
     poly = Poly3DCollection(
         tris, facecolors=(0.85, 0.25, 0.55, 0.20), edgecolors=(0.70, 0.10, 0.40, 0.75), linewidths=0.7
     )
@@ -340,7 +340,7 @@ def setup_axis(
     pmg_obj: PMGObject,
     coords: np.ndarray,
     atomic_numbers: np.ndarray,
-    absorber_idx: int,
+    target_site_idx: int,
     vis_points: np.ndarray,
     is_periodic: bool,
     title: str,
@@ -353,7 +353,7 @@ def setup_axis(
         pmg_obj: Pymatgen object being visualized.
         coords: Cartesian atom coordinates with shape ``(N, 3)`` in **angstrom**.
         atomic_numbers: Atomic numbers with shape ``(N,)``.
-        absorber_idx: Atom index highlighted as the absorber.
+        target_site_idx: Atom index highlighted as the target site.
         vis_points: Points used to choose equal axis limits, shape ``(M, 3)``.
         is_periodic: Whether to draw a unit cell.
         title: Axis title.
@@ -362,7 +362,7 @@ def setup_axis(
 
     if is_periodic:
         draw_unit_cell(ax, pmg_obj)
-    plot_atoms(ax, coords, atomic_numbers, absorber_idx, label=label_atoms)
+    plot_atoms(ax, coords, atomic_numbers, target_site_idx, label=label_atoms)
     ax.set_title(title, fontsize=10)
     equalize_3d_axes(ax, vis_points)
 
@@ -516,10 +516,10 @@ def main() -> None:
         action="store_true",
         help="Overlay Voronoi tessellation facets on the edges panel (any method)",
     )
-    p.add_argument("--absorber-idx", type=int, default=0)
+    p.add_argument("--target-site-idx", type=int, default=0)
     p.add_argument("--max-triplets-drawn", type=int, default=60)
     p.add_argument("--max-paths-drawn", type=int, default=60)
-    p.add_argument("--max-paths", type=int, default=128, help="Truncation budget for absorber paths")
+    p.add_argument("--max-paths", type=int, default=128, help="Truncation budget for target-site paths")
     p.add_argument("--no-atom-labels", action="store_true")
     p.add_argument("--save", type=Path, default=None)
     p.add_argument("--no-show", action="store_true")
@@ -532,8 +532,8 @@ def main() -> None:
     atomic_numbers = np.array(pmg_obj.atomic_numbers, dtype=np.int64)
     n_atoms = len(pmg_obj)
 
-    if not (0 <= args.absorber_idx < n_atoms):
-        raise SystemExit(f"--absorber-idx {args.absorber_idx} out of range [0, {n_atoms})")
+    if not (0 <= args.target_site_idx < n_atoms):
+        raise SystemExit(f"--target-site-idx {args.target_site_idx} out of range [0, {n_atoms})")
 
     min_facet_area = args.min_facet_area
     if min_facet_area is not None and not min_facet_area.endswith("%"):
@@ -566,9 +566,9 @@ def main() -> None:
     idx_kj_np = idx_kj.numpy()
     idx_ji_np = idx_ji.numpy()
 
-    paths = build_absorber_paths(
+    paths = build_target_site_paths(
         pmg_obj,
-        absorber_idx=args.absorber_idx,
+        target_site_idx=args.target_site_idx,
         cutoff=args.cutoff,
         max_paths=args.max_paths,
     )
@@ -600,7 +600,7 @@ def main() -> None:
     ax_hist_ang = fig.add_subplot(gs[1, 2])
 
     label_atoms = (not args.no_atom_labels) and (n_atoms <= 60)
-    abs_sym = Element.from_Z(int(atomic_numbers[args.absorber_idx])).symbol
+    target_site_symbol = Element.from_Z(int(atomic_numbers[args.target_site_idx])).symbol
 
     # Edges only
     setup_axis(
@@ -608,7 +608,7 @@ def main() -> None:
         pmg_obj,
         coords,
         atomic_numbers,
-        args.absorber_idx,
+        args.target_site_idx,
         vis_points,
         is_periodic,
         f"Edges ({args.graph_method}, E={edge_index.shape[1]})",
@@ -632,7 +632,7 @@ def main() -> None:
         pmg_obj,
         coords,
         atomic_numbers,
-        args.absorber_idx,
+        args.target_site_idx,
         vis_points,
         is_periodic,
         f"Triplets (T={idx_kj_np.size}, <={args.max_triplets_drawn} drawn)",
@@ -643,22 +643,25 @@ def main() -> None:
         handles=[Patch(color=(0.30, 0.75, 0.35, 0.35), label="triplet (k-j-i)")], loc="upper left", fontsize=8
     )
 
-    # E3EE absorber paths
+    # E3EE target-site paths
     n_paths_total = int(paths["path_j"].numel())
     setup_axis(
         ax_paths,
         pmg_obj,
         coords,
         atomic_numbers,
-        args.absorber_idx,
+        args.target_site_idx,
         vis_points,
         is_periodic,
-        f"Absorber paths from {abs_sym}{args.absorber_idx} " f"(P={n_paths_total}, <={args.max_paths_drawn} drawn)",
+        f"Target-site paths from {target_site_symbol}{args.target_site_idx} "
+        f"(P={n_paths_total}, <={args.max_paths_drawn} drawn)",
         label_atoms,
     )
-    plot_absorber_paths(ax_paths, pmg_obj, args.absorber_idx, args.cutoff, args.max_paths, args.max_paths_drawn)
+    plot_target_site_paths(ax_paths, pmg_obj, args.target_site_idx, args.cutoff, args.max_paths, args.max_paths_drawn)
     ax_paths.legend(
-        handles=[Patch(color=(0.85, 0.25, 0.55, 0.35), label="(absorber, j, k)")], loc="upper left", fontsize=8
+        handles=[Patch(color=(0.85, 0.25, 0.55, 0.35), label="(target site, j, k)")],
+        loc="upper left",
+        fontsize=8,
     )
 
     # Histograms
@@ -715,7 +718,12 @@ def main() -> None:
         cos_paths = paths["path_cosangle"].numpy()
         path_ang = np.rad2deg(np.arccos(np.clip(cos_paths, -1.0, 1.0)))
         ax_hist_ang.hist(
-            path_ang, bins=36, color="#c2185b", edgecolor="white", alpha=0.7, label=f"abs-path (P={path_ang.size})"
+            path_ang,
+            bins=36,
+            color="#c2185b",
+            edgecolor="white",
+            alpha=0.7,
+            label=f"target-site path (P={path_ang.size})",
         )
     if has_trip or has_path:
         ax_hist_ang.set_title("angle distributions [deg]")
@@ -731,7 +739,7 @@ def main() -> None:
     print(f"sample:          {stem}")
     print(f"kind:            {'periodic Structure' if is_periodic else 'Molecule'}")
     print(f"# atoms:         {n_atoms}")
-    print(f"absorber:        idx={args.absorber_idx}  ({abs_sym})")
+    print(f"target site:     idx={args.target_site_idx}  ({target_site_symbol})")
     print(f"cutoff:          {args.cutoff} A   max_neighbors: {args.max_neighbors}")
     print(f"graph method:    {args.graph_method}")
     if args.graph_method == "voronoi":
@@ -767,14 +775,14 @@ def main() -> None:
                 f"  ! {n_zero} triplets with angle ~= 0" f"  (periodic bounce-back: likely a bug in triplets.py filter)"
             )
     if has_path:
-        print(f"# absorber paths (<={args.max_paths}): {n_paths_total}")
+        print(f"# target-site paths (<={args.max_paths}): {n_paths_total}")
         print(f"  r0j: min={paths['path_r0j'].min():.3f} " f"max={paths['path_r0j'].max():.3f}")
         print(f"  rjk: min={paths['path_rjk'].min():.3f} " f"max={paths['path_rjk'].max():.3f}")
     print("=" * 66)
 
     fig.suptitle(
         f"{'periodic Structure' if is_periodic else 'Molecule'}  .  {stem}  "
-        f".  absorber={abs_sym}{args.absorber_idx}  "
+        f".  target site={target_site_symbol}{args.target_site_idx}  "
         f".  method={args.graph_method}  "
         f".  cutoff={args.cutoff}  .  max_nbrs={args.max_neighbors}",
         fontsize=11,

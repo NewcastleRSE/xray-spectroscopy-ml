@@ -6,6 +6,7 @@ device: cuda
 datasource:
   datasource_type: pmgjson
   json_path: ./data/toy_data/
+  spectrum_key: "XANES"
 
 dataset:
   # general:
@@ -35,7 +36,6 @@ dataset:
     cov_radii_scale: 2.5
     max_num_neighbors: 50
   oc_aint_graph_builder:
-  graph_builder:
     graph_builder_type: cov_radius
     cutoff: 5.0
     cov_radii_scale: 3.5

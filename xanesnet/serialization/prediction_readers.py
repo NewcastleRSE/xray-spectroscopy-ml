@@ -39,9 +39,9 @@ from .prediction_writers import PredictionBatch
 
 
 class PredictionSample(TypedDict):
-    """Single-absorber prediction record returned by ``PredictionReader``.
+    """Single-target-site prediction record returned by ``PredictionReader``.
 
-    All values are numpy arrays or torch tensors with no leading absorber
+    All values are numpy arrays or torch tensors with no leading target-site
     dimension - each field corresponds to a single row of the equivalent
     ``PredictionBatch`` field. ``prediction_std`` is present when inference
     produced an energy/channel-wise uncertainty estimate. ``sample_id`` is the
@@ -68,7 +68,7 @@ class PredictionReader(ABC):
     """Abstract base class for reading saved XANESNET inference results.
 
     Implements the ``Iterator`` protocol so that callers can iterate over
-    predictions one absorber at a time.
+    predictions one target site at a time.
 
     Args:
         path: Directory (or file) containing the saved prediction data.
@@ -94,10 +94,10 @@ class PredictionReader(ABC):
 
     @abstractmethod
     def __len__(self) -> int:
-        """Return the total number of absorber records in the dataset.
+        """Return the total number of target-site records in the dataset.
 
         Returns:
-            Number of absorber-level prediction records.
+            Number of target-site-level prediction records.
         """
         ...
 
@@ -106,10 +106,10 @@ class PredictionReader(ABC):
         """Return the ``PredictionSample`` at position ``index``.
 
         Args:
-            index: Zero-based absorber index.
+            index: Zero-based target-site index.
 
         Returns:
-            A ``PredictionSample`` for the requested absorber.
+            A ``PredictionSample`` for the requested target site.
         """
         ...
 
@@ -126,10 +126,10 @@ class PredictionReader(ABC):
         """Return the next ``PredictionSample`` and advance the cursor.
 
         Returns:
-            The next absorber record.
+            The next target-site record.
 
         Raises:
-            StopIteration: When all absorbers have been yielded.
+            StopIteration: When all target sites have been yielded.
         """
         if self._current_index >= len(self):
             raise StopIteration
@@ -142,8 +142,8 @@ class PredictionReader(ABC):
         """Load all predictions at once.
 
         Returns:
-            A ``PredictionBatch`` with all absorbers stacked along the leading
-            absorber dimension.
+            A ``PredictionBatch`` with all target sites stacked along the leading
+            target-site dimension.
         """
 
         all_data: dict[str, list[Any]] = {}
@@ -172,7 +172,7 @@ class PredictionReader(ABC):
 
     @staticmethod
     def _normalize_sample_value(value: Any) -> Any:
-        """Normalize a single per-absorber value to a Python primitive or ndarray.
+        """Normalize a single per-target-site value to a Python primitive or ndarray.
 
         - bytes -> str
         - np.generic (e.g. np.float64, np.bool_) -> Python primitive via .item()
@@ -275,10 +275,10 @@ class HDF5Reader(PredictionReader):
             raise
 
     def __len__(self) -> int:
-        """Return the number of absorber records stored in the HDF5 file.
+        """Return the number of target-site records stored in the HDF5 file.
 
         Returns:
-            Number of persisted absorber rows.
+            Number of persisted target-site rows.
         """
         if self._length is not None:
             return self._length
@@ -299,10 +299,10 @@ class HDF5Reader(PredictionReader):
         return self._length
 
     def __getitem__(self, index: int) -> PredictionSample:
-        """Return a single absorber record from the HDF5 dataset.
+        """Return a single target-site record from the HDF5 dataset.
 
         Args:
-            index: Zero-based absorber index.
+            index: Zero-based target-site index.
 
         Returns:
             Decoded prediction sample for ``index``.
@@ -329,7 +329,7 @@ class HDF5Reader(PredictionReader):
         """Load every HDF5 dataset into a single stacked prediction batch.
 
         Returns:
-            Mapping from field names to full absorber-major numpy arrays.
+            Mapping from field names to full target-site-major numpy arrays.
         """
         if self._group is None:
             raise RuntimeError("Reader not properly initialized")
@@ -403,7 +403,7 @@ class NumpyReader(PredictionReader):
         """Load a single prediction sample from disk.
 
         Args:
-            index: Zero-based absorber index.
+            index: Zero-based target-site index.
 
         Returns:
             Decoded prediction sample for ``index``.
@@ -466,7 +466,7 @@ class JSONReader(PredictionReader):
         """Load a single prediction sample from a JSON file.
 
         Args:
-            index: Zero-based absorber index.
+            index: Zero-based target-site index.
 
         Returns:
             Decoded prediction sample for ``index``.

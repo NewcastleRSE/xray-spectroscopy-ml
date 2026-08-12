@@ -43,8 +43,8 @@ class EnvEmbed(Model):
     Architecture:
 
     1. :class:`~xanesnet.models.envembed.layers.SoftRadialShellsEncoder`: learnable
-       soft radial shell binning over absorber-centric distances, fused with the
-       absorber descriptor to produce a fixed-size latent vector.
+    soft radial shell binning over target-site-centric distances, fused with the
+    target-site descriptor to produce a fixed-size latent vector.
     2. :class:`~xanesnet.models.envembed.layers.CoeffHeadGroupedResidualPreLN`: shared
        Pre-LN residual trunk predicting spectral basis coefficients per width group.
 
@@ -115,16 +115,16 @@ class EnvEmbed(Model):
         lengths: torch.Tensor,
         basis: SpectralBasis,
     ) -> torch.Tensor:
-        """Encode the local chemical environment and predict the XANES spectrum.
+        """Encode the local chemical environment and predict the spectrum.
 
         Args:
-            descriptor_features: Padded descriptor features with absorber at index 0, shape ``(B, N, H)``.
-            distance_features: Distances from the absorber atom, shape ``(B, N)``.
+            descriptor_features: Padded descriptor features with the target site at index 0, shape ``(B, N, H)``.
+            distance_features: Distances from the target-site atom, shape ``(B, N)``.
             lengths: Number of real atoms per sample (before padding), shape ``(B,)``.
             basis: Spectral basis used to reconstruct the spectrum from coefficients.
 
         Returns:
-            Predicted XANES spectra of shape ``(B, n_energies)``.
+            Predicted spectra of shape ``(B, n_energies)``.
         """
         h = self.encoder(descriptor_features, dists=distance_features, lengths=lengths)
         coeff = self.coeff_head(h)

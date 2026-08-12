@@ -15,5 +15,5 @@ $defs:
       root_path:
         type: string
         description: Path to the root directory containing the subdirectories.
-    description: Datasource for multiple paired XYZ coordinate files and XANES spectra.
+    description: Datasource for multiple paired XYZ coordinate files and spectra.
 description: Datasource schemas backed by ``DataSourceRegistry`` classes and datasource constructor signatures.

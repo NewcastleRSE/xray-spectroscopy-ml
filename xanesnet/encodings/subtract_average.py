@@ -44,7 +44,7 @@ class SubtractAverageEncoding(AffineEncoding):
     spectrum.
 
     The ``per_element`` switch selects whether a separate average spectrum is
-    used for each absorbing element (chosen per sample from its atomic number)
+    used for each target-site element (chosen per sample from its atomic number)
     or a single average is shared across all elements. When ``per_element`` is
     false, ``average`` is a flat list; when true, it is a list of rows, one row
     per entry of ``elements``.
@@ -53,7 +53,7 @@ class SubtractAverageEncoding(AffineEncoding):
         encoding_type: Identifier string for this encoding type.
         average: Per-point average spectrum. A flat list when ``per_element`` is
             false, or one row per element (aligned with ``elements``) when true.
-        per_element: Whether the average is selected per absorbing element
+        per_element: Whether the average is selected per target-site element
             (``True``) or shared across all elements (``False``).
         elements: Atomic numbers aligned row-wise with ``average`` when
             ``per_element`` is true; ignored otherwise.

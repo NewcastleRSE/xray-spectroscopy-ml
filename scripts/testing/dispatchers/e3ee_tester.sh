@@ -48,7 +48,7 @@ ATT_MIN_FACET_AREA=""
 ATT_COV_RADII_SCALE=1.5
 
 # Drawing / output params
-ABSORBER_IDX=0
+TARGET_SITE_IDX=0
 NO_ATOM_LABELS=false
 SAVE_PATH=""
 NO_SHOW=false
@@ -64,7 +64,7 @@ args=(
 	"--att-max-neighbors" "$ATT_MAX_NEIGHBORS"
 	"--att-graph-method" "$ATT_GRAPH_METHOD"
 	"--att-cov-radii-scale" "$ATT_COV_RADII_SCALE"
-	"--absorber-idx" "$ABSORBER_IDX"
+	"--target-site-idx" "$TARGET_SITE_IDX"
 )
 
 if [[ -n "$FILE_STEM" ]]; then

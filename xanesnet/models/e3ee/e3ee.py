@@ -18,7 +18,7 @@
 # Citations:
 #   ...
 
-"""Absorber-centred E3-equivariant model (E3EE)."""
+"""Target-site-centred E3-equivariant model (E3EE)."""
 
 import torch
 import torch.nn as nn
@@ -30,17 +30,17 @@ from ..base import Model
 from ..registry import ModelRegistry
 from .layers import (
     MLP,
-    AbsorberPathAggregator,
-    EnergyConditionedAbsorberBranch,
     EnergyConditionedAtomAttention,
     EnergyConditionedAtomConvolution,
-    EnergyConditionedEquivariantAbsorberHead,
     EnergyConditionedEquivariantAtomAttention,
     EnergyConditionedEquivariantAtomConvolution,
+    EnergyConditionedEquivariantTargetSiteHead,
+    EnergyConditionedTargetSiteBranch,
     EnergyRBFEmbedding,
     EquivariantAtomEncoder,
     GatedBranchFusion,
     PairElementEnergyScattering,
+    TargetSitePathAggregator,
 )
 from .utils import invariant_feature_dim, invariant_features_from_irreps
 
@@ -48,15 +48,15 @@ from .utils import invariant_feature_dim, invariant_features_from_irreps
 @ModelRegistry.register("e3ee")
 class E3EE(Model):
     """
-    Absorber-centred E3-equivariant model.
+    Target-site-centred E3-equivariant model.
     Architecture:
     - Equivariant atom encoder (e3nn spherical harmonics message passing)
-    - Branch 1 (optional): invariant absorber features + energy
+    - Branch 1 (optional): invariant target-site features + energy
     - Branch 2a (optional): energy-conditioned atom attention
     - Branch 2b (optional): energy-conditioned equivariant atom attention
     - Branch 2c (optional): energy-conditioned invariant convolution (SchNet/PaiNN-style)
     - Branch 2d (optional): energy-conditioned equivariant convolution (NequIP/MACE-style)
-    - Branch 3 (optional): late equivariant absorber head
+    - Branch 3 (optional): late equivariant target-site head
     - Branch 4 (optional): 3-body path scattering
 
     Each optional branch produces a ``(B, nE, latent_dim)`` tensor. Active
@@ -82,9 +82,9 @@ class E3EE(Model):
         e3nn_irreps_message: Message irreps inside each interaction block.
         e3nn_lmax: Maximum ``l`` for spherical harmonics in the encoder.
         out_mlp_layers: Number of layers in the final head MLP.
-        use_invariant_branch: Enable the invariant absorber branch.
+        use_invariant_branch: Enable the invariant target-site branch.
         use_attention_branch: Enable the invariant atom-attention branch.
-        use_equivariant_branch: Enable the late equivariant absorber head.
+        use_equivariant_branch: Enable the late equivariant target-site head.
         use_eq_attention_branch: Enable the equivariant atom-attention branch.
         use_conv_branch: Enable the invariant SchNet/PaiNN convolution branch.
         use_eq_conv_branch: Enable the equivariant NequIP/MACE convolution branch.
@@ -197,9 +197,9 @@ class E3EE(Model):
             n_rbf=energy_rbf_dim,
         )
 
-        # Branch 1 (optional): absorber invariant features + energy
+        # Branch 1 (optional): target-site invariant features + energy
         if self.use_invariant_branch:
-            self.abs_branch = EnergyConditionedAbsorberBranch(
+            self.target_site_branch = EnergyConditionedTargetSiteBranch(
                 atom_dim=self._inv_dim,
                 e_dim=energy_rbf_dim,
                 hidden_dim=head_hidden_dim,
@@ -268,9 +268,9 @@ class E3EE(Model):
                 use_gate=conv_use_gate,
             )
 
-        # Branch 3 (optional): late equivariant absorber head
+        # Branch 3 (optional): late equivariant target-site head
         if self.use_equivariant_branch:
-            self.eq_abs_head = EnergyConditionedEquivariantAbsorberHead(
+            self.eq_target_site_head = EnergyConditionedEquivariantTargetSiteHead(
                 irreps_node=self.atom_encoder.irreps_node,
                 e_dim=energy_rbf_dim,
                 hidden_dim=head_hidden_dim,
@@ -286,7 +286,7 @@ class E3EE(Model):
                 hidden_dim=128,
                 out_dim=scatter_dim,
             )
-            self.path_agg = AbsorberPathAggregator(
+            self.path_agg = TargetSitePathAggregator(
                 atom_dim=self._inv_dim,
                 rbf_dim=rbf_dim,
                 geom_hidden_dim=128,
@@ -328,7 +328,7 @@ class E3EE(Model):
         self,
         x: torch.Tensor,
         mask: torch.Tensor,
-        absorber_index: torch.Tensor,
+        target_site_index: torch.Tensor,
         edge_src: torch.Tensor,
         edge_dst: torch.Tensor,
         edge_weight: torch.Tensor,
@@ -351,25 +351,25 @@ class E3EE(Model):
         Args:
             x: Atomic numbers (int64, padded), shape ``(B, N)``.
             mask: Valid-atom mask, shape ``(B, N)``.
-            absorber_index: Absorber atom index per sample, shape ``(B,)``.
+            target_site_index: Target-site atom index per sample, shape ``(B,)``.
             edge_src: Flat source indices into ``B*N``, shape ``(E,)``.
             edge_dst: Flat destination indices into ``B*N``, shape ``(E,)``.
             edge_weight: Edge lengths in **Angstrom**, shape ``(E,)``.
             edge_vec: Edge displacement vectors in **Angstrom**, shape ``(E, 3)``.
             att_dst: Flat destination indices into ``B*N`` (attention graph), shape ``(E_att,)``.
-            att_dist: Absorber-to-atom distances in **Angstrom**, shape ``(E_att,)``.
-            att_vec: Absorber-to-atom displacement vectors in **Angstrom**, shape ``(E_att, 3)``.
+            att_dist: Target-site-to-atom distances in **Angstrom**, shape ``(E_att,)``.
+            att_vec: Target-site-to-atom displacement vectors in **Angstrom**, shape ``(E_att, 3)``.
             energies: Energy grid, shape ``(B, nE)`` (nE drives RBF embedding).
             path_j: Flat j index into ``B*N``, shape ``(P,)``.
             path_k: Flat k index into ``B*N``, shape ``(P,)``.
-            path_r0j: Absorber-to-j distance in **Angstrom**, shape ``(P,)``.
-            path_r0k: Absorber-to-k distance in **Angstrom**, shape ``(P,)``.
+            path_r0j: Target-site-to-j distance in **Angstrom**, shape ``(P,)``.
+            path_r0k: Target-site-to-k distance in **Angstrom**, shape ``(P,)``.
             path_rjk: j-to-k distance in **Angstrom**, shape ``(P,)``.
-            path_cosangle: Cosine of the j-absorber-k angle, shape ``(P,)``.
+            path_cosangle: Cosine of the j-target-site-k angle, shape ``(P,)``.
             path_batch: Batch index per path, shape ``(P,)``.
 
         Returns:
-            Predicted XANES intensities of shape ``(B, nE)``.
+            Predicted spectral intensities of shape ``(B, nE)``.
         """
         bsz, n_atoms = x.shape
         device = x.device
@@ -382,7 +382,7 @@ class E3EE(Model):
         h_full = self.atom_encoder(
             z=x,
             mask=mask,
-            absorber_index=absorber_index,
+            target_site_index=target_site_index,
             edge_src=edge_src,
             edge_dst=edge_dst,
             edge_weight=edge_weight,
@@ -392,15 +392,15 @@ class E3EE(Model):
         h = invariant_features_from_irreps(h_full, self.atom_encoder.irreps_node)  # [B, N, inv_dim]
 
         batch_arange = torch.arange(bsz, device=device)
-        h_abs = h[batch_arange, absorber_index, :]
-        h_abs_full = h_full[batch_arange, absorber_index, :]
+        h_target_site = h[batch_arange, target_site_index, :]
+        h_target_site_full = h_full[batch_arange, target_site_index, :]
 
         parts = []
 
-        # Branch 1 (optional): absorber invariant features + energy
+        # Branch 1 (optional): target-site invariant features + energy
         if self.use_invariant_branch:
-            abs_lat = self.abs_branch(h_abs, e_feat)  # [B, nE, latent]
-            parts.append(abs_lat)
+            target_site_lat = self.target_site_branch(h_target_site, e_feat)  # [B, nE, latent]
+            parts.append(target_site_lat)
 
         # Branch 2a (optional): energy-conditioned atom attention
         if self.use_attention_branch:
@@ -409,7 +409,7 @@ class E3EE(Model):
                 z=x,
                 mask=mask,
                 e_feat=e_feat,
-                absorber_index=absorber_index,
+                target_site_index=target_site_index,
                 att_dst=att_dst,
                 att_dist=att_dist,
             )  # [B, nE, latent]
@@ -423,7 +423,7 @@ class E3EE(Model):
                 z=x,
                 mask=mask,
                 e_feat=e_feat,
-                absorber_index=absorber_index,
+                target_site_index=target_site_index,
                 att_dst=att_dst,
                 att_dist=att_dist,
                 att_vec=att_vec,
@@ -437,7 +437,7 @@ class E3EE(Model):
                 z=x,
                 mask=mask,
                 e_feat=e_feat,
-                absorber_index=absorber_index,
+                target_site_index=target_site_index,
                 att_dst=att_dst,
                 att_dist=att_dist,
             )  # [B, nE, latent]
@@ -451,17 +451,17 @@ class E3EE(Model):
                 z=x,
                 mask=mask,
                 e_feat=e_feat,
-                absorber_index=absorber_index,
+                target_site_index=target_site_index,
                 att_dst=att_dst,
                 att_dist=att_dist,
                 att_vec=att_vec,
             )  # [B, nE, latent]
             parts.append(eq_conv_lat)
 
-        # Branch 3 (optional): late equivariant absorber head
+        # Branch 3 (optional): late equivariant target-site head
         if self.use_equivariant_branch:
-            eq_abs_lat = self.eq_abs_head(h_abs_full, e_feat)  # [B, nE, latent]
-            parts.append(eq_abs_lat)
+            eq_target_site_lat = self.eq_target_site_head(h_target_site_full, e_feat)  # [B, nE, latent]
+            parts.append(eq_target_site_lat)
 
         # Branch 4 (optional): 3-body path terms
         if self.use_path_branch:

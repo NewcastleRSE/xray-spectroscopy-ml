@@ -21,12 +21,11 @@
 """Shared graph-construction utilities used by :class:`GraphBuilder` subclasses.
 
 The functions here operate on already-built edge lists (symmetrisation,
-truncation) and on already-built graphs (absorber-centered paths, triplet
+truncation) and on already-built graphs (target-site-centred paths, triplet
 angles, and direction-aware higher-order indices). They are model-agnostic
 and reused across builders and downstream dataset code.
 """
 
-from .absorber_paths import build_absorber_paths
 from .directional_indices import (
     compute_id_swap,
     compute_mixed_triplets,
@@ -34,10 +33,11 @@ from .directional_indices import (
     compute_triplets,
 )
 from .symmetrize import symmetrize_directed_edges, truncate_per_source
+from .target_site_paths import build_target_site_paths
 from .triplets import compute_triplets_and_angles
 
 __all__ = [
-    "build_absorber_paths",
+    "build_target_site_paths",
     "compute_id_swap",
     "compute_mixed_triplets",
     "compute_quadruplets",

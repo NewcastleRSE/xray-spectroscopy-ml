@@ -29,7 +29,7 @@ from .basic import (
     IrrepNorm,
     RadialMLP,
 )
-from .branch_absorber import AllAtomEnergyBranch
+from .branch_all_atom import AllAtomEnergyBranch
 from .branch_attention import AllAtomAtomAttention
 from .branch_convolution import (
     AllAtomAtomConvolution,

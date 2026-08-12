@@ -73,8 +73,8 @@ class AllAtomAtomAttention(nn.Module):
     local encoder graph. RBF-encoded distances enter the keys/values, and values receive
     an additional cosine cutoff envelope. Softmax over each query's edge set provides renormalization.
 
-    The optional ``absorber_mask`` lets the caller restrict queries to absorber atoms when
-    ``use_absorber_mask`` is enabled in the parent model; other rows of the output are zeros.
+    The optional ``target_site_mask`` lets the caller restrict queries to target-site atoms when
+    ``use_target_site_mask`` is enabled in the parent model; other rows of the output are zeros.
 
     Args:
         atom_dim: Dimension of invariant per-atom features.
@@ -159,7 +159,7 @@ class AllAtomAtomAttention(nn.Module):
         att_src: torch.Tensor,
         att_dst: torch.Tensor,
         att_dist: torch.Tensor,
-        absorber_mask: torch.Tensor | None = None,
+        target_site_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Compute energy-conditioned attention over atoms and return latent.
 
@@ -171,7 +171,7 @@ class AllAtomAtomAttention(nn.Module):
             att_src: Flat source indices (queries) into ``B*N``, shape ``(E_att,)``.
             att_dst: Flat destination indices (keys/values) into ``B*N``, shape ``(E_att,)``.
             att_dist: Pair distances in **A**, shape ``(E_att,)``.
-            absorber_mask: Optional ``(B, N)`` bool mask. When given, queries are
+            target_site_mask: Optional ``(B, N)`` bool mask. When given, queries are
                 restricted to atoms with ``True``; other rows are returned as zeros.
 
         Returns:
@@ -189,8 +189,8 @@ class AllAtomAtomAttention(nn.Module):
 
         # Active queries.
         src_active = mask_flat.clone()
-        if absorber_mask is not None:
-            src_active = src_active & absorber_mask.reshape(flat)
+        if target_site_mask is not None:
+            src_active = src_active & target_site_mask.reshape(flat)
 
         # Restrict to edges with active src and valid dst.
         # Normally the dataset and graph construction should ensure this already.

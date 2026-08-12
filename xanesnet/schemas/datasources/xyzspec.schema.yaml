@@ -8,7 +8,7 @@ $defs:
     required:
     - datasource_type
     - xyz_path
-    - xanes_path
+    - spectra_path
     properties:
       datasource_type:
         const: xyzspec
@@ -16,8 +16,8 @@ $defs:
       xyz_path:
         type: string
         description: Path to the directory containing the ``.xyz`` files.
-      xanes_path:
+      spectra_path:
         type: string
         description: Path to the directory containing the ``.txt`` spectra files.
-    description: Datasource for paired XYZ coordinate files and XANES spectra.
+    description: Datasource for paired XYZ coordinate files and spectra.
 description: Datasource schemas backed by ``DataSourceRegistry`` classes and datasource constructor signatures.

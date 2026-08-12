@@ -24,6 +24,7 @@ from xanesnet.cli import main
 
 
 def run_debug_train() -> None:
+    """Run the configured debug training command through the CLI."""
     debug_args = [
         "train",
         "-i",
@@ -42,6 +43,7 @@ def run_debug_train() -> None:
 
 
 def run_debug_infer() -> None:
+    """Run the configured debug inference command through the CLI."""
     debug_args = [
         "infer",
         "-i",
@@ -60,6 +62,7 @@ def run_debug_infer() -> None:
 
 
 def run_debug_analyze() -> None:
+    """Run the configured debug analysis command through the CLI."""
     debug_args = [
         "analyze",
         "-i",

@@ -18,7 +18,7 @@
 # Citations:
 #   ...
 
-"""Invariant absorber branch for E3EE."""
+"""Dense invariant energy-dependent branch applied to every atom in E3EEFull."""
 
 import torch
 import torch.nn as nn
@@ -26,15 +26,8 @@ import torch.nn as nn
 from .basic import MLP
 
 
-class EnergyConditionedAbsorberBranch(nn.Module):
-    """Energy-dependent absorber branch based on invariant absorber features.
-
-    Args:
-        atom_dim: Dimension of the invariant absorber feature vector.
-        e_dim: Dimension of the energy RBF embedding.
-        hidden_dim: Hidden dimension of the MLP.
-        out_dim: Output (latent) dimension.
-    """
+class AllAtomEnergyBranch(nn.Module):
+    """Energy-dependent branch applied to every atom's invariant features."""
 
     def __init__(
         self,
@@ -43,7 +36,7 @@ class EnergyConditionedAbsorberBranch(nn.Module):
         hidden_dim: int,
         out_dim: int,
     ) -> None:
-        """Initialize ``EnergyConditionedAbsorberBranch``."""
+        """Initialize ``AllAtomEnergyBranch``."""
         super().__init__()
         self.mlp = MLP(
             in_dim=atom_dim + e_dim,
@@ -52,19 +45,19 @@ class EnergyConditionedAbsorberBranch(nn.Module):
             n_layers=3,
         )
 
-    def forward(self, h_abs: torch.Tensor, e_feat: torch.Tensor) -> torch.Tensor:
-        """Compute absorber branch latent from absorber features and energy embedding.
+    def forward(self, h_all: torch.Tensor, e_feat: torch.Tensor) -> torch.Tensor:
+        """Compute per-(atom, energy) latent vectors.
 
         Args:
-            h_abs: Absorber invariant features, shape ``(B, H)``.
+            h_all: Invariant features for every atom, shape ``(B, N, H)``.
             e_feat: Energy RBF features, shape ``(nE, dE)``.
 
         Returns:
-            Latent tensor of shape ``(B, nE, latent_dim)``.
+            Latent tensor of shape ``(B, N, nE, out_dim)``.
         """
-        bsz, h_dim = h_abs.shape
+        bsz, n_atoms, h_dim = h_all.shape
         n_energies, e_dim = e_feat.shape
 
-        ha = h_abs.unsqueeze(1).expand(bsz, n_energies, h_dim)
-        ef = e_feat.unsqueeze(0).expand(bsz, n_energies, e_dim)
-        return self.mlp(torch.cat([ha, ef], dim=-1))
+        expanded_atoms = h_all.unsqueeze(2).expand(bsz, n_atoms, n_energies, h_dim)
+        expanded_energy = e_feat.view(1, 1, n_energies, e_dim).expand(bsz, n_atoms, n_energies, e_dim)
+        return self.mlp(torch.cat([expanded_atoms, expanded_energy], dim=-1))

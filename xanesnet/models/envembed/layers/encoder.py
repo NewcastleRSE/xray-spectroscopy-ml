@@ -18,7 +18,7 @@
 # Citations:
 #   ...
 
-"""Soft radial shell encoder for absorber-centric environment embedding."""
+"""Soft radial shell encoder for target-site-centric environment embedding."""
 
 import torch
 import torch.nn as nn
@@ -37,12 +37,12 @@ def init_mlp_weights(module: nn.Module) -> None:
 
 
 class SoftRadialShellsEncoder(nn.Module):
-    """Absorber-centric soft-binning over distance with learnable shell centres and widths.
+    """Target-site-centric soft-binning over distance with learnable shell centres and widths.
 
     For each learnable radial shell, computes Gaussian weights over neighbor
-    atoms from the absorber-centric distance distribution. These shell-wise
+    atoms from the target-site-centric distance distribution. These shell-wise
     neighbor weights are used to form a weighted average descriptor per shell;
-    the shell summaries are then concatenated and fused with the absorber's own
+    the shell summaries are then concatenated and fused with the target site's own
     descriptor to produce a fixed-size latent vector.
 
     An optional gating mechanism modulates the fused representation using Fourier
@@ -96,7 +96,7 @@ class SoftRadialShellsEncoder(nn.Module):
             )
             self.register_buffer("freqs", torch.linspace(0.5, 6.0, n_fourier))
 
-        # Fuse absorber + shell summary into latent
+        # Fuse target site + shell summary into latent
         self.fuse = nn.Sequential(
             nn.Linear(d_input * 2, 2 * d_input),
             nn.GELU(),
@@ -152,8 +152,8 @@ class SoftRadialShellsEncoder(nn.Module):
         """Encode the local chemical environment into a fixed-size latent vector.
 
         Args:
-            x: Descriptor features with absorber at index 0, shape ``(B, N, H)``.
-            dists: Distances from the absorber atom in **A**, shape ``(B, N)``.
+            x: Descriptor features with the target site at index 0, shape ``(B, N, H)``.
+            dists: Distances from the target-site atom in **A**, shape ``(B, N)``.
             lengths: Number of real atoms per sample before padding, shape ``(B,)``.
                 If ``None``, all positions are treated as real.
 
@@ -161,7 +161,7 @@ class SoftRadialShellsEncoder(nn.Module):
             Fused latent representation of shape ``(B, latent_dim)``.
         """
         B, N, H = x.shape
-        absorbing = x[:, 0, :]  # (B, H)
+        target_site_features = x[:, 0, :]  # (B, H)
         context = x[:, 1:, :]  # (B, N-1, H)
         raw_r = dists[:, 1:]  # (B, N-1)
         r = raw_r.clamp_max(self.max_radius)  # (B, N-1)
@@ -189,9 +189,9 @@ class SoftRadialShellsEncoder(nn.Module):
         # Optional gating
         if self.use_gating:
             crowd = self._fourier_feats(r, mask=mask)  # (B, 2*n_fourier)
-            gate_in = torch.cat([absorbing, crowd], dim=-1)
+            gate_in = torch.cat([target_site_features, crowd], dim=-1)
             g = self.gate(gate_in)
             shell_summary = shell_summary * g
 
-        fused = torch.cat([absorbing, shell_summary], dim=-1)  # (B, 2*H)
+        fused = torch.cat([target_site_features, shell_summary], dim=-1)  # (B, 2*H)
         return self.fuse(fused)  # (B, latent_dim)

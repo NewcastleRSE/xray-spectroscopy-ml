@@ -132,7 +132,7 @@ class SpectralStatisticsCollector:
     """Overall and per-element streaming statistics over training spectra.
 
     Maintains one :class:`SpectralStatistics` accumulator across all spectra
-    and one accumulator per absorbing element.  Spectral rows are routed to
+    and one accumulator per target-site element. Spectral rows are routed to
     their element bucket using the atomic numbers supplied alongside each
     batch; when no element information is available only the overall
     accumulator is updated.
@@ -148,7 +148,7 @@ class SpectralStatisticsCollector:
 
         Args:
             spectra: Training spectra ``(B, N)``.
-            elements: Per-row absorber atomic numbers ``(B,)``, or ``None``
+            elements: Per-row target-site atomic numbers ``(B,)``, or ``None``
                 when the batch carries no element information.
         """
         self.overall.update(spectra)
@@ -193,7 +193,7 @@ def collect_spectral_statistics(dataset: Dataset, batchprocessor: BatchProcessor
     Iterates the training subset (or the whole dataset when no split is
     configured) and folds each spectral sample into a running
     :class:`SpectralStatisticsCollector`, which maintains both overall and
-    per-absorbing-element statistics.  For forward batch processors the
+    per-target-site-element statistics. For forward batch processors the
     spectrum is the model target; for inverse batch processors it is the
     spectral input (under
     :attr:`~xanesnet.batchprocessors.InverseBatchProcessor.spectra_input_key`).

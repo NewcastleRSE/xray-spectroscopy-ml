@@ -69,7 +69,7 @@ class DIRECT(Descriptor):
         Args:
             system: The atomic system.  Must carry ``info["sample_id"]``.
             site_index: Site index, list of site indices, or ``None`` for
-                all sites.  Defaults to ``0`` (the absorber site).
+                all sites.  Defaults to ``0`` (the target site).
 
         Returns:
             Descriptor array ``(S, F)`` with one row per selected site.

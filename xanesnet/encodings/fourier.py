@@ -61,7 +61,7 @@ class FourierEncoding(SpectraEncoding):
 
         Args:
             targets: Ground-truth target spectra ``(B, N)``.
-            elements: Optional per-sample absorber atomic numbers ``(B,)``.
+            elements: Optional per-sample target-site atomic numbers ``(B,)``.
                 Ignored: this encoding is element-independent.
 
         Returns:
@@ -76,7 +76,7 @@ class FourierEncoding(SpectraEncoding):
         Args:
             predictions: Model predictions in the Fourier space ``(B, 3N)`` when
                 ``concat=True`` or ``(B, 2N)`` when ``concat=False``.
-            elements: Optional per-sample absorber atomic numbers ``(B,)``.
+            elements: Optional per-sample target-site atomic numbers ``(B,)``.
                 Ignored: this encoding is element-independent.
 
         Returns:

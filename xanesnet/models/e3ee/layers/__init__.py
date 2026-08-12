@@ -29,7 +29,6 @@ from .basic import (
     IrrepNorm,
     RadialMLP,
 )
-from .branch_absorber import EnergyConditionedAbsorberBranch
 from .branch_attention import EnergyConditionedAtomAttention
 from .branch_convolution import (
     EnergyConditionedAtomConvolution,
@@ -37,20 +36,21 @@ from .branch_convolution import (
 )
 from .branch_eq_attention import EnergyConditionedEquivariantAtomAttention
 from .branch_equivariant import (
-    EnergyConditionedEquivariantAbsorberHead,
+    EnergyConditionedEquivariantTargetSiteHead,
     EnergyIrrepModulation,
 )
 from .branch_fusion import GatedBranchFusion
-from .branch_path import AbsorberPathAggregator, PairElementEnergyScattering
+from .branch_path import PairElementEnergyScattering, TargetSitePathAggregator
+from .branch_target_site import EnergyConditionedTargetSiteBranch
 from .interactions import EquivariantInteractionBlock
 
 __all__ = [
-    "AbsorberPathAggregator",
+    "TargetSitePathAggregator",
     "CosineCutoff",
-    "EnergyConditionedAbsorberBranch",
+    "EnergyConditionedTargetSiteBranch",
     "EnergyConditionedAtomAttention",
     "EnergyConditionedAtomConvolution",
-    "EnergyConditionedEquivariantAbsorberHead",
+    "EnergyConditionedEquivariantTargetSiteHead",
     "EnergyConditionedEquivariantAtomAttention",
     "EnergyConditionedEquivariantAtomConvolution",
     "EnergyIrrepModulation",

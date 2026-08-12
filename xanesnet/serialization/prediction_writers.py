@@ -36,11 +36,11 @@ import torch
 
 
 class PredictionBatch(TypedDict):
-    """Batch of per-absorber predictions ready to be persisted.
+    """Batch of per-target-site predictions ready to be persisted.
 
     All values are numpy arrays or torch tensors whose first dimension is the
-    absorber dimension - every field carries one row per absorber site.  All
-    array-like fields must share the same leading absorber size.
+    target-site dimension - every field carries one row per target site.  All
+    array-like fields must share the same leading target-site size.
     ``prediction`` contains the predicted spectrum, or an aggregate mean
     spectrum for ensemble inference. ``prediction_std`` may contain an
     energy/channel-wise uncertainty estimate with the same shape as
@@ -67,12 +67,12 @@ class PredictionWriter(ABC):
     """Abstract base class for writing XANESNET inference results to disk.
 
     Buffers incoming ``PredictionBatch`` objects and flushes them in batches
-    to keep memory usage bounded.  All storage is indexed along the absorber
+    to keep memory usage bounded.  All storage is indexed along the target-site
     dimension.
 
     Args:
         path: Directory where output data will be written.
-        buffer_size: Number of absorber rows to accumulate before flushing to
+        buffer_size: Number of target-site rows to accumulate before flushing to
             storage.
     """
 
@@ -89,22 +89,22 @@ class PredictionWriter(ABC):
         self._init_storage()
 
     def add(self, batch: PredictionBatch) -> None:
-        """Buffer a batch of absorber predictions.
+        """Buffer a batch of target-site predictions.
 
         The batch is accumulated in an internal buffer.  When the buffer
         reaches ``buffer_size`` rows, it is automatically flushed to storage.
 
         Args:
             batch: A ``PredictionBatch`` where every field's first dimension is
-                the absorber dimension.  All fields must have the same leading
-                absorber size.
+                the target-site dimension.  All fields must have the same leading
+                target-site size.
 
         Raises:
-            ValueError: If any value has no leading absorber dimension, the
-                absorber sizes across fields are inconsistent, the set of
+            ValueError: If any value has no leading target-site dimension, the
+                target-site sizes across fields are inconsistent, the set of
                 fields differs from earlier batches, or the batch is empty.
             TypeError: If a boolean or string array has more than one dimension
-                per absorber.
+                per target site.
         """
         batch_keys = set(batch)
         if self._expected_keys is None:
@@ -119,35 +119,35 @@ class PredictionWriter(ABC):
                 details.append(f"unexpected keys: {extra}")
             raise ValueError("PredictionBatch keys must stay consistent across writes; " + "; ".join(details))
 
-        n_absorbers: int | None = None
+        n_target_sites: int | None = None
 
         for key, value in batch.items():
             array = self._to_numpy(value)
 
             if array.ndim == 0:
-                raise ValueError(f"Value for key '{key}' is scalar; expected leading absorber dimension")
+                raise ValueError(f"Value for key '{key}' is scalar; expected leading target-site dimension")
 
-            # Bool and string are only supported as per-absorber scalars
-            # (1-D along the absorber dimension).
+            # Bool and string are only supported as per-target-site scalars
+            # (1-D along the target-site dimension).
             if array.dtype.kind in ("U", "S", "b") and array.ndim > 1:
                 raise TypeError(
                     f"Key '{key}': {array.dtype} arrays are not supported, "
-                    f"only per-absorber scalars (got shape {array.shape})"
+                    f"only per-target-site scalars (got shape {array.shape})"
                 )
 
-            if n_absorbers is None:
-                n_absorbers = array.shape[0]
-            elif array.shape[0] != n_absorbers:
+            if n_target_sites is None:
+                n_target_sites = array.shape[0]
+            elif array.shape[0] != n_target_sites:
                 raise ValueError(
-                    f"Absorber-dimension mismatch for key '{key}': expected {n_absorbers}, got {array.shape[0]}"
+                    f"Target-site-dimension mismatch for key '{key}': expected {n_target_sites}, got {array.shape[0]}"
                 )
 
             self._buffers.setdefault(key, []).append(array)
 
-        if n_absorbers is None:
+        if n_target_sites is None:
             raise ValueError("Empty PredictionBatch provided")
 
-        self._buffer_count += n_absorbers
+        self._buffer_count += n_target_sites
 
         if self._buffer_count >= self.buffer_size:
             self.flush()
@@ -212,8 +212,8 @@ class PredictionWriter(ABC):
                     "You can configure the writer type by changing the code in the inferencer.\n"
                     "Available writers:\n"
                     "  - HDF5Writer (default): Stores all predictions in a single HDF5 file.\n"
-                    "  - NumpyWriter: Stores one .npz file per absorber (good for debugging).\n"
-                    "  - JSONWriter: Stores one .json file per absorber (human readable).\n"
+                    "  - NumpyWriter: Stores one .npz file per target site (good for debugging).\n"
+                    "  - JSONWriter: Stores one .json file per target site (human readable).\n"
                 )
 
     def _close_storage(self) -> None:
@@ -222,11 +222,11 @@ class PredictionWriter(ABC):
 
     @abstractmethod
     def _write_batch(self, batch: dict[str, np.ndarray]) -> None:
-        """Persist a fully concatenated batch of absorber rows.
+        """Persist a fully concatenated batch of target-site rows.
 
         Args:
             batch: Mapping from field name to a numpy array whose first
-                dimension is the absorber dimension.
+                dimension is the target-site dimension.
         """
         ...
 
@@ -239,18 +239,18 @@ class PredictionWriter(ABC):
 class HDF5Writer(PredictionWriter):
     """HDF5-backed prediction writer.
 
-    Appends absorber rows to datasets inside a single ``predictions.h5`` file.
+    Appends target-site rows to datasets inside a single ``predictions.h5`` file.
 
-    Supported per-absorber payload types:
+    Supported per-target-site payload types:
     - Numeric arrays of any shape.
-    - Per-absorber scalar ``float``, ``int``, or ``bool`` values.
-    - Per-absorber scalar ``str`` / ``bytes`` values.
+    - Per-target-site scalar ``float``, ``int``, or ``bool`` values.
+    - Per-target-site scalar ``str`` / ``bytes`` values.
 
-    Bool and string *arrays* (``ndim > 0`` per absorber) are not supported.
+    Bool and string *arrays* (``ndim > 0`` per target site) are not supported.
 
     Args:
         path: Directory in which ``predictions.h5`` will be created.
-        buffer_size: Number of absorber rows to buffer before flushing.
+        buffer_size: Number of target-site rows to buffer before flushing.
         compression: HDF5 compression filter name (default ``"gzip"``).
     """
 
@@ -302,7 +302,7 @@ class HDF5Writer(PredictionWriter):
         )
 
     def _write_batch(self, batch: dict[str, np.ndarray]) -> None:
-        """Append a batch of absorber rows to the HDF5 file.
+        """Append a batch of target-site rows to the HDF5 file.
 
         Args:
             batch: Mapping from field name to concatenated numpy arrays.
@@ -325,34 +325,34 @@ class HDF5Writer(PredictionWriter):
 
 
 class NumpyWriter(PredictionWriter):
-    """Prediction writer that saves one ``.npz`` file per absorber.
+    """Prediction writer that saves one ``.npz`` file per target site.
 
     Each file is named ``sample_XXXXXX.npz`` and contains all fields for that
-    absorber.  Useful for debugging or small datasets.
+    target site.  Useful for debugging or small datasets.
     """
 
     def _write_batch(self, batch: dict[str, np.ndarray]) -> None:
         """Write one prediction batch to disk."""
-        n_absorbers = next(iter(batch.values())).shape[0]
+        n_target_sites = next(iter(batch.values())).shape[0]
 
-        for i in range(n_absorbers):
+        for i in range(n_target_sites):
             sample_file = self.path / f"sample_{self._total_written + i:06d}.npz"
             sample_data = {key: data[i] for key, data in batch.items()}
             np.savez(sample_file, **sample_data)
 
 
 class JSONWriter(PredictionWriter):
-    """Prediction writer that saves one ``.json`` file per absorber.
+    """Prediction writer that saves one ``.json`` file per target site.
 
     Each file is named ``sample_XXXXXX.json`` and contains all fields for that
-    absorber as human-readable JSON.  Useful for debugging or small datasets.
+    target site as human-readable JSON.  Useful for debugging or small datasets.
     """
 
     def _write_batch(self, batch: dict[str, np.ndarray]) -> None:
         """Write one prediction batch to disk."""
-        n_absorbers = next(iter(batch.values())).shape[0]
+        n_target_sites = next(iter(batch.values())).shape[0]
 
-        for i in range(n_absorbers):
+        for i in range(n_target_sites):
             sample_data = {key: data[i].tolist() for key, data in batch.items()}
             sample_file = self.path / f"sample_{self._total_written + i:06d}.json"
 

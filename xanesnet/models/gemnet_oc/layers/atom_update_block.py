@@ -108,7 +108,7 @@ class AtomUpdateBlock(torch.nn.Module):
 
 
 class OutputBlock(AtomUpdateBlock):
-    """XANES output block that returns a per-atom embedding (no force branch).
+    """Spectral output block that returns a per-atom embedding (no force branch).
 
     Extends :class:`AtomUpdateBlock` with an optional second residual MLP
     fused with the atom skip connection.

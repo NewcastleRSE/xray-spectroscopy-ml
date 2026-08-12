@@ -20,13 +20,13 @@ $defs:
       per_element:
         type: boolean
         default: false
-        description: Whether the average is selected per absorbing element (true) or shared across all
+        description: Whether the average is selected per target-site element (true) or shared across all
           elements (false). When true, ``average`` holds one row per entry of ``elements``.
       elements:
         $ref: ../shared/value_types.schema.yaml#/$defs/nullablePositiveIntegerArrayOrAuto
-        description: Absorber atomic numbers aligned row-wise with ``average`` when ``per_element`` is
+        description: Target-site atomic numbers aligned row-wise with ``average`` when ``per_element`` is
           true; may be the training-time ``auto`` token, which resolves to all elements observed in
           the training data. ``null`` when ``per_element`` is false.
     description: Average-spectrum subtraction encoding that trains on residuals about the mean spectrum,
-      optionally keyed by absorbing element.
+      optionally keyed by target-site element.
 description: Encoding schemas backed by ``SpectraEncodingRegistry`` classes and encoding constructor signatures.

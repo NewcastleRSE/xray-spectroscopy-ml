@@ -35,8 +35,8 @@ class GeometryGraphSchNetBatchProcessor(ForwardBatchProcessor):
     """Batch processor for ``GeometryGraphDataset`` + SchNet.
 
     Forwards the minimal set of graph tensors required by SchNet (atomic
-    numbers, edge index, edge weight, batch). Absorber-site predictions
-    are selected via ``absorber_mask``.
+    numbers, edge index, edge weight, batch). Target-site predictions
+    are selected via ``target_site_mask``.
     """
 
     def input_preparation(self, batch: GeometryGraphBatch) -> dict[str, torch.Tensor]:
@@ -55,16 +55,16 @@ class GeometryGraphSchNetBatchProcessor(ForwardBatchProcessor):
         }
 
     def prediction_preparation(self, batch: GeometryGraphBatch, predictions: torch.Tensor) -> torch.Tensor:
-        """Select absorber-site predictions from the per-atom output.
+        """Select target-site predictions from the per-atom output.
 
         Args:
-            batch: Collated geometry graph batch carrying ``absorber_mask``.
+            batch: Collated geometry graph batch carrying ``target_site_mask``.
             predictions: Per-atom output tensor. ``(num_atoms_total, num_targets)``
 
         Returns:
-            Predictions for absorber atoms only. ``(n_abs, reduce_channels_2)``
+            Predictions for target sites only. ``(n_target_sites, reduce_channels_2)``
         """
-        return predictions[batch.absorber_mask]
+        return predictions[batch.target_site_mask]
 
     def target_preparation(self, batch: GeometryGraphBatch) -> torch.Tensor:
         """Prepare target spectra from a geometry-graph batch.
@@ -73,22 +73,22 @@ class GeometryGraphSchNetBatchProcessor(ForwardBatchProcessor):
             batch: Collated geometry-graph batch.
 
         Returns:
-            Target spectra for absorber atoms only. ``(n_abs, n_energies)``
+            Target spectra for target sites only. ``(n_target_sites, n_energies)``
         """
         return batch.intensities
 
     def element_preparation(self, batch: GeometryGraphBatch) -> torch.Tensor | None:
-        """Extract absorber atomic numbers from a geometry-graph batch.
+        """Extract target-site atomic numbers from a geometry-graph batch.
 
-        Selects atomic numbers at absorber positions via ``absorber_mask``.
+        Selects atomic numbers at target-site positions via ``target_site_mask``.
 
         Args:
             batch: Collated geometry-graph batch.
 
         Returns:
-            Absorber atomic numbers. ``(n_abs,)``
+            Target-site atomic numbers. ``(n_target_sites,)``
         """
-        return batch.x[batch.absorber_mask]
+        return batch.x[batch.target_site_mask]
 
     def sample_id_extraction(self, batch: GeometryGraphBatch) -> np.ndarray:
         """Extract file names from a geometry-graph batch.
@@ -97,6 +97,6 @@ class GeometryGraphSchNetBatchProcessor(ForwardBatchProcessor):
             batch: Collated geometry-graph batch.
 
         Returns:
-            Array of file name strings. ``(n_abs,)``
+            Array of file name strings. ``(n_target_sites,)``
         """
         return np.array(batch.sample_id, dtype=str)

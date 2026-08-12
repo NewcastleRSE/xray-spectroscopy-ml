@@ -18,39 +18,39 @@
 # Citations:
 #   ...
 
-"""Absorber-centred 3-body path enumeration for XANESNET graph inputs."""
+"""Target-site-centred 3-body path enumeration for XANESNET graph inputs."""
 
 import numpy as np
 import torch
 from pymatgen.core import Molecule, Structure
 
 
-def _absorber_neighbors(
+def _target_site_neighbors(
     pmg_obj: Structure | Molecule,
-    absorber_idx: int,
+    target_site_idx: int,
     cutoff: float,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Return the neighbors of the absorber site within ``cutoff``.
+    """Return the neighbours of the target site within ``cutoff``.
 
-    For periodic ``Structure`` objects, uses pymatgen's PBC-aware neighbor
+    For periodic ``Structure`` objects, uses pymatgen's PBC-aware neighbour
     search so that ``neighbor_coords`` are the Cartesian coordinates of the
     correct periodic images. For ``Molecule`` objects, uses plain Euclidean
     distances.
 
     Args:
         pmg_obj: The periodic structure or molecule.
-        absorber_idx: Index of the absorbing atom in ``pmg_obj``.
-        cutoff: Maximum neighbor distance in **angstroms**.
+        target_site_idx: Index of the target site in ``pmg_obj``.
+        cutoff: Maximum neighbour distance in **angstroms**.
 
     Returns:
         A tuple ``(neighbor_indices, neighbor_coords)`` where
         ``neighbor_indices`` is ``(N,)`` int64 and ``neighbor_coords`` is
         ``(N, 3)`` float64.
     """
-    abs_coord = np.array(pmg_obj.cart_coords[absorber_idx], dtype=np.float64)
+    target_coord = np.array(pmg_obj.cart_coords[target_site_idx], dtype=np.float64)
 
     if isinstance(pmg_obj, Structure):
-        neighbors = pmg_obj.get_neighbors(pmg_obj[absorber_idx], r=cutoff)
+        neighbors = pmg_obj.get_neighbors(pmg_obj[target_site_idx], r=cutoff)
         if len(neighbors) == 0:
             return (
                 np.zeros(0, dtype=np.int64),
@@ -60,24 +60,24 @@ def _absorber_neighbors(
         coords = np.array([n.coords for n in neighbors], dtype=np.float64)
         return idx, coords
 
-    # Molecule: filter by Euclidean distance, exclude absorber itself.
+    # Molecule: filter by Euclidean distance, excluding the target site itself.
     all_coords = np.array(pmg_obj.cart_coords, dtype=np.float64)
-    dists = np.linalg.norm(all_coords - abs_coord, axis=-1)
-    mask = (dists <= cutoff) & (np.arange(len(pmg_obj)) != absorber_idx)
+    dists = np.linalg.norm(all_coords - target_coord, axis=-1)
+    mask = (dists <= cutoff) & (np.arange(len(pmg_obj)) != target_site_idx)
     idx = np.where(mask)[0].astype(np.int64)
     coords = all_coords[idx]
     return idx, coords
 
 
-def build_absorber_paths(
+def build_target_site_paths(
     pmg_obj: Structure | Molecule,
-    absorber_idx: int,
+    target_site_idx: int,
     cutoff: float,
     max_paths: int,
 ) -> dict[str, torch.Tensor]:
-    """Enumerate absorber-centred 3-body paths ``(absorber, j, k)``.
+    """Enumerate target-site-centred 3-body paths ``(target_site, j, k)``.
 
-    Both ``j`` and ``k`` must be within ``cutoff`` of the absorber. For
+    Both ``j`` and ``k`` must be within ``cutoff`` of the target site. For
     periodic structures, ``j`` and ``k`` may be periodic images; their scalar
     geometry is computed from pymatgen image Cartesian coordinates. Paths are
     ordered by ascending ``r0j + r0k + 0.5 * rjk`` (a proxy for path
@@ -85,23 +85,23 @@ def build_absorber_paths(
 
     Args:
         pmg_obj: The periodic structure or molecule.
-        absorber_idx: Index of the absorbing atom in ``pmg_obj``.
-        cutoff: Neighbor cutoff radius in **angstroms**.
+        target_site_idx: Index of the target site in ``pmg_obj``.
+        cutoff: Neighbour cutoff radius in **angstroms**.
         max_paths: Maximum number of paths to return.
 
     Returns:
         Dictionary with the following ``torch.Tensor`` entries (all ``(P,)``):
 
-                - ``path_j``: int64 -- structure-global atom index of ``j``.
-                - ``path_k``: int64 -- structure-global atom index of ``k``.
-        - ``path_r0j``: float32 -- absorber-j distance in **angstroms**.
-        - ``path_r0k``: float32 -- absorber-k distance in **angstroms**.
-        - ``path_rjk``: float32 -- j-k distance in **angstroms**.
-        - ``path_cosangle``: float32 -- cosine of the angle at the absorber
-          (range ``[-1, 1]``).
+        - ``path_j``: int64 -- structure-global atom index of ``j``.
+        - ``path_k``: int64 -- structure-global atom index of ``k``.
+        - ``path_r0j``: float32 -- target-site-to-``j`` distance in **angstroms**.
+        - ``path_r0k``: float32 -- target-site-to-``k`` distance in **angstroms**.
+        - ``path_rjk``: float32 -- ``j``-to-``k`` distance in **angstroms**.
+        - ``path_cosangle``: float32 -- cosine of the angle at the target
+          site (range ``[-1, 1]``).
     """
-    neigh_idx, neigh_coords = _absorber_neighbors(pmg_obj, absorber_idx, cutoff)
-    abs_coord = np.array(pmg_obj.cart_coords[absorber_idx], dtype=np.float64)
+    neigh_idx, neigh_coords = _target_site_neighbors(pmg_obj, target_site_idx, cutoff)
+    target_coord = np.array(pmg_obj.cart_coords[target_site_idx], dtype=np.float64)
 
     n = neigh_idx.shape[0]
     if n < 2:
@@ -114,13 +114,13 @@ def build_absorber_paths(
             "path_cosangle": torch.zeros(0, dtype=torch.float32),
         }
 
-    # Enumerate ordered index pairs (j < k over the neighbor list ordering).
+    # Enumerate ordered index pairs (j < k over the neighbour-list ordering).
     ii, jj = np.triu_indices(n, k=1)
 
-    cj = neigh_coords[ii]  # [P, 3]
-    ck = neigh_coords[jj]  # [P, 3]
-    vj = cj - abs_coord
-    vk = ck - abs_coord
+    cj = neigh_coords[ii]
+    ck = neigh_coords[jj]
+    vj = cj - target_coord
+    vk = ck - target_coord
     vjk = ck - cj
 
     r0j = np.linalg.norm(vj, axis=-1)

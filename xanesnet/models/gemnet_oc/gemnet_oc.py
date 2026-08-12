@@ -42,7 +42,7 @@ from .utils import get_angle, get_initializer, get_inner_idx, inner_product_clam
 
 @ModelRegistry.register("gemnet_oc")
 class GemNetOC(Model):
-    """GemNet-OC adapted for per-atom XANES spectrum prediction.
+    """GemNet-OC adapted for per-atom spectrum prediction.
 
     Ported from the fairchem-core reference (MIT License).
 
@@ -163,7 +163,7 @@ class GemNetOC(Model):
         num_elements: int,
         scale_file: str | None = None,
     ) -> None:
-        """Initialize the GemNet-OC XANES model."""
+        """Initialize the GemNet-OC model."""
         super().__init__(model_type)
         self.num_blocks = num_blocks
         self.num_targets = num_targets

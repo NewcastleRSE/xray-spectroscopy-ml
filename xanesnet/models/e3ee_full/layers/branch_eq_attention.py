@@ -36,7 +36,7 @@ from .branch_equivariant import EnergyIrrepModulation
 class AllAtomEquivariantAtomAttention(nn.Module):
     """All-atom equivariant counterpart of :class:`AllAtomAtomAttention`.
 
-    Each atom (or just the absorber atoms when ``use_absorber_mask`` is set)
+    Each atom (or just the target-site atoms when ``use_target_site_mask`` is set)
     queries its attention-graph neighbors. The value carried along each edge is
     an E(3)-equivariant feature built from spherical harmonics of the
     src->dst unit vector mixed with the dst atom's full equivariant features via
@@ -147,7 +147,7 @@ class AllAtomEquivariantAtomAttention(nn.Module):
         att_dst: torch.Tensor,
         att_dist: torch.Tensor,
         att_vec: torch.Tensor,
-        absorber_mask: torch.Tensor | None = None,
+        target_site_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Compute equivariant energy-conditioned attention over atoms and return latent.
 
@@ -161,7 +161,7 @@ class AllAtomEquivariantAtomAttention(nn.Module):
             att_dst: Flat destination indices (keys/values) into ``B*N``, shape ``(E_att,)``.
             att_dist: Pair distances in **A**, shape ``(E_att,)``.
             att_vec: Pair displacement vectors (src->dst) in **A**, shape ``(E_att, 3)``.
-            absorber_mask: Optional ``(B, N)`` bool mask. When given, queries are
+            target_site_mask: Optional ``(B, N)`` bool mask. When given, queries are
                 restricted to atoms with ``True``; other rows are returned as zeros.
 
         Returns:
@@ -180,8 +180,8 @@ class AllAtomEquivariantAtomAttention(nn.Module):
 
         # Active queries.
         src_active = mask_flat.clone()
-        if absorber_mask is not None:
-            src_active = src_active & absorber_mask.reshape(flat)
+        if target_site_mask is not None:
+            src_active = src_active & target_site_mask.reshape(flat)
 
         # Restrict to edges with active src and valid dst.
         # Normally the dataset and graph construction should ensure this already.

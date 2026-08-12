@@ -89,7 +89,7 @@ def _parse_args() -> argparse.Namespace:
     Returns:
         Populated argument namespace.
     """
-    p = argparse.ArgumentParser(description="Visualize XANESNET spectra encodings on real data.")
+    p = argparse.ArgumentParser(description="Visualize spectrum encodings on real data.")
     p.add_argument(
         "--config",
         default="configs/in_mlp.yaml",
@@ -160,7 +160,7 @@ def _collect_spectra(dataset: Any, max_samples: int) -> tuple[torch.Tensor, torc
     Returns:
         A pair ``(spectra, elements)`` where ``spectra`` is a float32 tensor
         ``(N, L)`` of raw target spectra and ``elements`` is an int64 tensor
-        ``(N,)`` of absorber atomic numbers, or ``None`` when the dataset
+        ``(N,)`` of target-site atomic numbers, or ``None`` when the dataset
         carries no element information.
     """
     subset = dataset.train_subset
@@ -194,7 +194,7 @@ def _collect_spectra(dataset: Any, max_samples: int) -> tuple[torch.Tensor, torc
 # Element utilities
 ###############################################################################
 
-#: Atomic-number -> IUPAC symbol for common XANES absorber elements.
+#: Atomic-number -> IUPAC symbol lookup for target-site elements.
 _ELEMENT_SYMBOLS: dict[int, str] = {
     22: "Ti",
     23: "V",
@@ -827,7 +827,7 @@ def _figure_for_encoding(
     * **gaussian** -- basis decomposition panel.
     * **subtract_average** -- per-element (or global) average panel.
 
-    Spectra are coloured by absorbing element when element information is
+    Spectra are coloured by target-site element when element information is
     available.  The encoded panel uses a line plot when the encoding
     preserves the spectrum length, and a heat-map otherwise.
 
@@ -836,7 +836,7 @@ def _figure_for_encoding(
         spectra_t: Raw spectra tensor ``(N, L)``.
         label: Short descriptive title for the encoding (e.g. ``"z_score"``).
         max_samples: Maximum number of spectra included.
-        elements_t: Optional absorber atomic numbers ``(N,)`` forwarded to
+        elements_t: Optional target-site atomic numbers ``(N,)`` forwarded to
             element-aware encodings.
 
     Returns:
@@ -912,7 +912,7 @@ def _figure_overview(
         combined: Complete composed encoding.
         spectra_t: Raw spectra tensor ``(N, L)``.
         max_samples: Maximum number of spectra included.
-        elements_t: Optional absorber atomic numbers ``(N,)`` forwarded to
+        elements_t: Optional target-site atomic numbers ``(N,)`` forwarded to
             element-aware encodings.
 
     Returns:
@@ -970,7 +970,7 @@ def _make_error_figure(message: str, config_path: str) -> Figure:
         message,
         "",
         "This typically happens when per-point statistics (std, min, max)",
-        "evaluate to zero in flat regions of the spectrum (e.g. pre-edge).",
+        "evaluate to zero in flat regions of the spectrum.",
         "Consider using per_point=false or adding a small epsilon to the",
         "auto-resolved parameters in the core encoding code.",
     ]

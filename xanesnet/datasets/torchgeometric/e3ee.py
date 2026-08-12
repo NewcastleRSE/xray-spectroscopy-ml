@@ -32,12 +32,10 @@ from torch_geometric.data.data import BaseData
 from xanesnet.datasets.base import SavePathFn, TorchGeometricDataset
 from xanesnet.datasources import DataSource
 from xanesnet.graphs import GraphBuilderRegistry
-from xanesnet.graphs.utils.absorber_paths import build_absorber_paths
+from xanesnet.graphs.utils.target_site_paths import build_target_site_paths
 from xanesnet.serialization.config import Config
 
 from ..registry import DatasetRegistry
-
-SPECTRUM_KEYS = ["XANES", "XANES_K"]
 
 
 class E3EEBatch(Protocol):
@@ -50,8 +48,8 @@ class E3EEBatch(Protocol):
     # Padded per-sample node fields [B, N_max, ...]
     x: torch.Tensor
     mask: torch.Tensor
-    # [B] absorber index into the padded layout (0..N_max-1)
-    absorber_index: torch.Tensor
+    # [B] target-site index into the padded layout (0..N_max-1)
+    target_site_index: torch.Tensor
     # Flat edge fields, already offset into the padded B*N_max layout
     edge_src: torch.Tensor
     edge_dst: torch.Tensor
@@ -60,7 +58,7 @@ class E3EEBatch(Protocol):
     att_dst: torch.Tensor
     att_dist: torch.Tensor
     att_vec: torch.Tensor
-    # Flat absorber-centred triplet scalars, indices into padded layout
+    # Flat target-site-centred triplet scalars, indices into padded layout
     path_j: torch.Tensor
     path_k: torch.Tensor
     path_r0j: torch.Tensor
@@ -76,10 +74,10 @@ class E3EEBatch(Protocol):
 
 @DatasetRegistry.register("e3ee")
 class E3EEDataset(TorchGeometricDataset):
-    """E3EE dataset that emits one graph sample per absorber site.
+    """E3EE dataset that emits one graph sample per target site.
 
-    The dataset preserves absorber ordering and supports both
-    periodic Structures and non-periodic Molecules. All edges and absorber-
+    The dataset preserves target-site ordering and supports both
+    periodic Structures and non-periodic Molecules. All edges and target-site-
     centred triplet path scalars are precomputed at prepare() time using the
     shared graph utilities, so the model does not need to rebuild geometry at
     forward time.
@@ -98,9 +96,9 @@ class E3EEDataset(TorchGeometricDataset):
         split_indexfile: Optional path to split indices.
         graph_builder: Main graph builder configuration.
         att_graph_builder: Attention graph builder configuration.
-        use_path_branch: Whether to precompute absorber-centered paths. The
+        use_path_branch: Whether to precompute target-site-centred paths. The
             path cutoff is taken from ``graph_builder.cutoff``.
-        max_paths_per_structure: Maximum absorber paths saved per structure.
+        max_paths_per_structure: Maximum target-site paths saved per structure.
     """
 
     def __init__(
@@ -133,25 +131,22 @@ class E3EEDataset(TorchGeometricDataset):
         self.max_paths_per_structure = max_paths_per_structure
 
     def _prepare_single(self, idx: int, save_path_fn: SavePathFn) -> int:
-        """Process one datasource item into absorber-centered graph samples.
+        """Process one datasource item into target-site-centred graph samples.
 
         Args:
             idx: Datasource index to process.
-            save_path_fn: Callback that maps per-absorber sequence numbers to output paths.
+            save_path_fn: Callback that maps per-target-site sequence numbers to output paths.
 
         Returns:
-            Number of absorber graph samples written.
+            Number of target-site graph samples written.
         """
         pmg_obj = self.datasource[idx]
-        for key in SPECTRUM_KEYS:
-            if key in pmg_obj.site_properties.keys():
-                break
-        else:
-            logging.warning(f"No XANES spectrum found for sample {idx} ({pmg_obj.properties['sample_id']}); skipping.")
+        if "spectrum" not in pmg_obj.site_properties:
+            logging.warning(f"No spectrum found for sample {idx} ({pmg_obj.properties['sample_id']}); skipping.")
             return 0
 
-        xanes = np.array(pmg_obj.site_properties[key], dtype=object)
-        absorber_idxs: list[int] = np.where(xanes != None)[0].tolist()  # noqa: E711
+        spectra = np.array(pmg_obj.site_properties["spectrum"], dtype=object)
+        target_site_indices: list[int] = np.where(spectra != None)[0].tolist()  # noqa: E711
 
         atomic_numbers = torch.tensor(pmg_obj.atomic_numbers, dtype=torch.int64)
 
@@ -164,8 +159,8 @@ class E3EEDataset(TorchGeometricDataset):
         att_dst_all = att_edge_index[1]
 
         seq = 0
-        for site_idx in absorber_idxs:
-            spectrum = pmg_obj.site_properties[key][site_idx]
+        for site_idx in target_site_indices:
+            spectrum = pmg_obj.site_properties["spectrum"][site_idx]
             energies = torch.tensor(spectrum["energies"], dtype=torch.float32)
             intensities = torch.tensor(spectrum["intensities"], dtype=torch.float32)
 
@@ -194,7 +189,7 @@ class E3EEDataset(TorchGeometricDataset):
 
             data_kwargs: dict[str, Any] = {
                 "x": atomic_numbers,
-                "absorber_index": torch.tensor(site_idx, dtype=torch.int64),
+                "target_site_index": torch.tensor(site_idx, dtype=torch.int64),
                 "edge_src": edge_index[0],
                 "edge_dst": edge_index[1],
                 "edge_weight": edge_weight,
@@ -208,9 +203,9 @@ class E3EEDataset(TorchGeometricDataset):
             }
 
             if self.use_path_branch:
-                paths = build_absorber_paths(
+                paths = build_target_site_paths(
                     pmg_obj,
-                    absorber_idx=site_idx,
+                    target_site_idx=site_idx,
                     cutoff=self.graph_builder.cutoff,
                     max_paths=self.max_paths_per_structure,
                 )
@@ -223,7 +218,7 @@ class E3EEDataset(TorchGeometricDataset):
         return seq
 
     def collate_fn(self, batch: list[BaseData]) -> Batch:
-        """Collate absorber-centered graph samples into one padded batch.
+        """Collate target-site-centred graph samples into one padded batch.
 
         Node tensors are padded to ``(batch, max_nodes, ...)`` and flat
         edge/path indices are offset by ``batch_index * max_nodes``.
@@ -247,7 +242,7 @@ class E3EEDataset(TorchGeometricDataset):
         intensities = torch.stack([s.intensities.to(dtype=torch.float32) for s in batch], dim=0)
         energies = torch.stack([s.energies.to(dtype=torch.float32) for s in batch], dim=0)
 
-        absorber_index = torch.stack([s.absorber_index.to(dtype=torch.int64).reshape(()) for s in batch], dim=0)
+        target_site_index = torch.stack([s.target_site_index.to(dtype=torch.int64).reshape(()) for s in batch], dim=0)
 
         edge_src_list: list[torch.Tensor] = []
         edge_dst_list: list[torch.Tensor] = []
@@ -298,7 +293,7 @@ class E3EEDataset(TorchGeometricDataset):
                 "x",
                 "energies",
                 "intensities",
-                "absorber_index",
+                "target_site_index",
                 "edge_src",
                 "edge_dst",
                 "edge_weight",
@@ -315,7 +310,7 @@ class E3EEDataset(TorchGeometricDataset):
 
         setattr(batched, "x", x)
         setattr(batched, "mask", mask)
-        setattr(batched, "absorber_index", absorber_index)
+        setattr(batched, "target_site_index", target_site_index)
         setattr(batched, "edge_src", edge_src)
         setattr(batched, "edge_dst", edge_dst)
         setattr(batched, "edge_weight", edge_weight)

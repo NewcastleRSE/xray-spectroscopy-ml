@@ -52,7 +52,7 @@ class BasicInferencer(Inferencer):
         drop_last: Whether to drop the last incomplete batch.
         num_workers: Number of data-loader worker processes.
         inferencer_type: Identifier string for this inferencer type.
-        buffer_size: Number of absorber rows buffered before prediction data is
+        buffer_size: Number of target-site rows buffered before prediction data is
             flushed to disk.
     """
 
@@ -119,29 +119,29 @@ class BasicInferencer(Inferencer):
 
             predictions = self.batch_processor.decode_target(predictions, elements)
 
-            # Two timing fields, both broadcast to ``[n_absorbers]`` so they
-            # follow the writer's per-absorber leading-dim contract:
-            #   * ``forward_time``      -- amortized per-absorber cost: the
+            # Two timing fields, both broadcast to ``[n_target_sites]`` so they
+            # follow the writer's per-target-site leading-dimension contract:
+            #   * ``forward_time``      -- amortized per-target-site cost: the
             #     wall-clock duration of this forward pass divided by the
-            #     number of absorbers with ground truth produced by it.
+            #     number of target sites with ground truth produced by it.
             #     Useful as the time budget attributable to a single spectrum.
             #   * ``forward_time_pass`` -- raw wall-clock duration of the
-            #     forward pass, repeated for every absorber it produced.
-            #     Independent of batch size / multi-absorber count.
+            #     forward pass, repeated for every target site it produced.
+            #     Independent of batch size / multi-target-site count.
             # ``predictions`` after ``prediction_preparation`` already contains
-            # exactly the absorbers with ground truth (selected via
-            # ``absorber_mask`` for masking models, all rows for per-absorber
+            # exactly the target sites with ground truth (selected via
+            # ``target_site_mask`` for masking models, all rows for per-target-site
             # datasets).
-            n_absorbers = predictions.shape[0]
+            n_target_sites = predictions.shape[0]
             wall_time = end_time - start_time
             forward_time = torch.full(
-                (n_absorbers,),
-                wall_time / n_absorbers if n_absorbers > 0 else 0.0,
+                (n_target_sites,),
+                wall_time / n_target_sites if n_target_sites > 0 else 0.0,
                 dtype=torch.float32,
                 device=self.device,
             )
             forward_time_pass = torch.full(
-                (n_absorbers,),
+                (n_target_sites,),
                 wall_time,
                 dtype=torch.float32,
                 device=self.device,

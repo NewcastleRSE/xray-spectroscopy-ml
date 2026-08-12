@@ -18,7 +18,7 @@
 # Citations:
 #   ...
 
-"""Datasource for multiple paired XYZ coordinate files and XANES spectra across subdirectories."""
+"""Datasource for multiple paired XYZ coordinate files and spectra across subdirectories."""
 
 import logging
 from collections.abc import Iterator
@@ -33,10 +33,12 @@ from xanesnet.utils.filesystem import list_filestems, list_subdir_stems
 from .base import DataSource
 from .registry import DataSourceRegistry
 
+# TODO Document somewhere how exactly the spectrum files are expected to look like.
+
 
 @DataSourceRegistry.register("multixyzspec")
 class MultiXYZSpecSource(DataSource):
-    """Datasource for multiple paired XYZ coordinate files and XANES spectra.
+    """Datasource for multiple paired XYZ coordinate files and spectra files.
 
     Expects a root directory containing subdirectories, each with an ``xyz/``
     and a ``spectra/`` subdirectory. Within each subdirectory, ``.xyz`` and
@@ -86,7 +88,7 @@ class MultiXYZSpecSource(DataSource):
             idx: Zero-based flat index across all subdirectories.
 
         Returns:
-            A ``Molecule`` with ``XANES`` site property and ``sample_id``
+            A ``Molecule`` with ``"spectrum"`` site property and ``sample_id``
             stored in ``properties``.
         """
         subdir, file = self._flat_index[idx]
@@ -94,13 +96,13 @@ class MultiXYZSpecSource(DataSource):
         spectra_file = Path(self.root_path) / subdir / "spectra" / f"{file}.txt"
 
         molecule = self.load_xyz(xyz_file)
-        energies, intensities = self.load_xanes(spectra_file)
+        energies, intensities = self.load_spectrum(spectra_file)
         spectra_list: list[dict[str, np.ndarray] | None] = [None for _ in molecule.sites]
         spectra_list[0] = {
             "energies": energies,
             "intensities": intensities,
         }
-        molecule.add_site_property("XANES", spectra_list)
+        molecule.add_site_property("spectrum", spectra_list)
         molecule.properties["sample_id"] = file
         return molecule
 
@@ -151,10 +153,10 @@ class MultiXYZSpecSource(DataSource):
         return files_dict
 
     @staticmethod
-    def load_xanes(file_path: Path) -> tuple[np.ndarray, np.ndarray]:
-        """Load a XANES spectrum from an FDMNES output text file.
+    def load_spectrum(file_path: Path) -> tuple[np.ndarray, np.ndarray]:
+        """Load a spectrum from a two-column simulation output text file.
 
-        Skips the two-line FDMNES header block at the top of the file.
+        Skips the required two-line header block at the top of the file.
 
         Args:
             file_path: Path to the ``.txt`` spectra file.
@@ -165,13 +167,13 @@ class MultiXYZSpecSource(DataSource):
         with open(file_path, "r") as f:
             lines = f.readlines()
 
-        # pop the FDMNES header block
+        # Skip the required header block.
         for _ in range(2):
             lines.pop(0)
 
-        xanes_block = [lines.pop(0).split() for _ in range(len(lines))]
-        energies = np.array([line[0] for line in xanes_block], dtype="float32")
-        intensities = np.array([line[1] for line in xanes_block], dtype="float32")
+        spectrum_block = [lines.pop(0).split() for _ in range(len(lines))]
+        energies = np.array([line[0] for line in spectrum_block], dtype="float32")
+        intensities = np.array([line[1] for line in spectrum_block], dtype="float32")
 
         return energies, intensities
 

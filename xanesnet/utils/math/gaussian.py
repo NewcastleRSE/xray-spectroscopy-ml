@@ -27,7 +27,7 @@ import torch.nn as nn
 
 
 class SpectralBasis(nn.Module):
-    """Gaussian spectral basis for expanding and reconstructing XANES spectra.
+    """Gaussian spectral basis for expanding and reconstructing spectra.
 
     Builds a ``(N, K)`` basis matrix ``Phi`` on a uniform energy grid, where
     ``N`` is the number of energy points and
@@ -221,22 +221,23 @@ def build_ridge_operator(phi: torch.Tensor, lam: float = 1e-2) -> torch.Tensor:
     return A.to(torch.float32)
 
 
-def gaussian_fit(basis: SpectralBasis, xanes: torch.Tensor) -> torch.Tensor:
-    """Fit Gaussian basis coefficients to observed XANES spectra.
+def gaussian_fit(basis: SpectralBasis, intensities: torch.Tensor) -> torch.Tensor:
+    """Fit Gaussian basis coefficients to observed spectra.
 
     Solves the Tikhonov-regularised least-squares problem
-    ``argmin_c ||Phi c - y||^2 + 1e-2 * ||c||^2`` for each row in ``xanes``.
+    ``argmin_c ||Phi c - y||^2 + 1e-2 * ||c||^2`` for each row in
+    ``intensities``.
 
     Args:
         basis: Pre-built ``SpectralBasis`` instance.
-        xanes: ``(*, N_E)`` float -- observed spectra.
+        intensities: ``(*, N_E)`` float -- observed spectra.
 
     Returns:
         ``(*, K)`` float -- Gaussian basis coefficients.
     """
     A = build_ridge_operator(basis.Phi, lam=1e-2)
 
-    return xanes @ A.T
+    return intensities @ A.T
 
 
 def gaussian_inverse(

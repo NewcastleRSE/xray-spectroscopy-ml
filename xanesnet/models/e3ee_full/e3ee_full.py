@@ -18,7 +18,7 @@
 # Citations:
 #   ...
 
-"""Multi-absorber E3-equivariant model (E3EEFull)."""
+"""Multi-target-site E3-equivariant model (E3EEFull)."""
 
 import torch
 import torch.nn as nn
@@ -47,12 +47,12 @@ from .utils import invariant_feature_dim, invariant_features_from_irreps
 
 @ModelRegistry.register("e3ee_full")
 class E3EEFull(Model):
-    """Multi-absorber E3-equivariant model.
+    """Multi-target-site E3-equivariant model.
 
-    Predicts a XANES spectrum for every atom in the batch simultaneously,
-    suitable for training across multiple absorber sites per structure.
-    The equivariant atom encoder is absorber-agnostic; absorber selectivity
-    can optionally be applied via ``use_absorber_mask``.
+    Predicts a spectrum for every atom in the batch simultaneously, suitable
+    for training across multiple target sites per structure. The equivariant
+    atom encoder is target-site-agnostic; target-site selectivity can
+    optionally be applied via ``use_target_site_mask``.
 
     Seven optional prediction branches are supported (at least one must be
     enabled): invariant energy branch, invariant attention, equivariant
@@ -91,10 +91,10 @@ class E3EEFull(Model):
         fusion_mode: Branch fusion strategy. ``"cat"`` preserves the existing
             concatenate-and-MLP head, while ``"gated"`` uses learned
             energy-conditioned soft gates before the final head.
-        use_absorber_mask: If ``True``, restrict query/receiver/center-site
+        use_target_site_mask: If ``True``, restrict query/receiver/center-site
             selection in the attention, convolution, and path branches to
-            absorber atoms, and zero final predictions on non-absorber atoms
-            via ``absorber_mask``.
+            target-site atoms, and zero final predictions on non-target-site
+            atoms via ``target_site_mask``.
         residual_scale_init: Initial scale of the encoder residual connections.
         attention_heads: Number of attention heads.
         attention_rbf_dim: Number of Gaussian RBF bases for attention distances.
@@ -130,7 +130,7 @@ class E3EEFull(Model):
         use_conv_branch: bool,
         use_eq_conv_branch: bool,
         use_path_branch: bool,
-        use_absorber_mask: bool,
+        use_target_site_mask: bool,
         residual_scale_init: float,
         attention_heads: int,
         attention_rbf_dim: int,
@@ -165,7 +165,7 @@ class E3EEFull(Model):
         self.use_conv_branch = use_conv_branch
         self.use_eq_conv_branch = use_eq_conv_branch
         self.use_path_branch = use_path_branch
-        self.use_absorber_mask = use_absorber_mask
+        self.use_target_site_mask = use_target_site_mask
         self.residual_scale_init = residual_scale_init
         self.attention_heads = attention_heads
         self.attention_rbf_dim = attention_rbf_dim
@@ -204,7 +204,7 @@ class E3EEFull(Model):
 
         # Branch 1 (optional): per-atom invariant features + energy
         if self.use_invariant_branch:
-            self.abs_branch = AllAtomEnergyBranch(
+            self.all_atom_branch = AllAtomEnergyBranch(
                 atom_dim=self._inv_dim,
                 e_dim=energy_rbf_dim,
                 hidden_dim=head_hidden_dim,
@@ -333,7 +333,7 @@ class E3EEFull(Model):
         self,
         x: torch.Tensor,
         mask: torch.Tensor,
-        absorber_mask: torch.Tensor,
+        target_site_mask: torch.Tensor,
         edge_src: torch.Tensor,
         edge_dst: torch.Tensor,
         edge_weight: torch.Tensor,
@@ -356,7 +356,7 @@ class E3EEFull(Model):
         Args:
             x: Atomic numbers (int64, padded), shape ``(B, N)``.
             mask: Valid-atom mask, shape ``(B, N)``.
-            absorber_mask: Per-atom absorber indicator, shape ``(B, N)``.
+            target_site_mask: Per-atom target-site indicator, shape ``(B, N)``.
             edge_src: Flat source indices into ``B*N``, shape ``(E,)``.
             edge_dst: Flat destination indices into ``B*N``, shape ``(E,)``.
             edge_weight: Edge lengths in **A**, shape ``(E,)``.
@@ -365,17 +365,18 @@ class E3EEFull(Model):
             att_dst: Attention-graph destination indices, shape ``(E_att,)``.
             att_dist: Attention-graph distances in **A**, shape ``(E_att,)``.
             att_vec: Attention-graph displacement vectors in **A**, shape ``(E_att, 3)``.
-            energies: Energy grid, shape ``(n_abs, nE)`` (only ``nE`` is used).
+            energies: Energy grid, shape ``(n_target_sites, nE)`` (only ``nE`` is used).
             path_center: Flat site index per path into ``B*N``, shape ``(P,)``.
             path_j: Flat j atom index into ``B*N``, shape ``(P,)``.
             path_k: Flat k atom index into ``B*N``, shape ``(P,)``.
-            path_r0j: Absorber-to-j distance in **A**, shape ``(P,)``.
-            path_r0k: Absorber-to-k distance in **A**, shape ``(P,)``.
+            path_r0j: Target-site-to-j distance in **A**, shape ``(P,)``.
+            path_r0k: Target-site-to-k distance in **A**, shape ``(P,)``.
             path_rjk: j-to-k distance in **A**, shape ``(P,)``.
-            path_cosangle: Cosine of the j-absorber-k angle, shape ``(P,)``.
+            path_cosangle: Cosine of the j-target-site-k angle, shape ``(P,)``.
 
         Returns:
-            Predicted XANES intensities for every atom, shape ``(B, N, nE)`` (padded).
+            Predicted spectral intensities for every atom, shape ``(B, N, nE)``
+            (padded).
             The caller is expected to mask out atoms without ground truth.
         """
         bsz, n_atoms = x.shape
@@ -397,14 +398,14 @@ class E3EEFull(Model):
 
         h = invariant_features_from_irreps(h_full, self.atom_encoder.irreps_node)  # [B, N, inv_dim]
 
-        active_mask = absorber_mask if self.use_absorber_mask else None
+        active_mask = target_site_mask if self.use_target_site_mask else None
 
         parts = []
 
         # Branch 1
         if self.use_invariant_branch:
-            abs_lat = self.abs_branch(h, e_feat)  # [B, N, nE, latent]
-            parts.append(abs_lat)
+            all_atom_lat = self.all_atom_branch(h, e_feat)  # [B, N, nE, latent]
+            parts.append(all_atom_lat)
 
         # Branch 2a
         if self.use_attention_branch:
@@ -416,7 +417,7 @@ class E3EEFull(Model):
                 att_src=att_src,
                 att_dst=att_dst,
                 att_dist=att_dist,
-                absorber_mask=active_mask,
+                target_site_mask=active_mask,
             )  # [B, N, nE, latent]
             parts.append(attn_lat)
 
@@ -432,7 +433,7 @@ class E3EEFull(Model):
                 att_dst=att_dst,
                 att_dist=att_dist,
                 att_vec=att_vec,
-                absorber_mask=active_mask,
+                target_site_mask=active_mask,
             )  # [B, N, nE, latent]
             parts.append(eq_attn_lat)
 
@@ -446,7 +447,7 @@ class E3EEFull(Model):
                 att_src=att_src,
                 att_dst=att_dst,
                 att_dist=att_dist,
-                absorber_mask=active_mask,
+                target_site_mask=active_mask,
             )  # [B, N, nE, latent]
             parts.append(conv_lat)
 
@@ -462,7 +463,7 @@ class E3EEFull(Model):
                 att_dst=att_dst,
                 att_dist=att_dist,
                 att_vec=att_vec,
-                absorber_mask=active_mask,
+                target_site_mask=active_mask,
             )  # [B, N, nE, latent]
             parts.append(eq_conv_lat)
 
@@ -477,8 +478,8 @@ class E3EEFull(Model):
             z_flat = x.reshape(bsz * n_atoms)
 
             if active_mask is not None:
-                abs_flat = active_mask.reshape(bsz * n_atoms)
-                keep = abs_flat[path_center]
+                target_site_flat = active_mask.reshape(bsz * n_atoms)
+                keep = target_site_flat[path_center]
                 p_center = path_center[keep]
                 p_j = path_j[keep]
                 p_k = path_k[keep]
@@ -514,8 +515,8 @@ class E3EEFull(Model):
             combined = torch.cat(parts, dim=-1)  # [B, N, nE, head_in_dim]
         out = self.head(combined).squeeze(-1)  # [B, N, nE]
 
-        if self.use_absorber_mask:
-            out = out * absorber_mask.unsqueeze(-1).to(dtype=out.dtype)
+        if self.use_target_site_mask:
+            out = out * target_site_mask.unsqueeze(-1).to(dtype=out.dtype)
 
         return out
 
@@ -577,7 +578,7 @@ class E3EEFull(Model):
                 "use_eq_conv_branch": self.use_eq_conv_branch,
                 "use_path_branch": self.use_path_branch,
                 "fusion_mode": self.fusion_mode,
-                "use_absorber_mask": self.use_absorber_mask,
+                "use_target_site_mask": self.use_target_site_mask,
                 "residual_scale_init": self.residual_scale_init,
                 "attention_heads": self.attention_heads,
                 "attention_rbf_dim": self.attention_rbf_dim,

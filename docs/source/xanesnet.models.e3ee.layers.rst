@@ -14,7 +14,7 @@ Submodules
 
    xanesnet.models.e3ee.layers.atom_encoder
    xanesnet.models.e3ee.layers.basic
-   xanesnet.models.e3ee.layers.branch_absorber
+   xanesnet.models.e3ee.layers.branch_target_site
    xanesnet.models.e3ee.layers.branch_attention
    xanesnet.models.e3ee.layers.branch_convolution
    xanesnet.models.e3ee.layers.branch_eq_attention

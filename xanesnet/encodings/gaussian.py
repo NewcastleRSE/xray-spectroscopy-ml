@@ -100,21 +100,21 @@ class GaussianEncoding(SpectraEncoding):
 
         Args:
             targets: Ground-truth target spectra ``(B, N)``.
-            elements: Optional per-sample absorber atomic numbers ``(B,)``.
+            elements: Optional per-sample target-site atomic numbers ``(B,)``.
                 Ignored: this encoding is element-independent.
 
         Returns:
             Gaussian basis coefficients ``(B, K)``.
         """
         self.basis.to(targets.device)
-        return gaussian_fit(basis=self.basis, xanes=targets)
+        return gaussian_fit(basis=self.basis, intensities=targets)
 
     def decode(self, predictions: torch.Tensor, elements: torch.Tensor | None = None) -> torch.Tensor:
         """Re-synthesise spectra from predicted Gaussian basis coefficients.
 
         Args:
             predictions: Predicted Gaussian basis coefficients ``(B, K)``.
-            elements: Optional per-sample absorber atomic numbers ``(B,)``.
+            elements: Optional per-sample target-site atomic numbers ``(B,)``.
                 Ignored: this encoding is element-independent.
 
         Returns:

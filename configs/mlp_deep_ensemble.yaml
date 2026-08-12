@@ -6,6 +6,7 @@ device: cuda
 datasource:
   datasource_type: pmgjson
   json_path: ./data/toy_data/
+  spectrum_key: "XANES"
 
 dataset:
   # general:

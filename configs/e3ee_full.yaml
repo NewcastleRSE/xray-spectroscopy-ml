@@ -6,6 +6,7 @@ device: cuda
 datasource:
   datasource_type: pmgjson
   json_path: ./data/toy_data/
+  spectrum_key: "XANES"
 
 dataset:
   # general:
@@ -27,7 +28,7 @@ dataset:
     max_num_neighbors: 50
   use_path_branch: False
   max_paths_per_site: 32
-  use_absorber_mask: True
+  use_target_site_mask: True
 
 encodings:
   - encoding_type: identity
@@ -59,7 +60,7 @@ model:
   use_equivariant_branch: True
   use_path_branch: False
   fusion_mode: cat
-  use_absorber_mask: True
+  use_target_site_mask: True
   residual_scale_init: 0.1
   attention_heads: 4
   attention_rbf_dim: 16

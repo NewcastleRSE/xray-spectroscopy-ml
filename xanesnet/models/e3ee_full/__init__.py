@@ -18,7 +18,7 @@
 # Citations:
 #   ...
 
-"""E3EEFull: multi-absorber E3-equivariant model."""
+"""E3EEFull: multi-target-site E3-equivariant model."""
 
 from .e3ee_full import E3EEFull
 from .resolver import resolve_e3ee_full  # <- triggers resolver registration

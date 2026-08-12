@@ -44,8 +44,8 @@ class SpectraEncoding(ABC):
     :meth:`encode` and :meth:`decode`.
 
     Both :meth:`encode` and :meth:`decode` accept an optional ``elements``
-    tensor carrying the per-sample absorber atomic numbers ``(B,)``. Encodings
-    that do not depend on the absorbing element ignore it; element-aware
+    tensor carrying the per-sample target-site atomic numbers ``(B,)``. Encodings
+    that do not depend on the target-site element ignore it; element-aware
     encodings use it to select per-element parameters.
 
     Args:
@@ -65,7 +65,7 @@ class SpectraEncoding(ABC):
 
         Args:
             targets: Ground-truth target spectra ``(B, N)``.
-            elements: Optional per-sample absorber atomic numbers ``(B,)``.
+            elements: Optional per-sample target-site atomic numbers ``(B,)``.
                 Ignored by element-independent encodings and required by
                 element-aware encodings.
 
@@ -80,7 +80,7 @@ class SpectraEncoding(ABC):
 
         Args:
             predictions: Model predictions in the encoded space ``(B, M)``.
-            elements: Optional per-sample absorber atomic numbers ``(B,)``.
+            elements: Optional per-sample target-site atomic numbers ``(B,)``.
                 Ignored by element-independent encodings and required by
                 element-aware encodings.
 
