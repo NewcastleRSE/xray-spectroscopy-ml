@@ -117,8 +117,8 @@ def resolve_auto_encoding_config(config: Config, dataset: Dataset) -> Config:
     The input config is expected to have passed schema-backed training
     validation.  This function performs only the dataset-dependent
     finalization for the top-level ``encodings`` list: it accumulates overall
-    and per-target-site-element spectral statistics in a single streaming pass
-    (so the full spectral matrix is never materialized), asks the
+    and per-target-site-element spectral statistics in a single batched,
+    streaming pass (so the full spectral matrix is never materialized), asks the
     encoding-specific resolver for concrete values (e.g. per-point statistics
     over the training spectra), and returns a new ``Config`` without mutating
     the input config.
