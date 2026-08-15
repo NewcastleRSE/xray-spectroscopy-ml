@@ -28,6 +28,7 @@ from .envembed import EnvEmbed
 from .gemnet import GemNet
 from .gemnet_oc import GemNetOC
 from .mlp import MLP
+from .multihead import MultiHead_MLP
 from .registry import ModelRegistry
 from .schnet import SchNet
 
@@ -43,4 +44,6 @@ __all__ = [
     "E3EE",
     "E3EEFull",
     "EnvEmbed",
+    "MultiHead_MLP",
+    "MultiHead_CNN",
 ]

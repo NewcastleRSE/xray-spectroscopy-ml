@@ -58,6 +58,9 @@ class MultiXYZSpecSource(DataSource):
         self.root_path = root_path
 
         self.sample_ids: dict[str, list[str]] = self._get_file_dictionary()
+        self._subdir_ids: dict[str, int] = {
+            subdir: subdir_id for subdir_id, subdir in enumerate(self.sample_ids)
+        }
         self._flat_index: list[tuple[str, str]] = [
             (subdir, file) for subdir, files in self.sample_ids.items() for file in files
         ]
@@ -86,8 +89,8 @@ class MultiXYZSpecSource(DataSource):
             idx: Zero-based flat index across all subdirectories.
 
         Returns:
-            A ``Molecule`` with ``XANES`` site property and ``sample_id``
-            stored in ``properties``.
+            A ``Molecule`` with ``XANES`` site property, ``sample_id``,
+            ``subdir_name``, and ``subdir_id`` stored in ``properties``.
         """
         subdir, file = self._flat_index[idx]
         xyz_file = Path(self.root_path) / subdir / "xyz" / f"{file}.xyz"
@@ -102,6 +105,8 @@ class MultiXYZSpecSource(DataSource):
         }
         molecule.add_site_property("XANES", spectra_list)
         molecule.properties["sample_id"] = file
+        molecule.properties["subdir_name"] = subdir
+        molecule.properties["subdir_id"] = self._subdir_ids[subdir]
         return molecule
 
     def _get_file_dictionary(self) -> dict[str, list[str]]:

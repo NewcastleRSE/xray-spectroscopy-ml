@@ -31,6 +31,7 @@ from .forward import (
     GemNetOCBatchProcessor,
     GeometryGraphDimeNetBatchProcessor,
     GeometryGraphSchNetBatchProcessor,
+    MultiheadBatchProcessor,
 )
 from .inverse import (
     InverseBatchProcessor,
@@ -52,4 +53,5 @@ __all__ = [
     "EnvEmbedBatchProcessor",
     "GeometryGraphDimeNetBatchProcessor",
     "GeometryGraphSchNetBatchProcessor",
+    "MultiheadBatchProcessor",
 ]

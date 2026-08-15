@@ -5,12 +5,12 @@ device: cpu
 
 datasource:
   datasource_type: multipmgjson
-  root_path: ./data/toy_data_multipmgjson/
+  root_path: ./data/toy_data_multipmgjson
 
 dataset:
   # general:
-  dataset_type: descriptor
-  root: ./data/processed/toy_data_multipmgjson_mlp/  # Where should the processed data be stored
+  dataset_type: multihead
+  root: ./data/processed/toy_data_mlp/  # Where should the processed data be stored
   preload: True                    # Preload dataset into RAM if True; otherwise load on-the-fly
   skip_prepare: False
   split_ratios: [0.8, 0.2]
@@ -28,22 +28,25 @@ encodings:
 
 model:
   # general:
-  model_type: mlp
+  model_type: mh_mlp
   # params:
   in_size: auto
-  out_size: auto
-  hidden_size: 256
+  out_size: [401,401,401,401]
+  hidden_size: 512
+  head_hidden_size: 512
   dropout: 0.1
   num_hidden_layers: 3
+  head_num_hidden_layers: 2
   shrink_rate: 0.5
+  head_shrink_rate: 1.0
   activation: prelu
 
 trainer:
   # general:
   trainer_type: basic
-  batch_size: 4
+  batch_size: 5
   shuffle: True
-  drop_last: False
+  drop_last: True
   num_workers: 0
   # params:
   epochs: 50
