@@ -41,8 +41,7 @@ from xanesnet.serialization.config import Config, load_raw_config
 from xanesnet.serialization.jsonl_stream import JSONLStream, json_friendly
 from xanesnet.serialization.prediction_readers import (
     PredictionReader,
-    StructureMatchedPredictionReader,
-    detect_prediction_format,
+    build_prediction_reader,
 )
 
 ###############################################################################
@@ -65,6 +64,9 @@ def analyze(config: Config, args_namespace: Namespace, save_dir: Path) -> None:
     """
     logging.info("Analysis.")
 
+    preload = config.get_bool("preload")
+    logging.info(f"Preload predictions and structures: {preload}")
+
     inference_run_dirs = args_namespace.inference_runs
     logging.info(f"You provided {len(inference_run_dirs)} inference run directories:")
 
@@ -74,14 +76,17 @@ def analyze(config: Config, args_namespace: Namespace, save_dir: Path) -> None:
         logging.info("No prediction names provided; using inference run directory names as labels.")
         prediction_names = run_dir_names
     elif len(prediction_names) != len(run_dir_names):
+        if len(prediction_names) > len(run_dir_names):
+            mismatch_note = "surplus names are ignored."
+        else:
+            mismatch_note = "remaining readers fall back to inference run directory names."
         logging.warning(
             f"Number of prediction names ({len(prediction_names)}) does not match the number of "
-            f"inference runs ({len(run_dir_names)}); "
-            f"{'surplus names are ignored.' if len(prediction_names) > len(run_dir_names) else 'remaining readers fall back to inference run directory names.'}"
+            f"inference runs ({len(run_dir_names)}); {mismatch_note}"
         )
     names_padded = (prediction_names + run_dir_names)[: len(run_dir_names)]
 
-    predictions_readers = _setup_predictions_readers(inference_run_dirs)
+    predictions_readers = _setup_predictions_readers(inference_run_dirs, preload)
     try:
         selectors, selectors_config = _setup_selectors(config, predictions_readers)
         collectors, collectors_config = _setup_collectors(config)
@@ -151,16 +156,18 @@ def _setup_datasource(config: Config) -> DataSource:
     return datasource
 
 
-def _setup_predictions_readers(inference_run_dirs: list[str] | list[Path]) -> list[PredictionReader]:
+def _setup_predictions_readers(inference_run_dirs: list[str] | list[Path], preload: bool) -> list[PredictionReader]:
     """Create prediction readers from inference run directories.
 
     Auto-detects the format in each run's ``predictions`` directory. When the
     run also contains a readable ``validated_infer_config.yaml`` and its
     datasource can be loaded, the returned reader attaches matching
-    structures.
+    structures. With ``preload`` enabled, prediction records and matched
+    structures are materialized into memory during setup.
 
     Args:
         inference_run_dirs: Paths to inference run directories.
+        preload: Whether to preload predictions and structures into memory.
 
     Returns:
         One plain or structure-enriched ``PredictionReader`` per inference run.
@@ -170,21 +177,17 @@ def _setup_predictions_readers(inference_run_dirs: list[str] | list[Path]) -> li
         inference_run_path = Path(inference_run_dir)
         predictions_dir = inference_run_path / "predictions"
 
-        reader_class = detect_prediction_format(predictions_dir)
-        logging.info(f"Detected format for {predictions_dir}: {reader_class.__name__}")
-        reader = reader_class(predictions_dir)
-
+        datasource: DataSource | None = None
         config_path = inference_run_path / "validated_infer_config.yaml"
         try:
             logging.info(f"Loading inference configuration: {config_path}")
             inference_config = Config(load_raw_config(config_path))
             datasource = _setup_datasource(inference_config)
-            reader = StructureMatchedPredictionReader(reader, datasource)
         except Exception as exc:
             logging.warning(
                 f"Exception during data loading from {config_path}: {exc}. Continuing with prediction data only."
             )
-        readers.append(reader)
+        readers.append(build_prediction_reader(predictions_dir, datasource=datasource, preload=preload))
 
     return readers
 

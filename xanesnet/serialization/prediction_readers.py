@@ -247,21 +247,37 @@ class StructureMatchedPredictionReader(PredictionReader):
 
     The wrapped prediction reader remains indexed at target-site level. A
     structure may therefore occur in multiple returned samples when it has
-    multiple target sites.
+    multiple target sites. When ``preload_structures`` is enabled, parsed
+    structures are retained in memory after indexing instead of being
+    re-read from disk on every sample access.
 
     Args:
         predictions_reader: Reader containing persisted inference predictions.
         datasource: Raw datasource reconstructed from the inference run.
+        preload_structures: Whether to cache parsed raw structures in memory.
 
     Raises:
         ValueError: If the datasource contains duplicate ``sample_id`` values,
             or a prediction refers to a sample that is absent from it.
     """
 
-    def __init__(self, predictions_reader: PredictionReader, datasource: DataSource) -> None:
-        """Initialize the structure-enriched prediction reader."""
+    def __init__(
+        self,
+        predictions_reader: PredictionReader,
+        datasource: DataSource,
+        preload_structures: bool = False,
+    ) -> None:
+        """Initialize the structure-enriched prediction reader.
+
+        Args:
+            predictions_reader: Reader containing persisted inference predictions.
+            datasource: Raw datasource reconstructed from the inference run.
+            preload_structures: Whether to cache parsed raw structures in memory.
+        """
         self.predictions_reader = predictions_reader
         self.datasource = datasource
+        self.preload_structures = preload_structures
+        self._structure_cache: dict[int, Molecule | Structure] | None = {} if preload_structures else None
         self._source_indices_by_id = self._index_source_indices(datasource)
         super().__init__(predictions_reader.path)
 
@@ -295,7 +311,7 @@ class StructureMatchedPredictionReader(PredictionReader):
             source_index = self._source_indices_by_id[sample_id]
         except KeyError as exc:
             raise ValueError(f"Prediction at index {index} references unknown sample_id '{sample_id}'.") from exc
-        sample["structure"] = self.datasource[source_index]
+        sample["structure"] = self._load_structure(source_index)
         return cast(PredictionSample, sample)
 
     def get_all(self) -> PredictionBatch:
@@ -310,9 +326,27 @@ class StructureMatchedPredictionReader(PredictionReader):
         """Close resources owned by the wrapped prediction reader."""
         self.predictions_reader.close()
 
-    @staticmethod
-    def _index_source_indices(datasource: DataSource) -> dict[str, int]:
+    def _load_structure(self, source_index: int) -> Molecule | Structure:
+        """Return the parsed raw structure for one datasource position.
+
+        Cached entries are reused when ``preload_structures`` is enabled;
+        otherwise the structure is loaded from disk on every access.
+
+        Args:
+            source_index: Zero-based datasource position.
+
+        Returns:
+            The pymatgen structure or molecule at ``source_index``.
+        """
+        if self._structure_cache is not None:
+            return self._structure_cache[source_index]
+        return self.datasource[source_index]
+
+    def _index_source_indices(self, datasource: DataSource) -> dict[str, int]:
         """Index datasource positions by their required ``sample_id`` property.
+
+        When ``preload_structures`` is enabled, the parsed objects are
+        retained in ``_structure_cache`` for later reuse.
 
         Args:
             datasource: Source of raw structures or molecules.
@@ -336,8 +370,66 @@ class StructureMatchedPredictionReader(PredictionReader):
             if sample_id in source_indices_by_id:
                 raise ValueError(f"Inference datasource contains duplicate sample_id '{sample_id}'.")
             source_indices_by_id[sample_id] = source_index
+            if self._structure_cache is not None:
+                self._structure_cache[source_index] = structure
 
         return source_indices_by_id
+
+
+###############################################################################
+############################## PRELOAD CLASS ##################################
+###############################################################################
+
+
+class PreloadedPredictionReader(PredictionReader):
+    """Serve an in-memory snapshot of a wrapped prediction reader's records.
+
+    Materializes every target-site record of the wrapped reader once during
+    setup and serves later accesses from memory. Useful when the analysis
+    pipeline iterates the same predictions multiple times.
+
+    Args:
+        predictions_reader: Reader whose records should be preloaded.
+    """
+
+    def __init__(self, predictions_reader: PredictionReader) -> None:
+        """Preload all records from the wrapped prediction reader."""
+        self.predictions_reader = predictions_reader
+        self._samples: list[PredictionSample] = [
+            predictions_reader[i] for i in tqdm(range(len(predictions_reader)), desc="Preloading predictions")
+        ]
+        super().__init__(predictions_reader.path)
+
+    def _validate_path(self) -> None:
+        """Accept the already validated path owned by the wrapped reader."""
+
+    def __len__(self) -> int:
+        """Return the number of preloaded target-site records.
+
+        Returns:
+            Number of records served from memory.
+        """
+        return len(self._samples)
+
+    def __getitem__(self, index: int) -> PredictionSample:
+        """Return one preloaded prediction record.
+
+        Args:
+            index: Zero-based target-site prediction index.
+
+        Returns:
+            The preloaded ``PredictionSample`` at ``index``.
+
+        Raises:
+            IndexError: If ``index`` is out of range.
+        """
+        if index < 0 or index >= len(self):
+            raise IndexError(f"Index {index} out of range [0, {len(self)})")
+        return self._samples[index]
+
+    def close(self) -> None:
+        """Close resources owned by the wrapped prediction reader."""
+        self.predictions_reader.close()
 
 
 ###############################################################################
@@ -636,3 +728,43 @@ def detect_prediction_format(path: str | Path) -> type[PredictionReader]:
             f"Could not detect prediction format in {predictions_path}. "
             f"Expected HDF5 (predictions.h5), Numpy (sample_*.npz), or JSON (sample_*.json) files."
         )
+
+
+###############################################################################
+################################# FACTORY #####################################
+###############################################################################
+
+
+def build_prediction_reader(
+    path: str | Path,
+    datasource: DataSource | None = None,
+    preload: bool = False,
+) -> PredictionReader:
+    """Build a prediction reader for one predictions directory.
+
+    Detects the storage format from the directory contents, optionally
+    attaches matching raw structures from ``datasource``, and optionally
+    preloads every target-site record into memory.
+
+    Args:
+        path: Directory containing persisted prediction files.
+        datasource: Optional datasource whose raw structures are attached to
+            matching prediction records. When ``None``, records are returned
+            without structures.
+        preload: Whether to preload prediction records and matched structures
+            into memory during setup.
+
+    Returns:
+        A format reader, optionally wrapped for structure enrichment and
+        in-memory preloading.
+    """
+    reader_class = detect_prediction_format(path)
+    logging.info(f"Detected format for {path}: {reader_class.__name__}")
+    reader = reader_class(path)
+
+    if datasource is not None:
+        reader = StructureMatchedPredictionReader(reader, datasource, preload_structures=preload)
+    if preload:
+        reader = PreloadedPredictionReader(reader)
+
+    return reader

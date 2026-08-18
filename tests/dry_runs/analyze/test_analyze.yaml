@@ -1,4 +1,5 @@
 seed: 42
+preload: true
 
 selectors:
   - selector_type: all
