@@ -99,12 +99,12 @@ class DescriptorData:
             Reconstructed descriptor data object.
         """
         return cls(
-            x=state.get("x"),
-            y=state.get("y"),
-            energies=state.get("energies"),
-            sample_id=state.get("sample_id"),
-            element=state.get("element"),
-            target_site_index=state.get("target_site_index"),
+            x=state["x"],
+            y=state["y"],
+            energies=state["energies"],
+            sample_id=state["sample_id"],
+            element=state["element"],
+            target_site_index=state["target_site_index"],
         )
 
     def save(self, path: str) -> str:

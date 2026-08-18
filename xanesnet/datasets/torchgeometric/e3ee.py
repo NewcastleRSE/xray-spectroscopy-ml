@@ -229,11 +229,9 @@ class E3EEDataset(TorchGeometricDataset):
         Returns:
             PyG batch with E3EE-specific padded tensors attached.
         """
-        bsz = len(batch)
-
         x_list = [sample.x for sample in batch]
         n_atoms_per_sample = torch.tensor([xi.shape[0] for xi in x_list], dtype=torch.int64)
-        n_max = int(n_atoms_per_sample.max().item()) if bsz > 0 else 0
+        n_max = int(n_atoms_per_sample.max().item())
 
         x = pad_sequence(x_list, batch_first=True, padding_value=0)
         mask_list = [torch.ones(xi.shape[0], dtype=torch.bool) for xi in x_list]
@@ -255,10 +253,10 @@ class E3EEDataset(TorchGeometricDataset):
             edge_weight_list.append(sample.edge_weight)
             edge_vec_list.append(sample.edge_vec)
 
-        edge_src = torch.cat(edge_src_list, dim=0) if edge_src_list else torch.zeros(0, dtype=torch.int64)
-        edge_dst = torch.cat(edge_dst_list, dim=0) if edge_dst_list else torch.zeros(0, dtype=torch.int64)
-        edge_weight = torch.cat(edge_weight_list, dim=0) if edge_weight_list else torch.zeros(0, dtype=torch.float32)
-        edge_vec = torch.cat(edge_vec_list, dim=0) if edge_vec_list else torch.zeros(0, 3, dtype=torch.float32)
+        edge_src = torch.cat(edge_src_list, dim=0)
+        edge_dst = torch.cat(edge_dst_list, dim=0)
+        edge_weight = torch.cat(edge_weight_list, dim=0)
+        edge_vec = torch.cat(edge_vec_list, dim=0)
 
         has_paths = all(hasattr(s, "path_j") for s in batch)
         path_j = torch.zeros(0, dtype=torch.int64)

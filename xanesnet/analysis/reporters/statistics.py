@@ -109,12 +109,8 @@ class StatisticsReporter(Reporter):
         Returns:
             Report dictionary with ``metadata`` and ``statistics`` sections.
         """
-        sel_cfg = results.selectors_config[sel_idx] if sel_idx < len(results.selectors_config) else {}
-        agg_cfg = (
-            results.aggregators_config[agg_result.aggregator_index]
-            if agg_result.aggregator_index < len(results.aggregators_config)
-            else {}
-        )
+        sel_cfg = results.selectors_config[sel_idx]
+        agg_cfg = results.aggregators_config[agg_result.aggregator_index]
 
         return {
             "metadata": {

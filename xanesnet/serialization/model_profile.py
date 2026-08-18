@@ -175,13 +175,9 @@ def save_model_profile(save_dir: Path, model_profile: dict[str, Any]) -> tuple[P
         readable_file.write("Model Profile\n")
         readable_file.write("=============\n\n")
 
-        architecture = model_profile.get("model_architecture")
         readable_file.write("Model Architecture\n")
         readable_file.write("------------------\n")
-        if isinstance(architecture, str) and architecture:
-            readable_file.write(f"{architecture}\n\n")
-        else:
-            readable_file.write("<not available>\n\n")
+        readable_file.write(f"{model_profile['model_architecture']}\n\n")
 
         readable_file.write("Metadata\n")
         readable_file.write("--------\n")

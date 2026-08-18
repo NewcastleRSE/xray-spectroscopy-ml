@@ -87,7 +87,7 @@ class SpectraPlotter(Plotter):
             for sel_idx, selector in enumerate(reader_selectors):
                 logging.info(f"      Selector {sel_idx + 1}/{len(reader_selectors)}.")
                 sel_label_str = selector_label(results.selectors_config, sel_idx)
-                sel_cfg = results.selectors_config[sel_idx] if sel_idx < len(results.selectors_config) else {}
+                sel_cfg = results.selectors_config[sel_idx]
 
                 stream: JSONLStream | None = None
                 if reader_idx < len(results.collector_results) and sel_idx < len(results.collector_results[reader_idx]):
@@ -251,7 +251,7 @@ def _subtitle(sel_cfg: dict[str, Any], reader_idx: int) -> str:
         Human-readable subtitle string.
     """
     parts = [f"predictions={reader_idx}"]
-    sel_type = sel_cfg.get("selector_type", "?")
+    sel_type = sel_cfg["selector_type"]
     parts.append(f"selector={sel_type}")
     extras = {k: v for k, v in sel_cfg.items() if k != "selector_type"}
     if extras:

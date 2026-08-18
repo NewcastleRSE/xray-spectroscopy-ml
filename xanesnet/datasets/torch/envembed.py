@@ -129,15 +129,15 @@ class EnvEmbedData:
             Reconstructed environment-embedding data object.
         """
         return cls(
-            descriptor_features=state.get("descriptor_features"),
-            distance_features=state.get("distance_features"),
-            intensities=state.get("intensities"),
-            energies=state.get("energies"),
-            c_star=state.get("c_star"),
-            lengths=state.get("lengths"),
-            sample_id=state.get("sample_id"),
-            element=state.get("element"),
-            target_site_index=state.get("target_site_index"),
+            descriptor_features=state["descriptor_features"],
+            distance_features=state["distance_features"],
+            intensities=state["intensities"],
+            energies=state["energies"],
+            c_star=state["c_star"],
+            lengths=state["lengths"],
+            sample_id=state["sample_id"],
+            element=state["element"],
+            target_site_index=state["target_site_index"],
             basis=None,
         )
 

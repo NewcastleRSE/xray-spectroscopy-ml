@@ -76,10 +76,6 @@ class GemNetData(Data):
         "trip_a2e_in",
         "trip_e2a_out",
     }
-    # a2a-graph edge-level
-    _A2A_EDGE_KEYS: set[str] = set()
-    # qint-graph edge-level
-    _QINT_EDGE_KEYS: set[str] = set()
     # Intermediate-ca level (offset by num_intm_ca)
     _INTM_CA_KEYS = {"id4_reduce_cab"}
     # Intermediate-db level (offset by num_intm_db)
@@ -105,26 +101,17 @@ class GemNetData(Data):
         ):
             return self.num_nodes
         if key in self._MAIN_EDGE_KEYS:
-            ei = self.edge_index
-            return ei.size(1) if ei is not None else 0
+            assert self.edge_index is not None
+            return self.edge_index.size(1)
         if key in self._INT_EDGE_KEYS:
             # Interaction edge graph is a 2xE tensor or an index into it
-            return self.int_edge_index.size(1) if getattr(self, "int_edge_index", None) is not None else 0
+            return self.int_edge_index.size(1)
         if key in self._A2EE2A_EDGE_KEYS:
-            a2ee2a = getattr(self, "a2ee2a_edge_index", None)
-            return a2ee2a.size(1) if a2ee2a is not None else 0
-        if key in self._A2A_EDGE_KEYS:
-            a2a = getattr(self, "a2a_edge_index", None)
-            return a2a.size(1) if a2a is not None else 0
-        if key in self._QINT_EDGE_KEYS:
-            q = getattr(self, "qint_edge_index", None)
-            return q.size(1) if q is not None else 0
+            return self.a2ee2a_edge_index.size(1)
         if key in self._INTM_CA_KEYS:
-            v = getattr(self, "id4_reduce_intm_ca", None)
-            return v.size(0) if v is not None else 0
+            return self.id4_reduce_intm_ca.size(0)
         if key in self._INTM_DB_KEYS:
-            v = getattr(self, "id4_expand_intm_db", None)
-            return v.size(0) if v is not None else 0
+            return self.id4_expand_intm_db.size(0)
         if key in self._NO_INC_KEYS:
             return 0
         return super().__inc__(key, value, *args, **kwargs)
@@ -278,9 +265,7 @@ class GemNetDataset(TorchGeometricDataset):
         """
         pmg_obj = self.datasource[idx]
         if "spectrum" not in pmg_obj.site_properties:
-            logging.warning(
-                f"No spectrum found for sample {idx} " f"({pmg_obj.properties.get('sample_id', '')}); skipping."
-            )
+            logging.warning(f"No spectrum found for sample {idx} ({pmg_obj.properties['sample_id']}); skipping.")
             return 0
 
         spectra = np.array(pmg_obj.site_properties["spectrum"], dtype=object)

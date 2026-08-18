@@ -170,9 +170,6 @@ class PredictionReader(ABC):
     @staticmethod
     def _stack_values(values: list[Any]) -> np.ndarray:
         """Stack prediction field values into one array."""
-        if not values:
-            return np.array([])
-
         if all(isinstance(value, np.ndarray) for value in values):
             arrays = [value for value in values if isinstance(value, np.ndarray)]
             return np.stack(arrays, axis=0)

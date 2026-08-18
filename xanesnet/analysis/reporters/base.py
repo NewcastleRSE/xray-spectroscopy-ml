@@ -66,8 +66,6 @@ def selector_label(selectors_config: list[dict[str, Any]], sel_idx: int) -> str:
         sel_idx: Zero-based selector index.
 
     Returns:
-        Configured ``selector_type`` when present, otherwise ``"unknown"``.
+        Configured ``selector_type`` label.
     """
-    if sel_idx < len(selectors_config):
-        return cast(str, selectors_config[sel_idx].get("selector_type", "unknown"))
-    return "unknown"
+    return cast(str, selectors_config[sel_idx]["selector_type"])

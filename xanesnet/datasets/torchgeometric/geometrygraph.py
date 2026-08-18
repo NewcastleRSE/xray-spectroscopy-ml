@@ -54,8 +54,8 @@ class GeometryGraphData(Data):
             Increment used by PyG for ``key``.
         """
         if key in ("idx_kj", "idx_ji"):
-            edge_index = self.edge_index
-            return edge_index.size(1) if edge_index is not None else 0
+            assert self.edge_index is not None
+            return self.edge_index.size(1)
         return super().__inc__(key, value, *args, **kwargs)
 
 
