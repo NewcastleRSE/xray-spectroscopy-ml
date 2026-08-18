@@ -122,6 +122,15 @@ class PredictionReader(ABC):
         """
         ...
 
+    def provides_structures(self) -> bool:
+        """Return whether records carry matched raw structures.
+
+        Returns:
+            ``True`` when ``__getitem__`` results include a ``structure``
+            entry, ``False`` otherwise.
+        """
+        return False
+
     def __iter__(self) -> Iterator[PredictionSample]:
         """Reset the iteration cursor and return ``self`` as the iterator.
 
@@ -292,6 +301,14 @@ class StructureMatchedPredictionReader(PredictionReader):
         """
         return len(self.predictions_reader)
 
+    def provides_structures(self) -> bool:
+        """Return whether records carry matched raw structures.
+
+        Returns:
+            Always ``True`` for this reader.
+        """
+        return True
+
     def __getitem__(self, index: int) -> PredictionSample:
         """Return one prediction record with its originating raw structure.
 
@@ -410,6 +427,14 @@ class PreloadedPredictionReader(PredictionReader):
             Number of records served from memory.
         """
         return len(self._samples)
+
+    def provides_structures(self) -> bool:
+        """Forward the structure capability of the wrapped reader.
+
+        Returns:
+            ``True`` when the wrapped reader attaches matched raw structures.
+        """
+        return self.predictions_reader.provides_structures()
 
     def __getitem__(self, index: int) -> PredictionSample:
         """Return one preloaded prediction record.

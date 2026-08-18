@@ -28,7 +28,6 @@ from pymatgen.core import Element, Molecule, Structure
 from xanesnet.serialization.prediction_readers import (
     PredictionReader,
     PredictionSample,
-    StructureMatchedPredictionReader,
 )
 from xanesnet.utils.exceptions import ConfigError
 
@@ -64,7 +63,7 @@ class ElementSelector(Selector):
         """
         super().__init__(selector_type, data_source)
 
-        if not isinstance(data_source, StructureMatchedPredictionReader):
+        if not data_source.provides_structures():
             raise ConfigError("ElementSelector requires predictions matched to raw structures.")
 
         self.elements = elements
