@@ -36,10 +36,12 @@ from xanesnet.analysis.plotters import Plotter, PlotterRegistry
 from xanesnet.analysis.reporters import Reporter, ReporterRegistry
 from xanesnet.analysis.result import AnalysisResults
 from xanesnet.analysis.selectors import Selector, SelectorRegistry
-from xanesnet.serialization.config import Config
+from xanesnet.datasources import DataSource, DataSourceRegistry
+from xanesnet.serialization.config import Config, load_raw_config
 from xanesnet.serialization.jsonl_stream import JSONLStream, json_friendly
 from xanesnet.serialization.prediction_readers import (
     PredictionReader,
+    StructureMatchedPredictionReader,
     detect_prediction_format,
 )
 
@@ -57,15 +59,29 @@ def analyze(config: Config, args_namespace: Namespace, save_dir: Path) -> None:
 
     Args:
         config: Validated analysis configuration.
-        args_namespace: Parsed CLI arguments (must contain ``predictions``).
+        args_namespace: Parsed CLI arguments (must contain ``inference_runs``
+            and, optionally, ``prediction_names``).
         save_dir: Root directory for all analysis outputs.
     """
     logging.info("Analysis.")
 
-    predictions_dirs = args_namespace.predictions
-    logging.info(f"You provided {len(predictions_dirs)} predictions directories:")
+    inference_run_dirs = args_namespace.inference_runs
+    logging.info(f"You provided {len(inference_run_dirs)} inference run directories:")
 
-    predictions_readers = _setup_predictions_readers(predictions_dirs)
+    run_dir_names: list[str | None] = [Path(d).name for d in inference_run_dirs]
+    prediction_names: list[str | None] = list(args_namespace.prediction_names or [])
+    if not prediction_names:
+        logging.info("No prediction names provided; using inference run directory names as labels.")
+        prediction_names = run_dir_names
+    elif len(prediction_names) != len(run_dir_names):
+        logging.warning(
+            f"Number of prediction names ({len(prediction_names)}) does not match the number of "
+            f"inference runs ({len(run_dir_names)}); "
+            f"{'surplus names are ignored.' if len(prediction_names) > len(run_dir_names) else 'remaining readers fall back to inference run directory names.'}"
+        )
+    names_padded = (prediction_names + run_dir_names)[: len(run_dir_names)]
+
+    predictions_readers = _setup_predictions_readers(inference_run_dirs)
     try:
         selectors, selectors_config = _setup_selectors(config, predictions_readers)
         collectors, collectors_config = _setup_collectors(config)
@@ -95,6 +111,7 @@ def analyze(config: Config, args_namespace: Namespace, save_dir: Path) -> None:
             selectors_config=[cfg.as_dict() for cfg in selectors_config.get_config_list("selectors")],
             collectors_config=[cfg.as_dict() for cfg in collectors_config.get_config_list("collectors")],
             aggregators_config=[cfg.as_dict() for cfg in aggregators_config.get_config_list("aggregators")],
+            prediction_names=names_padded,
         )
 
         # Run reporters
@@ -117,22 +134,56 @@ def analyze(config: Config, args_namespace: Namespace, save_dir: Path) -> None:
 ###############################################################################
 
 
-def _setup_predictions_readers(predictions_dirs: list[str] | list[Path]) -> list[PredictionReader]:
-    """Create a prediction reader for each supplied directory.
-
-    Auto-detects the prediction format from the directory layout.
+def _setup_datasource(config: Config) -> DataSource:
+    """Instantiate the data source from config.
 
     Args:
-        predictions_dirs: Paths to directories containing prediction files.
+        config: Validated configuration containing a ``datasource`` section.
 
     Returns:
-        One ``PredictionReader`` per directory.
+        Initialized data source.
+    """
+    datasource_config = config.section("datasource")
+    datasource_type = datasource_config.get_str("datasource_type")
+    logging.info(f"Initializing data source: {datasource_type}")
+    datasource = DataSourceRegistry.create(datasource_type, **datasource_config.as_kwargs())
+
+    return datasource
+
+
+def _setup_predictions_readers(inference_run_dirs: list[str] | list[Path]) -> list[PredictionReader]:
+    """Create prediction readers from inference run directories.
+
+    Auto-detects the format in each run's ``predictions`` directory. When the
+    run also contains a readable ``validated_infer_config.yaml`` and its
+    datasource can be loaded, the returned reader attaches matching
+    structures.
+
+    Args:
+        inference_run_dirs: Paths to inference run directories.
+
+    Returns:
+        One plain or structure-enriched ``PredictionReader`` per inference run.
     """
     readers: list[PredictionReader] = []
-    for predictions_dir in predictions_dirs:
+    for inference_run_dir in inference_run_dirs:
+        inference_run_path = Path(inference_run_dir)
+        predictions_dir = inference_run_path / "predictions"
+
         reader_class = detect_prediction_format(predictions_dir)
         logging.info(f"Detected format for {predictions_dir}: {reader_class.__name__}")
         reader = reader_class(predictions_dir)
+
+        config_path = inference_run_path / "validated_infer_config.yaml"
+        try:
+            logging.info(f"Loading inference configuration: {config_path}")
+            inference_config = Config(load_raw_config(config_path))
+            datasource = _setup_datasource(inference_config)
+            reader = StructureMatchedPredictionReader(reader, datasource)
+        except Exception as exc:
+            logging.warning(
+                f"Exception during data loading from {config_path}: {exc}. Continuing with prediction data only."
+            )
         readers.append(reader)
 
     return readers

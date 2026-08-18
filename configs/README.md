@@ -17,5 +17,5 @@ prediction from structure to spectra:
 2. **Infer** — `xanesnet infer -i <file> -m <checkpoint>` merges the user
    config with the checkpoint signature before validation. Predictions land in
    `runs/<timestamp>_infer_<name>/predictions/`.
-3. **Analyze** — `xanesnet analyze -i <file> -p <predictions>` computes and
+3. **Analyze** — `xanesnet analyze -i <file> -r <inference-run>` computes and
    reports metrics on saved predictions.

@@ -41,6 +41,7 @@ class AnalysisResults:
         selectors_config: Selector configuration dictionaries in pipeline order.
         collectors_config: Collector configuration dictionaries in pipeline order.
         aggregators_config: Aggregator configuration dictionaries in pipeline order.
+        prediction_names: Display name per prediction reader.
     """
 
     selectors: list[list[Selector]]
@@ -49,3 +50,4 @@ class AnalysisResults:
     selectors_config: list[dict[str, Any]] = field(default_factory=list)
     collectors_config: list[dict[str, Any]] = field(default_factory=list)
     aggregators_config: list[dict[str, Any]] = field(default_factory=list)
+    prediction_names: list[str | None] = field(default_factory=list)

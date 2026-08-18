@@ -63,11 +63,12 @@ Commands (mutually exclusive):
 
     analyze  Analyze predictions from inference runs.
         Arguments:
-            -i, --in_file       Path to input YAML configuration file. (Required)
-            -p, --predictions   Path to directory containing predictions. (Required)
-            -o, --out_dir       Path to output directory. (Optional, default: ./runs )
-            -n, --name          Name for the analysis run used for logging and saving (Optional).
-            -y, --yes           Automatically answer yes to confirmation prompts (Optional).
+            -i, --in_file           Path to input YAML configuration file. (Required)
+            -r, --inference-runs    Path to inference run directory. (Required)
+            -d, --prediction-names  Display names for inference run directories, in the same order as -r. (Optional)
+            -o, --out_dir           Path to output directory. (Optional, default: ./runs )
+            -n, --name              Name for the analysis run used for logging and saving (Optional).
+            -y, --yes               Automatically answer yes to confirmation prompts (Optional).
 """
 
 TRAIN = r"""

@@ -166,6 +166,7 @@ class GemNetBatch(Batch):
     id3_expand_ba: torch.Tensor
     Kidx3: torch.Tensor
     target_site_mask: torch.Tensor
+    target_site_index: torch.Tensor
     energies: torch.Tensor
     intensities: torch.Tensor
     sample_id: list[str]
@@ -329,6 +330,7 @@ class GemNetDataset(TorchGeometricDataset):
             "energies": torch.tensor(energies, dtype=torch.float32),
             "intensities": torch.tensor(intensities, dtype=torch.float32),
             "target_site_mask": target_site_mask,
+            "target_site_index": torch.tensor(target_site_indices, dtype=torch.int64),
             "sample_id": pmg_obj.properties["sample_id"],
         }
 
@@ -463,10 +465,11 @@ class GemNetDataset(TorchGeometricDataset):
             PyG batch with target tensors and file names concatenated over
             target sites.
         """
-        fields_to_cat = ["energies", "intensities", "target_site_mask"]
+        fields_to_cat = ["energies", "intensities", "target_site_mask", "target_site_index"]
         batched = GemNetBatch.from_data_list(batch, exclude_keys=[*fields_to_cat, "sample_id"])
         for field in fields_to_cat:
-            setattr(batched, field, torch.cat([getattr(d, field) for d in batch], dim=0))
+            values = [getattr(data, field) for data in batch]
+            setattr(batched, field, torch.cat(values, dim=0))
         batched.sample_id = [
             str(getattr(data, "sample_id"))
             for data in batch

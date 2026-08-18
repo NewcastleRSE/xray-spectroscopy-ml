@@ -30,6 +30,10 @@ from typing import Any, NotRequired, TypedDict, cast
 import h5py
 import numpy as np
 import torch
+from pymatgen.core import Molecule, Structure
+from tqdm import tqdm
+
+from xanesnet.datasources import DataSource
 
 from .prediction_writers import PredictionBatch
 
@@ -45,18 +49,23 @@ class PredictionSample(TypedDict):
     dimension - each field corresponds to a single row of the equivalent
     ``PredictionBatch`` field. ``prediction_std`` is present when inference
     produced an energy/channel-wise uncertainty estimate. ``sample_id`` is the
-    identifier written by XANESNET inference.
+    identifier written by XANESNET inference. ``target_site_index`` identifies
+    the original atom within that structure, or is ``None`` for non-site-specific
+    predictions. Analysis may attach the matching raw ``structure`` from the
+    inference datasource.
     """
 
     # Required:
     prediction: np.ndarray | torch.Tensor
     target: np.ndarray | torch.Tensor
     sample_id: str
+    target_site_index: int | None
 
     # Optional:
     prediction_std: NotRequired[np.ndarray | torch.Tensor]
     forward_time: NotRequired[float]
     forward_time_pass: NotRequired[float]
+    structure: NotRequired[Molecule | Structure]
 
 
 ###############################################################################
@@ -232,6 +241,109 @@ class PredictionReader(ABC):
 
 
 ###############################################################################
+########################## STRUCTURE MATCHED CLASS ############################
+###############################################################################
+
+
+class StructureMatchedPredictionReader(PredictionReader):
+    """Attach the structure matching each prediction's ``sample_id``.
+
+    The wrapped prediction reader remains indexed at target-site level. A
+    structure may therefore occur in multiple returned samples when it has
+    multiple target sites.
+
+    Args:
+        predictions_reader: Reader containing persisted inference predictions.
+        datasource: Raw datasource reconstructed from the inference run.
+
+    Raises:
+        ValueError: If the datasource contains duplicate ``sample_id`` values,
+            or a prediction refers to a sample that is absent from it.
+    """
+
+    def __init__(self, predictions_reader: PredictionReader, datasource: DataSource) -> None:
+        """Initialize the structure-enriched prediction reader."""
+        self.predictions_reader = predictions_reader
+        self.datasource = datasource
+        self._source_indices_by_id = self._index_source_indices(datasource)
+        super().__init__(predictions_reader.path)
+
+    def _validate_path(self) -> None:
+        """Accept the already validated path owned by the wrapped reader."""
+
+    def __len__(self) -> int:
+        """Return the number of target-site prediction records.
+
+        Returns:
+            Number of records provided by the wrapped prediction reader.
+        """
+        return len(self.predictions_reader)
+
+    def __getitem__(self, index: int) -> PredictionSample:
+        """Return one prediction record with its originating raw structure.
+
+        Args:
+            index: Zero-based target-site prediction index.
+
+        Returns:
+            Prediction record with an added ``structure`` entry.
+
+        Raises:
+            ValueError: If the record's ``sample_id`` is not in the inference
+                datasource.
+        """
+        sample = dict(self.predictions_reader[index])
+        sample_id = str(sample["sample_id"])
+        try:
+            source_index = self._source_indices_by_id[sample_id]
+        except KeyError as exc:
+            raise ValueError(f"Prediction at index {index} references unknown sample_id '{sample_id}'.") from exc
+        sample["structure"] = self.datasource[source_index]
+        return cast(PredictionSample, sample)
+
+    def get_all(self) -> PredictionBatch:
+        """Load persisted prediction fields without materializing structures.
+
+        Returns:
+            Full prediction batch returned by the wrapped reader.
+        """
+        return self.predictions_reader.get_all()
+
+    def close(self) -> None:
+        """Close resources owned by the wrapped prediction reader."""
+        self.predictions_reader.close()
+
+    @staticmethod
+    def _index_source_indices(datasource: DataSource) -> dict[str, int]:
+        """Index datasource positions by their required ``sample_id`` property.
+
+        Args:
+            datasource: Source of raw structures or molecules.
+
+        Returns:
+            Mapping from sample identifier to datasource position.
+
+        Raises:
+            ValueError: If a structure lacks ``sample_id`` or the datasource
+                contains duplicate identifiers.
+        """
+        source_indices_by_id: dict[str, int] = {}
+        for source_index, structure in tqdm(
+            enumerate(datasource), desc="Indexing datasource sample_ids", total=len(datasource)
+        ):
+            try:
+                sample_id = str(structure.properties["sample_id"])
+            except KeyError as exc:
+                raise ValueError("Inference datasource entries must define properties['sample_id'].") from exc
+
+            if sample_id in source_indices_by_id:
+                raise ValueError(f"Inference datasource contains duplicate sample_id '{sample_id}'.")
+            source_indices_by_id[sample_id] = source_index
+
+        return source_indices_by_id
+
+
+###############################################################################
 ################################# HDF5 CLASS ##################################
 ###############################################################################
 
@@ -266,7 +378,6 @@ class HDF5Reader(PredictionReader):
 
             if not isinstance(group, h5py.Group):
                 raise TypeError(f"Expected Group, got {type(group).__name__}")
-
             self._h5 = h5
             self._group = group
         except Exception:
@@ -323,6 +434,7 @@ class HDF5Reader(PredictionReader):
 
                 sample[key] = data
 
+        sample.setdefault("target_site_index", None)
         return cast(PredictionSample, sample)
 
     def get_all(self) -> PredictionBatch:
@@ -416,6 +528,7 @@ class NumpyReader(PredictionReader):
         with np.load(sample_file) as data:
             sample = {key: self._normalize_sample_value(data[key]) for key in data.files}
 
+        sample.setdefault("target_site_index", None)
         return cast(PredictionSample, sample)
 
 
@@ -486,6 +599,7 @@ class JSONReader(PredictionReader):
             else:
                 sample[key] = self._normalize_sample_value(np.array(value))
 
+        sample.setdefault("target_site_index", None)
         return cast(PredictionSample, sample)
 
 

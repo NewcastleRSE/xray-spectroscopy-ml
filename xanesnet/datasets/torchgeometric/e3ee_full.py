@@ -71,6 +71,7 @@ class E3EEFullBatch(Protocol):
     # Targets, concatenated over target sites across the batch
     energies: torch.Tensor
     intensities: torch.Tensor
+    target_site_index: torch.Tensor
     sample_id: list[str]
 
 
@@ -213,6 +214,7 @@ class E3EEFullDataset(TorchGeometricDataset):
         data_kwargs: dict[str, Any] = {
             "x": atomic_numbers,
             "target_site_mask": target_site_mask,
+            "target_site_index": torch.tensor(target_site_indices, dtype=torch.int64),
             "edge_src": edge_index[0],
             "edge_dst": edge_index[1],
             "edge_weight": edge_weight,
@@ -307,6 +309,7 @@ class E3EEFullDataset(TorchGeometricDataset):
         # target_site_mask.view(-1) order: sample-major, atom-minor).
         intensities = torch.cat([s.intensities.to(dtype=torch.float32) for s in batch], dim=0)
         energies = torch.cat([s.energies.to(dtype=torch.float32) for s in batch], dim=0)
+        target_site_index = torch.cat([s.target_site_index.to(dtype=torch.int64) for s in batch], dim=0)
 
         edge_src_list: list[torch.Tensor] = []
         edge_dst_list: list[torch.Tensor] = []
@@ -375,6 +378,7 @@ class E3EEFullDataset(TorchGeometricDataset):
                 "energies",
                 "intensities",
                 "target_site_mask",
+                "target_site_index",
                 "edge_src",
                 "edge_dst",
                 "edge_weight",
@@ -397,6 +401,7 @@ class E3EEFullDataset(TorchGeometricDataset):
         setattr(batched, "x", x)
         setattr(batched, "mask", mask)
         setattr(batched, "target_site_mask", target_site_mask)
+        setattr(batched, "target_site_index", target_site_index)
         setattr(batched, "edge_src", edge_src)
         setattr(batched, "edge_dst", edge_dst)
         setattr(batched, "edge_weight", edge_weight)

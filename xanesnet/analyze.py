@@ -71,12 +71,19 @@ def parse_args(args: list[str]) -> Namespace:
         help="Path to input YAML configuration file.",
     )
     parser.add_argument(
-        "-p",
-        "--predictions",
+        "-r",
+        "--inference-runs",
         type=str,
         required=True,
-        help="Path to directory containing predictions. Can be specified multiple times.",
+        help="Path to an inference run directory. Can be specified multiple times.",
         action="append",
+    )
+    parser.add_argument(
+        "-d",
+        "--prediction-names",
+        type=str,
+        nargs="+",
+        help="Optional display names for inference run directories, in the same order as -r.",
     )
     parser.add_argument(
         "-o",

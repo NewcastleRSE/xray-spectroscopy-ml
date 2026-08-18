@@ -17,3 +17,4 @@ reporters:
 plotters:
   - plotter_type: spectra
     max_pages: 1
+  - plotter_type: stat_table

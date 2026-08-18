@@ -95,14 +95,17 @@ def test_full_pipeline(tmp_path: Path) -> None:
         predictions_dir = infer_run_dir / "predictions"
         assert predictions_dir.is_dir()
         assert (predictions_dir / "predictions.h5").exists()
+        assert (infer_run_dir / "validated_infer_config.yaml").is_file()
 
         # Analyse
         analyze_cli.main(
             [
                 "-i",
                 str(PIPELINE_ANALYZE),
-                "-p",
-                str(predictions_dir),
+                "-r",
+                str(infer_run_dir),
+                "--prediction-names",
+                "MLP",
                 "-o",
                 str(tmp_path / "analyze"),
                 "-n",

@@ -28,7 +28,7 @@ from tqdm import tqdm
 from xanesnet.datasets import Dataset
 from xanesnet.encodings import SpectraEncoding
 from xanesnet.models import Model
-from xanesnet.serialization.prediction_writers import PredictionWriter
+from xanesnet.serialization.prediction_writers import PredictionBatch, PredictionWriter
 
 from .base import Inferencer
 from .registry import InferencerRegistry
@@ -152,12 +152,14 @@ class BasicInferencer(Inferencer):
 
             # Writer add
             if writer is not None:
-                writer.add(
-                    {
-                        "prediction": predictions,
-                        "target": targets,
-                        "sample_id": self.batch_processor.sample_id_extraction(batch),
-                        "forward_time": forward_time,
-                        "forward_time_pass": forward_time_pass,
-                    }
-                )
+                prediction_batch: PredictionBatch = {
+                    "prediction": predictions,
+                    "target": targets,
+                    "sample_id": self.batch_processor.sample_id_preparation(batch),
+                    "forward_time": forward_time,
+                    "forward_time_pass": forward_time_pass,
+                }
+                target_site_indices = self.batch_processor.target_site_index_preparation(batch)
+                if target_site_indices is not None:
+                    prediction_batch["target_site_index"] = target_site_indices
+                writer.add(prediction_batch)

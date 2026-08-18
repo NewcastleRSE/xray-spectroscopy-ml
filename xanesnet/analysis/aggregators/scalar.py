@@ -95,6 +95,9 @@ class ScalarAggregator(Aggregator):
             target: Mutable mapping from value key to accumulated scalar values.
         """
         for key, value in sample.items():
+            # TODO is this enough or necessary? target_site_index plots created!
+            if key == "target_site_index":
+                continue
             if is_scalar_value(value):
                 target.setdefault(key, []).append(float(value))
 
