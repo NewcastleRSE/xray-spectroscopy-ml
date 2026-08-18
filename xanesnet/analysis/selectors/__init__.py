@@ -22,6 +22,7 @@
 
 from .base import Selector
 from .bernoulli import BernoulliSelector
+from .by_element import ElementSelector
 from .by_index import IndexSelector
 from .by_range import IndexRangeSelector
 from .identity import IdentitySelector
@@ -30,6 +31,7 @@ from .registry import SelectorRegistry
 __all__ = [
     "Selector",
     "SelectorRegistry",
+    "ElementSelector",
     "IndexRangeSelector",
     "IndexSelector",
     "BernoulliSelector",
