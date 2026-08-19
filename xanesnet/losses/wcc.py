@@ -68,12 +68,14 @@ class WCCLoss(Loss):
         start = (full.shape[-1] - n_features) // 2
         return full.squeeze(0)[:, start : start + n_features]
 
-    def forward(self, preds: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+    def forward(self, preds: torch.Tensor, targets: torch.Tensor, reduction: str = "mean") -> torch.Tensor:
         """Compute the WCC loss.
 
         Args:
             preds: Model output predictions ``(B, N)``.
             targets: Ground-truth spectral targets ``(B, N)``.
+            reduction: Only ``"mean"`` is supported; the lag-weighted
+                correlation has no meaningful per-channel decomposition.
 
         Returns:
             Scalar loss tensor in ``[0, 1]``.

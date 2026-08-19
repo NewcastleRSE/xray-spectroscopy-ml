@@ -45,16 +45,26 @@ class EMDLoss(Loss):
         """Initialize ``EMDLoss``."""
         super().__init__(loss_type)
 
-    def forward(self, preds: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+    def forward(self, preds: torch.Tensor, targets: torch.Tensor, reduction: str = "mean") -> torch.Tensor:
         """Compute the Earth Mover's Distance loss.
 
         Args:
             preds: Model output predictions ``(B, N)``.
             targets: Ground-truth spectral targets ``(B, N)``.
+            reduction: ``"mean"`` returns the scalar loss; ``"none"`` returns
+                the per-channel absolute cumulative difference map with shape
+                ``(B, N)``.
 
         Returns:
-            Scalar loss tensor summed over spectral bins and averaged over the
-            batch dimension.
+            Loss tensor.
+
+        Raises:
+            ValueError: If ``reduction`` is neither ``"mean"`` nor ``"none"``.
         """
         cdf_delta = torch.cumsum(preds - targets, dim=-1)
-        return cdf_delta.abs().sum(dim=-1).mean()
+        loss_map = cdf_delta.abs()
+        if reduction == "mean":
+            return loss_map.sum(dim=-1).mean()
+        if reduction == "none":
+            return loss_map
+        raise ValueError(f"Unsupported reduction: {reduction}")
