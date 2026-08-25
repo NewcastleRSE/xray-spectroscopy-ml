@@ -13,12 +13,15 @@ selectors:
     end: 50
 
 collectors:
-  - collector_type: "error_metric"
+  - collector_type: "loss"
     loss_type: "l1"
   
-  - collector_type: "error_metric"
+  - collector_type: "loss"
     loss_type: "mse"
 
+  - collector_type: "loss"
+    loss_type: "mse"
+    energy_resolved: true
 aggregators:
   - aggregator_type: "scalar"
     percentiles: [25, 50, 75, 90, 95]
@@ -32,11 +35,29 @@ plotters:
   - plotter_type: scalar
     bins: 50
 
-  - plotter_type: spectra
+  - plotter_type: spectra_all
     sort_by_value: True
     sort_key: mse
     sort_ascending: True
     max_pages: 100
+
+  - plotter_type: spectra_comparison
+    n: 5
+
+  - plotter_type: energy_resolved_loss
+
+  - plotter_type: mean_spectrum
+
+  - plotter_type: parity
+
+  - plotter_type: bias_variance
+
+  - plotter_type: error_correlation
+
+  - plotter_type: structure_clusters
+    descriptor_type: mace
+    invariants_only: true
+    num_layers: -1
 
   - plotter_type: stat_table
     stat_keys: ["mean", "std", "median", "min", "max"]

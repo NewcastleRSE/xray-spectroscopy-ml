@@ -20,16 +20,44 @@
 
 """Plotter implementations and registry exports."""
 
+import matplotlib as mpl
+
 from .base import Plotter
+from .bias_variance import BiasVariancePlotter
+from .energy_resolved import EnergyResolvedLossPlotter
+from .error_correlation import ErrorCorrelationPlotter
+from .mean_spectrum import MeanSpectrumPlotter
+from .parity import ParityPlotter
 from .registry import PlotterRegistry
 from .scalar import ScalarPlotter
-from .spectra import SpectraPlotter
+from .spectra import AllSpectraPlotter
+from .spectra_comparison import SpectraComparisonPlotter
 from .stat_table import StatTablePlotter
+from .structure_clusters import StructureClusterPlotter
+
+# Uniform font sizes for every plotter figure. Explicit per-call font sizes
+# elsewhere should match these values.
+mpl.rcParams.update(
+    {
+        "axes.labelsize": 9.0,
+        "axes.titlesize": 10.0,
+        "xtick.labelsize": 8.0,
+        "ytick.labelsize": 8.0,
+        "legend.fontsize": 8.0,
+    }
+)
 
 __all__ = [
     "Plotter",
     "PlotterRegistry",
     "ScalarPlotter",
-    "SpectraPlotter",
+    "AllSpectraPlotter",
+    "SpectraComparisonPlotter",
     "StatTablePlotter",
+    "EnergyResolvedLossPlotter",
+    "MeanSpectrumPlotter",
+    "ParityPlotter",
+    "BiasVariancePlotter",
+    "ErrorCorrelationPlotter",
+    "StructureClusterPlotter",
 ]

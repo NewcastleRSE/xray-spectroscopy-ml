@@ -1,0 +1,312 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# XANESNET
+#
+# Authors:  Hendrik Junkawitsch, Tom J. Penfold, Tom W. Pope, C. D. Rankine, B. Li
+#
+# This program is free software: you can redistribute it and/or modify it under the terms of the
+# GNU General Public License as published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with this program.
+# If not, see <https://www.gnu.org/licenses/>.
+#
+# Citations:
+#   ...
+
+"""Plotter for predicted-versus-target intensity parity plots."""
+
+import logging
+import math
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.axes import Axes
+from matplotlib.colors import LogNorm
+
+from xanesnet.serialization.jsonl_stream import JSONLStream
+
+from ..reporters.base import selector_label
+from ..result import AnalysisResults
+from ..selectors import Selector
+from .base import Plotter
+from .registry import PlotterRegistry
+from .utils import (
+    add_subtitle,
+    compact_layout,
+    method_colour,
+    method_label_lines,
+    style_axis,
+)
+
+# Label lines, colour, flattened targets, flattened predictions.
+_MethodPoints = tuple[list[str], str, np.ndarray, np.ndarray]
+
+
+@PlotterRegistry.register("parity")
+class ParityPlotter(Plotter):
+    """Plot predicted-versus-target intensity parity per method and combined.
+
+    For every (prediction-reader, selector) pair all selected sample spectra
+    are flattened into ``(target, prediction)`` intensity pairs and drawn as
+    a density scatter around the identity line. Each figure annotates the
+    RMSE, MAE, and coefficient of determination ``R2`` computed over the
+    flattened pairs, so systematic offsets and dynamic-range compression (a
+    signature of predicting the mean spectrum) are visible at a glance.
+
+    A combined grid compares one density panel per method on shared axes.
+
+    Args:
+        plotter_type: Registered plotter name from the analysis configuration.
+    """
+
+    def __init__(self, plotter_type: str) -> None:
+        """Initialize a parity plotter."""
+        super().__init__(plotter_type)
+
+    def plot(self, results: AnalysisResults, output_dir: Path) -> None:
+        """Write per-method parity PDFs and a combined parity grid.
+
+        Args:
+            results: Analysis pipeline outputs to plot.
+            output_dir: Directory where the ``parity_plots`` tree should be written.
+        """
+        if not results.selectors:
+            logging.info("    No selectors available, skipping.")
+            return
+
+        root = output_dir / "parity_plots"
+        root.mkdir(parents=True, exist_ok=True)
+
+        methods: list[_MethodPoints] = []
+
+        for reader_idx, reader_selectors in enumerate(results.selectors):
+            logging.info(f"    Predictions {reader_idx + 1}/{len(results.selectors)}.")
+
+            for sel_idx, selector in enumerate(reader_selectors):
+                logging.info(f"      Selector {sel_idx + 1}/{len(reader_selectors)}.")
+                sel_label_str = selector_label(results.selectors_config, sel_idx)
+                sel_cfg = results.selectors_config[sel_idx]
+                label_lines = method_label_lines(results.prediction_names[reader_idx], sel_label_str, sel_cfg)
+
+                stream: JSONLStream | None = None
+                if reader_idx < len(results.collector_results) and sel_idx < len(results.collector_results[reader_idx]):
+                    stream = results.collector_results[reader_idx][sel_idx]
+
+                points = self._collect_points(selector, stream)
+                if points is None:
+                    continue
+
+                targets, preds = points
+                colour = method_colour(len(methods))
+                methods.append((label_lines, colour, targets, preds))
+
+                combo_label = f"pred_{reader_idx:03d}__sel_{sel_idx:03d}_{sel_label_str}"
+                combo_dir = root / combo_label
+                combo_dir.mkdir(parents=True, exist_ok=True)
+                self._parity_figure(targets, preds, "\n".join(label_lines), colour, combo_dir / "parity.pdf")
+
+        if not methods:
+            logging.info("    No samples selected, skipping.")
+            return
+
+        combined_dir = root / "combined"
+        combined_dir.mkdir(parents=True, exist_ok=True)
+        self._parity_grid(methods, combined_dir / "parity_grid.pdf")
+
+    @staticmethod
+    def _collect_points(selector: Selector, stream: JSONLStream | None) -> tuple[np.ndarray, np.ndarray] | None:
+        """Flatten all selected spectra into target and prediction intensity vectors.
+
+        Args:
+            selector: Selector over prediction samples for one prediction reader and selector pair.
+            stream: Optional collector result stream aligned with ``selector``.
+
+        Returns:
+            ``(targets, preds)`` flattened vectors with shape ``(M,)``, or
+            ``None`` when no samples are selected.
+        """
+        targets: list[np.ndarray] = []
+        preds: list[np.ndarray] = []
+        if stream is not None:
+            for sel_sample, _ in zip(selector, stream):
+                targets.append(np.asarray(sel_sample["target"]).ravel())
+                preds.append(np.asarray(sel_sample["prediction"]).ravel())
+        else:
+            for sel_sample in selector:
+                targets.append(np.asarray(sel_sample["target"]).ravel())
+                preds.append(np.asarray(sel_sample["prediction"]).ravel())
+        if not targets:
+            return None
+        return np.concatenate(targets), np.concatenate(preds)
+
+    @staticmethod
+    def _parity_metrics(targets: np.ndarray, preds: np.ndarray) -> tuple[float, float, float | None]:
+        """Compute RMSE, MAE, and R2 over flattened intensity pairs.
+
+        Args:
+            targets: Flattened target intensities with shape ``(M,)``.
+            preds: Flattened predicted intensities with shape ``(M,)``.
+
+        Returns:
+            ``(rmse, mae, r2)`` where ``r2`` is ``None`` when the target
+            intensities are constant.
+        """
+        diff = preds - targets
+        rmse = float(np.sqrt(np.mean(diff**2)))
+        mae = float(np.mean(np.abs(diff)))
+        ss_tot = float(np.sum((targets - targets.mean()) ** 2))
+        r2 = 1.0 - float(np.sum(diff**2)) / ss_tot if ss_tot > 0 else None
+        return rmse, mae, r2
+
+    def _parity_figure(
+        self,
+        targets: np.ndarray,
+        preds: np.ndarray,
+        subtitle: str,
+        colour: str,
+        out: Path,
+    ) -> None:
+        """Write one parity figure for a single method.
+
+        Args:
+            targets: Flattened target intensities with shape ``(M,)``.
+            preds: Flattened predicted intensities with shape ``(M,)``.
+            subtitle: Plot subtitle text describing prediction and selector context.
+            colour: Method colour used for the density colormap.
+            out: Destination PDF path.
+        """
+        fig, ax = plt.subplots(figsize=(6.5, 5.2))
+        self._draw_parity_panel(ax, targets, preds, colour, gridsize=80)
+        fig.colorbar(ax.collections[-1], ax=ax, label="count")
+        ax.set_xlabel("Target intensity")
+        ax.set_ylabel("Predicted intensity")
+        ax.legend(fontsize=8, framealpha=0.9, loc="upper left")
+        style_axis(ax)
+        self._add_metrics_text(ax, targets, preds)
+        add_subtitle(fig, subtitle)
+        compact_layout(fig)
+        fig.savefig(out, bbox_inches="tight")
+        plt.close(fig)
+
+    @staticmethod
+    def _draw_parity_panel(ax: Axes, targets: np.ndarray, preds: np.ndarray, colour: str, gridsize: int) -> None:
+        """Draw one parity density panel with its identity line.
+
+        Args:
+            ax: Matplotlib axis to draw on.
+            targets: Flattened target intensities with shape ``(M,)``.
+            preds: Flattened predicted intensities with shape ``(M,)``.
+            colour: Method colour used for the density colormap.
+            gridsize: Number of hexagons along each axis.
+        """
+        poly = ax.hexbin(targets, preds, gridsize=gridsize, mincnt=1, cmap="viridis")
+        counts = poly.get_array()
+        if counts is not None and counts.size:
+            compressed = getattr(counts, "compressed", None)
+            data = compressed() if compressed is not None else np.asarray(counts)
+            vmax = float(np.max(data)) if data.size else 2.0
+        else:
+            vmax = 2.0
+        poly.set_norm(LogNorm(vmin=1.0, vmax=max(2.0, vmax)))
+        lo = min(float(targets.min()), float(preds.min()))
+        hi = max(float(targets.max()), float(preds.max()))
+        ax.plot([lo, hi], [lo, hi], color="black", linewidth=1.2, linestyle="--", label="y = x")
+        ax.set_xlim(lo, hi)
+        ax.set_ylim(lo, hi)
+        # Keep the axes box square so the identity line stays at 45 degrees
+        # and the density cloud is not stretched horizontally.
+        ax.set_aspect("equal")
+
+    def _add_metrics_text(self, ax: Axes, targets: np.ndarray, preds: np.ndarray) -> None:
+        """Annotate a parity panel with the flattened-pair metrics.
+
+        Args:
+            ax: Matplotlib axis to annotate.
+            targets: Flattened target intensities with shape ``(M,)``.
+            preds: Flattened predicted intensities with shape ``(M,)``.
+        """
+        rmse, mae, r2 = self._parity_metrics(targets, preds)
+        r2_text = f"{r2:.4g}" if r2 is not None else "n/a"
+        text = f"n={len(targets)}\nRMSE={rmse:.4g}\nMAE={mae:.4g}\nR2={r2_text}"
+        ax.text(
+            0.98,
+            0.02,
+            text,
+            transform=ax.transAxes,
+            fontsize=7,
+            verticalalignment="bottom",
+            horizontalalignment="right",
+            fontfamily="monospace",
+            bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8, edgecolor="#bbbbbb"),
+        )
+
+    def _parity_grid(self, methods: list[_MethodPoints], out: Path) -> None:
+        """Write one combined figure with a per-method parity density grid.
+
+        All cells share one x range and one y range so the cells stay directly
+        comparable.
+
+        Args:
+            methods: Method intensity pairs in first-seen order.
+            out: Destination PDF path.
+        """
+        n = len(methods)
+        ncols = math.ceil(math.sqrt(n))
+        nrows = math.ceil(n / ncols)
+
+        # Square cells: each parity panel enforces equal x and y ranges and an
+        # equal aspect, so the cell size must match to avoid skewed density
+        # clouds and a stretched identity line. The manual adjust keeps the
+        # cells as large and close together as possible.
+        fig, axes = plt.subplots(
+            nrows, ncols, figsize=(2.4 * ncols + 0.3, 2.4 * nrows + 0.55), sharex=True, sharey=True, squeeze=False
+        )
+
+        for idx, (label_lines, colour, targets, preds) in enumerate(methods):
+            ax = axes[idx // ncols][idx % ncols]
+            self._draw_parity_panel(ax, targets, preds, colour, gridsize=40)
+            rmse, _, _ = self._parity_metrics(targets, preds)
+            ax.text(0.02, 0.98, f"RMSE={rmse:.3g}", transform=ax.transAxes, fontsize=5.5, verticalalignment="top")
+            ax.set_title("\n".join(label_lines), fontsize=5.5)
+            ax.tick_params(labelsize=5.5)
+
+        for ax in axes.flat[n:]:
+            ax.axis("off")
+        for col in range(ncols):
+            used_rows = [r for r in range(nrows) if r * ncols + col < n]
+            if used_rows:
+                axes[used_rows[-1]][col].tick_params(labelbottom=True)
+
+        for i in range(nrows):
+            axes[i][0].set_ylabel("Predicted intensity", fontsize=8)
+        for j in range(ncols):
+            axes[nrows - 1][j].set_xlabel("Target intensity", fontsize=8)
+        fig.subplots_adjust(left=0.16, right=0.92, top=0.87, bottom=0.16, wspace=0.08, hspace=0.18)
+
+        vmax = 2.0
+        for row in axes:
+            for ax in row:
+                for coll in ax.collections:
+                    arr = coll.get_array()
+                    if arr is None or not arr.size:
+                        continue
+                    compressed = getattr(arr, "compressed", None)
+                    data = compressed() if compressed is not None else np.asarray(arr)
+                    if data.size:
+                        vmax = max(vmax, float(np.max(data)))
+        norm = LogNorm(vmin=1.0, vmax=vmax)
+        for row in axes:
+            for ax in row:
+                for coll in ax.collections:
+                    coll.set_norm(norm)
+
+        cax = fig.add_axes((0.94, 0.16, 0.02, 0.71))
+        fig.colorbar(axes[0][0].collections[0], cax=cax, label="count")
+        fig.savefig(out, bbox_inches="tight")
+        plt.close(fig)

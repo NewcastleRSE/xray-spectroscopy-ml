@@ -6,6 +6,13 @@ $defs:
     oneOf:
     - $ref: scalar.schema.yaml#/$defs/plotterScalar
     - $ref: spectra.schema.yaml#/$defs/plotterSpectra
+    - $ref: spectra_comparison.schema.yaml#/$defs/plotterSpectraComparison
     - $ref: stat_table.schema.yaml#/$defs/plotterStatTable
+    - $ref: energy_resolved.schema.yaml#/$defs/plotterEnergyResolvedLoss
+    - $ref: mean_spectrum.schema.yaml#/$defs/plotterMeanSpectrum
+    - $ref: parity.schema.yaml#/$defs/plotterParity
+    - $ref: bias_variance.schema.yaml#/$defs/plotterBiasVariance
+    - $ref: error_correlation.schema.yaml#/$defs/plotterErrorCorrelation
+    - $ref: structure_clusters.schema.yaml#/$defs/plotterStructureClusters
     description: Union of plotter configuration objects instantiated by ``PlotterRegistry`` in ``core_analyze``.
 description: Analysis component schemas used by ``core_analyze`` setup functions and analysis registries.

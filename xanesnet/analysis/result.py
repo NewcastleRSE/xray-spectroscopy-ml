@@ -50,4 +50,4 @@ class AnalysisResults:
     selectors_config: list[dict[str, Any]] = field(default_factory=list)
     collectors_config: list[dict[str, Any]] = field(default_factory=list)
     aggregators_config: list[dict[str, Any]] = field(default_factory=list)
-    prediction_names: list[str | None] = field(default_factory=list)
+    prediction_names: list[str] = field(default_factory=list)

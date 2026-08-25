@@ -1,0 +1,31 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: loss.schema.yaml
+title: XANESNET loss collector schema
+$defs:
+  collectorLoss:
+    type: object
+    additionalProperties: true
+    required:
+    - collector_type
+    - loss_type
+    properties:
+      collector_type:
+        const: loss
+        description: Registered collector name from the analysis configuration.
+      loss_type:
+        enum:
+        - mse
+        - l1
+        - bce
+        - emd
+        - wcc
+        - msssim
+        - specplus
+        description: Registered loss name from ``xanesnet.losses``.
+      energy_resolved:
+        type: boolean
+        default: false
+        description: If ``True``, collect the per-channel loss vector under ``<loss_type>_energy`` instead of the scalar value.
+    description: Compute a configured loss between prediction and target spectra, optionally per energy channel.
+      Remaining properties are forwarded to the selected loss constructor.
+description: Analysis component schemas used by ``core_analyze`` setup functions and analysis registries.

@@ -5,8 +5,11 @@ selectors:
   - selector_type: all
 
 collectors:
-  - collector_type: error_metric
+  - collector_type: loss
     loss_type: mse
+  - collector_type: loss
+    loss_type: mse
+    energy_resolved: true
 
 aggregators:
   - aggregator_type: scalar
@@ -16,6 +19,31 @@ reporters:
   - reporter_type: scalar
 
 plotters:
-  - plotter_type: spectra
+  - plotter_type: spectra_all
     max_pages: 1
+  - plotter_type: spectra_comparison
+    n: 2
   - plotter_type: stat_table
+
+  - plotter_type: energy_resolved_loss
+
+  - plotter_type: mean_spectrum
+
+  - plotter_type: parity
+
+  - plotter_type: bias_variance
+
+  - plotter_type: error_correlation
+
+  - plotter_type: structure_clusters
+    descriptor_type: wacsf
+    r_min: 1.0
+    r_max: 6.0
+    n_g2: 8
+    n_g4: 16
+    l: [1.0, -1.0]
+    z: [1.0]
+    g2_parameterisation: shifted
+    g4_parameterisation: centred
+    use_charge: false
+    use_spin: false

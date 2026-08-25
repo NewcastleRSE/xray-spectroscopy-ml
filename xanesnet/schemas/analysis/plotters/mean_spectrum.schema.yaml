@@ -1,0 +1,30 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: mean_spectrum.schema.yaml
+title: 'XANESNET plotter schema: mean_spectrum'
+$defs:
+  plotterMeanSpectrum:
+    type: object
+    additionalProperties: false
+    required:
+    - plotter_type
+    properties:
+      plotter_type:
+        const: mean_spectrum
+        description: Registered plotter name from the analysis configuration.
+      percent:
+        type: number
+        exclusiveMinimum: 0
+        maximum: 50
+        default: 20
+        description: Percentage of samples in the best and worst prediction groups.
+      sort_key:
+        type:
+        - string
+        - 'null'
+        default: null
+        description: Scalar key used to rank samples. When null, the MSE between
+          predicted and target spectra is used.
+    description: Plot mean predicted and target spectra plus best/worst tail means
+      and per-channel spread.
+description: Analysis component schemas used by ``core_analyze`` setup functions
+  and analysis registries.

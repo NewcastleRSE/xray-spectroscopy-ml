@@ -1,0 +1,25 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: error_correlation.schema.yaml
+title: 'XANESNET plotter schema: error_correlation'
+$defs:
+  plotterErrorCorrelation:
+    type: object
+    additionalProperties: false
+    required:
+    - plotter_type
+    properties:
+      plotter_type:
+        const: error_correlation
+        description: Registered plotter name from the analysis configuration.
+      sort_key:
+        type:
+        - string
+        - 'null'
+        default: null
+        description: Scalar key used as the per-sample error. When null, the
+          MSE between predicted and target spectra is used.
+    description: Plot pairwise per-sample error correlations between methods on
+      their common samples, as one combined grid plus one figure per method
+      pair.
+description: Analysis component schemas used by ``core_analyze`` setup functions
+  and analysis registries.

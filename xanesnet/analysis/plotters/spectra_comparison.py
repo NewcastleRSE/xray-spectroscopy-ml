@@ -18,16 +18,15 @@
 # Citations:
 #   ...
 
-"""Plotter that writes predicted-target spectra comparisons for every selected sample."""
+"""Plotter for best/worst spectra comparisons across methods."""
 
 import logging
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, ClassVar
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
-from xanesnet.analysis.utils import is_scalar_value
 from xanesnet.serialization.jsonl_stream import JSONLStream
 from xanesnet.serialization.prediction_readers import PredictionSample
 
@@ -40,53 +39,50 @@ from .utils import (
     method_label_lines,
     spectra_page_figure,
     spectra_structure_page_figure,
+    spectrum_error_value,
 )
 
+_Entry = tuple[PredictionSample, dict[str, Any], float]
 
-@PlotterRegistry.register("spectra_all")
-class AllSpectraPlotter(Plotter):
-    """Plot predicted and target spectra for every selected sample.
 
-    One multi-page PDF is written per prediction-reader/selector pair; each
-    selected sample contributes one page. Structure-matched samples show their
-    structure next to the spectra on the same page.
+@PlotterRegistry.register("spectra_comparison")
+class SpectraComparisonPlotter(Plotter):
+    """Plot the N best and N worst spectra per method.
+
+    For every prediction-reader/selector pair the ``n`` best and ``n`` worst
+    samples, ranked by a scalar error value, are written as multi-page PDFs.
+    Structure-matched samples show their structure next to the spectra on the
+    same page.
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
-        sort_by_value: Whether to sort PDF pages by a scalar value.
-        sort_key: Scalar key to sort by. Values are read from collector output first, then samples.
-        sort_ascending: Whether sorted pages should use ascending order.
-        max_pages: Maximum number of pages per PDF. ``None`` writes all selected samples.
+        n: Number of best and worst samples plotted per method.
+        sort_key: Scalar key used to rank samples. When ``None``, the MSE
+            between predicted and target spectra is used. Collector values take
+            precedence over sample scalars.
     """
 
-    def __init__(
-        self,
-        plotter_type: str,
-        sort_by_value: bool = False,
-        sort_key: str | None = None,
-        sort_ascending: bool = True,
-        max_pages: int | None = None,
-    ) -> None:
-        """Initialize an all-spectra comparison plotter."""
+    DEFAULT_N: ClassVar[int] = 10
+
+    def __init__(self, plotter_type: str, n: int | None = None, sort_key: str | None = None) -> None:
+        """Initialize a best/worst spectra comparison plotter."""
         super().__init__(plotter_type)
-        self.sort_by_value = sort_by_value
+        self.n = n if n is not None else self.DEFAULT_N
         self.sort_key = sort_key
-        self.sort_ascending = sort_ascending
-        self.max_pages = max_pages
 
     def plot(self, results: AnalysisResults, output_dir: Path) -> None:
-        """Write one multi-page spectra PDF per prediction-reader/selector pair.
+        """Write best/worst spectra PDFs with structure panels where available.
 
         Args:
             results: Analysis pipeline outputs to plot.
-            output_dir: Directory where the ``spectra_plots`` tree should be written.
+            output_dir: Directory where the ``spectra_comparison`` tree should be written.
         """
         if not results.selectors:
             logging.info("    No selectors available, skipping.")
             return
 
-        root = output_dir / "spectra_plots"
-        root.mkdir(parents=True, exist_ok=True)
+        root = output_dir / "spectra_comparison"
+        metric = self.sort_key if self.sort_key is not None else "mse"
 
         for reader_idx, reader_selectors in enumerate(results.selectors):
             logging.info(f"    Predictions {reader_idx + 1}/{len(results.selectors)}.")
@@ -101,60 +97,61 @@ class AllSpectraPlotter(Plotter):
                 if reader_idx < len(results.collector_results) and sel_idx < len(results.collector_results[reader_idx]):
                     stream = results.collector_results[reader_idx][sel_idx]
 
+                entries = self._collect_entries(selector, stream)
+                if not entries:
+                    continue
+
+                by_error = sorted(entries, key=lambda entry: entry[2])
+                best = by_error[: self.n]
+                worst = list(reversed(by_error[-self.n :]))
+
                 combo_label = f"pred_{reader_idx:03d}__sel_{sel_idx:03d}_{sel_label_str}"
-                pdf_path = root / f"{combo_label}.pdf"
+                combo_dir = root / combo_label
+                combo_dir.mkdir(parents=True, exist_ok=True)
 
-                self._plot_to_pdf(selector, stream, pdf_path, "\n".join(label_lines))
+                self._write_pages(best, label_lines, combo_dir / "best.pdf", "best", metric)
+                self._write_pages(worst, label_lines, combo_dir / "worst.pdf", "worst", metric)
 
-    def _plot_to_pdf(
-        self,
-        selector: Selector,
-        stream: JSONLStream | None,
-        pdf_path: Path,
-        subtitle: str,
-    ) -> None:
-        """Write selected spectra comparisons into a multi-page PDF.
+    def _collect_entries(self, selector: Selector, stream: JSONLStream | None) -> list[_Entry]:
+        """Collect per-sample entries with their ranking error value.
 
         Args:
             selector: Selector over prediction samples for one prediction reader and selector pair.
             stream: Optional collector result stream aligned with ``selector``.
-            pdf_path: Destination PDF path.
-            subtitle: Subtitle text describing prediction and selector context.
+
+        Returns:
+            ``(sample, collector scalars, error)`` entries in selector order.
         """
-        entries: list[tuple[PredictionSample, dict[str, Any]]] = []
+        entries: list[_Entry] = []
         if stream is not None:
             for sel_sample, col_sample in zip(selector, stream):
-                entries.append((sel_sample, col_sample))
+                entries.append((sel_sample, col_sample, spectrum_error_value(sel_sample, col_sample, self.sort_key)))
         else:
             for sel_sample in selector:
-                entries.append((sel_sample, {}))
+                entries.append((sel_sample, {}, spectrum_error_value(sel_sample, {}, self.sort_key)))
+        return entries
 
-        if not entries:
-            return
+    @staticmethod
+    def _write_pages(
+        entries: list[_Entry],
+        label_lines: list[str],
+        pdf_path: Path,
+        direction: str,
+        metric: str,
+    ) -> None:
+        """Write one multi-page PDF for the best or worst entries of one method.
 
-        if self.sort_by_value and self.sort_key:
-            key = self.sort_key
-
-            def _sort_val(entry: tuple[PredictionSample, dict[str, Any]]) -> float:
-                """Return the scalar value used to order one PDF page entry.
-
-                Args:
-                    entry: Pair of prediction sample and collector scalar dictionary.
-
-                Returns:
-                    Sort value for the configured key, or ``0.0`` when unavailable/non-scalar.
-                """
-                sel_s, col_s = entry
-                v = col_s.get(key, sel_s.get(key, 0.0))
-                return cast(float, v) if is_scalar_value(v) else 0.0
-
-            entries.sort(key=_sort_val, reverse=not self.sort_ascending)
-
-        if self.max_pages is not None:
-            entries = entries[: self.max_pages]
-
+        Args:
+            entries: Ranked ``(sample, collector scalars, error)`` entries, best or worst first.
+            label_lines: Method label lines used for the page subtitle.
+            pdf_path: Destination PDF path.
+            direction: ``"best"`` or ``"worst"`` for the page subtitle.
+            metric: Scalar key used for ranking.
+        """
+        total = len(entries)
         with PdfPages(pdf_path) as pdf:
-            for sample, col_scalars in entries:
+            for rank, (sample, col_scalars, error) in enumerate(entries, start=1):
+                subtitle = f"{direction} #{rank} of {total}  |  {metric}={error:.4g}  |  " + "  |  ".join(label_lines)
                 if sample.get("structure") is not None:
                     fig = spectra_structure_page_figure(sample, col_scalars, subtitle)
                 else:

@@ -70,8 +70,8 @@ def analyze(config: Config, args_namespace: Namespace, save_dir: Path) -> None:
     inference_run_dirs = args_namespace.inference_runs
     logging.info(f"You provided {len(inference_run_dirs)} inference run directories:")
 
-    run_dir_names: list[str | None] = [Path(d).name for d in inference_run_dirs]
-    prediction_names: list[str | None] = list(args_namespace.prediction_names or [])
+    run_dir_names: list[str] = [Path(d).name for d in inference_run_dirs]
+    prediction_names: list[str] = list(args_namespace.prediction_names or [])
     if not prediction_names:
         logging.info("No prediction names provided; using inference run directory names as labels.")
         prediction_names = run_dir_names

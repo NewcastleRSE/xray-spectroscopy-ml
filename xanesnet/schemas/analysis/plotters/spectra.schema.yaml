@@ -1,6 +1,6 @@
 $schema: https://json-schema.org/draft/2020-12/schema
 $id: spectra.schema.yaml
-title: 'XANESNET plotter schema: spectra'
+title: 'XANESNET plotter schema: spectra_all'
 $defs:
   plotterSpectra:
     type: object
@@ -9,7 +9,7 @@ $defs:
     - plotter_type
     properties:
       plotter_type:
-        const: spectra
+        const: spectra_all
         description: Registered plotter name from the analysis configuration.
       sort_by_value:
         type: boolean

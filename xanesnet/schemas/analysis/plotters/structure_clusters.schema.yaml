@@ -1,0 +1,54 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: structure_clusters.schema.yaml
+title: 'XANESNET plotter schema: structure_clusters'
+$defs:
+  plotterStructureClusters:
+    type: object
+    additionalProperties: true
+    required:
+    - plotter_type
+    properties:
+      plotter_type:
+        const: structure_clusters
+        description: Registered plotter name from the analysis configuration.
+      descriptor_type:
+        type: string
+        default: wacsf
+        description: Registered descriptor name from ``xanesnet.descriptors``.
+      cluster_distance:
+        type:
+        - number
+        - 'null'
+        default: null
+        description: Linkage-distance cut for cluster formation. When null,
+          ``distance_fraction`` of the maximum linkage height is used.
+      distance_fraction:
+        type: number
+        exclusiveMinimum: 0
+        exclusiveMaximum: 1
+        default: 0.25
+        description: Fraction of the maximum linkage height used as the cut.
+          Lower values produce more clusters.
+      min_cluster_size:
+        type: integer
+        minimum: 1
+        default: 3
+        description: Clusters with fewer members are folded into an ``others``
+          bucket.
+      sort_key:
+        type:
+        - string
+        - 'null'
+        default: null
+        description: Scalar key used as the per-sample error. When null, the MSE
+          between predicted and target spectra is used.
+      top_clusters:
+        type: integer
+        minimum: 1
+        default: 5
+        description: Number of best and worst clusters shown on the detail pages.
+    description: Cluster structures by descriptor similarity and score the
+      clusters by per-sample error. Remaining properties are forwarded to the
+      selected descriptor constructor.
+description: Analysis component schemas used by ``core_analyze`` setup functions
+  and analysis registries.
