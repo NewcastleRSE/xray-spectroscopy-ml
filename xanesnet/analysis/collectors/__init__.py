@@ -21,11 +21,13 @@
 """Collector implementations and registry exports."""
 
 from .base import Collector
+from .descriptor import DescriptorCollector
 from .loss import LossCollector
 from .registry import CollectorRegistry
 
 __all__ = [
     "Collector",
     "CollectorRegistry",
+    "DescriptorCollector",
     "LossCollector",
 ]

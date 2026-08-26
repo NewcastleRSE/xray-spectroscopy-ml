@@ -25,6 +25,7 @@ from typing import Any
 import torch
 
 from xanesnet.losses import LossRegistry
+from xanesnet.serialization.config import Config
 from xanesnet.serialization.prediction_readers import PredictionSample
 
 from .base import Collector
@@ -37,25 +38,24 @@ class LossCollector(Collector):
 
     Args:
         collector_type: Registered collector name from the analysis configuration.
-        loss_type: Registered loss name from ``xanesnet.losses``.
+        loss: Loss configuration object used to score each sample.
         energy_resolved: If ``True``, return the per-channel loss vector under
             the key ``<loss_type>_energy`` instead of the scalar loss value.
-        **loss_kwargs: Keyword arguments forwarded to the configured loss class.
     """
 
     def __init__(
         self,
         collector_type: str,
-        loss_type: str,
+        loss: Config,
         energy_resolved: bool,
-        **loss_kwargs: Any,
     ) -> None:
         """Initialize the configured loss function."""
         super().__init__(collector_type)
 
-        self.loss_type = loss_type
+        self.loss_config = loss
+        self.loss_type = loss.get_str("loss_type")
         self.energy_resolved = energy_resolved
-        self.loss_fn = LossRegistry.create(loss_type, loss_type=loss_type, **loss_kwargs)
+        self.loss_fn = LossRegistry.create(self.loss_type, **loss.as_kwargs())
 
     def process(self, sample: PredictionSample) -> dict[str, Any]:
         """Compute the configured loss for one prediction sample.
@@ -86,3 +86,10 @@ class LossCollector(Collector):
 
         loss_value = self.loss_fn(pred_torch, target_torch)
         return {self.loss_type: float(loss_value.item())}
+
+    @property
+    def signature(self) -> Config:
+        """Return the collector signature."""
+        signature = super().signature
+        signature.update_with_dict({"loss": self.loss_config.as_dict(), "energy_resolved": self.energy_resolved})
+        return signature
