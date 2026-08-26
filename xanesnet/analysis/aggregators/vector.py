@@ -18,14 +18,14 @@
 # Citations:
 #   ...
 
-"""Aggregator that summarizes scalar values from samples and collectors."""
+"""Aggregator that summarizes vector sample and collector values into per-element statistics."""
 
 import logging
 from typing import Any
 
 import numpy as np
 
-from xanesnet.analysis.utils import iter_scalar_items
+from xanesnet.analysis.utils import as_float_vector, iter_vector_items
 from xanesnet.serialization.config import Config
 from xanesnet.serialization.jsonl_stream import JSONLStream
 from xanesnet.serialization.prediction_readers import PredictionSample
@@ -35,13 +35,15 @@ from .base import Aggregator, AggregatorResult
 from .registry import AggregatorRegistry
 
 
-@AggregatorRegistry.register("scalar")
-class ScalarAggregator(Aggregator):
-    """Compute summary statistics for all scalar sample and collector values.
+@AggregatorRegistry.register("vector")
+class VectorAggregator(Aggregator):
+    """Compute summary statistics for all vector sample and collector values.
 
-    Every scalar value is one number per sample, for example a loss value or a
-    timing measurement. All scalars sharing a key are collected over the
-    selected samples and reduced to summary statistics.
+    Every vector value (a list, tuple, or one-dimensional array or tensor) is
+    treated as one feature vector per sample. All vectors sharing a key are
+    stacked over the selected samples and reduced to per-element summary
+    statistics, mirroring the ``scalar`` aggregator but for vector-valued values.
+    The ``prediction`` and ``target`` spectra are excluded.
 
     Args:
         aggregator_type: Registered aggregator name from the analysis configuration.
@@ -50,13 +52,13 @@ class ScalarAggregator(Aggregator):
     """
 
     def __init__(self, aggregator_type: str, percentiles: list[float]) -> None:
-        """Initialize a scalar summary aggregator."""
+        """Initialize a vector summary aggregator."""
         super().__init__(aggregator_type)
 
         self.percentiles = percentiles
 
     def aggregate(self, selector: Selector, per_sample_values: JSONLStream | None, index: int) -> AggregatorResult:
-        """Aggregate scalar values into mean, spread, extrema, and percentile statistics.
+        """Aggregate vector values into per-element summary statistics.
 
         Args:
             selector: Selector over prediction samples for one prediction reader and selector pair.
@@ -65,62 +67,63 @@ class ScalarAggregator(Aggregator):
             index: Zero-based aggregator index from the analysis configuration.
 
         Returns:
-            Aggregated scalar statistics grouped by input key.
+            Aggregated per-element statistics grouped by input key.
         """
-        values_by_key: dict[str, list[float]] = {}
+        values_by_key: dict[str, list[np.ndarray]] = {}
 
         for sample in selector:
-            self._collect_scalars(sample, values_by_key)
+            self._collect_vectors(sample, values_by_key)
 
         if per_sample_values is not None:
             for raw_sample in per_sample_values:
-                self._collect_scalars(raw_sample, values_by_key)
+                self._collect_vectors(raw_sample, values_by_key)
 
         if not values_by_key:
-            logging.info("      No scalar values found, skipping.")
+            logging.info("      No vector values found, skipping.")
 
         data = {name: self._compute_stats(values) for name, values in values_by_key.items()}
         return AggregatorResult(aggregator_type=self.aggregator_type, aggregator_index=index, data=data)
 
     @staticmethod
-    def _collect_scalars(sample: dict[str, Any] | PredictionSample, target: dict[str, list[float]]) -> None:
-        """Append scalar values from ``sample`` into ``target`` by key.
+    def _collect_vectors(sample: dict[str, Any] | PredictionSample, target: dict[str, list[np.ndarray]]) -> None:
+        """Append vector values from ``sample`` into ``target`` by key.
 
-        Sample metadata such as ``sample_id`` and ``target_site_index`` is
-        skipped so it is not summarized as if it were a measurement.
+        Sample metadata such as ``sample_id`` and ``target_site_index`` and the
+        ``prediction`` and ``target`` spectra are skipped so they are not
+        summarized as if they were measurements.
 
         Args:
             sample: Prediction sample or collector output mapping.
-            target: Mutable mapping from value key to accumulated scalar values.
+            target: Mutable mapping from value key to accumulated vector values.
         """
-        for key, value in iter_scalar_items(sample):
-            target.setdefault(key, []).append(float(value))
+        for key, value in iter_vector_items(sample):
+            target.setdefault(key, []).append(as_float_vector(value))
 
-    def _compute_stats(self, values: list[float]) -> dict[str, float]:
-        """Compute summary statistics for scalar values.
+    def _compute_stats(self, values: list[np.ndarray]) -> dict[str, np.ndarray]:
+        """Compute per-element summary statistics for vector values.
 
         Args:
-            values: Non-empty list of scalar values.
+            values: Non-empty list of equal-length vectors.
 
         Returns:
             Statistics dictionary containing ``mean``, ``std``, ``min``, ``max``, ``median``, and
-            configured percentile keys.
+            configured percentile keys, each with shape ``(n_elements,)``.
         """
-        arr = np.array(values)
+        stack = np.stack(values)
         stats = {
-            "mean": float(np.mean(arr)),
-            "std": float(np.std(arr)),
-            "min": float(np.min(arr)),
-            "max": float(np.max(arr)),
-            "median": float(np.median(arr)),
+            "mean": stack.mean(axis=0),
+            "std": stack.std(axis=0),
+            "min": stack.min(axis=0),
+            "max": stack.max(axis=0),
+            "median": np.median(stack, axis=0),
         }
         for p in self.percentiles:
-            stats[f"p{p}"] = float(np.percentile(arr, p))
+            stats[f"p{p}"] = np.percentile(stack, p, axis=0)
         return stats
 
     @property
     def signature(self) -> Config:
-        """Return the scalar aggregator signature."""
+        """Return the vector aggregator signature."""
         signature = super().signature
         signature.update_with_dict({"percentiles": self.percentiles})
         return signature

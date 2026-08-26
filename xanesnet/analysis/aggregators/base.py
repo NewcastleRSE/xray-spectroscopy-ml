@@ -24,9 +24,11 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any
 
+from xanesnet.serialization.config import Config
 from xanesnet.serialization.jsonl_stream import JSONLStream
 
 from ..selectors import Selector
+from ..utils import component_repr
 
 
 @dataclass(frozen=True)
@@ -54,10 +56,7 @@ class Aggregator(ABC):
         aggregator_type: Registered aggregator name from the analysis configuration.
     """
 
-    def __init__(
-        self,
-        aggregator_type: str,
-    ) -> None:
+    def __init__(self, aggregator_type: str) -> None:
         """Initialize an aggregator instance."""
         self.aggregator_type = aggregator_type
 
@@ -75,3 +74,20 @@ class Aggregator(ABC):
             Aggregated result for this selector and aggregator.
         """
         ...
+
+    @property
+    def signature(self) -> Config:
+        """Return the aggregator signature.
+
+        Returns:
+            Configuration values needed to recreate this aggregator.
+        """
+        return Config({"aggregator_type": self.aggregator_type})
+
+    def __str__(self) -> str:
+        """Return the short display label of this aggregator."""
+        return self.aggregator_type
+
+    def __repr__(self) -> str:
+        """Return a detailed representation of this aggregator."""
+        return component_repr(type(self).__name__, self.signature.as_dict())
