@@ -94,7 +94,7 @@ class StatisticsReporter(Reporter):
             logging.info(f"    Predictions {reader_idx + 1}/{len(results.aggregator_results)}.")
 
             for sel_idx, agg_results in enumerate(reader_results):
-                dir_name = results.label(reader_idx, sel_idx).dir_name
+                dir_name = results.method_label(reader_idx, sel_idx).dir_name
                 for agg_result in agg_results:
                     if self.aggregator_types is not None and agg_result.aggregator_type not in self.aggregator_types:
                         continue

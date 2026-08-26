@@ -64,7 +64,7 @@ class ScalarReporter(Reporter):
 
             for sel_idx, selector in enumerate(reader_selectors):
                 logging.info(f"      Selector {sel_idx + 1}/{len(reader_selectors)}.")
-                subdir = root / results.label(reader_idx, sel_idx).dir_name
+                subdir = root / results.method_label(reader_idx, sel_idx).dir_name
                 subdir.mkdir(parents=True, exist_ok=True)
 
                 stream = results.collector_stream(reader_idx, sel_idx)
