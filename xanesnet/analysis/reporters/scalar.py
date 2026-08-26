@@ -23,14 +23,14 @@
 import csv
 import logging
 from pathlib import Path
-from typing import cast
 
-from xanesnet.analysis.utils import ScalarValue, is_scalar_value
+from xanesnet.analysis.utils import ScalarValue
 from xanesnet.serialization.jsonl_stream import JSONLStream
 
 from ..result import AnalysisResults
+from ..sample_data import iter_aligned, merged_scalars
 from ..selectors import Selector
-from .base import Reporter, selector_label
+from .base import Reporter
 from .registry import ReporterRegistry
 
 
@@ -64,13 +64,10 @@ class ScalarReporter(Reporter):
 
             for sel_idx, selector in enumerate(reader_selectors):
                 logging.info(f"      Selector {sel_idx + 1}/{len(reader_selectors)}.")
-                sel_label = selector_label(results.selectors_config, sel_idx)
-                subdir = root / f"pred_{reader_idx:03d}__sel_{sel_idx:03d}_{sel_label}"
+                subdir = root / results.label(reader_idx, sel_idx).dir_name
                 subdir.mkdir(parents=True, exist_ok=True)
 
-                stream: JSONLStream | None = None
-                if reader_idx < len(results.collector_results) and sel_idx < len(results.collector_results[reader_idx]):
-                    stream = results.collector_results[reader_idx][sel_idx]
+                stream = results.collector_stream(reader_idx, sel_idx)
 
                 self._write_scalar_csvs(selector, stream, subdir)
 
@@ -91,21 +88,10 @@ class ScalarReporter(Reporter):
         """
         rows_by_key: dict[str, list[tuple[str, ScalarValue]]] = {}
 
-        if stream is not None:
-            for sel_sample, col_sample in zip(selector, stream):
-                sample_id = str(col_sample["sample_id"])
-                for key, value in sel_sample.items():
-                    if key != "sample_id" and is_scalar_value(value):
-                        rows_by_key.setdefault(key, []).append((sample_id, cast(float, value)))
-                for key, value in col_sample.items():
-                    if key != "sample_id" and is_scalar_value(value):
-                        rows_by_key.setdefault(key, []).append((sample_id, cast(float, value)))
-        else:
-            for sel_sample in selector:
-                sample_id = str(sel_sample["sample_id"])
-                for key, value in sel_sample.items():
-                    if key != "sample_id" and is_scalar_value(value):
-                        rows_by_key.setdefault(key, []).append((sample_id, cast(float, value)))
+        for sample, record in iter_aligned(selector, stream):
+            sample_id = str(sample["sample_id"])
+            for key, value in merged_scalars(sample, record).items():
+                rows_by_key.setdefault(key, []).append((sample_id, value))
 
         if not rows_by_key:
             logging.info("      No scalar data found, skipping.")

@@ -27,9 +27,12 @@ from typing import Any, ClassVar
 
 import yaml
 
+from xanesnet.serialization.config import Config
+from xanesnet.serialization.jsonl_stream import json_friendly
+
 from ..aggregators import AggregatorResult
 from ..result import AnalysisResults
-from .base import Reporter, selector_label
+from .base import Reporter
 from .registry import ReporterRegistry
 
 
@@ -38,20 +41,30 @@ class StatisticsReporter(Reporter):
     """Write aggregated statistics as structured files.
 
     Produces one file per (selector, predictions_reader, aggregator) combination.
-    Each file includes a ``metadata`` section for traceability and a ``statistics``
-    section containing the full aggregation output.
+    Each file includes a ``metadata`` section identifying the producing method
+    and aggregator and a ``statistics`` section containing the aggregation
+    output. Full component configurations are recorded in ``selectors.yaml``
+    and ``aggregators.yaml`` next to the report.
 
-    Supported formats: ``yaml`` (default), ``json``.
+    Supported formats: ``yaml``, ``json``.
 
     Args:
         reporter_type: Registered reporter name from the analysis configuration.
         format: Output format. Supported values are ``"yaml"`` and ``"json"``.
-        **kwargs: Accepted for configuration compatibility and ignored.
+        aggregator_types: Registered aggregator names to report. ``None``
+            reports every configured aggregator; a list restricts the report to
+            those types, which is useful when other aggregators only exist to
+            feed a plotter.
     """
 
     SUPPORTED_FORMATS: ClassVar[tuple[str, str]] = ("yaml", "json")
 
-    def __init__(self, reporter_type: str, format: str = "yaml", **kwargs: Any) -> None:
+    def __init__(
+        self,
+        reporter_type: str,
+        format: str,
+        aggregator_types: list[str] | None,
+    ) -> None:
         """Initialize a statistics reporter.
 
         Raises:
@@ -61,6 +74,7 @@ class StatisticsReporter(Reporter):
         if format not in self.SUPPORTED_FORMATS:
             raise ValueError(f"Unsupported format '{format}'. Choose from {self.SUPPORTED_FORMATS}")
         self.format = format
+        self.aggregator_types = aggregator_types
 
     def report(self, results: AnalysisResults, output_dir: Path) -> None:
         """Write one statistics file per aggregation result.
@@ -80,28 +94,25 @@ class StatisticsReporter(Reporter):
             logging.info(f"    Predictions {reader_idx + 1}/{len(results.aggregator_results)}.")
 
             for sel_idx, agg_results in enumerate(reader_results):
-                sel_label = selector_label(results.selectors_config, sel_idx)
+                dir_name = results.label(reader_idx, sel_idx).dir_name
                 for agg_result in agg_results:
+                    if self.aggregator_types is not None and agg_result.aggregator_type not in self.aggregator_types:
+                        continue
                     agg_label = f"{agg_result.aggregator_type}_{agg_result.aggregator_index:03d}"
-                    filename = (
-                        f"pred_{reader_idx:03d}" f"__sel_{sel_idx:03d}_{sel_label}" f"__{agg_label}" f".{self.format}"
-                    )
-                    filepath = report_dir / filename
+                    filepath = report_dir / f"{dir_name}__{agg_label}.{self.format}"
 
-                    report = self._build_report(results, sel_idx, reader_idx, agg_result)
+                    report = self._build_report(sel_idx, reader_idx, agg_result)
                     self._save(report, filepath)
 
     @staticmethod
     def _build_report(
-        results: AnalysisResults,
         sel_idx: int,
         reader_idx: int,
         agg_result: AggregatorResult,
     ) -> dict[str, Any]:
-        """Build a self-describing statistics report payload.
+        """Build a statistics report payload with identifying metadata.
 
         Args:
-            results: Analysis pipeline outputs containing configurations.
             sel_idx: Zero-based selector index for this aggregation result.
             reader_idx: Zero-based prediction reader index for this aggregation result.
             agg_result: Aggregation result to serialize.
@@ -109,19 +120,14 @@ class StatisticsReporter(Reporter):
         Returns:
             Report dictionary with ``metadata`` and ``statistics`` sections.
         """
-        sel_cfg = results.selectors_config[sel_idx]
-        agg_cfg = results.aggregators_config[agg_result.aggregator_index]
-
         return {
             "metadata": {
                 "predictions_index": reader_idx,
                 "selector_index": sel_idx,
-                "selector_config": sel_cfg,
                 "aggregator_type": agg_result.aggregator_type,
                 "aggregator_index": agg_result.aggregator_index,
-                "aggregator_config": agg_cfg,
             },
-            "statistics": agg_result.data,
+            "statistics": json_friendly(agg_result.data),
         }
 
     def _save(self, report: dict[str, Any], filepath: Path) -> None:
@@ -142,3 +148,10 @@ class StatisticsReporter(Reporter):
                 )
             elif self.format == "json":
                 json.dump(report, f, indent=2)
+
+    @property
+    def signature(self) -> Config:
+        """Return the statistics reporter signature."""
+        signature = super().signature
+        signature.update_with_dict({"format": self.format, "aggregator_types": self.aggregator_types})
+        return signature
