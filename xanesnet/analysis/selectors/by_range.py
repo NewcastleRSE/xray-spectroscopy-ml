@@ -22,6 +22,7 @@
 
 from collections.abc import Iterator
 
+from xanesnet.serialization.config import Config
 from xanesnet.serialization.prediction_readers import PredictionReader, PredictionSample
 
 from .base import Selector
@@ -39,13 +40,7 @@ class IndexRangeSelector(Selector):
         end: Exclusive zero-based end index. ``None`` keeps samples through the source end.
     """
 
-    def __init__(
-        self,
-        selector_type: str,
-        data_source: PredictionReader,
-        start: int,
-        end: int | None,
-    ) -> None:
+    def __init__(self, selector_type: str, data_source: PredictionReader, start: int, end: int | None) -> None:
         """Initialize a half-open index range selector."""
         super().__init__(selector_type, data_source)
 
@@ -74,3 +69,10 @@ class IndexRangeSelector(Selector):
         if self.end is None:
             return max(0, len(self.data_source) - self.start)
         return max(0, min(self.end, len(self.data_source)) - self.start)
+
+    @property
+    def signature(self) -> Config:
+        """Return the selector signature."""
+        signature = super().signature
+        signature.update_with_dict({"start": self.start, "end": self.end})
+        return signature

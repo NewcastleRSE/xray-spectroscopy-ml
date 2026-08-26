@@ -25,7 +25,7 @@ from typing import Any
 
 import numpy as np
 
-from xanesnet.analysis.utils import is_scalar_value
+from xanesnet.analysis.utils import iter_scalar_items
 from xanesnet.serialization.jsonl_stream import JSONLStream
 from xanesnet.serialization.prediction_readers import PredictionSample
 
@@ -47,12 +47,12 @@ class ScalarAggregator(Aggregator):
     def __init__(
         self,
         aggregator_type: str,
-        percentiles: list[float] | None = None,
+        percentiles: list[float],
     ) -> None:
         """Initialize a scalar summary aggregator."""
         super().__init__(aggregator_type)
 
-        self.percentiles = percentiles if percentiles is not None else [25, 50, 75]
+        self.percentiles = percentiles
 
     def aggregate(self, selector: Selector, per_sample_values: JSONLStream | None, index: int) -> AggregatorResult:
         """Aggregate scalar values into mean, spread, extrema, and percentile statistics.
@@ -76,7 +76,7 @@ class ScalarAggregator(Aggregator):
                 self._collect_scalars(raw_sample, values_by_key)
 
         if not values_by_key:
-            logging.info(f"ScalarAggregator: No scalar values found for selector {selector} at index {index}.")
+            logging.info("      No scalar values found, skipping.")
 
         data = {name: self._compute_stats(values) for name, values in values_by_key.items()}
         result = AggregatorResult(
@@ -90,16 +90,15 @@ class ScalarAggregator(Aggregator):
     def _collect_scalars(sample: dict[str, Any] | PredictionSample, target: dict[str, list[float]]) -> None:
         """Append scalar values from ``sample`` into ``target`` by key.
 
+        Sample metadata such as ``sample_id`` and ``target_site_index`` is
+        skipped so it is not summarized as if it were a measurement.
+
         Args:
             sample: Prediction sample or collector output mapping.
             target: Mutable mapping from value key to accumulated scalar values.
         """
-        for key, value in sample.items():
-            # TODO is this enough or necessary? target_site_index plots created!
-            if key == "target_site_index":
-                continue
-            if is_scalar_value(value):
-                target.setdefault(key, []).append(float(value))
+        for key, value in iter_scalar_items(sample):
+            target.setdefault(key, []).append(float(value))
 
     def _compute_stats(self, values: list[float]) -> dict[str, float]:
         """Compute summary statistics for scalar values.

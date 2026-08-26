@@ -40,11 +40,7 @@ class IdentitySelector(Selector):
         data_source: Prediction reader to select samples from.
     """
 
-    def __init__(
-        self,
-        selector_type: str,
-        data_source: PredictionReader,
-    ) -> None:
+    def __init__(self, selector_type: str, data_source: PredictionReader) -> None:
         """Initialize an identity selector."""
         super().__init__(selector_type, data_source)
 

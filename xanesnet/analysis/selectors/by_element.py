@@ -26,6 +26,7 @@ from typing import cast
 from pymatgen.core import Element, Molecule, Structure
 from tqdm import tqdm
 
+from xanesnet.serialization.config import Config
 from xanesnet.serialization.prediction_readers import (
     PredictionReader,
     PredictionSample,
@@ -50,12 +51,7 @@ class ElementSelector(Selector):
             symbol is invalid.
     """
 
-    def __init__(
-        self,
-        selector_type: str,
-        data_source: PredictionReader,
-        elements: list[str],
-    ) -> None:
+    def __init__(self, selector_type: str, data_source: PredictionReader, elements: list[str]) -> None:
         """Initialize a target-element selector and collect matching indices.
 
         Raises:
@@ -97,3 +93,10 @@ class ElementSelector(Selector):
             Number of selected prediction samples.
         """
         return len(self._selected_indices)
+
+    @property
+    def signature(self) -> Config:
+        """Return the selector signature."""
+        signature = super().signature
+        signature.update_with_dict({"elements": self.elements})
+        return signature
