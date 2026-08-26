@@ -64,3 +64,13 @@ class IndexRangeSelector(Selector):
             if self.end is not None and idx >= self.end:
                 break
             yield sample
+
+    def __len__(self) -> int:
+        """Return the number of selected samples.
+
+        Returns:
+            Number of selected prediction samples.
+        """
+        if self.end is None:
+            return max(0, len(self.data_source) - self.start)
+        return max(0, min(self.end, len(self.data_source)) - self.start)

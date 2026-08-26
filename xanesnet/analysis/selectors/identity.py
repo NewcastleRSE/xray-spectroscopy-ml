@@ -55,3 +55,11 @@ class IdentitySelector(Selector):
             Iterator over prediction samples.
         """
         yield from self.data_source
+
+    def __len__(self) -> int:
+        """Return the number of selected samples.
+
+        Returns:
+            Number of selected prediction samples.
+        """
+        return len(self.data_source)

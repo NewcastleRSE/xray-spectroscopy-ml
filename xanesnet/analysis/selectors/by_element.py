@@ -24,6 +24,7 @@ from collections.abc import Iterator
 from typing import cast
 
 from pymatgen.core import Element, Molecule, Structure
+from tqdm import tqdm
 
 from xanesnet.serialization.prediction_readers import (
     PredictionReader,
@@ -55,7 +56,7 @@ class ElementSelector(Selector):
         data_source: PredictionReader,
         elements: list[str],
     ) -> None:
-        """Initialize a target-element selector.
+        """Initialize a target-element selector and collect matching indices.
 
         Raises:
             ConfigError: If ``data_source`` does not attach matched raw
@@ -72,26 +73,27 @@ class ElementSelector(Selector):
         except ValueError as exc:
             raise ConfigError(f"Invalid element symbol in ElementSelector: {exc}") from exc
 
+        self._selected_indices: list[int] = []
+        for index, sample in tqdm(enumerate(self.data_source), total=len(self.data_source), desc="Getting indices"):
+            target_site_index = cast(int, sample["target_site_index"])
+            structure = cast(Molecule | Structure, sample.get("structure"))
+            atomic_number = structure.atomic_numbers[target_site_index]
+            if atomic_number in self._atomic_numbers:
+                self._selected_indices.append(index)
+
     def __iter__(self) -> Iterator[PredictionSample]:
         """Yield samples whose target-site element is configured.
 
         Returns:
             Iterator over selected prediction samples.
-
-        Raises:
-            ValueError: If a prediction record's target-site index is ``None``
-                or outside the matched structure.
         """
-        for sample in self.data_source:
-            if sample["target_site_index"] is None:
-                raise ValueError(
-                    "ElementSelector requires site-specific predictions. "
-                    "Analyze an inference run with an available datasource and site-specific model output."
-                )
-            target_site_index = int(sample["target_site_index"])
-            structure = cast(Molecule | Structure, sample.get("structure"))
-            if target_site_index < 0 or target_site_index >= len(structure):
-                raise ValueError(f"Target-site index {target_site_index} is outside the matched structure.")
-            atomic_number = structure.atomic_numbers[target_site_index]
-            if atomic_number in self._atomic_numbers:
-                yield sample
+        for index in self._selected_indices:
+            yield self.data_source[index]
+
+    def __len__(self) -> int:
+        """Return the number of selected samples.
+
+        Returns:
+            Number of selected prediction samples.
+        """
+        return len(self._selected_indices)

@@ -66,3 +66,11 @@ class BernoulliSelector(Selector):
         """
         for i in self._selected_indices:
             yield self.data_source[i]
+
+    def __len__(self) -> int:
+        """Return the number of selected samples.
+
+        Returns:
+            Number of selected prediction samples.
+        """
+        return len(self._selected_indices)
