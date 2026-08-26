@@ -22,7 +22,6 @@
 
 from typing import Any
 
-import numpy as np
 import torch
 
 from xanesnet.losses import LossRegistry
@@ -48,7 +47,7 @@ class LossCollector(Collector):
         self,
         collector_type: str,
         loss_type: str,
-        energy_resolved: bool = False,
+        energy_resolved: bool,
         **loss_kwargs: Any,
     ) -> None:
         """Initialize the configured loss function."""
