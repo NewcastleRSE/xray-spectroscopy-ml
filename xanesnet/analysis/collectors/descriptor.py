@@ -20,15 +20,12 @@
 
 """Collector that computes a structure descriptor vector per sample."""
 
-from typing import Any, cast
+from typing import Any
 
-import numpy as np
-from pymatgen.core import Molecule, Structure
-
-from xanesnet.descriptors import DescriptorRegistry
 from xanesnet.serialization.config import Config
 from xanesnet.serialization.prediction_readers import PredictionSample
 
+from ..descriptor_cache import descriptor_vector
 from .base import Collector
 from .registry import CollectorRegistry
 
@@ -54,7 +51,6 @@ class DescriptorCollector(Collector):
         """Initialize a descriptor collector."""
         super().__init__(collector_type)
         self.descriptor_config = descriptor
-        self.descriptor = DescriptorRegistry.create(descriptor.get_str("descriptor_type"), **descriptor.as_kwargs())
 
     def process(self, sample: PredictionSample) -> dict[str, Any]:
         """Compute the descriptor vector for one prediction sample.
@@ -65,12 +61,7 @@ class DescriptorCollector(Collector):
         Returns:
             Mapping with the descriptor vector under the ``descriptor`` key.
         """
-        structure = cast(Molecule | Structure, sample.get("structure"))
-        site_index = sample.get("target_site_index")
-        vector = np.asarray(self.descriptor.transform_pmg(structure, site_index=site_index), dtype=float)
-        if vector.ndim == 2:
-            vector = vector.mean(axis=0)
-        return {"descriptor": vector.ravel().tolist()}
+        return {"descriptor": descriptor_vector(self.descriptor_config, sample).tolist()}
 
     @property
     def signature(self) -> Config:

@@ -22,18 +22,16 @@
 
 import logging
 from dataclasses import dataclass
-from typing import Any, cast
+from typing import Any
 
 import numpy as np
-from pymatgen.core import Molecule, Structure
 from scipy.cluster.hierarchy import fcluster, linkage
-from tqdm import tqdm
 
-from xanesnet.descriptors import DescriptorRegistry
 from xanesnet.serialization.config import Config
 from xanesnet.serialization.prediction_readers import PredictionReader
 from xanesnet.utils.exceptions import ConfigError
 
+from ..descriptor_cache import descriptor_matrix
 from .base import Selector
 from .registry import SelectorRegistry
 
@@ -228,21 +226,10 @@ def _compute_clustering(
     Raises:
         ConfigError: If fewer than two structures are available.
     """
-    descriptor_obj = DescriptorRegistry.create(descriptor.get_str("descriptor_type"), **descriptor.as_kwargs())
-
-    vectors: list[np.ndarray] = []
-    for sample in tqdm(data_source, desc="Computing descriptors", total=len(data_source)):
-        structure = cast(Molecule | Structure, sample.get("structure"))
-        site_index = sample.get("target_site_index")
-        vector = np.asarray(descriptor_obj.transform_pmg(structure, site_index=site_index), dtype=float)
-        if vector.ndim == 2:
-            vector = vector.mean(axis=0)
-        vectors.append(vector.ravel())
-
-    if len(vectors) < 2:
+    if len(data_source) < 2:
         raise ConfigError("StructureClusterSelector requires at least two samples with structures.")
 
-    features = np.stack(vectors)
+    features = descriptor_matrix(descriptor, data_source)
     with np.errstate(invalid="ignore", divide="ignore"):
         scaled = (features - features.mean(axis=0)) / features.std(axis=0)
     scaled = np.nan_to_num(scaled, nan=0.0, posinf=0.0, neginf=0.0)
