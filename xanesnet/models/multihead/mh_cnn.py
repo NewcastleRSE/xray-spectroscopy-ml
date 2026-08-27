@@ -168,7 +168,7 @@ class MultiHead_CNN(Model):
                 "stride": self.stride,
                 "head_num_hidden_layers": self.head_num_hidden_layers,
                 "head_hidden_size": self.head_hidden_size,
-                "head_strink_rate": self.head_shrink_rate
+                "head_shrink_rate": self.head_shrink_rate
             }
         )
         return signature
