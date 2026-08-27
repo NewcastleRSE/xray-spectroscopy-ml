@@ -24,41 +24,32 @@ from typing import Any
 
 import torch
 
+from xanesnet.batchprocessors.forward.multihead import _MULTIHEAD_OUT_SIZES_KEY
 from xanesnet.serialization.auto_config.registries import ModelAutoResolver
 from xanesnet.serialization.config import ConfigRaw
+from xanesnet.utils.exceptions import ConfigError
+
+
+def _resolve_multihead_fields(inputs: dict[str, Any]) -> ConfigRaw:
+    if _MULTIHEAD_OUT_SIZES_KEY not in inputs:
+        raise ConfigError(
+            "Multi-head auto-resolution requires "
+            f"inputs['{_MULTIHEAD_OUT_SIZES_KEY}'] from MultiheadBatchProcessor.input_preparation_single()."
+        )
+
+    return {
+        "in_size": int(inputs["x"].shape[-1]),
+        "out_size": inputs[_MULTIHEAD_OUT_SIZES_KEY],
+    }
 
 
 @ModelAutoResolver.register("mh_mlp")
 def resolve_mh_mlp(inputs: dict[str, Any], target: torch.Tensor) -> ConfigRaw:
-    """Resolve MH-MLP input and output dimensions.
-
-    Args:
-        inputs: Prepared model input dictionary.
-        target: Prepared target tensor.
-
-    Returns:
-        Mapping with MH-MLP automatic fields ``in_size`` and ``out_size``.
-    """
-    print(inputs)
-    return {
-        "in_size": int(inputs["x"].shape[-1]),
-        "out_size": int(target.shape[-1]),
-    }
+    """Resolve MH-MLP input and output dimensions."""
+    return _resolve_multihead_fields(inputs)
 
 
 @ModelAutoResolver.register("mh_cnn")
 def resolve_mh_cnn(inputs: dict[str, Any], target: torch.Tensor) -> ConfigRaw:
-    """Resolve MH-CNN input and output dimensions.
-
-    Args:
-        inputs: Prepared model input dictionary.
-        target: Prepared target tensor.
-
-    Returns:
-        Mapping with MH-CNN automatic fields ``in_size`` and ``out_size``.
-    """
-    return {
-        "in_size": int(inputs["x"].shape[-1]),
-        "out_size": int(target.shape[-1]),
-    }
-
+    """Resolve MH-CNN input and output dimensions."""
+    return _resolve_multihead_fields(inputs)

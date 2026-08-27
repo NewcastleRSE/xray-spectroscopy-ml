@@ -87,7 +87,7 @@ class MultiHead_CNN(Model):
                 nn.Sequential(
                     nn.Conv1d(in_channel, current_out_channel, kernel_size, stride),
                     nn.BatchNorm1d(current_out_channel),
-                    ActivationRegistry.get(activation),
+                    ActivationRegistry.create(activation),
                     nn.Dropout(p=dropout),
                 )
             )

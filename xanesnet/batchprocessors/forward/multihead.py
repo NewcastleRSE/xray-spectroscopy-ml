@@ -25,14 +25,19 @@ from typing import Any
 import numpy as np
 import torch
 
-from xanesnet.datasets import MultiheadData
+from xanesnet.datasets import Dataset, MultiheadData
+from xanesnet.utils.exceptions import ConfigError
 
 from ..registry import BatchProcessorRegistry
 from .base import ForwardBatchProcessor
 
+_MULTIHEAD_OUT_SIZES_KEY = "_multihead_out_sizes"
+
 
 @BatchProcessorRegistry.register(("multihead", "mh_mlp"))
 @BatchProcessorRegistry.register(("multihead_mp", "mh_mlp"))
+@BatchProcessorRegistry.register(("multihead", "mh_cnn"))
+@BatchProcessorRegistry.register(("multihead_mp", "mh_cnn"))
 class MultiheadBatchProcessor(ForwardBatchProcessor):
     """Batch processor for ``MultiheadData`` + multi-head models.
 
@@ -52,6 +57,34 @@ class MultiheadBatchProcessor(ForwardBatchProcessor):
             Dict with ``"x"`` containing the descriptor tensor. ``(batch_size, n_features)``.
         """
         return {"x": batch.x}  # type: ignore[dict-item]
+
+    def input_preparation_single(self, dataset: Dataset, index: int) -> dict[str, Any]:
+        """Prepare model inputs for auto-config from a single dataset sample."""
+        inputs = super().input_preparation_single(dataset, index)
+        inputs[_MULTIHEAD_OUT_SIZES_KEY] = self._resolve_out_sizes(dataset)
+        return inputs
+
+    def _resolve_out_sizes(self, dataset: Dataset) -> list[int]:
+        """Build per-head encoded target sizes from the dataset."""
+        out_sizes: dict[int, int] = {}
+        for idx in range(len(dataset)):
+            sample = dataset[idx]
+            head_idx = int(sample.head_idx)
+            batch = dataset.collate_fn([sample])
+            target = self.target_preparation(batch)
+            element = self.element_preparation(batch)
+            target = self.encode_target(target, element)
+            out_sizes[head_idx] = int(target.shape[-1])
+
+        if not out_sizes:
+            raise ConfigError("Cannot resolve multi-head out_size from an empty dataset.")
+
+        num_heads = max(out_sizes) + 1
+        missing = [head_idx for head_idx in range(num_heads) if head_idx not in out_sizes]
+        if missing:
+            raise ConfigError(f"Missing training samples for head(s) {missing}.")
+
+        return [out_sizes[head_idx] for head_idx in range(num_heads)]
 
     def target_preparation(self, batch: MultiheadData) -> torch.Tensor:
         """Prepare raw spectral targets from a multihead batch.
