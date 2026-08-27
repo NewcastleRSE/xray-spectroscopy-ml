@@ -27,6 +27,8 @@ from argparse import Namespace
 from pathlib import Path
 from typing import Any, TypeVar
 
+from tqdm import tqdm
+
 from xanesnet.analysis.aggregators import (
     Aggregator,
     AggregatorRegistry,
@@ -347,7 +349,7 @@ def _write_collector_records(collectors: list[Collector], selector: Selector, au
     """
     count = 0
     with open(aux_path, "w") as f:
-        for sample in selector:
+        for sample in tqdm(selector, desc="Collecting", total=len(selector)):
             sample_id = sample["sample_id"]
             sample_result: dict[str, Any] = {"sample_id": sample_id}
             for collector in collectors:
