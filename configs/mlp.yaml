@@ -1,16 +1,16 @@
 # Example configuration for MLP training with toy data.
 
 seed: 2025
-device: cpu
+device: cuda
 
 datasource:
-  datasource_type: multipmgjson
-  root_path: ./data/toy_data_multipmgjson/
+  datasource_type: pmgjson
+  json_path: ./data/toy_data/
 
 dataset:
   # general:
   dataset_type: descriptor
-  root: ./data/processed/toy_data_multipmgjson_mlp/  # Where should the processed data be stored
+  root: ./data/processed/toy_data_mlp/  # Where should the processed data be stored
   preload: True                    # Preload dataset into RAM if True; otherwise load on-the-fly
   skip_prepare: False
   split_ratios: [0.8, 0.2]
