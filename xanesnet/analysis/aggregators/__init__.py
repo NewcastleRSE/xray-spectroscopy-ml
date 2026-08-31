@@ -22,7 +22,6 @@
 
 from .base import Aggregator, AggregatorResult
 from .bias_variance import BiasVarianceAggregator
-from .pca import PcaAggregator
 from .ranking import RankingAggregator
 from .registry import AggregatorRegistry
 from .scalar import ScalarAggregator
@@ -34,7 +33,6 @@ __all__ = [
     "AggregatorRegistry",
     "AggregatorResult",
     "BiasVarianceAggregator",
-    "PcaAggregator",
     "RankingAggregator",
     "ScalarAggregator",
     "SpectrumAggregator",
