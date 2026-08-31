@@ -18,24 +18,16 @@
 # Citations:
 #   ...
 
-"""Access helpers for prediction samples and their collector values.
-
-Aggregators, reporters, and plotters all read the same two aligned sources:
-the samples yielded by a selector and the per-sample records a collector
-stream wrote for them. These helpers pair the two sources, merge their scalar
-values, and derive the per-sample error used to rank samples.
-"""
+"""Access helpers for prediction samples and their collector values."""
 
 from collections.abc import Iterator
-from typing import Any, cast
-
-import numpy as np
+from typing import Any
 
 from xanesnet.serialization.jsonl_stream import JSONLStream
 from xanesnet.serialization.prediction_readers import PredictionSample
 
 from .selectors import Selector
-from .utils import ScalarValue, is_scalar_value, iter_scalar_items
+from .utils import ScalarValue, iter_scalar_items
 
 
 def iter_aligned(
@@ -86,31 +78,3 @@ def merged_scalars(
     scalars: dict[str, ScalarValue] = dict(iter_scalar_items(sample, include_metadata))
     scalars.update(iter_scalar_items(col_scalars, include_metadata))
     return scalars
-
-
-def spectrum_error_value(
-    sample: PredictionSample,
-    col_scalars: dict[str, Any],
-    sort_key: str | None,
-) -> float:
-    """Return the scalar used to rank one sample by prediction error.
-
-    The configured ``sort_key`` is used when it holds a scalar value;
-    otherwise the mean squared error between the predicted and target spectra
-    is computed.
-
-    Args:
-        sample: Prediction sample containing spectra arrays and optional scalars.
-        col_scalars: Collector record aligned with ``sample``.
-        sort_key: Preferred scalar key; ``None`` falls back to computed MSE.
-
-    Returns:
-        Ranking value for the sample; lower means a better prediction.
-    """
-    if sort_key is not None:
-        value = col_scalars.get(sort_key, sample.get(sort_key))
-        if is_scalar_value(value):
-            return cast(float, value)
-    pred = np.asarray(sample["prediction"]).ravel()
-    target = np.asarray(sample["target"]).ravel()
-    return float(np.mean((pred - target) ** 2))
