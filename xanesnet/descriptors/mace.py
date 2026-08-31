@@ -57,7 +57,7 @@ class MACE(Descriptor):
         self.invariants_only = invariants_only
         self.num_layers = num_layers
         self.device = device
-        self.mace = mace_mp(device=device)
+        self.mace = mace_mp(device=device, default_dtype="float32")
 
     def transform(
         self,
