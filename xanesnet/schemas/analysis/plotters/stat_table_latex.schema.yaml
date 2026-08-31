@@ -1,15 +1,15 @@
 $schema: https://json-schema.org/draft/2020-12/schema
-$id: stat_table.schema.yaml
-title: 'XANESNET plotter schema: stat_table'
+$id: stat_table_latex.schema.yaml
+title: 'XANESNET plotter schema: stat_table_latex'
 $defs:
-  plotterStatTable:
+  plotterStatTableLatex:
     type: object
     additionalProperties: false
     required:
     - plotter_type
     properties:
       plotter_type:
-        const: stat_table
+        const: stat_table_latex
         description: Registered plotter name from the analysis configuration.
       stat_keys:
         type: array
@@ -26,7 +26,8 @@ $defs:
         type: integer
         minimum: 0
         default: 4
-        description: Number of significant digits used when formatting table values.
+        description: Number of significant digits used when formatting table
+          values.
       sort_key:
         type:
         - string
@@ -34,5 +35,7 @@ $defs:
         default: null
         description: Scalar value key whose first statistic orders the combined
           table rows. When null, the first value key is used.
-    description: Render comparison tables of aggregated statistics as PDF figures.
-description: Analysis component schemas used by ``core_analyze`` setup functions and analysis registries.
+    description: Render comparison tables of aggregated statistics as standalone
+      LaTeX sources, compiled to PDF when a LaTeX installation is available.
+description: Analysis component schemas used by ``core_analyze`` setup functions
+  and analysis registries.

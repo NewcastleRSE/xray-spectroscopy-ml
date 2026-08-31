@@ -45,5 +45,6 @@ $defs:
         default: null
         description: Energy-resolved loss keys to plot. When null, every
           collected key is plotted.
-    description: Plot average energy-resolved loss curves per method plus combined grid and overlay figures.
+    description: Plot average energy-resolved loss curves per method plus combined
+      grid and overlay figures. Requires a ``vector`` aggregator.
 description: Analysis component schemas used by ``core_analyze`` setup functions and analysis registries.

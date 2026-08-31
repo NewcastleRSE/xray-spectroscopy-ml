@@ -1,8 +1,8 @@
 $schema: https://json-schema.org/draft/2020-12/schema
-$id: selector_overview.schema.yaml
-title: 'XANESNET plotter schema: selector_overview'
+$id: structure_clusters.schema.yaml
+title: 'XANESNET plotter schema: structure_clusters'
 $defs:
-  plotterSelectorOverview:
+  plotterStructureClusters:
     type: object
     additionalProperties: false
     required:
@@ -10,7 +10,7 @@ $defs:
     - err_key
     properties:
       plotter_type:
-        const: selector_overview
+        const: structure_clusters
         description: Registered plotter name from the analysis configuration.
       err_key:
         type: string

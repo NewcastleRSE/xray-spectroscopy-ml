@@ -12,6 +12,6 @@ $defs:
         const: bias_variance
         description: Registered plotter name from the analysis configuration.
     description: Plot the per-channel MSE split into squared bias and variance
-      per method plus a combined grid.
+      per method plus a combined grid. Requires a ``bias_variance`` aggregator.
 description: Analysis component schemas used by ``core_analyze`` setup functions
   and analysis registries.

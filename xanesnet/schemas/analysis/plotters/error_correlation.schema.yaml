@@ -7,17 +7,15 @@ $defs:
     additionalProperties: false
     required:
     - plotter_type
+    - sort_key
     properties:
       plotter_type:
         const: error_correlation
         description: Registered plotter name from the analysis configuration.
       sort_key:
-        type:
-        - string
-        - 'null'
-        default: null
-        description: Scalar key used as the per-sample error. When null, the
-          MSE between predicted and target spectra is used.
+        type: string
+        description: Scalar collector key used as the per-sample error. Must be
+          produced by a configured collector.
     description: Plot pairwise per-sample error correlations between methods on
       their common samples, as one combined grid plus one figure per method
       pair.

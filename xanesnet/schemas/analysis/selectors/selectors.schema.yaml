@@ -9,5 +9,6 @@ $defs:
     - $ref: by_index.schema.yaml#/$defs/selectorIndexList
     - $ref: by_range.schema.yaml#/$defs/selectorIndexRange
     - $ref: bernoulli.schema.yaml#/$defs/selectorRandom
+    - $ref: structure_cluster.schema.yaml#/$defs/selectorStructureCluster
     description: Union of selector configuration objects instantiated by ``SelectorRegistry`` in ``core_analyze``.
 description: Analysis component schemas used by ``core_analyze`` setup functions and analysis registries.

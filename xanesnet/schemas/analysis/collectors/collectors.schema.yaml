@@ -5,5 +5,6 @@ $defs:
   collector:
     oneOf:
     - $ref: loss.schema.yaml#/$defs/collectorLoss
+    - $ref: descriptor.schema.yaml#/$defs/collectorDescriptor
     description: Union of collector configuration objects instantiated by ``CollectorRegistry`` in ``core_analyze``.
 description: Analysis component schemas used by ``core_analyze`` setup functions and analysis registries.
