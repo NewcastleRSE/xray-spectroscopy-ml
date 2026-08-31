@@ -53,6 +53,20 @@ setup_logging(logging.INFO)
 ###############################################################################
 
 
+def _flatten_args(values: list[list[str]] | None) -> list[str]:
+    """Flatten the nested lists produced by ``nargs='+'`` with ``action='append'``.
+
+    Args:
+        values: Nested list of parsed values, or ``None``.
+
+    Returns:
+        Flat list of values in argument order.
+    """
+    if not values:
+        return []
+    return [value for group in values for value in group]
+
+
 def parse_args(args: list[str]) -> Namespace:
     """Parse command-line arguments for the analysis entry point.
 
@@ -75,15 +89,21 @@ def parse_args(args: list[str]) -> Namespace:
         "--inference-runs",
         type=str,
         required=True,
-        help="Path to an inference run directory. Can be specified multiple times.",
         action="append",
+        nargs="+",
+        help=("Path(s) to inference run directories. Can be repeated (-r A -r B) " "and/or space separated (-r A B)."),
     )
     parser.add_argument(
         "-d",
         "--prediction-names",
         type=str,
+        action="append",
         nargs="+",
-        help="Optional display names for inference run directories, in the same order as -r.",
+        help=(
+            "Optional display names for inference run directories, in the same "
+            "order as -r. Can be repeated (-d X -d Y) and/or space separated "
+            "(-d X Y)."
+        ),
     )
     parser.add_argument(
         "-o",
@@ -105,6 +125,10 @@ def parse_args(args: list[str]) -> Namespace:
     )
 
     args_namespace = parser.parse_args(args)
+
+    args_namespace.inference_runs = _flatten_args(args_namespace.inference_runs)
+    args_namespace.prediction_names = _flatten_args(args_namespace.prediction_names)
+
     return args_namespace
 
 
