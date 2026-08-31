@@ -100,3 +100,7 @@ class ElementSelector(Selector):
         signature = super().signature
         signature.update_with_dict({"elements": self.elements})
         return signature
+
+    def __str__(self) -> str:
+        """Return the short display label of this plotter."""
+        return f"{self.selector_type} {', '.join(self.elements)}"
