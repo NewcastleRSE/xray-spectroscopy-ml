@@ -21,7 +21,6 @@
 """Plotter for predicted-versus-target intensity parity plots."""
 
 import logging
-import math
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -31,18 +30,22 @@ from matplotlib.colors import LogNorm
 
 from xanesnet.serialization.jsonl_stream import JSONLStream
 
-from ..reporters.base import selector_label
 from ..result import AnalysisResults
+from ..sample_data import iter_aligned
 from ..selectors import Selector
 from .base import Plotter
-from .registry import PlotterRegistry
-from .utils import (
+from .common import (
     add_subtitle,
+    adjust_grid,
+    annotate_box,
     compact_layout,
+    finish_grid,
     method_colour,
-    method_label_lines,
+    method_grid,
     style_axis,
+    style_grid_cell,
 )
+from .registry import PlotterRegistry
 
 # Label lines, colour, flattened targets, flattened predictions.
 _MethodPoints = tuple[list[str], str, np.ndarray, np.ndarray]
@@ -90,13 +93,8 @@ class ParityPlotter(Plotter):
 
             for sel_idx, selector in enumerate(reader_selectors):
                 logging.info(f"      Selector {sel_idx + 1}/{len(reader_selectors)}.")
-                sel_label_str = selector_label(results.selectors_config, sel_idx)
-                sel_cfg = results.selectors_config[sel_idx]
-                label_lines = method_label_lines(results.prediction_names[reader_idx], sel_label_str, sel_cfg)
-
-                stream: JSONLStream | None = None
-                if reader_idx < len(results.collector_results) and sel_idx < len(results.collector_results[reader_idx]):
-                    stream = results.collector_results[reader_idx][sel_idx]
+                label = results.method_label(reader_idx, sel_idx)
+                stream = results.collector_stream(reader_idx, sel_idx)
 
                 points = self._collect_points(selector, stream)
                 if points is None:
@@ -104,12 +102,11 @@ class ParityPlotter(Plotter):
 
                 targets, preds = points
                 colour = method_colour(len(methods))
-                methods.append((label_lines, colour, targets, preds))
+                methods.append((label.lines, colour, targets, preds))
 
-                combo_label = f"pred_{reader_idx:03d}__sel_{sel_idx:03d}_{sel_label_str}"
-                combo_dir = root / combo_label
+                combo_dir = root / label.dir_name
                 combo_dir.mkdir(parents=True, exist_ok=True)
-                self._parity_figure(targets, preds, "\n".join(label_lines), colour, combo_dir / "parity.pdf")
+                self._parity_figure(targets, preds, "\n".join(label.lines), colour, combo_dir / "parity.pdf")
 
         if not methods:
             logging.info("    No samples selected, skipping.")
@@ -133,14 +130,9 @@ class ParityPlotter(Plotter):
         """
         targets: list[np.ndarray] = []
         preds: list[np.ndarray] = []
-        if stream is not None:
-            for sel_sample, _ in zip(selector, stream):
-                targets.append(np.asarray(sel_sample["target"]).ravel())
-                preds.append(np.asarray(sel_sample["prediction"]).ravel())
-        else:
-            for sel_sample in selector:
-                targets.append(np.asarray(sel_sample["target"]).ravel())
-                preds.append(np.asarray(sel_sample["prediction"]).ravel())
+        for sample, _ in iter_aligned(selector, stream):
+            targets.append(np.asarray(sample["target"]).ravel())
+            preds.append(np.asarray(sample["prediction"]).ravel())
         if not targets:
             return None
         return np.concatenate(targets), np.concatenate(preds)
@@ -234,17 +226,7 @@ class ParityPlotter(Plotter):
         rmse, mae, r2 = self._parity_metrics(targets, preds)
         r2_text = f"{r2:.4g}" if r2 is not None else "n/a"
         text = f"n={len(targets)}\nRMSE={rmse:.4g}\nMAE={mae:.4g}\nR2={r2_text}"
-        ax.text(
-            0.98,
-            0.02,
-            text,
-            transform=ax.transAxes,
-            fontsize=7,
-            verticalalignment="bottom",
-            horizontalalignment="right",
-            fontfamily="monospace",
-            bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8, edgecolor="#bbbbbb"),
-        )
+        annotate_box(ax, text, 0.98, 0.02, "right", "bottom")
 
     def _parity_grid(self, methods: list[_MethodPoints], out: Path) -> None:
         """Write one combined figure with a per-method parity density grid.
@@ -257,37 +239,23 @@ class ParityPlotter(Plotter):
             out: Destination PDF path.
         """
         n = len(methods)
-        ncols = math.ceil(math.sqrt(n))
-        nrows = math.ceil(n / ncols)
 
         # Square cells: each parity panel enforces equal x and y ranges and an
         # equal aspect, so the cell size must match to avoid skewed density
         # clouds and a stretched identity line. The manual adjust keeps the
         # cells as large and close together as possible.
-        fig, axes = plt.subplots(
-            nrows, ncols, figsize=(2.4 * ncols + 0.3, 2.4 * nrows + 0.55), sharex=True, sharey=True, squeeze=False
-        )
+        fig, axes = method_grid(n, cell_width=2.4, cell_height=2.4, width_margin=0.3, height_margin=0.55)
+        ncols = len(axes[0])
 
         for idx, (label_lines, colour, targets, preds) in enumerate(methods):
             ax = axes[idx // ncols][idx % ncols]
             self._draw_parity_panel(ax, targets, preds, colour, gridsize=40)
             rmse, _, _ = self._parity_metrics(targets, preds)
             ax.text(0.02, 0.98, f"RMSE={rmse:.3g}", transform=ax.transAxes, fontsize=5.5, verticalalignment="top")
-            ax.set_title("\n".join(label_lines), fontsize=5.5)
-            ax.tick_params(labelsize=5.5)
+            style_grid_cell(ax, label_lines)
 
-        for ax in axes.flat[n:]:
-            ax.axis("off")
-        for col in range(ncols):
-            used_rows = [r for r in range(nrows) if r * ncols + col < n]
-            if used_rows:
-                axes[used_rows[-1]][col].tick_params(labelbottom=True)
-
-        for i in range(nrows):
-            axes[i][0].set_ylabel("Predicted intensity", fontsize=8)
-        for j in range(ncols):
-            axes[nrows - 1][j].set_xlabel("Target intensity", fontsize=8)
-        fig.subplots_adjust(left=0.16, right=0.92, top=0.87, bottom=0.16, wspace=0.08, hspace=0.18)
+        finish_grid(axes, n, "Target intensity", "Predicted intensity")
+        adjust_grid(fig, left=0.16, right=0.92, top=0.87, bottom=0.16)
 
         vmax = 2.0
         for row in axes:

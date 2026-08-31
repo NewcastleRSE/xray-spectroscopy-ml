@@ -1,0 +1,239 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# XANESNET
+#
+# Authors:  Hendrik Junkawitsch, Tom J. Penfold, Tom W. Pope, C. D. Rankine, B. Li
+#
+# This program is free software: you can redistribute it and/or modify it under the terms of the
+# GNU General Public License as published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with this program.
+# If not, see <https://www.gnu.org/licenses/>.
+#
+# Citations:
+#   ...
+
+"""Plotter for structure-group separation in PCA space."""
+
+import logging
+from pathlib import Path
+from typing import Any, cast
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.axes import Axes
+
+from xanesnet.analysis.utils import as_float_vector
+from xanesnet.serialization.config import Config
+from xanesnet.utils.exceptions import ConfigError
+
+from ..result import AnalysisResults
+from ..selectors import Selector
+from .base import Plotter
+from .common import add_subtitle, compact_layout, method_colour, style_axis
+from .registry import PlotterRegistry
+
+
+@PlotterRegistry.register("pca")
+class PcaPlotter(Plotter):
+    """Plot a reader's structure groups in PCA space.
+
+    For every prediction reader, the descriptor vectors collected for each
+    selector are pooled into one matrix, standardized, and projected onto
+    their leading principal components. One 2D scatter and, when at least
+    three components are available, one 3D scatter show whether the
+    selectors' structures separate into distinct groups.
+
+    The descriptor vectors come from a configured collector (``descriptor``
+    by default), so changing the descriptor collector changes the projection.
+    Selectors are assumed to be disjoint, so every point is coloured by the
+    selector that contributed it.
+
+    Args:
+        plotter_type: Registered plotter name from the analysis configuration.
+        descriptor_key: Collector key holding the descriptor vectors.
+    """
+
+    def __init__(self, plotter_type: str, descriptor_key: str) -> None:
+        """Initialize a PCA plotter."""
+        super().__init__(plotter_type)
+        self.descriptor_key = descriptor_key
+
+    def plot(self, results: AnalysisResults, output_dir: Path) -> None:
+        """Write one 2D and one 3D PCA scatter per prediction reader.
+
+        Args:
+            results: Analysis pipeline outputs to plot.
+            output_dir: Directory where the ``pca_plots`` tree should be written.
+        """
+        if not results.selectors:
+            logging.info("    No selectors available, skipping.")
+            return
+
+        root = output_dir / "pca_plots"
+        root.mkdir(parents=True, exist_ok=True)
+
+        for reader_idx, reader_selectors in enumerate(results.selectors):
+            logging.info(f"    Predictions {reader_idx + 1}/{len(results.selectors)}.")
+
+            projections, groups = self._collect_projections(results, reader_idx)
+            if projections is None:
+                continue
+
+            reader_dir = root / f"pred_{reader_idx:03d}"
+            reader_dir.mkdir(parents=True, exist_ok=True)
+            subtitle = results.prediction_names[reader_idx]
+
+            self._scatter(projections, groups, reader_selectors, subtitle, (0, 1), reader_dir / "pca_2d.pdf")
+            if projections.shape[1] >= 3:
+                self._scatter(
+                    projections,
+                    groups,
+                    reader_selectors,
+                    subtitle,
+                    (0, 1, 2),
+                    reader_dir / "pca_3d.pdf",
+                )
+
+    def _collect_projections(self, results: AnalysisResults, reader_idx: int) -> tuple[np.ndarray | None, list[int]]:
+        """Pool the descriptor vectors of every selector and project them.
+
+        Args:
+            results: Analysis pipeline outputs to plot.
+            reader_idx: Zero-based prediction reader index.
+
+        Returns:
+            ``(projections, groups)`` where ``projections`` has shape
+            ``(M, n_components)`` and ``groups`` holds the selector index of
+            each row, or ``(None, [])`` when there are too few vectors.
+
+        Raises:
+            ConfigError: If ``descriptor_key`` is missing from a collector record.
+        """
+        vectors: list[np.ndarray] = []
+        groups: list[int] = []
+        reader_selectors = results.selectors[reader_idx]
+
+        for sel_idx in range(len(reader_selectors)):
+            stream = results.collector_stream(reader_idx, sel_idx)
+            if stream is None:
+                continue
+            for record in stream:
+                value = record.get(self.descriptor_key)
+                if value is None:
+                    raise ConfigError(
+                        f"Key '{self.descriptor_key}' is missing from a collector record. "
+                        "Configure a descriptor collector that produces this key."
+                    )
+                vectors.append(as_float_vector(value))
+                groups.append(sel_idx)
+
+        if len(vectors) < 2:
+            logging.info("      Need at least two descriptor vectors for PCA, skipping.")
+            return None, []
+
+        projections = self._project(np.stack(vectors))
+        if projections.shape[1] < 2:
+            logging.info("      Descriptor is too low-dimensional for PCA, skipping.")
+            return None, []
+        return projections, groups
+
+    @staticmethod
+    def _project(matrix: np.ndarray) -> np.ndarray:
+        """Standardize and project a feature matrix onto its leading components.
+
+        Args:
+            matrix: Feature matrix with shape ``(M, D)``.
+
+        Returns:
+            Projection with shape ``(M, n_components)`` where
+            ``n_components = min(3, M, D)``.
+        """
+        with np.errstate(invalid="ignore", divide="ignore"):
+            scaled = (matrix - matrix.mean(axis=0)) / matrix.std(axis=0)
+        scaled = np.nan_to_num(scaled, nan=0.0, posinf=0.0, neginf=0.0)
+        centered = scaled - scaled.mean(axis=0)
+        n_components = min(3, centered.shape[0], centered.shape[1])
+        if centered.shape[1] < 2:
+            return centered[:, :1]
+        _, _, vt = np.linalg.svd(centered, full_matrices=False)
+        return centered @ vt[:n_components].T
+
+    @staticmethod
+    def _draw_group_scatter(
+        ax: Axes,
+        projections: np.ndarray,
+        groups: list[int],
+        selectors: list[Selector],
+        dims: tuple[int, ...],
+    ) -> None:
+        """Draw one per-selector scatter of the projected points.
+
+        Args:
+            ax: Matplotlib axis to draw on.
+            projections: Projection matrix with shape ``(M, n_components)``.
+            groups: Selector index of each projected row.
+            selectors: Selector instances in selector order.
+            dims: Indices of the components to draw.
+        """
+        group_ids = np.asarray(groups, dtype=int)
+        for sel_idx in sorted(set(groups)):
+            mask = group_ids == sel_idx
+            coords = [projections[mask, dim] for dim in dims]
+            kwargs: dict[str, Any] = {"color": method_colour(sel_idx), "s": 18, "alpha": 0.85}
+            if len(dims) == 3:
+                kwargs["depthshade"] = False
+            ax.scatter(*coords, label=str(selectors[sel_idx]), **kwargs)
+
+    def _scatter(
+        self,
+        projections: np.ndarray,
+        groups: list[int],
+        selectors: list[Selector],
+        subtitle: str,
+        dims: tuple[int, ...],
+        out: Path,
+    ) -> None:
+        """Write one PCA scatter figure for a projection.
+
+        Args:
+            projections: Projection matrix with shape ``(M, n_components)``.
+            groups: Selector index of each projected row.
+            selectors: Selector instances in selector order.
+            subtitle: Plot subtitle text describing the prediction reader.
+            dims: Indices of the components to draw.
+            out: Destination PDF path.
+        """
+        if len(dims) == 3:
+            from mpl_toolkits.mplot3d import (  # noqa: F401  (registers the 3D projection)
+                Axes3D,
+            )
+
+            fig = plt.figure(figsize=(6.5, 5.4))
+            ax = cast(Any, fig.add_subplot(111, projection="3d"))
+            ax.set_zlabel("PC 3")
+        else:
+            fig, ax = plt.subplots(figsize=(6.5, 5.2))
+
+        self._draw_group_scatter(ax, projections, groups, selectors, dims)
+        ax.set_xlabel("PC 1")
+        ax.set_ylabel("PC 2")
+        ax.legend(fontsize=8, framealpha=0.9)
+        style_axis(ax)
+        add_subtitle(fig, subtitle)
+        compact_layout(fig)
+        fig.savefig(out, bbox_inches="tight")
+        plt.close(fig)
+
+    @property
+    def signature(self) -> Config:
+        """Return the PCA plotter signature."""
+        signature = super().signature
+        signature.update_with_dict({"descriptor_key": self.descriptor_key})
+        return signature
+        return signature

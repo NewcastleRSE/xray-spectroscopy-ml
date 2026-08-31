@@ -27,21 +27,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 
+from xanesnet.serialization.config import Config
 from xanesnet.serialization.jsonl_stream import JSONLStream
+from xanesnet.utils.exceptions import ConfigError
 
-from ..reporters.base import selector_label
 from ..result import AnalysisResults
+from ..sample_data import iter_aligned
 from ..selectors import Selector
+from ..utils import is_scalar_value
 from .base import Plotter
+from .common import add_subtitle, compact_layout, method_colour, style_axis
 from .registry import PlotterRegistry
-from .utils import (
-    add_subtitle,
-    compact_layout,
-    method_colour,
-    method_label_lines,
-    spectrum_error_value,
-    style_axis,
-)
 
 # Label lines, colour, sample id to per-sample error.
 _MethodErrors = tuple[list[str], str, dict[str, float]]
@@ -62,12 +58,11 @@ class ErrorCorrelationPlotter(Plotter):
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
-        sort_key: Scalar key used as the per-sample error. When ``None``, the
-            MSE between predicted and target spectra is used. Collector values
-            take precedence over sample scalars.
+        sort_key: Scalar collector key used as the per-sample error. Must be
+            produced by a configured collector.
     """
 
-    def __init__(self, plotter_type: str, sort_key: str | None = None) -> None:
+    def __init__(self, plotter_type: str, sort_key: str) -> None:
         """Initialize an error correlation plotter."""
         super().__init__(plotter_type)
         self.sort_key = sort_key
@@ -90,19 +85,14 @@ class ErrorCorrelationPlotter(Plotter):
 
             for sel_idx, selector in enumerate(reader_selectors):
                 logging.info(f"      Selector {sel_idx + 1}/{len(reader_selectors)}.")
-                sel_label_str = selector_label(results.selectors_config, sel_idx)
-                sel_cfg = results.selectors_config[sel_idx]
-                label_lines = method_label_lines(results.prediction_names[reader_idx], sel_label_str, sel_cfg)
-
-                stream: JSONLStream | None = None
-                if reader_idx < len(results.collector_results) and sel_idx < len(results.collector_results[reader_idx]):
-                    stream = results.collector_results[reader_idx][sel_idx]
+                label = results.method_label(reader_idx, sel_idx)
+                stream = results.collector_stream(reader_idx, sel_idx)
 
                 errors = self._collect_errors(selector, stream)
                 if not errors:
                     continue
 
-                methods.append((label_lines, method_colour(len(methods)), errors))
+                methods.append((label.lines, method_colour(len(methods)), errors))
 
         if len(methods) < 2:
             logging.info("    Need at least two methods for error correlation, skipping.")
@@ -131,12 +121,14 @@ class ErrorCorrelationPlotter(Plotter):
             Mapping from sample id to the per-sample error value.
         """
         errors: dict[str, float] = {}
-        if stream is not None:
-            for sel_sample, col_sample in zip(selector, stream):
-                errors[str(sel_sample["sample_id"])] = spectrum_error_value(sel_sample, col_sample, self.sort_key)
-        else:
-            for sel_sample in selector:
-                errors[str(sel_sample["sample_id"])] = spectrum_error_value(sel_sample, {}, self.sort_key)
+        for sample, record in iter_aligned(selector, stream):
+            value = record.get(self.sort_key)
+            if not is_scalar_value(value):
+                raise ConfigError(
+                    f"Sort key '{self.sort_key}' is missing or not a scalar for sample "
+                    f"'{sample['sample_id']}'. Configure a scalar collector that produces this key."
+                )
+            errors[str(sample["sample_id"])] = float(value)
         return errors
 
     @staticmethod
@@ -270,6 +262,13 @@ class ErrorCorrelationPlotter(Plotter):
         compact_layout(fig)
         fig.savefig(out, bbox_inches="tight")
         plt.close(fig)
+
+    @property
+    def signature(self) -> Config:
+        """Return the error correlation plotter signature."""
+        signature = super().signature
+        signature.update_with_dict({"sort_key": self.sort_key})
+        return signature
 
 
 def _pearson(xs: np.ndarray, ys: np.ndarray) -> float | None:

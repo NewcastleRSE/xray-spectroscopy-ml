@@ -23,7 +23,10 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+from xanesnet.serialization.config import Config
+
 from ..result import AnalysisResults
+from ..utils import component_repr
 
 
 class Plotter(ABC):
@@ -55,3 +58,20 @@ class Plotter(ABC):
             output_dir: Directory where plot files should be written.
         """
         ...
+
+    @property
+    def signature(self) -> Config:
+        """Return the plotter signature.
+
+        Returns:
+            Configuration values needed to recreate this plotter.
+        """
+        return Config({"plotter_type": self.plotter_type})
+
+    def __str__(self) -> str:
+        """Return the short display label of this plotter."""
+        return self.plotter_type
+
+    def __repr__(self) -> str:
+        """Return a detailed representation of this plotter."""
+        return component_repr(type(self).__name__, self.signature.as_dict())

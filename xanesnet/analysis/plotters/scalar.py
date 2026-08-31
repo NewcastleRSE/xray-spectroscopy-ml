@@ -21,29 +21,31 @@
 """Plotter for scalar value distributions."""
 
 import logging
-import math
 from pathlib import Path
-from typing import ClassVar
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 
 from xanesnet.analysis.utils import ScalarValue
-from xanesnet.serialization.jsonl_stream import JSONLStream
+from xanesnet.serialization.config import Config
 
-from ..reporters.base import selector_label
 from ..result import AnalysisResults
+from ..sample_data import iter_aligned, merged_scalars
 from .base import Plotter
-from .registry import PlotterRegistry
-from .utils import (
+from .common import (
+    COLOUR_ACCENT_RED,
     add_subtitle,
-    collect_scalar_values,
+    adjust_grid,
+    annotate_box,
     compact_layout,
+    finish_grid,
     method_colour,
-    method_label_lines,
+    method_grid,
     style_axis,
+    style_grid_cell,
 )
+from .registry import PlotterRegistry
 
 _CLIP_IQR_SCALE: float = 1.5
 _CLIP_MIN_SAMPLES: int = 20
@@ -56,29 +58,22 @@ class ScalarPlotter(Plotter):
     For each (prediction-reader, selector) combination a per-key directory is
     created containing a histogram, box plot, and violin plot. In addition,
     four combined figures per scalar key compare all prediction-reader/selector
-    combinations, styled after ``StatTablePlotter``: a per-method histogram
-    grid, a grouped histogram whose bars sit side by side per bin, a combined
-    box plot, and a combined violin plot.
+    combinations.
 
-    Histogram bars report the percentage share of in-range samples per bin so
-    distributions stay comparable across differently sized samples. Histograms
-    display a robust Tukey-fence range by default: values outside
+    Histograms display a robust Tukey-fence range by default: values outside
     ``Q1 - 1.5 * IQR`` to ``Q3 + 1.5 * IQR`` are excluded from the plotted
     range and the number of excluded values is annotated on the figure. Box
-    and violin plots always display the full value range. Summary statistics
-    are always computed over the full sample.
+    and violin plots always display the full value range.
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
-        bins: Number of histogram bins. Defaults to ``DEFAULT_BINS``.
+        bins: Number of histogram bins.
     """
 
-    DEFAULT_BINS: ClassVar[int] = 50
-
-    def __init__(self, plotter_type: str, bins: int | None = None) -> None:
+    def __init__(self, plotter_type: str, bins: int) -> None:
         """Initialize a scalar distribution plotter."""
         super().__init__(plotter_type)
-        self.bins = bins if bins is not None else self.DEFAULT_BINS
+        self.bins = bins
 
     def plot(self, results: AnalysisResults, output_dir: Path) -> None:
         """Create per-method distribution plots and combined per-key figures.
@@ -89,8 +84,7 @@ class ScalarPlotter(Plotter):
         """
         root = output_dir / "scalar_plots"
 
-        reader_names = results.prediction_names
-        series: list[tuple[int, int, str, list[str], str, dict[str, list[ScalarValue]]]] = []
+        series: list[tuple[str, list[str], str, dict[str, list[ScalarValue]]]] = []
         key_order: list[str] = []
 
         for reader_idx, reader_selectors in enumerate(results.selectors):
@@ -98,20 +92,18 @@ class ScalarPlotter(Plotter):
 
             for sel_idx, selector in enumerate(reader_selectors):
                 logging.info(f"      Selector {sel_idx + 1}/{len(reader_selectors)}.")
-                sel_label_str = selector_label(results.selectors_config, sel_idx)
-                sel_cfg = results.selectors_config[sel_idx]
-                label_lines = method_label_lines(reader_names[reader_idx], sel_label_str, sel_cfg)
+                label = results.method_label(reader_idx, sel_idx)
+                stream = results.collector_stream(reader_idx, sel_idx)
 
-                stream: JSONLStream | None = None
-                if reader_idx < len(results.collector_results) and sel_idx < len(results.collector_results[reader_idx]):
-                    stream = results.collector_results[reader_idx][sel_idx]
-
-                values_by_key = collect_scalar_values(selector, stream)
+                values_by_key: dict[str, list[ScalarValue]] = {}
+                for sample, record in iter_aligned(selector, stream):
+                    for key, value in merged_scalars(sample, record).items():
+                        values_by_key.setdefault(key, []).append(value)
                 if not values_by_key:
                     continue
 
                 colour = method_colour(len(series))
-                series.append((reader_idx, sel_idx, sel_label_str, label_lines, colour, values_by_key))
+                series.append((label.dir_name, label.lines, colour, values_by_key))
                 for key in values_by_key:
                     if key not in key_order:
                         key_order.append(key)
@@ -120,9 +112,8 @@ class ScalarPlotter(Plotter):
             logging.info("    No scalar values collected, skipping.")
             return
 
-        for reader_idx, sel_idx, sel_label_str, label_lines, colour, values_by_key in series:
-            combo_label = f"pred_{reader_idx:03d}__sel_{sel_idx:03d}_{sel_label_str}"
-            combo_dir = root / combo_label
+        for dir_name, label_lines, colour, values_by_key in series:
+            combo_dir = root / dir_name
             subtitle = "\n".join(label_lines)
 
             for key, vals in values_by_key.items():
@@ -138,7 +129,7 @@ class ScalarPlotter(Plotter):
         combined_dir.mkdir(parents=True, exist_ok=True)
         for key in key_order:
             key_series: list[tuple[str, list[str], np.ndarray]] = []
-            for _, _, _, label_lines, colour, values_by_key in series:
+            for _, label_lines, colour, values_by_key in series:
                 if key in values_by_key:
                     key_series.append((colour, label_lines, np.array(values_by_key[key])))
             self._combined_grid(key, key_series, combined_dir)
@@ -179,9 +170,6 @@ class ScalarPlotter(Plotter):
     def _boxplot(arr: np.ndarray, key: str, subtitle: str, colour: str, out: Path) -> None:
         """Write a box plot PDF for one scalar key.
 
-        The full value range is always displayed; unlike histograms, box plots
-        do not clip outliers because the box itself is quartile-based.
-
         Args:
             arr: One-dimensional scalar values with shape ``(N,)``.
             key: Scalar value key used for labels and output path context.
@@ -204,9 +192,6 @@ class ScalarPlotter(Plotter):
     @staticmethod
     def _violin(arr: np.ndarray, key: str, subtitle: str, colour: str, out: Path) -> None:
         """Write a violin plot PDF for one scalar key.
-
-        The full value range is always displayed so the complete distribution
-        shape, including outliers, remains visible.
 
         Args:
             arr: One-dimensional scalar values with shape ``(N,)``.
@@ -249,16 +234,13 @@ class ScalarPlotter(Plotter):
             out: Directory where the combined grid PDF should be written.
         """
         n = len(series)
-        ncols = math.ceil(math.sqrt(n))
-        nrows = math.ceil(n / ncols)
 
         all_values = np.concatenate([arr for _, _, arr in series])
         clip = _clip_limits(all_values)
         lo, hi = _bin_range(all_values, clip)
 
-        fig, axes = plt.subplots(
-            nrows, ncols, figsize=(3.0 * ncols, 2.2 * nrows), sharex=True, sharey=True, squeeze=False
-        )
+        fig, axes = method_grid(n, cell_width=3.0, cell_height=2.2)
+        ncols = len(axes[0])
 
         for idx, (colour, label_lines, arr) in enumerate(series):
             ax = axes[idx // ncols][idx % ncols]
@@ -266,28 +248,18 @@ class ScalarPlotter(Plotter):
             width = edges[1] - edges[0]
             centers = (edges[:-1] + edges[1:]) / 2
             ax.bar(centers, heights, width=width, color=colour, alpha=0.8)
-            ax.set_title("\n".join(label_lines), fontsize=5.5)
-            ax.tick_params(labelsize=5.5)
+            style_grid_cell(ax, label_lines)
             if clip is not None:
                 clipped_i = int(np.count_nonzero((arr < lo) | (arr > hi)))
                 _add_cell_clip_note(ax, (lo, hi, clipped_i))
 
-        for ax in axes.flat[n:]:
-            ax.axis("off")
-        for col in range(ncols):
-            used_rows = [r for r in range(nrows) if r * ncols + col < n]
-            if used_rows:
-                axes[used_rows[-1]][col].tick_params(labelbottom=True)
+        finish_grid(axes, n, key, "Share (%)")
 
         if clip is not None:
             ymin, ymax = axes[0][0].get_ylim()
             axes[0][0].set_ylim(ymin, ymax * 1.2)  # headroom for the per-cell notes
 
-        for i in range(nrows):
-            axes[i][0].set_ylabel("Share (%)", fontsize=8)
-        for j in range(ncols):
-            axes[nrows - 1][j].set_xlabel(key, fontsize=8)
-        fig.subplots_adjust(left=0.16, right=0.99, top=0.95, bottom=0.20, wspace=0.08, hspace=0.18)
+        adjust_grid(fig, left=0.16, right=0.99, top=0.95, bottom=0.20)
         fig.savefig(out / f"{key}_grid.pdf", bbox_inches="tight")
         plt.close(fig)
 
@@ -404,6 +376,13 @@ class ScalarPlotter(Plotter):
         fig.savefig(out / f"{key}_violin.pdf", bbox_inches="tight")
         plt.close(fig)
 
+    @property
+    def signature(self) -> Config:
+        """Return the scalar plotter signature."""
+        signature = super().signature
+        signature.update_with_dict({"bins": self.bins})
+        return signature
+
 
 def _bin_range(arr: np.ndarray, clip: tuple[float, float, int] | None) -> tuple[float, float]:
     """Return lower and upper bin edges for one sample.
@@ -506,7 +485,7 @@ def _add_clip_note(ax: Axes, clip: tuple[float, float, int] | None) -> None:
     note = _clip_note(clip)
     if not note:
         return
-    ax.set_title(note, loc="right", fontsize=6.5, color="#e85651")
+    ax.set_title(note, loc="right", fontsize=6.5, color=COLOUR_ACCENT_RED)
 
 
 def _add_cell_clip_note(ax: Axes, clip: tuple[float, float, int] | None) -> None:
@@ -524,13 +503,13 @@ def _add_cell_clip_note(ax: Axes, clip: tuple[float, float, int] | None) -> None
         return
     ax.text(
         0.02,
-        0.99,
+        0.98,
         note,
         transform=ax.transAxes,
         fontsize=5,
         verticalalignment="top",
         horizontalalignment="left",
-        color="#e85651",
+        color=COLOUR_ACCENT_RED,
     )
 
 
@@ -559,13 +538,4 @@ def _add_stats_text(ax: Axes, arr: np.ndarray) -> None:
         arr: One-dimensional scalar values with shape ``(N,)``.
     """
     text = f"n={len(arr)}\n" f"mean={np.mean(arr):.4g}\n" f"std={np.std(arr):.4g}\n" f"median={np.median(arr):.4g}"
-    ax.text(
-        0.97,
-        0.95,
-        text,
-        transform=ax.transAxes,
-        fontsize=7,
-        verticalalignment="top",
-        horizontalalignment="right",
-        bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8, edgecolor="#bbbbbb"),
-    )
+    annotate_box(ax, text, 0.97, 0.95, "right", "top", monospace=False)

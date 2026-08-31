@@ -21,26 +21,28 @@
 """Plotter for energy-resolved loss curves."""
 
 import logging
-import math
 from pathlib import Path
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 
-from xanesnet.serialization.jsonl_stream import JSONLStream
+from xanesnet.serialization.config import Config
 
-from ..reporters.base import selector_label
 from ..result import AnalysisResults
 from .base import Plotter
-from .registry import PlotterRegistry
-from .utils import (
+from .common import (
     add_subtitle,
+    adjust_grid,
     compact_layout,
+    finish_grid,
     method_colour,
-    method_label_lines,
+    method_grid,
     style_axis,
+    style_grid_cell,
 )
+from .registry import PlotterRegistry
 
 Curve = tuple[np.ndarray, np.ndarray]
 
@@ -49,11 +51,13 @@ Curve = tuple[np.ndarray, np.ndarray]
 class EnergyResolvedLossPlotter(Plotter):
     """Plot average energy-resolved loss curves per method and combined.
 
-    For each (prediction-reader, selector) pair and each loss key collected by
-    an ``energy_resolved_loss`` collector, one figure plots the per-channel
-    mean loss with its standard-deviation band. Two combined figures per loss
-    key compare all methods: a per-method grid and an overlay of all mean
-    curves, styled after the scalar distribution plots.
+    The per-channel mean and standard deviation come from the ``vector``
+    aggregator, which must be present in the analysis configuration. For each
+    (prediction-reader, selector) pair and each loss key collected by an
+    ``energy_resolved_loss`` collector, one figure plots the mean loss with its
+    standard-deviation band. Two combined figures per loss key compare all
+    methods: a per-method grid and an overlay of all mean curves, styled after
+    the scalar distribution plots.
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
@@ -70,11 +74,11 @@ class EnergyResolvedLossPlotter(Plotter):
     def __init__(
         self,
         plotter_type: str,
-        y_scale: str = "linear",
-        start_index: int | None = None,
-        end_index: int | None = None,
-        y_zoom: float | None = None,
-        keys: list[str] | None = None,
+        y_scale: str,
+        start_index: int | None,
+        end_index: int | None,
+        y_zoom: float | None,
+        keys: list[str] | None,
     ) -> None:
         """Initialize an energy-resolved loss plotter.
 
@@ -95,32 +99,30 @@ class EnergyResolvedLossPlotter(Plotter):
 
         Args:
             results: Analysis pipeline outputs to plot.
-            output_dir: Directory where the ``energy_loss_plots`` tree should be written.
-        """
-        root = output_dir / "energy_loss_plots"
+            output_dir: Directory where the ``energy_resolved_loss_plots`` tree should be written.
 
-        series: list[tuple[int, int, str, list[str], str, dict[str, Curve]]] = []
+        Raises:
+            ConfigError: If no ``vector`` aggregator is configured.
+        """
+        root = output_dir / "energy_resolved_loss_plots"
+
+        series: list[tuple[str, list[str], str, dict[str, Curve]]] = []
         key_order: list[str] = []
 
         for reader_idx, reader_selectors in enumerate(results.selectors):
             logging.info(f"    Predictions {reader_idx + 1}/{len(results.selectors)}.")
 
-            for sel_idx, selector in enumerate(reader_selectors):
+            for sel_idx in range(len(reader_selectors)):
                 logging.info(f"      Selector {sel_idx + 1}/{len(reader_selectors)}.")
-                sel_label_str = selector_label(results.selectors_config, sel_idx)
-                sel_cfg = results.selectors_config[sel_idx]
-                label_lines = method_label_lines(results.prediction_names[reader_idx], sel_label_str, sel_cfg)
+                label = results.method_label(reader_idx, sel_idx)
 
-                stream: JSONLStream | None = None
-                if reader_idx < len(results.collector_results) and sel_idx < len(results.collector_results[reader_idx]):
-                    stream = results.collector_results[reader_idx][sel_idx]
-
-                curves = self._collect_curves(stream)
+                data = results.aggregation(reader_idx, sel_idx, "vector").data
+                curves = self._select_curves(data)
                 if not curves:
                     continue
 
                 colour = method_colour(len(series))
-                series.append((reader_idx, sel_idx, sel_label_str, label_lines, colour, curves))
+                series.append((label.dir_name, label.lines, colour, curves))
                 for key in curves:
                     if key not in key_order:
                         key_order.append(key)
@@ -129,9 +131,8 @@ class EnergyResolvedLossPlotter(Plotter):
             logging.info("    No energy-resolved loss data collected, skipping.")
             return
 
-        for reader_idx, sel_idx, sel_label_str, label_lines, colour, curves in series:
-            combo_label = f"pred_{reader_idx:03d}__sel_{sel_idx:03d}_{sel_label_str}"
-            combo_dir = root / combo_label
+        for dir_name, label_lines, colour, curves in series:
+            combo_dir = root / dir_name
             combo_dir.mkdir(parents=True, exist_ok=True)
 
             for key, (mean, std) in curves.items():
@@ -141,39 +142,27 @@ class EnergyResolvedLossPlotter(Plotter):
         combined_dir.mkdir(parents=True, exist_ok=True)
         for key in key_order:
             key_series: list[tuple[str, list[str], Curve]] = [
-                (colour, label_lines, curves[key]) for _, _, _, label_lines, colour, curves in series if key in curves
+                (colour, label_lines, curves[key]) for _, label_lines, colour, curves in series if key in curves
             ]
             self._combined_grid(key, key_series, combined_dir)
             self._combined_overlay(key, key_series, combined_dir)
 
-    def _collect_curves(self, stream: JSONLStream | None) -> dict[str, Curve]:
-        """Aggregate per-channel loss vectors into mean and standard-deviation curves.
-
-        Only the configured channel range and, when ``keys`` is set, only the
-        configured loss keys are retained.
+    def _select_curves(self, data: dict[str, Any]) -> dict[str, Curve]:
+        """Restrict aggregated per-channel curves to the configured keys and channels.
 
         Args:
-            stream: Collector result stream aligned with the selector.
+            data: ``vector`` aggregator data mapping each key to its ``mean``
+                and ``std`` curves.
 
         Returns:
             Mapping from loss key to ``(mean, std)`` curves with shape ``(N,)``.
         """
         channel_slice = slice(self.start_index, self.end_index)
-        vectors: dict[str, list[np.ndarray]] = {}
-        if stream is not None:
-            for record in stream:
-                for key, value in record.items():
-                    if key == "sample_id" or not isinstance(value, (list, tuple)):
-                        continue
-                    vectors.setdefault(key, []).append(np.asarray(value, dtype=float)[channel_slice])
-
-        curves: dict[str, Curve] = {}
-        for key, values in vectors.items():
-            stack = np.stack(values)
-            curves[key] = (stack.mean(axis=0), stack.std(axis=0))
-        if self.keys is not None:
-            curves = {key: curve for key, curve in curves.items() if key in self.keys}
-        return curves
+        return {
+            key: (entry["mean"][channel_slice], entry["std"][channel_slice])
+            for key, entry in data.items()
+            if self.keys is None or key in self.keys
+        }
 
     def _apply_axis(self, ax: Axes) -> None:
         """Apply the configured y-axis scaling and zoom to one axis.
@@ -235,35 +224,20 @@ class EnergyResolvedLossPlotter(Plotter):
             out: Directory where the combined grid PDF should be written.
         """
         n = len(series)
-        ncols = math.ceil(math.sqrt(n))
-        nrows = math.ceil(n / ncols)
 
-        fig, axes = plt.subplots(
-            nrows, ncols, figsize=(3.4 * ncols, 2.6 * nrows), sharex=True, sharey=True, squeeze=False
-        )
+        fig, axes = method_grid(n, cell_width=3.4, cell_height=2.6)
+        ncols = len(axes[0])
 
         for idx, (colour, label_lines, (mean, std)) in enumerate(series):
             ax = axes[idx // ncols][idx % ncols]
             x = np.arange(len(mean))
             ax.plot(x, mean, color=colour, linewidth=1.6)
             ax.fill_between(x, mean - std, mean + std, color=colour, alpha=0.25, linewidth=0)
-            ax.set_title("\n".join(label_lines), fontsize=5.5)
-            ax.tick_params(labelsize=5.5)
+            style_grid_cell(ax, label_lines)
 
-        for ax in axes.flat[n:]:
-            ax.axis("off")
-        for col in range(ncols):
-            used_rows = [r for r in range(nrows) if r * ncols + col < n]
-            if used_rows:
-                axes[used_rows[-1]][col].tick_params(labelbottom=True)
-
+        finish_grid(axes, n, "Energy", key)
         self._apply_axis(axes[0][0])
-
-        for i in range(nrows):
-            axes[i][0].set_ylabel(key, fontsize=8)
-        for j in range(ncols):
-            axes[nrows - 1][j].set_xlabel("Energy", fontsize=8)
-        fig.subplots_adjust(left=0.13, right=0.99, top=0.95, bottom=0.16, wspace=0.08, hspace=0.18)
+        adjust_grid(fig, left=0.13, right=0.99, top=0.95, bottom=0.16)
         fig.savefig(out / f"{key}_grid.pdf", bbox_inches="tight")
         plt.close(fig)
 
@@ -293,3 +267,18 @@ class EnergyResolvedLossPlotter(Plotter):
         compact_layout(fig)
         fig.savefig(out / f"{key}_overlay.pdf", bbox_inches="tight")
         plt.close(fig)
+
+    @property
+    def signature(self) -> Config:
+        """Return the energy-resolved loss plotter signature."""
+        signature = super().signature
+        signature.update_with_dict(
+            {
+                "y_scale": self.y_scale,
+                "start_index": self.start_index,
+                "end_index": self.end_index,
+                "y_zoom": self.y_zoom,
+                "keys": self.keys,
+            }
+        )
+        return signature

@@ -21,45 +21,46 @@
 """Plotter for the per-channel bias-variance error decomposition."""
 
 import logging
-import math
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
-from matplotlib.lines import Line2D
 
-from ..reporters.base import selector_label
 from ..result import AnalysisResults
-from ..selectors import Selector
 from .base import Plotter
-from .registry import PlotterRegistry
-from .utils import (
+from .common import (
+    COLOUR_ACCENT_GREEN,
+    COLOUR_ACCENT_RED,
     add_subtitle,
+    adjust_grid,
     compact_layout,
+    finish_grid,
     method_colour,
-    method_label_lines,
+    method_grid,
     style_axis,
+    style_grid_cell,
 )
+from .registry import PlotterRegistry
 
 # Label lines, colour, MSE, squared bias, variance.
 _MethodStats = tuple[list[str], str, np.ndarray, np.ndarray, np.ndarray]
 
-_BIAS_COLOUR = "#e85651"
-_VARIANCE_COLOUR = "#3f9e6e"
+# The two decomposition terms keep fixed colours across every figure so they
+# stay recognisable next to the per-method MSE colour.
+_BIAS_COLOUR = COLOUR_ACCENT_RED
+_VARIANCE_COLOUR = COLOUR_ACCENT_GREEN
 
 
 @PlotterRegistry.register("bias_variance")
 class BiasVariancePlotter(Plotter):
     """Plot the per-channel bias-variance decomposition of the MSE per method.
 
-    For every (prediction-reader, selector) pair the per-channel MSE is split
-    into its squared bias and variance components using the exact identity
-    ``MSE = bias^2 + variance`` with the mean taken over the selected samples.
-    A dominant bias component indicates a systematic shift (for example a
-    wrong edge position), while a dominant variance component indicates
-    sample-to-sample noise. A combined grid compares all methods on shared
-    axes.
+    The decomposition is computed by the ``bias_variance`` aggregator, which
+    must be present in the analysis configuration. A dominant bias component
+    indicates a systematic shift (for example a wrong edge position), while a
+    dominant variance component indicates sample-to-sample noise. A combined
+    grid compares all methods on shared axes.
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
@@ -75,6 +76,9 @@ class BiasVariancePlotter(Plotter):
         Args:
             results: Analysis pipeline outputs to plot.
             output_dir: Directory where the ``bias_variance_plots`` tree should be written.
+
+        Raises:
+            ConfigError: If no ``bias_variance`` aggregator is configured.
         """
         if not results.selectors:
             logging.info("    No selectors available, skipping.")
@@ -88,23 +92,21 @@ class BiasVariancePlotter(Plotter):
         for reader_idx, reader_selectors in enumerate(results.selectors):
             logging.info(f"    Predictions {reader_idx + 1}/{len(results.selectors)}.")
 
-            for sel_idx, selector in enumerate(reader_selectors):
+            for sel_idx in range(len(reader_selectors)):
                 logging.info(f"      Selector {sel_idx + 1}/{len(reader_selectors)}.")
-                sel_label_str = selector_label(results.selectors_config, sel_idx)
-                sel_cfg = results.selectors_config[sel_idx]
-                label_lines = method_label_lines(results.prediction_names[reader_idx], sel_label_str, sel_cfg)
+                label = results.method_label(reader_idx, sel_idx)
 
-                stats = self._collect_stats(selector)
-                if stats is None:
+                data = results.aggregation(reader_idx, sel_idx, "bias_variance").data
+                if not data:
                     continue
+                stats = (data["mse"], data["bias2"], data["variance"])
 
                 colour = method_colour(len(methods))
-                methods.append((label_lines, colour, *stats))
+                methods.append((label.lines, colour, *stats))
 
-                combo_label = f"pred_{reader_idx:03d}__sel_{sel_idx:03d}_{sel_label_str}"
-                combo_dir = root / combo_label
+                combo_dir = root / label.dir_name
                 combo_dir.mkdir(parents=True, exist_ok=True)
-                self._stats_figure(*stats, "\n".join(label_lines), colour, combo_dir / "bias_variance.pdf")
+                self._stats_figure(*stats, "\n".join(label.lines), colour, combo_dir / "bias_variance.pdf")
 
         if not methods:
             logging.info("    No samples selected, skipping.")
@@ -113,31 +115,6 @@ class BiasVariancePlotter(Plotter):
         combined_dir = root / "combined"
         combined_dir.mkdir(parents=True, exist_ok=True)
         self._stats_grid(methods, combined_dir / "bias_variance_grid.pdf")
-
-    @staticmethod
-    def _collect_stats(selector: Selector) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
-        """Compute per-channel MSE, squared bias, and variance for one method.
-
-        Args:
-            selector: Selector over prediction samples for one prediction reader and selector pair.
-
-        Returns:
-            ``(mse, bias2, variance)`` curves with shape ``(N,)``, or ``None``
-            when no samples are selected.
-        """
-        preds_list: list[np.ndarray] = []
-        targets_list: list[np.ndarray] = []
-        for sel_sample in selector:
-            preds_list.append(np.asarray(sel_sample["prediction"]).ravel())
-            targets_list.append(np.asarray(sel_sample["target"]).ravel())
-        if not preds_list:
-            return None
-        preds = np.stack(preds_list)
-        targets = np.stack(targets_list)
-        pred_mean = preds.mean(axis=0)
-        bias2 = (pred_mean - targets.mean(axis=0)) ** 2
-        variance = ((preds - pred_mean) ** 2).mean(axis=0)
-        return bias2 + variance, bias2, variance
 
     @staticmethod
     def _draw_decomposition(ax: Axes, mse: np.ndarray, bias2: np.ndarray, variance: np.ndarray, colour: str) -> None:
@@ -197,41 +174,17 @@ class BiasVariancePlotter(Plotter):
             out: Destination PDF path.
         """
         n = len(methods)
-        ncols = math.ceil(math.sqrt(n))
-        nrows = math.ceil(n / ncols)
 
-        fig, axes = plt.subplots(
-            nrows, ncols, figsize=(3.4 * ncols, 2.6 * nrows), sharex=True, sharey=True, squeeze=False
-        )
+        fig, axes = method_grid(n, cell_width=3.4, cell_height=2.6)
+        ncols = len(axes[0])
 
         for idx, (label_lines, colour, mse, bias2, variance) in enumerate(methods):
             ax = axes[idx // ncols][idx % ncols]
             BiasVariancePlotter._draw_decomposition(ax, mse, bias2, variance, colour)
-            ax.set_title("\n".join(label_lines), fontsize=5.5)
-            ax.tick_params(labelsize=5.5)
+            style_grid_cell(ax, label_lines)
+            ax.legend(fontsize=6, framealpha=0.9)
 
-        for ax in axes.flat[n:]:
-            ax.axis("off")
-        for col in range(ncols):
-            used_rows = [r for r in range(nrows) if r * ncols + col < n]
-            if used_rows:
-                axes[used_rows[-1]][col].tick_params(labelbottom=True)
-
-        for i in range(nrows):
-            axes[i][0].set_ylabel("Loss", fontsize=8)
-        for j in range(ncols):
-            axes[nrows - 1][j].set_xlabel("Energy", fontsize=8)
-        fig.subplots_adjust(left=0.13, right=0.99, top=0.88, bottom=0.16, wspace=0.08, hspace=0.18)
-        fig.legend(
-            handles=[
-                Line2D([0], [0], color="gray", linewidth=2.0, label="MSE"),
-                Line2D([0], [0], color=_BIAS_COLOUR, linewidth=1.6, linestyle="--", label="Bias^2"),
-                Line2D([0], [0], color=_VARIANCE_COLOUR, linewidth=1.6, linestyle=":", label="Variance"),
-            ],
-            loc="upper center",
-            ncol=3,
-            fontsize=8,
-            framealpha=0.9,
-        )
+        finish_grid(axes, n, "Energy", "Loss")
+        adjust_grid(fig, left=0.13, right=0.99, top=0.88, bottom=0.16)
         fig.savefig(out, bbox_inches="tight")
         plt.close(fig)
