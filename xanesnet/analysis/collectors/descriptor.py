@@ -35,8 +35,7 @@ class DescriptorCollector(Collector):
     """Compute the configured structure descriptor for one sample.
 
     The descriptor vector of the sample's structure (centred on the target
-    site when available) is returned under the ``descriptor`` key, so the
-    ``pca`` aggregator can project it.
+    site when available) is returned under the ``descriptor`` key.
 
     Args:
         collector_type: Registered collector name from the analysis configuration.
