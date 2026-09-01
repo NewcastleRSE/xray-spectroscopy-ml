@@ -37,6 +37,9 @@ class DescriptorCollector(Collector):
     The descriptor vector of the sample's structure (centred on the target
     site when available) is returned under the ``descriptor`` key.
 
+    Requires:
+        Matched raw structures: provided by a structure-matched prediction reader.
+
     Args:
         collector_type: Registered collector name from the analysis configuration.
         descriptor: Descriptor configuration object used to embed each structure.
