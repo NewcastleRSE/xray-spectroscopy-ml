@@ -6,14 +6,36 @@ selectors:
 
 collectors:
   - collector_type: loss
-    loss_type: mse
+    loss:
+      loss_type: mse
   - collector_type: loss
-    loss_type: mse
+    loss:
+      loss_type: mse
     energy_resolved: true
+  - collector_type: descriptor
+    descriptor:
+      descriptor_type: wacsf
+      r_min: 1.0
+      r_max: 6.0
+      n_g2: 8
+      n_g4: 16
+      l: [1.0, -1.0]
+      z: [1.0]
+      g2_parameterisation: shifted
+      g4_parameterisation: centred
+      use_charge: false
+      use_spin: false
 
 aggregators:
   - aggregator_type: scalar
     percentiles: [50]
+  - aggregator_type: vector
+  - aggregator_type: spectrum
+  - aggregator_type: ranking
+    sort_key: mse
+    percent: 20
+    group_keys: [prediction]
+  - aggregator_type: bias_variance
 
 reporters:
   - reporter_type: scalar
@@ -22,8 +44,13 @@ plotters:
   - plotter_type: spectra_all
     max_pages: 1
   - plotter_type: spectra_comparison
-    n: 2
+    n_samples: 2
+    sort_key: mse
   - plotter_type: stat_table
+    sort_key: mse
+
+  - plotter_type: stat_table_latex
+    sort_key: mse
 
   - plotter_type: energy_resolved_loss
 
@@ -34,16 +61,7 @@ plotters:
   - plotter_type: bias_variance
 
   - plotter_type: error_correlation
+    sort_key: mse
 
-  - plotter_type: structure_clusters
-    descriptor_type: wacsf
-    r_min: 1.0
-    r_max: 6.0
-    n_g2: 8
-    n_g4: 16
-    l: [1.0, -1.0]
-    z: [1.0]
-    g2_parameterisation: shifted
-    g4_parameterisation: centred
-    use_charge: false
-    use_spin: false
+  - plotter_type: pca
+
