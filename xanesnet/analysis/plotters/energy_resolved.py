@@ -51,24 +51,22 @@ Curve = tuple[np.ndarray, np.ndarray]
 class EnergyResolvedLossPlotter(Plotter):
     """Plot average energy-resolved loss curves per method and combined.
 
-    The per-channel mean and standard deviation come from the ``vector``
-    aggregator, which must be present in the analysis configuration. For each
-    (prediction-reader, selector) pair and each loss key collected by an
-    ``energy_resolved_loss`` collector, one figure plots the mean loss with its
-    standard-deviation band. Two combined figures per loss key compare all
-    methods: a per-method grid and an overlay of all mean curves, styled after
-    the scalar distribution plots.
+    Writes one figure per (method, loss key) showing the mean curve with its
+    standard-deviation band, plus a per-method grid and an overlay of all mean
+    curves.
+
+    Requires:
+        Per-channel loss statistics: provided by the ``vector`` aggregator.
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
         y_scale: Y-axis scaling, either ``"linear"`` or ``"log"``.
         start_index: First channel index to plot; ``None`` starts at the first channel.
         end_index: One-past-the-end channel index to plot; ``None`` plots to the last channel.
-        y_zoom: Optional upper y-axis limit for zooming in around zero. The
-            lower limit stays at zero.
-        keys: Energy-resolved loss keys to plot. ``None`` plots every
-            collected key; a list restricts the plotter to those keys so
-            different plotters can use different axis settings per key.
+        y_zoom: Optional upper y-axis limit for zooming in around zero. On a
+            logarithmic axis, a positive lower limit is computed instead of zero.
+        keys: Energy-resolved loss keys to plot. ``None`` plots every collected
+            key.
     """
 
     def __init__(
@@ -80,14 +78,8 @@ class EnergyResolvedLossPlotter(Plotter):
         y_zoom: float | None,
         keys: list[str] | None,
     ) -> None:
-        """Initialize an energy-resolved loss plotter.
-
-        Raises:
-            ValueError: If ``y_scale`` is neither ``"linear"`` nor ``"log"``.
-        """
+        """Initialize an energy-resolved loss plotter."""
         super().__init__(plotter_type)
-        if y_scale not in ("linear", "log"):
-            raise ValueError(f"Unsupported y_scale: {y_scale!r}; expected 'linear' or 'log'.")
         self.y_scale = y_scale
         self.start_index = start_index
         self.end_index = end_index
@@ -171,7 +163,20 @@ class EnergyResolvedLossPlotter(Plotter):
             ax: Matplotlib axis to configure.
         """
         ax.set_yscale(self.y_scale)
-        if self.y_zoom is not None:
+        if self.y_scale == "log":
+            positive_values = [
+                value
+                for line in ax.lines
+                for value in np.asarray(line.get_ydata(), dtype=float).ravel()
+                if np.isfinite(value) and value > 0
+            ]
+            upper = self.y_zoom if self.y_zoom is not None else ax.get_ylim()[1]
+            if not np.isfinite(upper) or upper <= 0:
+                upper = max(abs(upper) if np.isfinite(upper) else 0.0, 1e-12)
+            lower = min(positive_values) * 0.5 if positive_values else max(upper * 1e-6, 1e-12)
+            lower = min(max(lower, 1e-12), upper * 0.5)
+            ax.set_ylim(lower, upper)
+        elif self.y_zoom is not None:
             ax.set_ylim(0, self.y_zoom)
 
     def _curve_figure(

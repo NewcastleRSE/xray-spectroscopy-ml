@@ -138,7 +138,7 @@ def draw_structure(
                 sample_id,
                 exc_info=True,
             )
-    _structure_scatter(ax, structure, target_site_index)
+    _structure_scatter(ax, structure, target_site_index, frame_ratio)
 
 
 def _frame_axes(ax: Axes, frame_ratio: float) -> None:
@@ -302,6 +302,7 @@ def _structure_scatter(
     ax: Axes,
     structure: Molecule | Structure,
     target_site_index: int | None = None,
+    frame_ratio: float = 1.0,
 ) -> None:
     """Draw a fallback atomic-position scatter projection for one structure.
 
@@ -313,17 +314,22 @@ def _structure_scatter(
         structure: Pymatgen structure or molecule.
         target_site_index: Index of the target site within ``structure``, or
             ``None`` when unknown.
+        frame_ratio: Height/width ratio of the fixed drawing frame.
     """
     species = [str(site.specie) for site in structure]
+    positions = np.asarray([site.coords[:2] for site in structure], dtype=float)
+    _, scale = _fit_frame(positions, np.full(len(positions), _DEFAULT_SITE_RADIUS), frame_ratio)
+    lo = positions.min(axis=0)
+    hi = positions.max(axis=0)
+    center = (lo + hi) / 2.0
+    projected = (positions - center) * scale
     for spec in dict.fromkeys(species):
-        xs = [site.coords[0] for site, sp in zip(structure, species) if sp == spec]
-        ys = [site.coords[1] for site, sp in zip(structure, species) if sp == spec]
-        ax.scatter(xs, ys, s=140, label=spec)
+        selected = [index for index, sp in enumerate(species) if sp == spec]
+        ax.scatter(projected[selected, 0], projected[selected, 1], s=140, label=spec)
     if target_site_index is not None and 0 <= target_site_index < len(structure):
-        coords = structure[target_site_index].coords
         ax.scatter(
-            [coords[0]],
-            [coords[1]],
+            [projected[target_site_index, 0]],
+            [projected[target_site_index, 1]],
             s=420,
             facecolors="none",
             edgecolors=_RING_COLOUR,
@@ -333,7 +339,7 @@ def _structure_scatter(
         _add_target_site_legend(ax)
     else:
         ax.legend(fontsize=8, framealpha=0.9)
-    ax.set_aspect("equal")
+    _frame_axes(ax, frame_ratio)
 
 
 def _add_target_site_ring(ax: Axes, xy: np.ndarray, ring_radius: float) -> None:

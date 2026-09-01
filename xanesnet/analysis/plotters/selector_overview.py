@@ -29,7 +29,6 @@ import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.figure import Figure
 
-from xanesnet.analysis.utils import is_scalar_value
 from xanesnet.serialization.config import Config
 from xanesnet.serialization.prediction_readers import PredictionSample
 from xanesnet.utils.exceptions import ConfigError
@@ -37,6 +36,7 @@ from xanesnet.utils.exceptions import ConfigError
 from ..result import AnalysisResults
 from ..sample_data import iter_aligned
 from ..selectors import Selector
+from ..utils import is_scalar_value, sample_label
 from .base import Plotter
 from .common import (
     COLOUR_ACCENT_GREEN,
@@ -75,10 +75,13 @@ class _SelectorEntry:
 class SelectorOverviewPlotter(Plotter):
     """Compare a reader's selectors by error, with a mean spectrum and structures each.
 
-    For every prediction reader with two or more selectors, a scoreboard ranks
-    the selectors by their mean ``err_key`` value, and a multi-page PDF gives
-    every selector one page combining its mean spectrum with a grid of
-    representative structures.
+    For every reader with two or more selectors, a scoreboard ranks the
+    selectors by mean ``err_key``; a multi-page PDF gives each selector one
+    page with its mean spectrum and representative structures.
+
+    Requires:
+        Per-sample error values: provided by a scalar collector emitting ``err_key``.
+        Matched raw structures (optional): representative structures per selector.
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
@@ -282,7 +285,7 @@ class SelectorOverviewPlotter(Plotter):
                     legend_fontsize=5.0,
                     show_scale=False,
                 )
-            ax.set_title(f"{sample['sample_id']}  {self.err_key}={error:.3g}", fontsize=5.5)
+            ax.set_title(f"{sample_label(sample)}  {self.err_key}={error:.3g}", fontsize=5.5)
         for k in range(len(reps), _N_REPS):
             fig.add_subplot(gs_right[k // 3, k % 3]).axis("off")
 

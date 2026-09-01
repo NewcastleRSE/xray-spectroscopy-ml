@@ -18,14 +18,8 @@
 # Citations:
 #   ...
 
-"""Colours, fonts, and annotations shared by every plotter figure.
+"""Colours, fonts, and annotations shared by every plotter figure."""
 
-Importing this module applies the uniform XANESNET font sizes to the global
-Matplotlib settings, so every analysis figure looks the same regardless of
-which plotter drew it.
-"""
-
-import matplotlib as mpl
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.text import Text
@@ -91,8 +85,6 @@ ANNOTATION_FONTSIZE: float = 7.0
 _X_LABELPAD: float = 7.0
 _Y_LABELPAD: float = 2.5
 
-mpl.rcParams.update(FONT_SIZES)
-
 
 def method_colour(index: int) -> str:
     """Return the palette colour for a method index (cycling).
@@ -120,6 +112,9 @@ def style_axis(ax: Axes, xlabelpad: float = _X_LABELPAD, ylabelpad: float = _Y_L
     """
     ax.xaxis.labelpad = xlabelpad
     ax.yaxis.labelpad = ylabelpad
+    ax.xaxis.label.set_fontsize(FONT_SIZES["axes.labelsize"])
+    ax.yaxis.label.set_fontsize(FONT_SIZES["axes.labelsize"])
+    ax.tick_params(labelsize=FONT_SIZES["xtick.labelsize"])
 
 
 def add_subtitle(fig: Figure, text: str) -> None:

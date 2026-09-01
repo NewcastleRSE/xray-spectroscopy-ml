@@ -26,7 +26,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
-from matplotlib.colors import LogNorm
+from matplotlib.colors import LinearSegmentedColormap, LogNorm
 
 from xanesnet.serialization.jsonl_stream import JSONLStream
 
@@ -55,14 +55,10 @@ _MethodPoints = tuple[list[str], str, np.ndarray, np.ndarray]
 class ParityPlotter(Plotter):
     """Plot predicted-versus-target intensity parity per method and combined.
 
-    For every (prediction-reader, selector) pair all selected sample spectra
-    are flattened into ``(target, prediction)`` intensity pairs and drawn as
-    a density scatter around the identity line. Each figure annotates the
-    RMSE, MAE, and coefficient of determination ``R2`` computed over the
-    flattened pairs, so systematic offsets and dynamic-range compression (a
-    signature of predicting the mean spectrum) are visible at a glance.
-
-    A combined grid compares one density panel per method on shared axes.
+    All selected sample spectra are flattened into ``(target, prediction)``
+    intensity pairs and drawn as a density scatter around the identity line,
+    annotated with RMSE, MAE, and R2. A combined grid compares one panel per
+    method.
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
@@ -197,7 +193,8 @@ class ParityPlotter(Plotter):
             colour: Method colour used for the density colormap.
             gridsize: Number of hexagons along each axis.
         """
-        poly = ax.hexbin(targets, preds, gridsize=gridsize, mincnt=1, cmap="viridis")
+        cmap = LinearSegmentedColormap.from_list("parity_density", ["#ffffff", colour])
+        poly = ax.hexbin(targets, preds, gridsize=gridsize, mincnt=1, cmap=cmap)
         counts = poly.get_array()
         if counts is not None and counts.size:
             compressed = getattr(counts, "compressed", None)

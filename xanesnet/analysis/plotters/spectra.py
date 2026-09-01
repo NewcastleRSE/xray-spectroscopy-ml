@@ -32,10 +32,12 @@ from matplotlib.backends.backend_pdf import PdfPages
 from xanesnet.serialization.config import Config
 from xanesnet.serialization.jsonl_stream import JSONLStream
 from xanesnet.serialization.prediction_readers import PredictionSample
+from xanesnet.utils.exceptions import ConfigError
 
 from ..result import AnalysisResults
 from ..sample_data import iter_aligned
 from ..selectors import Selector
+from ..utils import sample_key, sample_key_sort_key
 from .base import Plotter
 from .common import (
     combined_spectra_page_figure,
@@ -49,15 +51,14 @@ from .registry import PlotterRegistry
 class AllSpectraPlotter(Plotter):
     """Plot predicted and target spectra for every selected sample.
 
-    One multi-page PDF is written per prediction-reader/selector pair; each
-    selected sample contributes one page. Structure-matched samples show their
-    structure next to the spectra on the same page. When ``max_pages`` is
-    smaller than the number of selected samples, a random subset is drawn.
+    One multi-page PDF per method; each page shows one sample, with its
+    structure when matched. ``max_pages`` draws a random subset. With two or
+    more readers, a combined PDF overlays every reader's prediction for the
+    samples common to all readers.
 
-    When two or more prediction readers are configured, an additional
-    ``combined`` PDF per shared selector index overlays every reader's
-    prediction against the shared target, for the samples common to all
-    readers.
+    Requires:
+        Scalar collector output (optional): annotated on each page.
+        Matched raw structures (optional): shown alongside the spectra.
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
@@ -128,10 +129,11 @@ class AllSpectraPlotter(Plotter):
     def _plot_combined(self, results: AnalysisResults, root: Path) -> None:
         """Write combined spectra pages comparing prediction readers on shared samples.
 
-        For every selector index shared by all prediction readers, the samples
-        common to every reader (matched by sample id) are collected and a
-        random subset overlays every reader's prediction against the shared
-        target. Nothing is written with fewer than two prediction readers.
+        For every selector index shared by all prediction readers, records
+        common to every reader are matched by compound sample identity
+        (sample ID and target-site index), and a random subset overlays every
+        reader's prediction against the shared target. Nothing is written with
+        fewer than two prediction readers.
 
         Args:
             results: Analysis pipeline outputs to plot.
@@ -145,30 +147,34 @@ class AllSpectraPlotter(Plotter):
         combined_root = root / "combined"
 
         for sel_idx in range(n_common_selectors):
-            by_reader = [
-                {
-                    str(sample["sample_id"]): (sample, col_scalars)
-                    for sample, col_scalars in iter_aligned(
-                        results.selectors[reader_idx][sel_idx], results.collector_stream(reader_idx, sel_idx)
-                    )
-                }
-                for reader_idx in range(len(results.selectors))
-            ]
-            common_ids = set.intersection(*(set(entries) for entries in by_reader))
-            if len(common_ids) < 2:
+            by_reader: list[dict[tuple[str, int | None], tuple[PredictionSample, dict[str, Any]]]] = []
+            for reader_idx in range(len(results.selectors)):
+                entries: dict[tuple[str, int | None], tuple[PredictionSample, dict[str, Any]]] = {}
+                aligned = iter_aligned(
+                    results.selectors[reader_idx][sel_idx], results.collector_stream(reader_idx, sel_idx)
+                )
+                for sample, col_scalars in aligned:
+                    identity = sample_key(sample)
+                    if identity in entries:
+                        raise ConfigError(f"Duplicate prediction record for sample identity {identity!r}.")
+                    entries[identity] = (sample, col_scalars)
+                by_reader.append(entries)
+
+            common_keys = set.intersection(*(set(entries) for entries in by_reader))
+            if len(common_keys) < 2:
                 continue
 
-            selected_ids = _random_subset(sorted(common_ids), self.max_pages)
+            selected_keys = _random_subset(sorted(common_keys, key=sample_key_sort_key), self.max_pages)
             selector_type = results.selectors[0][sel_idx].selector_type
             subtitle = str(results.selectors[0][sel_idx])
 
             combined_root.mkdir(parents=True, exist_ok=True)
             pdf_path = combined_root / f"sel_{sel_idx:03d}_{selector_type}.pdf"
             with PdfPages(pdf_path) as pdf:
-                for sample_id in selected_ids:
-                    sample = by_reader[0][sample_id][0]
+                for identity in selected_keys:
+                    sample = by_reader[0][identity][0]
                     target = np.asarray(sample["target"]).ravel()
-                    predictions = [np.asarray(entries[sample_id][0]["prediction"]).ravel() for entries in by_reader]
+                    predictions = [np.asarray(entries[identity][0]["prediction"]).ravel() for entries in by_reader]
                     fig = combined_spectra_page_figure(sample, results.prediction_names, predictions, target, subtitle)
                     pdf.savefig(fig, bbox_inches="tight")
                     plt.close(fig)

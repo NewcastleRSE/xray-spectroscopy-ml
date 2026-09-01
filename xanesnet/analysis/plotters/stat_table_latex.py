@@ -38,15 +38,11 @@ _SORT_INDICATOR = r" $\downarrow$"
 class StatTableLatexPlotter(Plotter):
     """Render comparison tables of aggregated statistics as LaTeX sources.
 
-    The tables mirror the ones produced by the ``stat_table`` plotter: one
-    table per scalar value key comparing all prediction-reader/selector
-    combinations, plus a compact combined table per aggregator whose rows are
-    grouped by method with one sub-row per statistic key.
+    Mirrors ``stat_table``; each table is written as a standalone ``.tex``
+    document and compiled to PDF when a LaTeX installation is available.
 
-    Each table is written as a standalone LaTeX document (``<stem>.tex``) that
-    can be dropped into a paper, and is compiled to ``<stem>_latex.pdf`` when a
-    LaTeX installation is available. The caption and label are placeholders
-    that are meant to be edited afterwards.
+    Requires:
+        Scalar statistics: provided by at least one aggregator.
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.

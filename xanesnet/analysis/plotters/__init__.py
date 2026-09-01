@@ -18,12 +18,7 @@
 # Citations:
 #   ...
 
-"""Plotter implementations and registry exports.
-
-Every plotter builds its figures from the shared building blocks in
-:mod:`xanesnet.analysis.plotters.common`, which also applies the uniform
-figure style on import.
-"""
+"""Plotter implementations and registry exports."""
 
 from .base import Plotter
 from .bias_variance import BiasVariancePlotter

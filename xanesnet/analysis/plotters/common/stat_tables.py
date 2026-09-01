@@ -213,17 +213,16 @@ def _first_stat(row_values: dict[str, StatValues], value_col: str, stat_key: str
     Args:
         row_values: Mapping from value key to statistic values of one method.
         value_col: Value key of the first table column.
-        stat_key: Preferred statistic key, or ``None`` to use the first one found.
+        stat_key: Configured statistic key used for ordering, or ``None`` when
+            no ordering statistic is available.
 
     Returns:
         The statistic value used for row ordering, or ``None`` when absent.
     """
     stats = row_values.get(value_col, {})
-    if not stats:
+    if not stats or stat_key is None:
         return None
-    if stat_key is not None and stat_key in stats:
-        return stats[stat_key]
-    return next(iter(stats.values()), None)
+    return stats.get(stat_key)
 
 
 def build_single_table(
@@ -285,8 +284,20 @@ def build_combined_table(
     Returns:
         Laid-out table, or ``None`` when it would have no rows or columns.
     """
-    value_cols = [key for key in value_keys if any(rows[row].get(key) for row in row_order)]
-    row_labels = [row for row in row_order if row in rows and any(rows[row].get(key) for key in value_cols)]
+    requested_stats = set(stat_keys)
+    value_cols = [
+        key
+        for key in value_keys
+        if any(requested_stats.intersection(rows[row].get(key, {})) for row in row_order if row in rows)
+    ]
+    row_labels = [
+        row
+        for row in row_order
+        if row in rows
+        and any(
+            any(stat_key in rows[row].get(value_key, {}) for stat_key in requested_stats) for value_key in value_cols
+        )
+    ]
     if not value_cols or not row_labels:
         return None
 
@@ -325,11 +336,7 @@ def build_combined_table(
             if any(stat_key in rows[row_label].get(value_key, {}) for value_key in value_cols):
                 add_sub_row(row_label, stat_key)
         if len(cell_text) == start:
-            # Fallback: no configured stat key matches this method's data;
-            # render one sub-row using the first statistic key found.
-            fallback = next((key for value_key in value_cols for key in rows[row_label].get(value_key, {})), None)
-            if fallback is not None:
-                add_sub_row(row_label, fallback)
+            continue
         groups.append((start, len(cell_text) - 1))
 
     marks = cell_marks(cell_values, row_groups=row_stats)

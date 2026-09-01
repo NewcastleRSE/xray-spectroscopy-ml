@@ -42,11 +42,11 @@ _SORT_INDICATOR = " \u2193"
 class StatTablePlotter(Plotter):
     """Render comparison tables of aggregated statistics as PDF figures.
 
-    For each scalar value key found across aggregator results, a table is
-    produced where rows are prediction-reader/selector combinations and columns
-    are statistics such as ``mean``, ``std``, and ``median``.
+    Rows are prediction-reader/selector combinations and columns are the
+    configured statistics. A compact combined table is rendered per aggregator.
 
-    In addition, a compact combined table is rendered per aggregator.
+    Requires:
+        Scalar statistics: provided by at least one aggregator.
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.

@@ -34,10 +34,10 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.text import Text
 
-from xanesnet.analysis.sample_data import merged_scalars
-from xanesnet.analysis.utils import ScalarValue
 from xanesnet.serialization.prediction_readers import PredictionSample
 
+from ...sample_data import merged_scalars
+from ...utils import ScalarValue, sample_label
 from .layout import compact_layout
 from .structures import draw_structure
 from .style import (
@@ -201,7 +201,14 @@ def combined_spectra_page_figure(
         )
         ax_struct = None
 
-    _draw_combined_spectra_panels(ax_spec, ax_res, method_labels, predictions, target, sample_id)
+    _draw_combined_spectra_panels(
+        ax_spec,
+        ax_res,
+        method_labels,
+        predictions,
+        target,
+        sample_label(sample),
+    )
     add_subtitle(fig, subtitle)
 
     if ax_struct is not None:
@@ -282,7 +289,7 @@ def _draw_sample_page(
     pred_std = np.asarray(pred_std_value).ravel() if pred_std_value is not None else None
 
     _draw_spectra_panels(ax_spec, ax_res, pred, target, pred_std)
-    ax_spec.set_title(f"Sample: {sample['sample_id']}", loc="left")
+    ax_spec.set_title(f"Sample: {sample_label(sample)}", loc="left")
     return _add_spectra_scalar_box(ax_spec, merged_scalars(sample, col_scalars, include_metadata=True))
 
 

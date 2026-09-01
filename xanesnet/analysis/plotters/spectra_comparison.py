@@ -36,7 +36,7 @@ from xanesnet.utils.exceptions import ConfigError
 from ..result import AnalysisResults
 from ..sample_data import iter_aligned
 from ..selectors import Selector
-from ..utils import is_scalar_value
+from ..utils import SampleKey, is_scalar_value, sample_key, sample_key_sort_key
 from .base import Plotter
 from .common import (
     combined_spectra_page_figure,
@@ -52,15 +52,14 @@ _Entry = tuple[PredictionSample, dict[str, Any], float]
 class SpectraComparisonPlotter(Plotter):
     """Plot the N best and N worst spectra per method.
 
-    For every prediction-reader/selector pair the ``n_samples`` best and
-    ``n_samples`` worst samples, ranked by a scalar error value, are written as
-    multi-page PDFs. Structure-matched samples show their structure next to the
-    spectra on the same page.
+    Ranked by a scalar error value, ``n_samples`` best and worst samples are
+    written as multi-page PDFs per method, with structure panels when matched.
+    With two or more readers, a combined PDF ranks the samples common to all
+    readers by their mean error.
 
-    When two or more prediction readers are configured, an additional
-    ``combined`` PDF per shared selector index ranks the samples common to
-    every reader by their mean error and overlays every reader's prediction
-    against the shared target for the best and worst of them.
+    Requires:
+        Per-sample ranking error: provided by a scalar collector emitting ``sort_key``.
+        Matched raw structures (optional): shown alongside the spectra.
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
@@ -183,24 +182,27 @@ class SpectraComparisonPlotter(Plotter):
         combined_root = root / "combined"
 
         for sel_idx in range(n_common_selectors):
-            by_reader = [
-                {
-                    str(sample["sample_id"]): (sample, record, error)
-                    for sample, record, error in self._collect_entries(
-                        results.selectors[reader_idx][sel_idx], results.collector_stream(reader_idx, sel_idx)
-                    )
-                }
-                for reader_idx in range(len(results.selectors))
-            ]
-            common_ids = set.intersection(*(set(entries) for entries in by_reader))
-            if len(common_ids) < 2:
+            by_reader: list[dict[SampleKey, _Entry]] = []
+            for reader_idx in range(len(results.selectors)):
+                entries: dict[SampleKey, _Entry] = {}
+                for entry in self._collect_entries(
+                    results.selectors[reader_idx][sel_idx], results.collector_stream(reader_idx, sel_idx)
+                ):
+                    identity = sample_key(entry[0])
+                    if identity in entries:
+                        raise ConfigError(f"Duplicate prediction record for sample identity {identity!r}.")
+                    entries[identity] = entry
+                by_reader.append(entries)
+
+            common_keys = set.intersection(*(set(entries) for entries in by_reader))
+            if len(common_keys) < 2:
                 continue
 
             mean_error = {
-                sample_id: sum(entries[sample_id][2] for entries in by_reader) / len(by_reader)
-                for sample_id in common_ids
+                identity: sum(entries[identity][2] for entries in by_reader) / len(by_reader)
+                for identity in common_keys
             }
-            ranked = sorted(common_ids, key=lambda sample_id: mean_error[sample_id])
+            ranked = sorted(common_keys, key=lambda identity: (mean_error[identity], sample_key_sort_key(identity)))
             n = min(self.n_samples, len(ranked))
             best = ranked[:n]
             worst = list(reversed(ranked[-n:]))
@@ -233,10 +235,10 @@ class SpectraComparisonPlotter(Plotter):
 
     @staticmethod
     def _write_combined_pages(
-        by_reader: list[dict[str, _Entry]],
+        by_reader: list[dict[SampleKey, _Entry]],
         method_labels: list[str],
-        sample_ids: list[str],
-        mean_error: dict[str, float],
+        sample_keys: list[SampleKey],
+        mean_error: dict[SampleKey, float],
         metric: str,
         selector_str: str,
         pdf_path: Path,
@@ -245,24 +247,24 @@ class SpectraComparisonPlotter(Plotter):
         """Write one combined multi-page PDF for shared best or worst samples.
 
         Args:
-            by_reader: Per-reader mapping from sample id to its ``(sample, collector
-                scalars, error)`` entry.
+            by_reader: Per-reader mapping from compound sample identity to its
+                ``(sample, collector scalars, error)`` entry.
             method_labels: Display name per prediction reader.
-            sample_ids: Ranked sample ids to render, best or worst first.
-            mean_error: Mean ranking error across readers, keyed by sample id.
+            sample_keys: Ranked compound sample identities to render, best or worst first.
+            mean_error: Mean ranking error across readers, keyed by compound sample identity.
             metric: Scalar key used for ranking.
             selector_str: Shared selector description for the page subtitle.
             pdf_path: Destination PDF path.
             direction: ``"best"`` or ``"worst"`` for the page subtitle.
         """
-        total = len(sample_ids)
+        total = len(sample_keys)
         with PdfPages(pdf_path) as pdf:
-            for rank, sample_id in enumerate(sample_ids, start=1):
-                sample = by_reader[0][sample_id][0]
+            for rank, identity in enumerate(sample_keys, start=1):
+                sample = by_reader[0][identity][0]
                 target = np.asarray(sample["target"]).ravel()
-                predictions = [np.asarray(entries[sample_id][0]["prediction"]).ravel() for entries in by_reader]
+                predictions = [np.asarray(entries[identity][0]["prediction"]).ravel() for entries in by_reader]
                 subtitle = (
-                    f"{direction} #{rank} of {total}  |  mean {metric}={mean_error[sample_id]:.4g}  |  {selector_str}"
+                    f"{direction} #{rank} of {total}  |  mean {metric}={mean_error[identity]:.4g}  |  {selector_str}"
                 )
                 fig = combined_spectra_page_figure(sample, method_labels, predictions, target, subtitle)
                 pdf.savefig(fig, bbox_inches="tight")

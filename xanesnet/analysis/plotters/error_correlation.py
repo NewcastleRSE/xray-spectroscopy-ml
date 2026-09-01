@@ -34,27 +34,26 @@ from xanesnet.utils.exceptions import ConfigError
 from ..result import AnalysisResults
 from ..sample_data import iter_aligned
 from ..selectors import Selector
-from ..utils import is_scalar_value
+from ..utils import SampleKey, is_scalar_value, sample_key, sample_key_sort_key
 from .base import Plotter
 from .common import add_subtitle, compact_layout, method_colour, style_axis
 from .registry import PlotterRegistry
 
-# Label lines, colour, sample id to per-sample error.
-_MethodErrors = tuple[list[str], str, dict[str, float]]
+# Label lines, colour, compound sample identity to per-sample error.
+_MethodErrors = tuple[list[str], str, dict[SampleKey, float]]
 
 
 @PlotterRegistry.register("error_correlation")
 class ErrorCorrelationPlotter(Plotter):
     """Plot pairwise per-sample error correlations across methods.
 
-    For each method the per-sample error is collected and one grid figure
-    draws the pairwise scatter of errors on the samples shared by each method
-    pair, annotated with the Pearson correlation coefficient and the number of
-    common samples. In addition, one standalone figure per method pair
-    (``pair_III__JJJ.pdf``) shows the same scatter with full axis labels. The
-    identity line shows which method of a pair has the larger error. High
-    correlation means both methods fail on the same samples, while low
-    correlation means their errors complement each other.
+    One grid figure draws the pairwise error scatter on the samples shared by
+    each method pair, annotated with the Pearson correlation and the number of
+    common samples; one standalone figure per pair shows the same scatter with
+    full axis labels.
+
+    Requires:
+        Per-sample error values: provided by a scalar collector emitting ``sort_key``.
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
@@ -108,19 +107,26 @@ class ErrorCorrelationPlotter(Plotter):
                 if pair is None:
                     continue
                 xs, ys = pair
-                self._pair_figure(xs, ys, methods[i][0], methods[j][0], root / f"pair_{i:03d}__{j:03d}.pdf")
+                self._pair_figure(
+                    xs,
+                    ys,
+                    methods[i][0],
+                    methods[j][0],
+                    methods[i][1],
+                    root / f"pair_{i:03d}__{j:03d}.pdf",
+                )
 
-    def _collect_errors(self, selector: Selector, stream: JSONLStream | None) -> dict[str, float]:
-        """Collect the per-sample error of one method keyed by sample id.
+    def _collect_errors(self, selector: Selector, stream: JSONLStream | None) -> dict[SampleKey, float]:
+        """Collect one method's errors keyed by compound sample identity.
 
         Args:
             selector: Selector over prediction samples for one prediction reader and selector pair.
             stream: Optional collector result stream aligned with ``selector``.
 
         Returns:
-            Mapping from sample id to the per-sample error value.
+            Mapping from ``(sample_id, target_site_index)`` to the error value.
         """
-        errors: dict[str, float] = {}
+        errors: dict[SampleKey, float] = {}
         for sample, record in iter_aligned(selector, stream):
             value = record.get(self.sort_key)
             if not is_scalar_value(value):
@@ -128,7 +134,10 @@ class ErrorCorrelationPlotter(Plotter):
                     f"Sort key '{self.sort_key}' is missing or not a scalar for sample "
                     f"'{sample['sample_id']}'. Configure a scalar collector that produces this key."
                 )
-            errors[str(sample["sample_id"])] = float(value)
+            identity = sample_key(sample)
+            if identity in errors:
+                raise ConfigError(f"Duplicate prediction record for sample identity {identity!r}.")
+            errors[identity] = float(value)
         return errors
 
     @staticmethod
@@ -181,7 +190,7 @@ class ErrorCorrelationPlotter(Plotter):
                     continue
 
                 xs, ys = pair
-                ErrorCorrelationPlotter._draw_pair_panel(ax, xs, ys, fontsize=5.5)
+                ErrorCorrelationPlotter._draw_pair_panel(ax, xs, ys, methods[i][1], fontsize=5.5)
                 ax.tick_params(labelsize=5.5)
 
         for j in range(n):
@@ -195,36 +204,39 @@ class ErrorCorrelationPlotter(Plotter):
         plt.close(fig)
 
     @staticmethod
-    def _pair_values(errors_i: dict[str, float], errors_j: dict[str, float]) -> tuple[np.ndarray, np.ndarray] | None:
-        """Return the error arrays for the samples shared by two methods.
+    def _pair_values(
+        errors_i: dict[SampleKey, float], errors_j: dict[SampleKey, float]
+    ) -> tuple[np.ndarray, np.ndarray] | None:
+        """Return error arrays for records shared by two methods.
 
         Args:
-            errors_i: Per-sample errors of the row method.
-            errors_j: Per-sample errors of the column method.
+            errors_i: Per-record errors of the row method.
+            errors_j: Per-record errors of the column method.
 
         Returns:
             ``(xs, ys)`` error arrays for the common samples, or ``None`` when
             fewer than two samples are shared.
         """
-        common = sorted(set(errors_i) & set(errors_j))
+        common = sorted(set(errors_i) & set(errors_j), key=sample_key_sort_key)
         if len(common) < 2:
             return None
         return np.array([errors_i[s] for s in common]), np.array([errors_j[s] for s in common])
 
     @staticmethod
-    def _draw_pair_panel(ax: Axes, xs: np.ndarray, ys: np.ndarray, fontsize: float) -> None:
+    def _draw_pair_panel(ax: Axes, xs: np.ndarray, ys: np.ndarray, colour: str, fontsize: float) -> None:
         """Draw one pairwise error scatter with identity line and annotation.
 
         Args:
             ax: Matplotlib axis to draw on.
             xs: Error values of the row method with shape ``(M,)``.
             ys: Error values of the column method with shape ``(M,)``.
+            colour: Method colour used for the scatter.
             fontsize: Font size used for the annotation text.
         """
         lo = min(float(xs.min()), float(ys.min()))
         hi = max(float(xs.max()), float(ys.max()))
         ax.plot([lo, hi], [lo, hi], color="black", linewidth=0.8, linestyle="--")
-        ax.scatter(xs, ys, s=6, alpha=0.5, color="#005186")
+        ax.scatter(xs, ys, s=6, alpha=0.5, color=colour)
         r = _pearson(xs, ys)
         note = f"r={r:.2f}" if r is not None else "r=n/a"
         ax.text(
@@ -242,6 +254,7 @@ class ErrorCorrelationPlotter(Plotter):
         ys: np.ndarray,
         row_label_lines: list[str],
         col_label_lines: list[str],
+        colour: str,
         out: Path,
     ) -> None:
         """Write one standalone correlation figure for a single method pair.
@@ -251,10 +264,11 @@ class ErrorCorrelationPlotter(Plotter):
             ys: Error values of the column method with shape ``(M,)``.
             row_label_lines: Label lines of the row method.
             col_label_lines: Label lines of the column method.
+            colour: Method colour used for the scatter.
             out: Destination PDF path.
         """
         fig, ax = plt.subplots(figsize=(4.8, 4.0))
-        ErrorCorrelationPlotter._draw_pair_panel(ax, xs, ys, fontsize=8)
+        ErrorCorrelationPlotter._draw_pair_panel(ax, xs, ys, colour, fontsize=8)
         ax.set_xlabel("\n".join(col_label_lines))
         ax.set_ylabel("\n".join(row_label_lines))
         style_axis(ax)

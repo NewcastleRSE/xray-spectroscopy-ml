@@ -61,17 +61,19 @@ def escape_latex(text: str) -> str:
     Returns:
         LaTeX-safe representation of ``text``.
     """
-    return (
-        text.replace("\\", r"\textbackslash{}")
-        .replace("&", r"\&")
-        .replace("%", r"\%")
-        .replace("#", r"\#")
-        .replace("$", r"\$")
-        .replace("{", r"\{")
-        .replace("}", r"\}")
-        .replace("_", r"\_")
-        .replace("~", r"\textasciitilde{}")
-    )
+    replacements = {
+        "\\": r"\textbackslash{}",
+        "&": r"\&",
+        "%": r"\%",
+        "#": r"\#",
+        "$": r"\$",
+        "{": r"\{",
+        "}": r"\}",
+        "_": r"\_",
+        "^": r"\textasciicircum{}",
+        "~": r"\textasciitilde{}",
+    }
+    return "".join(replacements.get(character, character) for character in text)
 
 
 def escape_label_line(text: str) -> str:

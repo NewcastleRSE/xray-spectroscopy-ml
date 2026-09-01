@@ -27,11 +27,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 
-from xanesnet.analysis.utils import ScalarValue
 from xanesnet.serialization.config import Config
 
 from ..result import AnalysisResults
 from ..sample_data import iter_aligned, merged_scalars
+from ..utils import ScalarValue
 from .base import Plotter
 from .common import (
     COLOUR_ACCENT_RED,
@@ -55,15 +55,12 @@ _CLIP_MIN_SAMPLES: int = 20
 class ScalarPlotter(Plotter):
     """Create distribution plots and combined figures for scalar value keys.
 
-    For each (prediction-reader, selector) combination a per-key directory is
-    created containing a histogram, box plot, and violin plot. In addition,
-    four combined figures per scalar key compare all prediction-reader/selector
-    combinations.
+    Per method this writes a histogram, box plot, and violin plot per key;
+    four combined figures per key compare all methods. Histograms clip to a
+    Tukey-fence range; box and violin plots always show the full range.
 
-    Histograms display a robust Tukey-fence range by default: values outside
-    ``Q1 - 1.5 * IQR`` to ``Q3 + 1.5 * IQR`` are excluded from the plotted
-    range and the number of excluded values is annotated on the figure. Box
-    and violin plots always display the full value range.
+    Requires:
+        Scalar collector output (optional).
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.

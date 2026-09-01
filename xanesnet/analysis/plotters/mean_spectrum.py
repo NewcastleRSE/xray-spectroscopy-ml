@@ -53,27 +53,12 @@ _MethodMeans = tuple[
 class MeanSpectrumPlotter(Plotter):
     """Plot mean predicted and target spectra plus best/worst tail means.
 
-    The averaged curves come from the ``spectrum`` aggregator, while the best
-    and worst tail means and spreads come from the ``ranking`` aggregator. Both
-    must be present in the analysis configuration; the ``ranking`` aggregator
-    also owns the ``percent`` and ``sort_key`` options that define the tails.
+    Writes ``mean_spectrum.pdf``, ``tail_means.pdf``, and ``spread.pdf`` per
+    method, plus combined overlays.
 
-    For every (prediction-reader, selector) pair this plotter writes three
-    figures. ``mean_spectrum.pdf`` shows the mean predicted and mean target
-    spectrum with the per-channel prediction standard deviation as a shaded
-    band. ``tail_means.pdf`` compares the mean target and mean prediction with
-    the mean prediction of the best and worst samples ranked by error.
-    ``spread.pdf`` compares the per-channel standard deviation of the
-    predictions with that of the targets.
-
-    When the best and worst tail means both collapse onto the mean prediction,
-    or the prediction spread stays well below the target spread, the model
-    only predicts the mean spectrum.
-
-    Three combined figures compare all methods: an overlay of the mean
-    spectra plus separate overlays for the best and worst tail means. Each
-    combined figure also shows the per-method prediction and target means,
-    with the line styles explained in the legends.
+    Requires:
+        Spectrum statistics: provided by the ``spectrum`` aggregator.
+        Best/worst tail statistics: provided by the ``ranking`` aggregator.
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.

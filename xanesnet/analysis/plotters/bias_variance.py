@@ -56,11 +56,10 @@ _VARIANCE_COLOUR = COLOUR_ACCENT_GREEN
 class BiasVariancePlotter(Plotter):
     """Plot the per-channel bias-variance decomposition of the MSE per method.
 
-    The decomposition is computed by the ``bias_variance`` aggregator, which
-    must be present in the analysis configuration. A dominant bias component
-    indicates a systematic shift (for example a wrong edge position), while a
-    dominant variance component indicates sample-to-sample noise. A combined
-    grid compares all methods on shared axes.
+    A combined grid compares all methods on shared axes.
+
+    Requires:
+        Per-channel bias/variance decomposition: provided by the ``bias_variance`` aggregator.
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.

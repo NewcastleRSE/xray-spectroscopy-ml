@@ -28,12 +28,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 
-from xanesnet.analysis.utils import as_float_vector
 from xanesnet.serialization.config import Config
 from xanesnet.utils.exceptions import ConfigError
 
 from ..result import AnalysisResults
 from ..selectors import Selector
+from ..utils import as_float_vector
 from .base import Plotter
 from .common import add_subtitle, compact_layout, method_colour, style_axis
 from .registry import PlotterRegistry
@@ -43,16 +43,11 @@ from .registry import PlotterRegistry
 class PcaPlotter(Plotter):
     """Plot a reader's structure groups in PCA space.
 
-    For every prediction reader, the descriptor vectors collected for each
-    selector are pooled into one matrix, standardized, and projected onto
-    their leading principal components. One 2D scatter and, when at least
-    three components are available, one 3D scatter show whether the
-    selectors' structures separate into distinct groups.
+    Descriptor vectors come from a configured collector and selectors are
+    assumed disjoint.
 
-    The descriptor vectors come from a configured collector (``descriptor``
-    by default), so changing the descriptor collector changes the projection.
-    Selectors are assumed to be disjoint, so every point is coloured by the
-    selector that contributed it.
+    Requires:
+        Descriptor vectors: provided by a collector emitting ``descriptor_key``.
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
