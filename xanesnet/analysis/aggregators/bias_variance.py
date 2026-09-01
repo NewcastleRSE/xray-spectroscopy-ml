@@ -26,6 +26,7 @@ import numpy as np
 
 from xanesnet.serialization.jsonl_stream import JSONLStream
 
+from ..sample_data import iter_aligned
 from ..selectors import Selector
 from .base import Aggregator, AggregatorResult
 from .registry import AggregatorRegistry
@@ -35,12 +36,7 @@ from .registry import AggregatorRegistry
 class BiasVarianceAggregator(Aggregator):
     """Split the per-channel MSE into its squared bias and variance components.
 
-    The per-sample residuals ``prediction - target`` are decomposed so that the
-    identity ``mse = bias2 + variance`` holds exactly per channel: ``bias`` is
-    the mean residual (systematic error), ``bias2`` its square, and ``variance``
-    the spread of the residuals. A dominant bias term indicates a systematic
-    shift such as a wrong edge position, while a dominant variance term
-    indicates sample-to-sample noise.
+    The identity ``mse = bias2 + variance`` holds exactly per channel.
 
     Args:
         aggregator_type: Registered aggregator name from the analysis configuration.
@@ -55,8 +51,8 @@ class BiasVarianceAggregator(Aggregator):
 
         Args:
             selector: Selector over prediction samples for one prediction reader and selector pair.
-            per_sample_values: Unused; the decomposition only needs the predicted and
-                target spectra carried by the selected samples.
+            per_sample_values: Optional collector stream used to validate
+                positional alignment; collector values are not aggregated.
             index: Zero-based aggregator index from the analysis configuration.
 
         Returns:
@@ -67,7 +63,7 @@ class BiasVarianceAggregator(Aggregator):
         preds_list: list[np.ndarray] = []
         targets_list: list[np.ndarray] = []
 
-        for sample in selector:
+        for sample, _ in iter_aligned(selector, per_sample_values):
             preds_list.append(np.asarray(sample["prediction"]).ravel())
             targets_list.append(np.asarray(sample["target"]).ravel())
 

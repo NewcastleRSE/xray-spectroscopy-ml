@@ -27,6 +27,7 @@ import numpy as np
 from xanesnet.serialization.config import Config
 from xanesnet.serialization.jsonl_stream import JSONLStream
 
+from ..sample_data import iter_aligned
 from ..selectors import Selector
 from .base import Aggregator, AggregatorResult
 from .registry import AggregatorRegistry
@@ -36,16 +37,9 @@ from .registry import AggregatorRegistry
 class SpectrumAggregator(Aggregator):
     """Compute per-channel summary statistics for the predicted and target spectra.
 
-    The spectra of every selected sample are stacked per channel and reduced to
-    per-channel summary statistics for the predictions and the targets. Sample
-    ranking and best/worst tail statistics are provided by the ``ranking``
-    aggregator.
-
     Args:
         aggregator_type: Registered aggregator name from the analysis configuration.
-        percentiles: Percentiles to compute per channel for the predicted and
-            target spectra. Values use NumPy percentile units, where ``0`` is the
-            minimum and ``100`` is the maximum. Defaults to ``[25, 50, 75]``.
+        percentiles: Percentiles.
     """
 
     def __init__(self, aggregator_type: str, percentiles: list[float]) -> None:
@@ -59,8 +53,8 @@ class SpectrumAggregator(Aggregator):
 
         Args:
             selector: Selector over prediction samples for one prediction reader and selector pair.
-            per_sample_values: Collector result stream aligned with ``selector``, or ``None`` when
-                no collectors were configured. Not used by this aggregator.
+            per_sample_values: Optional collector stream used to validate
+                positional alignment; collector values are not aggregated.
             index: Zero-based aggregator index from the analysis configuration.
 
         Returns:
@@ -72,7 +66,7 @@ class SpectrumAggregator(Aggregator):
         preds_list: list[np.ndarray] = []
         targets_list: list[np.ndarray] = []
 
-        for sample in selector:
+        for sample, _ in iter_aligned(selector, per_sample_values):
             preds_list.append(np.asarray(sample["prediction"]).ravel())
             targets_list.append(np.asarray(sample["target"]).ravel())
 

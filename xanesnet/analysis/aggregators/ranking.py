@@ -20,11 +20,10 @@
 
 """Aggregator that ranks selected samples by a collected scalar value."""
 
-from typing import Any, cast
+from typing import Any
 
 import numpy as np
 
-from xanesnet.analysis.utils import as_float_vector, is_scalar_value
 from xanesnet.serialization.config import Config
 from xanesnet.serialization.jsonl_stream import JSONLStream
 from xanesnet.serialization.prediction_readers import PredictionSample
@@ -32,6 +31,7 @@ from xanesnet.utils.exceptions import ConfigError
 
 from ..sample_data import iter_aligned
 from ..selectors import Selector
+from ..utils import as_float_vector, is_scalar_value
 from .base import Aggregator, AggregatorResult
 from .registry import AggregatorRegistry
 
@@ -40,10 +40,12 @@ from .registry import AggregatorRegistry
 class RankingAggregator(Aggregator):
     """Rank selected samples by a collected scalar value.
 
-    Every selected sample is looked up by its ``sort_key`` scalar in the
-    collector output and ranked in ascending order. The best and worst
-    ``percent`` samples are selected, and for every configured ``group_keys``
-    vector the best and worst group mean and standard deviation are computed.
+    Samples are ranked in ascending order by their ``sort_key`` scalar and
+    split into best and worst ``percent`` groups; per ``group_keys`` vector the
+    best and worst group mean and standard deviation are computed.
+
+    Requires:
+        Per-sample ranking values: provided by a scalar collector emitting ``sort_key``.
 
     Args:
         aggregator_type: Registered aggregator name from the analysis configuration.
@@ -61,14 +63,8 @@ class RankingAggregator(Aggregator):
         percent: float,
         group_keys: list[str],
     ) -> None:
-        """Initialize a ranking aggregator.
-
-        Raises:
-            ValueError: If ``percent`` is not within ``(0, 50]``.
-        """
+        """Initialize a ranking aggregator."""
         super().__init__(aggregator_type)
-        if not 0.0 < percent <= 50.0:
-            raise ValueError(f"percent must be in (0, 50], got {percent}")
         self.sort_key = sort_key
         self.percent = percent
         self.group_keys = group_keys
@@ -83,10 +79,12 @@ class RankingAggregator(Aggregator):
             index: Zero-based aggregator index from the analysis configuration.
 
         Returns:
-            Ranking output with ``sample_ids``, ``values``, ``order``,
-            ``best_indices`` and ``worst_indices``, ``best_sample_ids`` and
-            ``worst_sample_ids``, the ``n_samples`` and ``n_tail`` counts, the
-            configured ``percent`` and ``sort_key``, and one
+            Ranking output with ``sample_ids`` and parallel
+            ``target_site_indices``, ``values``, ``order``, ``best_indices``
+            and ``worst_indices``, ``best_sample_ids`` and
+            ``worst_sample_ids`` with parallel target-site indices, the
+            ``n_samples`` and ``n_tail`` counts, the configured ``percent`` and
+            ``sort_key``, and one
             ``best_<key>_mean``/``best_<key>_std``/``worst_<key>_mean``/
             ``worst_<key>_std`` entry per configured ``group_keys`` key.
 
@@ -102,6 +100,7 @@ class RankingAggregator(Aggregator):
             return AggregatorResult(aggregator_type=self.aggregator_type, aggregator_index=index, data={})
 
         sample_ids: list[str] = []
+        target_site_indices: list[int | None] = []
         values: list[float] = []
         for sample, record in aligned:
             sample_id = sample["sample_id"]
@@ -112,6 +111,7 @@ class RankingAggregator(Aggregator):
                     "Configure a scalar collector that produces this key."
                 )
             sample_ids.append(sample_id)
+            target_site_indices.append(sample.get("target_site_index"))
             values.append(float(value))
 
         n_samples = len(sample_ids)
@@ -122,12 +122,15 @@ class RankingAggregator(Aggregator):
 
         data: dict[str, Any] = {
             "sample_ids": sample_ids,
+            "target_site_indices": target_site_indices,
             "values": values,
             "order": order,
             "best_indices": best_indices,
             "worst_indices": worst_indices,
             "best_sample_ids": [sample_ids[i] for i in best_indices],
             "worst_sample_ids": [sample_ids[i] for i in worst_indices],
+            "best_target_site_indices": [target_site_indices[i] for i in best_indices],
+            "worst_target_site_indices": [target_site_indices[i] for i in worst_indices],
             "n_samples": n_samples,
             "n_tail": n_tail,
             "percent": self.percent,
@@ -162,7 +165,7 @@ class RankingAggregator(Aggregator):
             for sample, record in aligned:
                 raw = record.get(key)
                 if raw is None:
-                    raw = cast(dict[str, Any], sample).get(key)
+                    raw = sample.get(key)
                 if raw is None:
                     raise ConfigError(f"Group key '{key}' not found in sample or collector output.")
                 arrays.append(as_float_vector(raw))

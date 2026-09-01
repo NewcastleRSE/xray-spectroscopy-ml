@@ -25,30 +25,29 @@ from typing import Any
 
 import numpy as np
 
-from xanesnet.analysis.utils import as_float_vector, iter_vector_items
 from xanesnet.serialization.config import Config
 from xanesnet.serialization.jsonl_stream import JSONLStream
 from xanesnet.serialization.prediction_readers import PredictionSample
 
+from ..sample_data import iter_aligned
 from ..selectors import Selector
+from ..utils import as_float_vector, iter_vector_items
 from .base import Aggregator, AggregatorResult
 from .registry import AggregatorRegistry
 
 
 @AggregatorRegistry.register("vector")
 class VectorAggregator(Aggregator):
-    """Compute summary statistics for all vector sample and collector values.
+    """Compute per-element summary statistics for all vector sample and collector values.
 
-    Every vector value (a list, tuple, or one-dimensional array or tensor) is
-    treated as one feature vector per sample. All vectors sharing a key are
-    stacked over the selected samples and reduced to per-element summary
-    statistics, mirroring the ``scalar`` aggregator but for vector-valued values.
     The ``prediction`` and ``target`` spectra are excluded.
+
+    Requires:
+        Vector collector output (optional).
 
     Args:
         aggregator_type: Registered aggregator name from the analysis configuration.
-        percentiles: Percentiles to compute. Values use NumPy percentile units, where ``0`` is the
-            minimum and ``100`` is the maximum.``.
+        percentiles: Percentiles.
     """
 
     def __init__(self, aggregator_type: str, percentiles: list[float]) -> None:
@@ -71,12 +70,9 @@ class VectorAggregator(Aggregator):
         """
         values_by_key: dict[str, list[np.ndarray]] = {}
 
-        for sample in selector:
+        for sample, record in iter_aligned(selector, per_sample_values):
             self._collect_vectors(sample, values_by_key)
-
-        if per_sample_values is not None:
-            for raw_sample in per_sample_values:
-                self._collect_vectors(raw_sample, values_by_key)
+            self._collect_vectors(record, values_by_key)
 
         if not values_by_key:
             logging.info("      No vector values found, skipping.")

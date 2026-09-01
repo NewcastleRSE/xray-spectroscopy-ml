@@ -25,12 +25,13 @@ from typing import Any
 
 import numpy as np
 
-from xanesnet.analysis.utils import iter_scalar_items
 from xanesnet.serialization.config import Config
 from xanesnet.serialization.jsonl_stream import JSONLStream
 from xanesnet.serialization.prediction_readers import PredictionSample
 
+from ..sample_data import iter_aligned
 from ..selectors import Selector
+from ..utils import iter_scalar_items
 from .base import Aggregator, AggregatorResult
 from .registry import AggregatorRegistry
 
@@ -39,14 +40,15 @@ from .registry import AggregatorRegistry
 class ScalarAggregator(Aggregator):
     """Compute summary statistics for all scalar sample and collector values.
 
-    Every scalar value is one number per sample, for example a loss value or a
-    timing measurement. All scalars sharing a key are collected over the
-    selected samples and reduced to summary statistics.
+    Scalars sharing a key are collected over the selected samples and reduced
+    to summary statistics.
+
+    Requires:
+        Scalar collector output (optional).
 
     Args:
         aggregator_type: Registered aggregator name from the analysis configuration.
-        percentiles: Percentiles to compute. Values use NumPy percentile units, where ``0`` is the
-            minimum and ``100`` is the maximum.``.
+        percentiles: Percentiles.
     """
 
     def __init__(self, aggregator_type: str, percentiles: list[float]) -> None:
@@ -69,12 +71,9 @@ class ScalarAggregator(Aggregator):
         """
         values_by_key: dict[str, list[float]] = {}
 
-        for sample in selector:
+        for sample, record in iter_aligned(selector, per_sample_values):
             self._collect_scalars(sample, values_by_key)
-
-        if per_sample_values is not None:
-            for raw_sample in per_sample_values:
-                self._collect_scalars(raw_sample, values_by_key)
+            self._collect_scalars(record, values_by_key)
 
         if not values_by_key:
             logging.info("      No scalar values found, skipping.")
