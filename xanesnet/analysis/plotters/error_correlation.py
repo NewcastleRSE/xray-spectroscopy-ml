@@ -21,6 +21,7 @@
 """Plotter for cross-method per-sample error correlation."""
 
 import logging
+from itertools import repeat
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -32,7 +33,6 @@ from xanesnet.serialization.jsonl_stream import JSONLStream
 from xanesnet.utils.exceptions import ConfigError
 
 from ..result import AnalysisResults
-from ..sample_data import iter_aligned
 from ..selectors import Selector
 from ..utils import SampleKey, is_scalar_value, sample_key, sample_key_sort_key
 from .base import Plotter
@@ -127,7 +127,7 @@ class ErrorCorrelationPlotter(Plotter):
             Mapping from ``(sample_id, target_site_index)`` to the error value.
         """
         errors: dict[SampleKey, float] = {}
-        for sample, record in iter_aligned(selector, stream):
+        for sample, record in zip(selector, stream if stream is not None else repeat({})):
             value = record.get(self.sort_key)
             if not is_scalar_value(value):
                 raise ConfigError(

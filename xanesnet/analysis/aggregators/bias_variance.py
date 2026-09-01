@@ -26,7 +26,6 @@ import numpy as np
 
 from xanesnet.serialization.jsonl_stream import JSONLStream
 
-from ..sample_data import iter_aligned
 from ..selectors import Selector
 from .base import Aggregator, AggregatorResult
 from .registry import AggregatorRegistry
@@ -51,8 +50,8 @@ class BiasVarianceAggregator(Aggregator):
 
         Args:
             selector: Selector over prediction samples for one prediction reader and selector pair.
-            per_sample_values: Optional collector stream used to validate
-                positional alignment; collector values are not aggregated.
+            per_sample_values: Not used; only the selected samples are
+                aggregated.
             index: Zero-based aggregator index from the analysis configuration.
 
         Returns:
@@ -63,7 +62,7 @@ class BiasVarianceAggregator(Aggregator):
         preds_list: list[np.ndarray] = []
         targets_list: list[np.ndarray] = []
 
-        for sample, _ in iter_aligned(selector, per_sample_values):
+        for sample in selector:
             preds_list.append(np.asarray(sample["prediction"]).ravel())
             targets_list.append(np.asarray(sample["target"]).ravel())
 

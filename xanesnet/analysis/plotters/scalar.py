@@ -21,6 +21,7 @@
 """Plotter for scalar value distributions."""
 
 import logging
+from itertools import repeat
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -30,8 +31,7 @@ from matplotlib.axes import Axes
 from xanesnet.serialization.config import Config
 
 from ..result import AnalysisResults
-from ..sample_data import iter_aligned, merged_scalars
-from ..utils import ScalarValue
+from ..utils import ScalarValue, iter_scalar_items
 from .base import Plotter
 from .common import (
     COLOUR_ACCENT_RED,
@@ -93,8 +93,10 @@ class ScalarPlotter(Plotter):
                 stream = results.collector_stream(reader_idx, sel_idx)
 
                 values_by_key: dict[str, list[ScalarValue]] = {}
-                for sample, record in iter_aligned(selector, stream):
-                    for key, value in merged_scalars(sample, record).items():
+                for sample, record in zip(selector, stream if stream is not None else repeat({})):
+                    scalars = dict(iter_scalar_items(sample))
+                    scalars.update(iter_scalar_items(record))
+                    for key, value in scalars.items():
                         values_by_key.setdefault(key, []).append(value)
                 if not values_by_key:
                     continue

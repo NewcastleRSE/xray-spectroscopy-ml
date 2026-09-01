@@ -22,6 +22,7 @@
 
 import logging
 import random
+from itertools import repeat
 from pathlib import Path
 from typing import Any
 
@@ -35,7 +36,6 @@ from xanesnet.serialization.prediction_readers import PredictionSample
 from xanesnet.utils.exceptions import ConfigError
 
 from ..result import AnalysisResults
-from ..sample_data import iter_aligned
 from ..selectors import Selector
 from ..utils import sample_key, sample_key_sort_key
 from .base import Plotter
@@ -112,7 +112,9 @@ class AllSpectraPlotter(Plotter):
             pdf_path: Destination PDF path.
             subtitle: Subtitle text describing prediction and selector context.
         """
-        entries: list[tuple[PredictionSample, dict[str, Any]]] = list(iter_aligned(selector, stream))
+        entries: list[tuple[PredictionSample, dict[str, Any]]] = list(
+            zip(selector, stream if stream is not None else repeat({}))
+        )
         if not entries:
             return
         entries = _random_subset(entries, self.max_pages)
@@ -150,9 +152,8 @@ class AllSpectraPlotter(Plotter):
             by_reader: list[dict[tuple[str, int | None], tuple[PredictionSample, dict[str, Any]]]] = []
             for reader_idx in range(len(results.selectors)):
                 entries: dict[tuple[str, int | None], tuple[PredictionSample, dict[str, Any]]] = {}
-                aligned = iter_aligned(
-                    results.selectors[reader_idx][sel_idx], results.collector_stream(reader_idx, sel_idx)
-                )
+                stream = results.collector_stream(reader_idx, sel_idx)
+                aligned = zip(results.selectors[reader_idx][sel_idx], stream if stream is not None else repeat({}))
                 for sample, col_scalars in aligned:
                     identity = sample_key(sample)
                     if identity in entries:

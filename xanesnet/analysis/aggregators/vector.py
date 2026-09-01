@@ -21,6 +21,7 @@
 """Aggregator that summarizes vector sample and collector values into per-element statistics."""
 
 import logging
+from itertools import repeat
 from typing import Any
 
 import numpy as np
@@ -29,7 +30,6 @@ from xanesnet.serialization.config import Config
 from xanesnet.serialization.jsonl_stream import JSONLStream
 from xanesnet.serialization.prediction_readers import PredictionSample
 
-from ..sample_data import iter_aligned
 from ..selectors import Selector
 from ..utils import as_float_vector, iter_vector_items
 from .base import Aggregator, AggregatorResult
@@ -70,7 +70,7 @@ class VectorAggregator(Aggregator):
         """
         values_by_key: dict[str, list[np.ndarray]] = {}
 
-        for sample, record in iter_aligned(selector, per_sample_values):
+        for sample, record in zip(selector, per_sample_values if per_sample_values is not None else repeat({})):
             self._collect_vectors(sample, values_by_key)
             self._collect_vectors(record, values_by_key)
 

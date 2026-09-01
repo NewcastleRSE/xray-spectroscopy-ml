@@ -21,6 +21,7 @@
 """Aggregator that summarizes scalar values from samples and collectors."""
 
 import logging
+from itertools import repeat
 from typing import Any
 
 import numpy as np
@@ -29,7 +30,6 @@ from xanesnet.serialization.config import Config
 from xanesnet.serialization.jsonl_stream import JSONLStream
 from xanesnet.serialization.prediction_readers import PredictionSample
 
-from ..sample_data import iter_aligned
 from ..selectors import Selector
 from ..utils import iter_scalar_items
 from .base import Aggregator, AggregatorResult
@@ -71,7 +71,7 @@ class ScalarAggregator(Aggregator):
         """
         values_by_key: dict[str, list[float]] = {}
 
-        for sample, record in iter_aligned(selector, per_sample_values):
+        for sample, record in zip(selector, per_sample_values if per_sample_values is not None else repeat({})):
             self._collect_scalars(sample, values_by_key)
             self._collect_scalars(record, values_by_key)
 

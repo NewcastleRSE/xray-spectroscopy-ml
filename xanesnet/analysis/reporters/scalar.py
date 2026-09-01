@@ -22,14 +22,14 @@
 
 import csv
 import logging
+from itertools import repeat
 from pathlib import Path
 
 from xanesnet.serialization.jsonl_stream import JSONLStream
 
 from ..result import AnalysisResults
-from ..sample_data import iter_aligned, merged_scalars
 from ..selectors import Selector
-from ..utils import ScalarValue, sample_key
+from ..utils import ScalarValue, iter_scalar_items, sample_key
 from .base import Reporter
 from .registry import ReporterRegistry
 
@@ -92,9 +92,11 @@ class ScalarReporter(Reporter):
         """
         rows_by_key: dict[str, list[tuple[str, int | None, ScalarValue]]] = {}
 
-        for sample, record in iter_aligned(selector, stream):
+        for sample, record in zip(selector, stream if stream is not None else repeat({})):
             sample_id, target_site_index = sample_key(sample)
-            for key, value in merged_scalars(sample, record).items():
+            scalars = dict(iter_scalar_items(sample))
+            scalars.update(iter_scalar_items(record))
+            for key, value in scalars.items():
                 rows_by_key.setdefault(key, []).append((sample_id, target_site_index, value))
 
         if not rows_by_key:

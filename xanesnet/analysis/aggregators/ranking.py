@@ -29,7 +29,6 @@ from xanesnet.serialization.jsonl_stream import JSONLStream
 from xanesnet.serialization.prediction_readers import PredictionSample
 from xanesnet.utils.exceptions import ConfigError
 
-from ..sample_data import iter_aligned
 from ..selectors import Selector
 from ..utils import as_float_vector, is_scalar_value
 from .base import Aggregator, AggregatorResult
@@ -95,7 +94,7 @@ class RankingAggregator(Aggregator):
         if per_sample_values is None:
             raise ConfigError(f"Ranking aggregator requires a collector stream to read sort key '{self.sort_key}'.")
 
-        aligned: list[tuple[PredictionSample, dict[str, Any]]] = list(iter_aligned(selector, per_sample_values))
+        aligned: list[tuple[PredictionSample, dict[str, Any]]] = list(zip(selector, per_sample_values))
         if not aligned:
             return AggregatorResult(aggregator_type=self.aggregator_type, aggregator_index=index, data={})
 

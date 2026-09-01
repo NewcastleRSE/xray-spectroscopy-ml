@@ -21,6 +21,7 @@
 """Shared helpers for the analysis pipeline."""
 
 from collections.abc import Iterator, Mapping
+from numbers import Integral
 from typing import Any, TypeGuard
 
 import numpy as np
@@ -28,6 +29,7 @@ import torch
 
 ScalarValue = int | float | np.integer | np.floating
 VectorValue = list | tuple | np.ndarray | torch.Tensor
+SampleKey = tuple[str, int | None]
 
 # Keys that identify or locate a sample rather than measure it. They are
 # skipped by every stage that summarizes, reports, or plots scalar values, so
@@ -37,6 +39,30 @@ SAMPLE_METADATA_KEYS: frozenset[str] = frozenset({"sample_id", "target_site_inde
 # Keys whose values are the raw prediction and target spectra. Spectra are
 # summarized by the ``spectrum`` aggregator, so vector summaries skip them.
 SPECTRUM_KEYS: frozenset[str] = frozenset({"prediction", "target"})
+
+
+def sample_key(record: Mapping[str, Any]) -> SampleKey:
+    """Return the identity of one prediction or collector record.
+
+    The target-site index is part of the identity because one structure can
+    produce several prediction records.
+    """
+    sample_id = str(record["sample_id"])
+    site_index = record.get("target_site_index")
+    if site_index is not None and not isinstance(site_index, Integral):
+        raise TypeError(f"target_site_index must be an integer or None, got {site_index!r}")
+    return sample_id, None if site_index is None else int(site_index)
+
+
+def sample_key_sort_key(key: SampleKey) -> tuple[str, int]:
+    """Return a deterministic sort key for a compound sample identity."""
+    return key[0], -1 if key[1] is None else key[1]
+
+
+def sample_label(record: Mapping[str, Any]) -> str:
+    """Return a human-readable label that distinguishes target sites."""
+    sample_id, site_index = sample_key(record)
+    return f"{sample_id} (site {site_index})" if site_index is not None else sample_id
 
 
 def is_scalar_value(value: Any) -> TypeGuard[ScalarValue]:

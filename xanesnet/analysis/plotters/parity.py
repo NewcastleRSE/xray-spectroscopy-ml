@@ -28,10 +28,7 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.colors import LinearSegmentedColormap, LogNorm
 
-from xanesnet.serialization.jsonl_stream import JSONLStream
-
 from ..result import AnalysisResults
-from ..sample_data import iter_aligned
 from ..selectors import Selector
 from .base import Plotter
 from .common import (
@@ -90,9 +87,8 @@ class ParityPlotter(Plotter):
             for sel_idx, selector in enumerate(reader_selectors):
                 logging.info(f"      Selector {sel_idx + 1}/{len(reader_selectors)}.")
                 label = results.method_label(reader_idx, sel_idx)
-                stream = results.collector_stream(reader_idx, sel_idx)
 
-                points = self._collect_points(selector, stream)
+                points = self._collect_points(selector)
                 if points is None:
                     continue
 
@@ -113,12 +109,11 @@ class ParityPlotter(Plotter):
         self._parity_grid(methods, combined_dir / "parity_grid.pdf")
 
     @staticmethod
-    def _collect_points(selector: Selector, stream: JSONLStream | None) -> tuple[np.ndarray, np.ndarray] | None:
+    def _collect_points(selector: Selector) -> tuple[np.ndarray, np.ndarray] | None:
         """Flatten all selected spectra into target and prediction intensity vectors.
 
         Args:
             selector: Selector over prediction samples for one prediction reader and selector pair.
-            stream: Optional collector result stream aligned with ``selector``.
 
         Returns:
             ``(targets, preds)`` flattened vectors with shape ``(M,)``, or
@@ -126,7 +121,7 @@ class ParityPlotter(Plotter):
         """
         targets: list[np.ndarray] = []
         preds: list[np.ndarray] = []
-        for sample, _ in iter_aligned(selector, stream):
+        for sample in selector:
             targets.append(np.asarray(sample["target"]).ravel())
             preds.append(np.asarray(sample["prediction"]).ravel())
         if not targets:

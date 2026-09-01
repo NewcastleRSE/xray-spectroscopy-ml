@@ -21,6 +21,7 @@
 """Plotter for best/worst spectra comparisons across methods."""
 
 import logging
+from itertools import repeat
 from pathlib import Path
 from typing import Any
 
@@ -34,7 +35,6 @@ from xanesnet.serialization.prediction_readers import PredictionSample
 from xanesnet.utils.exceptions import ConfigError
 
 from ..result import AnalysisResults
-from ..sample_data import iter_aligned
 from ..selectors import Selector
 from ..utils import SampleKey, is_scalar_value, sample_key, sample_key_sort_key
 from .base import Plotter
@@ -123,7 +123,7 @@ class SpectraComparisonPlotter(Plotter):
             ``(sample, collector scalars, error)`` entries in selector order.
         """
         entries: list[_Entry] = []
-        for sample, record in iter_aligned(selector, stream):
+        for sample, record in zip(selector, stream if stream is not None else repeat({})):
             value = record.get(self.sort_key)
             if not is_scalar_value(value):
                 raise ConfigError(

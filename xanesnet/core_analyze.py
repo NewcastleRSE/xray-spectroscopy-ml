@@ -262,6 +262,9 @@ def _setup_selectors(
         selectors_config = [Config({"selector_type": "all"})]
 
     selectors: list[list[Selector]] = []
+    # Selector expansion is intentionally assumed symmetric:
+    # all selector expansions applied to each reader must yield the same number of selectors.
+    # If that invariant changes, selector indices must become reader-specific.
     for reader in predictions_readers:
         predictions_selectors: list[Selector] = []
         for selector_config in selectors_config:
@@ -288,7 +291,8 @@ def _run_collectors(
     """Execute all collectors for each selector and persist results to disk.
 
     Results are written as JSONL files under ``<save_dir>/aux/``. Each sample
-    record contains a ``"sample_id"`` key plus one entry per collector output key.
+    record contains ``"sample_id"`` and ``"target_site_index"`` plus one
+    entry per collector output key.
 
     Args:
         collectors: Collector instances to run on each sample.
@@ -335,9 +339,8 @@ def _run_collectors(
 def _write_collector_records(collectors: list[Collector], selector: Selector, aux_path: Path) -> int:
     """Run every collector on every selected sample and write one JSONL record per sample.
 
-    Collectors are expected to use distinct output keys. When two collectors
-    produce the same key for a sample, the later value wins and a warning is
-    logged.
+    Collectors are expected to use distinct output keys. Duplicate output keys
+    are rejected because overwriting a value would corrupt the analysis.
 
     Args:
         collectors: Collector instances to run on each sample.
@@ -351,12 +354,17 @@ def _write_collector_records(collectors: list[Collector], selector: Selector, au
     with open(aux_path, "w") as f:
         for sample in tqdm(selector, desc="Collecting", total=len(selector)):
             sample_id = sample["sample_id"]
-            sample_result: dict[str, Any] = {"sample_id": sample_id}
+            target_site_index = sample.get("target_site_index")
+            sample_result: dict[str, Any] = {}
             for collector in collectors:
                 for key, value in collector.process(sample).items():
                     if key in sample_result:
-                        logging.warning(f"Duplicate key '{key}' for sample {sample_id}. Overwriting!")
+                        raise ConfigError(f"Duplicate collector key '{key}' for sample {sample_id}.")
                     sample_result[key] = json_friendly(value)
+            # Keep the source identity authoritative if a custom collector
+            # attempted to emit a reserved metadata key.
+            sample_result["sample_id"] = sample_id
+            sample_result["target_site_index"] = json_friendly(target_site_index)
             f.write(json.dumps(sample_result) + "\n")
             count += 1
     return count

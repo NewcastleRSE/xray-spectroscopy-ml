@@ -36,8 +36,7 @@ from matplotlib.text import Text
 
 from xanesnet.serialization.prediction_readers import PredictionSample
 
-from ...sample_data import merged_scalars
-from ...utils import ScalarValue, sample_label
+from ...utils import ScalarValue, iter_scalar_items, sample_label
 from .layout import compact_layout
 from .structures import draw_structure
 from .style import (
@@ -290,7 +289,9 @@ def _draw_sample_page(
 
     _draw_spectra_panels(ax_spec, ax_res, pred, target, pred_std)
     ax_spec.set_title(f"Sample: {sample_label(sample)}", loc="left")
-    return _add_spectra_scalar_box(ax_spec, merged_scalars(sample, col_scalars, include_metadata=True))
+    scalars = dict(iter_scalar_items(sample, include_metadata=True))
+    scalars.update(iter_scalar_items(col_scalars, include_metadata=True))
+    return _add_spectra_scalar_box(ax_spec, scalars)
 
 
 def _draw_spectra_panels(

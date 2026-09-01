@@ -22,6 +22,7 @@
 
 import logging
 from dataclasses import dataclass
+from itertools import repeat
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -34,7 +35,6 @@ from xanesnet.serialization.prediction_readers import PredictionSample
 from xanesnet.utils.exceptions import ConfigError
 
 from ..result import AnalysisResults
-from ..sample_data import iter_aligned
 from ..selectors import Selector
 from ..utils import is_scalar_value, sample_label
 from .base import Plotter
@@ -150,7 +150,7 @@ class SelectorOverviewPlotter(Plotter):
         """
         stream = results.collector_stream(reader_idx, sel_idx)
         samples: list[tuple[PredictionSample, float]] = []
-        for sample, record in iter_aligned(selector, stream):
+        for sample, record in zip(selector, stream if stream is not None else repeat({})):
             value = record.get(self.err_key)
             if not is_scalar_value(value):
                 raise ConfigError(
