@@ -19,6 +19,7 @@ $defs:
         type:
         - number
         - 'null'
+        minimum: 0
         default: null
         description: Linkage-distance cut for cluster formation. When null,
           ``distance_fraction`` of the maximum linkage height is used.

@@ -13,5 +13,5 @@ $defs:
     enum:
     - yaml
     - json
-    description: Output format accepted by ``StatisticsReporter.SUPPORTED_FORMATS``.
+    description: Output format accepted by the statistics reporter.
 description: Analysis component schemas used by ``core_analyze`` setup functions and analysis registries.

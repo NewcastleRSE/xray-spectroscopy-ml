@@ -22,18 +22,21 @@ $defs:
         type:
         - integer
         - 'null'
+        minimum: 0
         default: null
         description: First channel index to plot. Defaults to the first channel.
       end_index:
         type:
         - integer
         - 'null'
+        minimum: 0
         default: null
         description: One-past-the-end channel index to plot. Defaults to the last channel.
       y_zoom:
         type:
         - number
         - 'null'
+        exclusiveMinimum: 0
         default: null
         description: Optional upper y-axis limit for zooming in around zero.
       keys:

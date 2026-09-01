@@ -15,6 +15,7 @@ $defs:
         type:
         - integer
         - 'null'
+        minimum: 1
         default: null
         description: Maximum number of pages per PDF. ``None`` writes all selected
           samples; otherwise a random subset is drawn using the global seed.
