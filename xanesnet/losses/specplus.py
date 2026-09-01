@@ -210,7 +210,7 @@ class SpectralLossPlus(Loss):
         """Compute a peak-aware spatial weight map.
 
         Upweights strong intensities and concave regions to direct the detail
-        loss towards spectrally important features.
+        loss toward spectrally important features.
 
         Args:
             y: Input signals ``(B, N)``.

@@ -32,7 +32,7 @@ from .base import Plotter
 from .common import stat_tables
 from .registry import PlotterRegistry
 
-_MARK_COLOURS: dict[str, str] = {"best": "#d5f5d5", "worst": "#f5d5d5"}
+_MARK_COLORS: dict[str, str] = {"best": "#d5f5d5", "worst": "#f5d5d5"}
 
 # Marker appended to the header of the column whose values order the rows.
 _SORT_INDICATOR = " \u2193"
@@ -120,7 +120,7 @@ class StatTablePlotter(Plotter):
         """
         row_labels = table.row_labels
         col_labels = _annotate_sort_column(table.col_labels, table.sort_col)
-        cell_colours = _cell_colours(table.cell_marks)
+        cell_colors = _cell_colors(table.cell_marks)
 
         n_rows, n_cols = len(row_labels), len(col_labels)
         fig_width = max(4, 1.4 * n_cols + 2)
@@ -133,7 +133,7 @@ class StatTablePlotter(Plotter):
             cellText=table.cell_text,
             rowLabels=row_labels,
             colLabels=col_labels,
-            cellColours=cell_colours,
+            cellColours=cell_colors,
             loc="center",
             cellLoc="center",
         )
@@ -168,7 +168,7 @@ class StatTablePlotter(Plotter):
             filepath: Destination PDF path.
         """
         value_cols = _annotate_sort_column(table.value_cols, table.sort_col)
-        cell_colours = [["white"] + colours_row for colours_row in _cell_colours(table.cell_marks)]
+        cell_colors = [["white"] + colors_row for colors_row in _cell_colors(table.cell_marks)]
 
         n_rows = len(table.cell_text)
         n_cols = 1 + len(value_cols)
@@ -183,7 +183,7 @@ class StatTablePlotter(Plotter):
             cellText=table.cell_text,
             rowLabels=[""] * n_rows,
             colLabels=[""] + value_cols,
-            cellColours=cell_colours,
+            cellColours=cell_colors,
             loc="center",
             cellLoc="center",
         )
@@ -244,13 +244,13 @@ def _annotate_sort_column(labels: list[str], sort_col: int) -> list[str]:
     return [label + _SORT_INDICATOR if idx == sort_col else label for idx, label in enumerate(labels)]
 
 
-def _cell_colours(cell_marks: list[list[str | None]]) -> list[list[str]]:
-    """Map best/worst cell marks to Matplotlib background colours.
+def _cell_colors(cell_marks: list[list[str | None]]) -> list[list[str]]:
+    """Map best/worst cell marks to Matplotlib background colors.
 
     Args:
         cell_marks: Per-cell marks from ``stat_tables.cell_marks``.
 
     Returns:
-        Matrix of Matplotlib-compatible colour strings matching ``cell_marks``.
+        Matrix of Matplotlib-compatible color strings matching ``cell_marks``.
     """
-    return [[_MARK_COLOURS[mark] if mark is not None else "white" for mark in marks_row] for marks_row in cell_marks]
+    return [[_MARK_COLORS[mark] if mark is not None else "white" for mark in marks_row] for marks_row in cell_marks]

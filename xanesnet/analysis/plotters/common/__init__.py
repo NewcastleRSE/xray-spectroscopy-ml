@@ -23,7 +23,7 @@
 Each module owns one concern, so a new plotter can pick exactly the pieces it
 needs without pulling in unrelated code:
 
-* :mod:`style` - colours, fonts, and boxed annotations.
+* :mod:`style` - colors, fonts, and boxed annotations.
 * :mod:`layout` - figure layout and method grids.
 * :mod:`spectra_pages` - single-sample spectra pages.
 * :mod:`structures` - atomic structure rendering.
@@ -33,6 +33,7 @@ The names re-exported here are the ones plotters use most; anything else is
 imported from its module directly.
 """
 
+from .formatting import apply_decimal_tick_format, format_decimal
 from .layout import (
     adjust_grid,
     compact_layout,
@@ -48,23 +49,24 @@ from .spectra_pages import (
 )
 from .structures import draw_structure
 from .style import (
-    COLOUR_ACCENT_GREEN,
-    COLOUR_ACCENT_RED,
-    COLOUR_PREDICTION,
-    COLOUR_TARGET,
-    METHOD_COLOURS,
+    COLOR_ACCENT_GREEN,
+    COLOR_ACCENT_RED,
+    COLOR_PREDICTION,
+    COLOR_TARGET,
+    METHOD_COLORS,
     add_subtitle,
     annotate_box,
-    method_colour,
+    method_color,
     style_axis,
 )
 
 __all__ = [
-    "COLOUR_ACCENT_GREEN",
-    "COLOUR_ACCENT_RED",
-    "COLOUR_PREDICTION",
-    "COLOUR_TARGET",
-    "METHOD_COLOURS",
+    "COLOR_ACCENT_GREEN",
+    "COLOR_ACCENT_RED",
+    "COLOR_PREDICTION",
+    "COLOR_TARGET",
+    "METHOD_COLORS",
+    "apply_decimal_tick_format",
     "add_subtitle",
     "adjust_grid",
     "annotate_box",
@@ -72,8 +74,9 @@ __all__ = [
     "compact_layout",
     "draw_structure",
     "finish_grid",
+    "format_decimal",
     "grid_shape",
-    "method_colour",
+    "method_color",
     "method_grid",
     "spectra_page_figure",
     "spectra_structure_page_figure",

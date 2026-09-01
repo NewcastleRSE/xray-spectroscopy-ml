@@ -35,9 +35,10 @@ from .base import Plotter
 from .common import (
     add_subtitle,
     adjust_grid,
+    apply_decimal_tick_format,
     compact_layout,
     finish_grid,
-    method_colour,
+    method_color,
     method_grid,
     style_axis,
     style_grid_cell,
@@ -113,8 +114,8 @@ class EnergyResolvedLossPlotter(Plotter):
                 if not curves:
                     continue
 
-                colour = method_colour(len(series))
-                series.append((label.dir_name, label.lines, colour, curves))
+                color = method_color(len(series))
+                series.append((label.dir_name, label.lines, color, curves))
                 for key in curves:
                     if key not in key_order:
                         key_order.append(key)
@@ -123,18 +124,18 @@ class EnergyResolvedLossPlotter(Plotter):
             logging.info("    No energy-resolved loss data collected, skipping.")
             return
 
-        for dir_name, label_lines, colour, curves in series:
+        for dir_name, label_lines, color, curves in series:
             combo_dir = root / dir_name
             combo_dir.mkdir(parents=True, exist_ok=True)
 
             for key, (mean, std) in curves.items():
-                self._curve_figure(mean, std, key, "\n".join(label_lines), colour, combo_dir / f"{key}.pdf")
+                self._curve_figure(mean, std, key, "\n".join(label_lines), color, combo_dir / f"{key}.pdf")
 
         combined_dir = root / "combined"
         combined_dir.mkdir(parents=True, exist_ok=True)
         for key in key_order:
             key_series: list[tuple[str, list[str], Curve]] = [
-                (colour, label_lines, curves[key]) for _, label_lines, colour, curves in series if key in curves
+                (color, label_lines, curves[key]) for _, label_lines, color, curves in series if key in curves
             ]
             self._combined_grid(key, key_series, combined_dir)
             self._combined_overlay(key, key_series, combined_dir)
@@ -178,6 +179,7 @@ class EnergyResolvedLossPlotter(Plotter):
             ax.set_ylim(lower, upper)
         elif self.y_zoom is not None:
             ax.set_ylim(0, self.y_zoom)
+        apply_decimal_tick_format(ax)
 
     def _curve_figure(
         self,
@@ -185,7 +187,7 @@ class EnergyResolvedLossPlotter(Plotter):
         std: np.ndarray,
         key: str,
         subtitle: str,
-        colour: str,
+        color: str,
         out: Path,
     ) -> None:
         """Write one mean-loss curve figure for a single method.
@@ -195,13 +197,13 @@ class EnergyResolvedLossPlotter(Plotter):
             std: Per-channel loss standard deviation with shape ``(N,)``.
             key: Loss key used for labels and output path context.
             subtitle: Plot subtitle text describing prediction and selector context.
-            colour: Method colour used for the curve.
+            color: Method color used for the curve.
             out: Destination PDF path.
         """
         fig, ax = plt.subplots(figsize=(6.5, 3.6))
         x = np.arange(len(mean))
-        ax.plot(x, mean, color=colour, linewidth=2.0, label="Mean")
-        ax.fill_between(x, mean - std, mean + std, color=colour, alpha=0.25, linewidth=0, label="+/- 1 std")
+        ax.plot(x, mean, color=color, linewidth=2.0, label="Mean")
+        ax.fill_between(x, mean - std, mean + std, color=color, alpha=0.25, linewidth=0, label="+/- 1 std")
         ax.set_xlabel("Energy")
         ax.set_ylabel(key)
         ax.legend(fontsize=8, framealpha=0.9)
@@ -225,7 +227,7 @@ class EnergyResolvedLossPlotter(Plotter):
 
         Args:
             key: Loss key used for labels and output path context.
-            series: ``(colour, label lines, (mean, std))`` per method in first-seen order.
+            series: ``(color, label lines, (mean, std))`` per method in first-seen order.
             out: Directory where the combined grid PDF should be written.
         """
         n = len(series)
@@ -233,11 +235,11 @@ class EnergyResolvedLossPlotter(Plotter):
         fig, axes = method_grid(n, cell_width=3.4, cell_height=2.6)
         ncols = len(axes[0])
 
-        for idx, (colour, label_lines, (mean, std)) in enumerate(series):
+        for idx, (color, label_lines, (mean, std)) in enumerate(series):
             ax = axes[idx // ncols][idx % ncols]
             x = np.arange(len(mean))
-            ax.plot(x, mean, color=colour, linewidth=1.6)
-            ax.fill_between(x, mean - std, mean + std, color=colour, alpha=0.25, linewidth=0)
+            ax.plot(x, mean, color=color, linewidth=1.6)
+            ax.fill_between(x, mean - std, mean + std, color=color, alpha=0.25, linewidth=0)
             style_grid_cell(ax, label_lines)
 
         finish_grid(axes, n, "Energy", key)
@@ -256,14 +258,14 @@ class EnergyResolvedLossPlotter(Plotter):
 
         Args:
             key: Loss key used for labels and output path context.
-            series: ``(colour, label lines, (mean, std))`` per method in first-seen order.
+            series: ``(color, label lines, (mean, std))`` per method in first-seen order.
             out: Directory where the combined overlay PDF should be written.
         """
         fig, ax = plt.subplots(figsize=(7, 4.2))
-        for colour, label_lines, (mean, std) in series:
+        for color, label_lines, (mean, std) in series:
             x = np.arange(len(mean))
-            ax.plot(x, mean, color=colour, linewidth=1.8, label="\n".join(label_lines))
-            ax.fill_between(x, mean - std, mean + std, color=colour, alpha=0.12, linewidth=0)
+            ax.plot(x, mean, color=color, linewidth=1.8, label="\n".join(label_lines))
+            ax.fill_between(x, mean - std, mean + std, color=color, alpha=0.12, linewidth=0)
         ax.set_xlabel("Energy")
         ax.set_ylabel(key)
         ax.legend(fontsize=8, framealpha=0.9)

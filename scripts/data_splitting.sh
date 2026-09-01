@@ -22,33 +22,30 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "$REPO_ROOT"
 
 # Required
-CONFIG="./configs/gemnet_oc.yaml"
-OUTPUT="./data/scales/scales_gemnet_oc.json"
-SPLIT_INDEXFILE_OUTPUT="./data/scales/split_indices_gemnet_oc.json"
+INPUT="/media/hendrik/ExternalSSD/final_data/tmQM_xas_constgrid/"
+OUTPUT="./data/paper_workflow/"
 
-# Optional overrides (leave empty to use values from config)
-NUM_BATCHES=16
-DEVICE="cuda"
-SEED=""
+# Optional overrides
+TEST_FRACTION=0.2
+SPECTRUM_KEY="XANES"
+STRATIFY_ABSORBERS="true"
+SEED=42
 
 args=(
-	"scripts/gemnet_scale_fitting.py"
-	"--config" "$CONFIG"
+	"scripts/data_splitting.py"
+	"--input" "$INPUT"
 	"--output" "$OUTPUT"
-	"--split-indexfile-output" "$SPLIT_INDEXFILE_OUTPUT"
-	"--num-batches" "$NUM_BATCHES"
+	"--test-fraction" "$TEST_FRACTION"
+	"--spectrum-key" "$SPECTRUM_KEY"
+	"--seed" "$SEED"
 )
 
-if [[ -n "$DEVICE" ]]; then
-	args+=("--device" "$DEVICE")
-fi
-
-if [[ -n "$SEED" ]]; then
-	args+=("--seed" "$SEED")
+if [[ "$STRATIFY_ABSORBERS" == "true" ]]; then
+	args+=("--stratify-absorbers")
 fi
 
 echo "Running: python3 ${args[*]}"

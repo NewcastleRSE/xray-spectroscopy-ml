@@ -107,7 +107,7 @@ def main(args: list[str]) -> None:
         args: Raw command-line argument strings (typically ``sys.argv[1:]``).
 
     Raises:
-        ConfigError: If an unrecognised sub-command is supplied.
+        ConfigError: If an unrecognized sub-command is supplied.
     """
     print(LOGO)
 

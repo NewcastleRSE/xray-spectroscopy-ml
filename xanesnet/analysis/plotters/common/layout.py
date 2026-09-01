@@ -31,6 +31,8 @@ from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
+from .formatting import apply_decimal_tick_format
+
 # Font size of the per-cell titles and tick labels inside a method grid. Cells
 # are small, so they use tighter type than single-panel figures.
 GRID_CELL_TITLE_FONTSIZE: float = 5.5
@@ -92,7 +94,7 @@ def method_grid(
         n_cells: Number of methods to show.
         cell_width: Width of one cell in inches.
         cell_height: Height of one cell in inches.
-        width_margin: Extra figure width in inches, for example for a colourbar.
+        width_margin: Extra figure width in inches, for example for a colorbar.
         height_margin: Extra figure height in inches, for example for a legend.
         sharex: Whether all cells share one x range.
         sharey: Whether all cells share one y range.
@@ -163,6 +165,7 @@ def style_grid_cell(ax: Axes, title_lines: list[str]) -> None:
     """
     ax.set_title("  |  ".join(title_lines), fontsize=GRID_CELL_TITLE_FONTSIZE)
     ax.tick_params(labelsize=GRID_CELL_TICK_FONTSIZE)
+    apply_decimal_tick_format(ax)
 
 
 def adjust_grid(

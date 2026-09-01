@@ -167,19 +167,12 @@ class EnsembleInferencer(Inferencer):
 
             n_target_sites = predictions_mean.shape[0]
             wall_time = end_time - start_time
-            forward_time = torch.full(
+            time_per_spectrum = torch.full(
                 (n_target_sites,),
                 wall_time / n_target_sites if n_target_sites > 0 else 0.0,
                 dtype=torch.float32,
                 device=self.device,
             )
-            forward_time_pass = torch.full(
-                (n_target_sites,),
-                wall_time,
-                dtype=torch.float32,
-                device=self.device,
-            )
-
             targets = self.batch_processor.target_preparation(batch)
 
             if writer is not None:
@@ -188,8 +181,7 @@ class EnsembleInferencer(Inferencer):
                     "prediction_std": predictions_std,
                     "target": targets,
                     "sample_id": self.batch_processor.sample_id_preparation(batch),
-                    "forward_time": forward_time,
-                    "forward_time_pass": forward_time_pass,
+                    "time_per_spectrum": time_per_spectrum,
                 }
                 target_site_indices = self.batch_processor.target_site_index_preparation(batch)
                 if target_site_indices is not None:

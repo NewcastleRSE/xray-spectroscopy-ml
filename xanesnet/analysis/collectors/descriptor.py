@@ -34,7 +34,7 @@ from .registry import CollectorRegistry
 class DescriptorCollector(Collector):
     """Compute the configured structure descriptor for one sample.
 
-    The descriptor vector of the sample's structure (centred on the target
+    The descriptor vector of the sample's structure (centered on the target
     site when available) is returned under the ``descriptor`` key.
 
     Requires:

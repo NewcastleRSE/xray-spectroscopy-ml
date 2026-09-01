@@ -51,8 +51,10 @@ class PredictionSample(TypedDict):
     produced an energy/channel-wise uncertainty estimate. ``sample_id`` is the
     identifier written by XANESNET inference. ``target_site_index`` identifies
     the original atom within that structure, or is ``None`` for non-site-specific
-    predictions. Analysis may attach the matching raw ``structure`` from the
-    inference datasource.
+    predictions. ``time_per_spectrum`` is the forward-pass duration amortized
+    over the spectra produced by the batch. This value is in seconds and covers
+    only the model forward pass. Analysis may attach the matching raw
+    ``structure`` from the inference datasource.
     """
 
     # Required:
@@ -63,8 +65,7 @@ class PredictionSample(TypedDict):
 
     # Optional:
     prediction_std: NotRequired[np.ndarray | torch.Tensor]
-    forward_time: NotRequired[float]
-    forward_time_pass: NotRequired[float]
+    time_per_spectrum: NotRequired[float]
     structure: NotRequired[Molecule | Structure]
 
 
@@ -734,7 +735,7 @@ def detect_prediction_format(path: str | Path) -> type[PredictionReader]:
 
     Raises:
         FileNotFoundError: If ``path`` does not exist.
-        ValueError: If no recognisable prediction files are found.
+        ValueError: If no recognizable prediction files are found.
     """
     predictions_path = Path(path)
 

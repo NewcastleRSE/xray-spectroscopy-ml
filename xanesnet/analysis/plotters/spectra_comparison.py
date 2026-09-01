@@ -40,6 +40,7 @@ from ..utils import SampleKey, is_scalar_value, sample_key, sample_key_sort_key
 from .base import Plotter
 from .common import (
     combined_spectra_page_figure,
+    format_decimal,
     spectra_page_figure,
     spectra_structure_page_figure,
 )
@@ -54,8 +55,9 @@ class SpectraComparisonPlotter(Plotter):
 
     Ranked by a scalar error value, ``n_samples`` best and worst samples are
     written as multi-page PDFs per method, with structure panels when matched.
-    With two or more readers, a combined PDF ranks the samples common to all
-    readers by their mean error.
+    With two or more readers, combined PDFs are generated for each method's
+    ranking: the samples common to all readers are ranked by that method's
+    error, and every reader's prediction is overlaid.
 
     Requires:
         Per-sample ranking error: provided by a scalar collector emitting ``sort_key``.
@@ -153,7 +155,10 @@ class SpectraComparisonPlotter(Plotter):
         total = len(entries)
         with PdfPages(pdf_path) as pdf:
             for rank, (sample, col_scalars, error) in enumerate(entries, start=1):
-                subtitle = f"{direction} #{rank} of {total}  |  {metric}={error:.4g}  |  " + "  |  ".join(label_lines)
+                subtitle = (
+                    f"{direction} #{rank} of {total}  |  {metric}={format_decimal(error, 4)}  |  "
+                    + "  |  ".join(label_lines)
+                )
                 if sample.get("structure") is not None:
                     fig = spectra_structure_page_figure(sample, col_scalars, subtitle)
                 else:
@@ -162,13 +167,13 @@ class SpectraComparisonPlotter(Plotter):
                 plt.close(fig)
 
     def _plot_combined(self, results: AnalysisResults, root: Path) -> None:
-        """Write combined best/worst pages ranking samples shared by every reader.
+        """Write combined best/worst pages ranked independently by each reader.
 
-        For every selector index shared by all prediction readers, the mean
-        ranking error across readers is computed for the samples common to
-        all of them, and the best and worst ``n_samples`` overlay every
-        reader's prediction against the shared target. Nothing is written
-        with fewer than two prediction readers.
+        For every selector index shared by all prediction readers, each
+        reader's error ranks the samples common to all readers. The best and
+        worst ``n_samples`` for that reader then overlay every reader's
+        prediction against the shared target. Nothing is written with fewer
+        than two prediction readers.
 
         Args:
             results: Analysis pipeline outputs to plot.
@@ -198,48 +203,55 @@ class SpectraComparisonPlotter(Plotter):
             if len(common_keys) < 2:
                 continue
 
-            mean_error = {
-                identity: sum(entries[identity][2] for entries in by_reader) / len(by_reader)
-                for identity in common_keys
-            }
-            ranked = sorted(common_keys, key=lambda identity: (mean_error[identity], sample_key_sort_key(identity)))
-            n = min(self.n_samples, len(ranked))
-            best = ranked[:n]
-            worst = list(reversed(ranked[-n:]))
-
             selector_type = results.selectors[0][sel_idx].selector_type
             selector_str = str(results.selectors[0][sel_idx])
-            combo_dir = combined_root / f"sel_{sel_idx:03d}_{selector_type}"
-            combo_dir.mkdir(parents=True, exist_ok=True)
+            selector_dir = combined_root / f"sel_{sel_idx:03d}_{selector_type}"
 
-            self._write_combined_pages(
-                by_reader,
-                results.prediction_names,
-                best,
-                mean_error,
-                self.sort_key,
-                selector_str,
-                combo_dir / "best.pdf",
-                "best",
-            )
-            self._write_combined_pages(
-                by_reader,
-                results.prediction_names,
-                worst,
-                mean_error,
-                self.sort_key,
-                selector_str,
-                combo_dir / "worst.pdf",
-                "worst",
-            )
+            for ranking_reader_idx, ranking_entries in enumerate(by_reader):
+                ranking_error = {identity: ranking_entries[identity][2] for identity in common_keys}
+                ranked = sorted(
+                    common_keys,
+                    key=lambda identity: (ranking_error[identity], sample_key_sort_key(identity)),
+                )
+                n = min(self.n_samples, len(ranked))
+                best = ranked[:n]
+                worst = list(reversed(ranked[-n:]))
+
+                ranking_method = results.method_label(ranking_reader_idx, sel_idx)
+                combo_dir = selector_dir / f"method_{ranking_reader_idx:03d}"
+                combo_dir.mkdir(parents=True, exist_ok=True)
+
+                self._write_combined_pages(
+                    by_reader,
+                    results.prediction_names,
+                    best,
+                    ranking_error,
+                    self.sort_key,
+                    ranking_method.lines[0],
+                    selector_str,
+                    combo_dir / "best.pdf",
+                    "best",
+                )
+                self._write_combined_pages(
+                    by_reader,
+                    results.prediction_names,
+                    worst,
+                    ranking_error,
+                    self.sort_key,
+                    ranking_method.lines[0],
+                    selector_str,
+                    combo_dir / "worst.pdf",
+                    "worst",
+                )
 
     @staticmethod
     def _write_combined_pages(
         by_reader: list[dict[SampleKey, _Entry]],
         method_labels: list[str],
         sample_keys: list[SampleKey],
-        mean_error: dict[SampleKey, float],
+        ranking_error: dict[SampleKey, float],
         metric: str,
+        ranking_method_label: str,
         selector_str: str,
         pdf_path: Path,
         direction: str,
@@ -251,8 +263,9 @@ class SpectraComparisonPlotter(Plotter):
                 ``(sample, collector scalars, error)`` entry.
             method_labels: Display name per prediction reader.
             sample_keys: Ranked compound sample identities to render, best or worst first.
-            mean_error: Mean ranking error across readers, keyed by compound sample identity.
+            ranking_error: Ranking method's error keyed by compound sample identity.
             metric: Scalar key used for ranking.
+            ranking_method_label: Display label of the method used for ranking.
             selector_str: Shared selector description for the page subtitle.
             pdf_path: Destination PDF path.
             direction: ``"best"`` or ``"worst"`` for the page subtitle.
@@ -264,7 +277,8 @@ class SpectraComparisonPlotter(Plotter):
                 target = np.asarray(sample["target"]).ravel()
                 predictions = [np.asarray(entries[identity][0]["prediction"]).ravel() for entries in by_reader]
                 subtitle = (
-                    f"{direction} #{rank} of {total}  |  mean {metric}={mean_error[identity]:.4g}  |  {selector_str}"
+                    f"{direction} #{rank} of {total}  |  {ranking_method_label} {metric}="
+                    f"{format_decimal(ranking_error[identity], 4)}  |  {selector_str}"
                 )
                 fig = combined_spectra_page_figure(sample, method_labels, predictions, target, subtitle)
                 pdf.savefig(fig, bbox_inches="tight")

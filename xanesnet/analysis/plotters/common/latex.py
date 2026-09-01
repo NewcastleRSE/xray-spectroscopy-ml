@@ -34,6 +34,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from .formatting import format_decimal
+
 LATEX_PREAMBLE: str = r"""\documentclass{article}
 \usepackage{graphicx}
 \usepackage{float}
@@ -45,8 +47,8 @@ LATEX_PREAMBLE: str = r"""\documentclass{article}
 
 LATEX_FOOTER: str = "\\end{document}\n"
 
-# Background colours used to highlight the best and worst cell of a table.
-LATEX_MARK_COLOURS: dict[str, str] = {"best": "green!15", "worst": "red!15"}
+# Background colors used to highlight the best and worst cell of a table.
+LATEX_MARK_COLORS: dict[str, str] = {"best": "green!15", "worst": "red!15"}
 
 # Seconds allowed per external toolchain call before it is abandoned.
 _PROCESS_TIMEOUT: int = 30
@@ -91,8 +93,8 @@ def escape_label_line(text: str) -> str:
 def format_number(value: float, precision: int) -> str:
     """Format a numeric value for LaTeX output.
 
-    Values that ``g`` formatting renders in scientific notation are converted
-    to a compact ``$m \\times 10^{e}$`` math expression.
+    Values are always rendered as plain fixed-point decimal text, including
+    values small enough that general formatting would use scientific notation.
 
     Args:
         value: Numeric value to format.
@@ -101,11 +103,7 @@ def format_number(value: float, precision: int) -> str:
     Returns:
         LaTeX-formatted number as a string.
     """
-    text = f"{value:.{precision}g}"
-    if "e" in text:
-        mantissa, exponent = text.split("e")
-        return f"${mantissa}\\times10^{{{int(exponent)}}}$"
-    return text
+    return format_decimal(value, precision)
 
 
 def format_cell(value: float | None, mark: str | None, precision: int) -> str:
@@ -113,15 +111,15 @@ def format_cell(value: float | None, mark: str | None, precision: int) -> str:
 
     Args:
         value: Numeric cell value; missing values are rendered as a dash.
-        mark: Optional ``"best"``/``"worst"`` mark controlling colour highlighting.
+        mark: Optional ``"best"``/``"worst"`` mark controlling color highlighting.
         precision: Number of significant digits.
 
     Returns:
         LaTeX cell content with an optional ``\\cellcolor`` prefix.
     """
     text = format_number(value, precision) if value is not None else "-"
-    colour = LATEX_MARK_COLOURS[mark] if mark is not None else ""
-    return rf"\cellcolor{{{colour}}} {text}" if colour else text
+    color = LATEX_MARK_COLORS[mark] if mark is not None else ""
+    return rf"\cellcolor{{{color}}} {text}" if color else text
 
 
 def sanitize_label(text: str) -> str:

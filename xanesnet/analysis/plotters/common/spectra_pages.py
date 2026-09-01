@@ -37,15 +37,16 @@ from matplotlib.text import Text
 from xanesnet.serialization.prediction_readers import PredictionSample
 
 from ...utils import ScalarValue, iter_scalar_items, sample_label
+from .formatting import format_decimal
 from .layout import compact_layout
 from .structures import draw_structure
 from .style import (
-    COLOUR_ACCENT_RED,
-    COLOUR_PREDICTION,
-    COLOUR_TARGET,
+    COLOR_ACCENT_RED,
+    COLOR_PREDICTION,
+    COLOR_TARGET,
     add_subtitle,
     annotate_box,
-    method_colour,
+    method_color,
     style_axis,
 )
 
@@ -251,11 +252,11 @@ def _draw_combined_spectra_panels(
         sample_id: Identifier shown in the page title.
     """
     x = np.arange(len(target))
-    ax_spec.plot(x, target, label="Target", linewidth=2.0, color=COLOUR_TARGET)
+    ax_spec.plot(x, target, label="Target", linewidth=2.0, color=COLOR_TARGET)
     for index, (label, pred) in enumerate(zip(method_labels, predictions)):
-        colour = method_colour(index)
-        ax_spec.plot(x, pred, label=label, linewidth=1.6, linestyle="--", color=colour)
-        ax_res.plot(x, pred - target, linewidth=1.6, color=colour)
+        color = method_color(index)
+        ax_spec.plot(x, pred, label=label, linewidth=1.6, linestyle="--", color=color)
+        ax_res.plot(x, pred - target, linewidth=1.6, color=color)
 
     ax_res.axhline(0, color="black", linewidth=1.0, linestyle=":")
     ax_res.set_xlabel("Energy")
@@ -311,7 +312,7 @@ def _draw_spectra_panels(
         pred_std: Optional one-dimensional standard deviation per channel.
     """
     x = np.arange(len(pred))
-    ax_spec.plot(x, target, label="Target", linewidth=2.0, color=COLOUR_TARGET)
+    ax_spec.plot(x, target, label="Target", linewidth=2.0, color=COLOR_TARGET)
     if pred_std is not None:
         if pred_std.shape == pred.shape:
             ax_spec.fill_between(
@@ -319,7 +320,7 @@ def _draw_spectra_panels(
                 pred - pred_std,
                 pred + pred_std,
                 label="Prediction +/- 1 std",
-                color=COLOUR_PREDICTION,
+                color=COLOR_PREDICTION,
                 alpha=0.18,
                 linewidth=0,
             )
@@ -329,9 +330,9 @@ def _draw_spectra_panels(
                 pred_std.shape,
                 pred.shape,
             )
-    ax_spec.plot(x, pred, label="Prediction", linewidth=2.0, color=COLOUR_PREDICTION, linestyle="--")
+    ax_spec.plot(x, pred, label="Prediction", linewidth=2.0, color=COLOR_PREDICTION, linestyle="--")
     ax_spec.legend(fontsize=8, loc="upper right")
-    ax_res.plot(x, pred - target, color=COLOUR_ACCENT_RED, linewidth=2.0)
+    ax_res.plot(x, pred - target, color=COLOR_ACCENT_RED, linewidth=2.0)
     ax_res.axhline(0, color="black", linewidth=1.0, linestyle=":")
     ax_res.set_xlabel("Energy")
     style_axis(ax_spec)
@@ -354,7 +355,7 @@ def _add_spectra_scalar_box(ax_spec: Axes, scalars: dict[str, ScalarValue]) -> T
     """
     if not scalars:
         return None
-    text = "\n".join(f"{key}: {value:.4g}" for key, value in scalars.items())
+    text = "\n".join(f"{key}: {format_decimal(float(value), 4)}" for key, value in scalars.items())
     return annotate_box(ax_spec, text, 0.99, 0.98, "right", "top", fontsize=8, alpha=0.7)
 
 

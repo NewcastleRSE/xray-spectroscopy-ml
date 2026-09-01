@@ -58,7 +58,7 @@ class E3EEBatch(Protocol):
     att_dst: torch.Tensor
     att_dist: torch.Tensor
     att_vec: torch.Tensor
-    # Flat target-site-centred triplet scalars, indices into padded layout
+    # Flat target-site-centered triplet scalars, indices into padded layout
     path_j: torch.Tensor
     path_k: torch.Tensor
     path_r0j: torch.Tensor
@@ -78,7 +78,7 @@ class E3EEDataset(TorchGeometricDataset):
 
     The dataset preserves target-site ordering and supports both
     periodic Structures and non-periodic Molecules. All edges and target-site-
-    centred triplet path scalars are precomputed at prepare() time using the
+    centered triplet path scalars are precomputed at prepare() time using the
     shared graph utilities, so the model does not need to rebuild geometry at
     forward time.
 
@@ -96,7 +96,7 @@ class E3EEDataset(TorchGeometricDataset):
         split_indexfile: Optional path to split indices.
         graph_builder: Main graph builder configuration.
         att_graph_builder: Attention graph builder configuration.
-        use_path_branch: Whether to precompute target-site-centred paths. The
+        use_path_branch: Whether to precompute target-site-centered paths. The
             path cutoff is taken from ``graph_builder.cutoff``.
         max_paths_per_structure: Maximum target-site paths saved per structure.
     """
@@ -131,7 +131,7 @@ class E3EEDataset(TorchGeometricDataset):
         self.max_paths_per_structure = max_paths_per_structure
 
     def _prepare_single(self, idx: int, save_path_fn: SavePathFn) -> int:
-        """Process one datasource item into target-site-centred graph samples.
+        """Process one datasource item into target-site-centered graph samples.
 
         Args:
             idx: Datasource index to process.
@@ -218,7 +218,7 @@ class E3EEDataset(TorchGeometricDataset):
         return seq
 
     def collate_fn(self, batch: list[BaseData]) -> Batch:
-        """Collate target-site-centred graph samples into one padded batch.
+        """Collate target-site-centered graph samples into one padded batch.
 
         Node tensors are padded to ``(batch, max_nodes, ...)`` and flat
         edge/path indices are offset by ``batch_index * max_nodes``.

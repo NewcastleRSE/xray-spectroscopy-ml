@@ -36,10 +36,10 @@ from ..result import AnalysisResults
 from ..selectors import Selector
 from ..utils import SampleKey, is_scalar_value, sample_key, sample_key_sort_key
 from .base import Plotter
-from .common import add_subtitle, compact_layout, method_colour, style_axis
+from .common import add_subtitle, compact_layout, method_color, style_axis
 from .registry import PlotterRegistry
 
-# Label lines, colour, compound sample identity to per-sample error.
+# Label lines, color, compound sample identity to per-sample error.
 _MethodErrors = tuple[list[str], str, dict[SampleKey, float]]
 
 
@@ -91,7 +91,7 @@ class ErrorCorrelationPlotter(Plotter):
                 if not errors:
                     continue
 
-                methods.append((label.lines, method_colour(len(methods)), errors))
+                methods.append((label.lines, method_color(len(methods)), errors))
 
         if len(methods) < 2:
             logging.info("    Need at least two methods for error correlation, skipping.")
@@ -194,9 +194,9 @@ class ErrorCorrelationPlotter(Plotter):
                 ax.tick_params(labelsize=5.5)
 
         for j in range(n):
-            axes[n - 1][j].set_xlabel("\n".join(methods[j][0]), fontsize=5.5)
+            axes[n - 1][j].set_xlabel("  |  ".join(methods[j][0]), fontsize=5.5)
         for i in range(n):
-            axes[i][0].set_ylabel("\n".join(methods[i][0]), fontsize=5.5)
+            axes[i][0].set_ylabel("  |  ".join(methods[i][0]), fontsize=5.5)
 
         compact_layout(fig, rect=(0.03, 0.04, 1.0, 0.99))
         add_subtitle(fig, "lower panels: error of row method vs error of column method on common samples")
@@ -223,20 +223,20 @@ class ErrorCorrelationPlotter(Plotter):
         return np.array([errors_i[s] for s in common]), np.array([errors_j[s] for s in common])
 
     @staticmethod
-    def _draw_pair_panel(ax: Axes, xs: np.ndarray, ys: np.ndarray, colour: str, fontsize: float) -> None:
+    def _draw_pair_panel(ax: Axes, xs: np.ndarray, ys: np.ndarray, color: str, fontsize: float) -> None:
         """Draw one pairwise error scatter with identity line and annotation.
 
         Args:
             ax: Matplotlib axis to draw on.
             xs: Error values of the row method with shape ``(M,)``.
             ys: Error values of the column method with shape ``(M,)``.
-            colour: Method colour used for the scatter.
+            color: Method color used for the scatter.
             fontsize: Font size used for the annotation text.
         """
         lo = min(float(xs.min()), float(ys.min()))
         hi = max(float(xs.max()), float(ys.max()))
         ax.plot([lo, hi], [lo, hi], color="black", linewidth=0.8, linestyle="--")
-        ax.scatter(xs, ys, s=6, alpha=0.5, color=colour)
+        ax.scatter(xs, ys, s=6, alpha=0.5, color=color)
         r = _pearson(xs, ys)
         note = f"r={r:.2f}" if r is not None else "r=n/a"
         ax.text(
@@ -254,7 +254,7 @@ class ErrorCorrelationPlotter(Plotter):
         ys: np.ndarray,
         row_label_lines: list[str],
         col_label_lines: list[str],
-        colour: str,
+        color: str,
         out: Path,
     ) -> None:
         """Write one standalone correlation figure for a single method pair.
@@ -264,13 +264,13 @@ class ErrorCorrelationPlotter(Plotter):
             ys: Error values of the column method with shape ``(M,)``.
             row_label_lines: Label lines of the row method.
             col_label_lines: Label lines of the column method.
-            colour: Method colour used for the scatter.
+            color: Method color used for the scatter.
             out: Destination PDF path.
         """
         fig, ax = plt.subplots(figsize=(4.8, 4.0))
-        ErrorCorrelationPlotter._draw_pair_panel(ax, xs, ys, colour, fontsize=8)
-        ax.set_xlabel("\n".join(col_label_lines))
-        ax.set_ylabel("\n".join(row_label_lines))
+        ErrorCorrelationPlotter._draw_pair_panel(ax, xs, ys, color, fontsize=8)
+        ax.set_xlabel("  |  ".join(col_label_lines))
+        ax.set_ylabel("  |  ".join(row_label_lines))
         style_axis(ax)
         add_subtitle(fig, f"{row_label_lines[0]} (y) vs {col_label_lines[0]} (x) on common samples")
         compact_layout(fig)

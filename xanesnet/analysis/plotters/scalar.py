@@ -34,13 +34,14 @@ from ..result import AnalysisResults
 from ..utils import ScalarValue, iter_scalar_items
 from .base import Plotter
 from .common import (
-    COLOUR_ACCENT_RED,
+    COLOR_ACCENT_RED,
     add_subtitle,
     adjust_grid,
     annotate_box,
     compact_layout,
     finish_grid,
-    method_colour,
+    format_decimal,
+    method_color,
     method_grid,
     style_axis,
     style_grid_cell,
@@ -101,8 +102,8 @@ class ScalarPlotter(Plotter):
                 if not values_by_key:
                     continue
 
-                colour = method_colour(len(series))
-                series.append((label.dir_name, label.lines, colour, values_by_key))
+                color = method_color(len(series))
+                series.append((label.dir_name, label.lines, color, values_by_key))
                 for key in values_by_key:
                     if key not in key_order:
                         key_order.append(key)
@@ -111,7 +112,7 @@ class ScalarPlotter(Plotter):
             logging.info("    No scalar values collected, skipping.")
             return
 
-        for dir_name, label_lines, colour, values_by_key in series:
+        for dir_name, label_lines, color, values_by_key in series:
             combo_dir = root / dir_name
             subtitle = "\n".join(label_lines)
 
@@ -120,23 +121,23 @@ class ScalarPlotter(Plotter):
                 key_dir.mkdir(parents=True, exist_ok=True)
                 arr = np.array(vals)
 
-                self._histogram(arr, key, subtitle, colour, key_dir)
-                self._boxplot(arr, key, subtitle, colour, key_dir)
-                self._violin(arr, key, subtitle, colour, key_dir)
+                self._histogram(arr, key, subtitle, color, key_dir)
+                self._boxplot(arr, key, subtitle, color, key_dir)
+                self._violin(arr, key, subtitle, color, key_dir)
 
         combined_dir = root / "combined"
         combined_dir.mkdir(parents=True, exist_ok=True)
         for key in key_order:
             key_series: list[tuple[str, list[str], np.ndarray]] = []
-            for _, label_lines, colour, values_by_key in series:
+            for _, label_lines, color, values_by_key in series:
                 if key in values_by_key:
-                    key_series.append((colour, label_lines, np.array(values_by_key[key])))
+                    key_series.append((color, label_lines, np.array(values_by_key[key])))
             self._combined_grid(key, key_series, combined_dir)
             self._combined_grouped(key, key_series, combined_dir)
             self._combined_boxplot(key, key_series, combined_dir)
             self._combined_violin(key, key_series, combined_dir)
 
-    def _histogram(self, arr: np.ndarray, key: str, subtitle: str, colour: str, out: Path) -> None:
+    def _histogram(self, arr: np.ndarray, key: str, subtitle: str, color: str, out: Path) -> None:
         """Write a histogram PDF for one scalar key.
 
         Bar heights report the percentage share of in-range samples per bin.
@@ -145,7 +146,7 @@ class ScalarPlotter(Plotter):
             arr: One-dimensional scalar values with shape ``(N,)``.
             key: Scalar value key used for labels and output path context.
             subtitle: Plot subtitle text describing prediction and selector context.
-            colour: Method colour used for the histogram bars.
+            color: Method color used for the histogram bars.
             out: Directory where ``histogram.pdf`` should be written.
         """
         fig, ax = plt.subplots(figsize=(6.5, 3.6))
@@ -154,7 +155,7 @@ class ScalarPlotter(Plotter):
         heights, edges = _share_heights(arr, self.bins, lo, hi)
         width = edges[1] - edges[0]
         centers = (edges[:-1] + edges[1:]) / 2
-        ax.bar(centers, heights, width=width, color=colour, alpha=0.55)
+        ax.bar(centers, heights, width=width, color=color, alpha=0.55)
         ax.set_xlabel(key)
         ax.set_ylabel("Share (%)")
         style_axis(ax)
@@ -166,19 +167,19 @@ class ScalarPlotter(Plotter):
         plt.close(fig)
 
     @staticmethod
-    def _boxplot(arr: np.ndarray, key: str, subtitle: str, colour: str, out: Path) -> None:
+    def _boxplot(arr: np.ndarray, key: str, subtitle: str, color: str, out: Path) -> None:
         """Write a box plot PDF for one scalar key.
 
         Args:
             arr: One-dimensional scalar values with shape ``(N,)``.
             key: Scalar value key used for labels and output path context.
             subtitle: Plot subtitle text describing prediction and selector context.
-            colour: Method colour used for the box fill.
+            color: Method color used for the box fill.
             out: Directory where ``boxplot.pdf`` should be written.
         """
         fig, ax = plt.subplots(figsize=(4.5, 3.4))
         bp = ax.boxplot(arr, vert=True, patch_artist=True)
-        bp["boxes"][0].set_facecolor(colour)
+        bp["boxes"][0].set_facecolor(color)
         bp["boxes"][0].set_alpha(0.7)
         ax.set_ylabel(key)
         ax.set_xticklabels([""])
@@ -189,14 +190,14 @@ class ScalarPlotter(Plotter):
         plt.close(fig)
 
     @staticmethod
-    def _violin(arr: np.ndarray, key: str, subtitle: str, colour: str, out: Path) -> None:
+    def _violin(arr: np.ndarray, key: str, subtitle: str, color: str, out: Path) -> None:
         """Write a violin plot PDF for one scalar key.
 
         Args:
             arr: One-dimensional scalar values with shape ``(N,)``.
             key: Scalar value key used for labels and output path context.
             subtitle: Plot subtitle text describing prediction and selector context.
-            colour: Method colour used for the violin bodies.
+            color: Method color used for the violin bodies.
             out: Directory where ``violin.pdf`` should be written.
         """
         fig, ax = plt.subplots(figsize=(4.5, 3.4))
@@ -204,7 +205,7 @@ class ScalarPlotter(Plotter):
         bodies = vp["bodies"]
         assert isinstance(bodies, list)
         for body in bodies:
-            body.set_facecolor(colour)
+            body.set_facecolor(color)
             body.set_alpha(0.7)
         ax.set_ylabel(key)
         ax.set_xticks([1])
@@ -229,7 +230,7 @@ class ScalarPlotter(Plotter):
 
         Args:
             key: Scalar value key used for labels and output path context.
-            series: ``(colour, label lines, values)`` per method in first-seen order.
+            series: ``(color, label lines, values)`` per method in first-seen order.
             out: Directory where the combined grid PDF should be written.
         """
         n = len(series)
@@ -241,12 +242,12 @@ class ScalarPlotter(Plotter):
         fig, axes = method_grid(n, cell_width=3.0, cell_height=2.2)
         ncols = len(axes[0])
 
-        for idx, (colour, label_lines, arr) in enumerate(series):
+        for idx, (color, label_lines, arr) in enumerate(series):
             ax = axes[idx // ncols][idx % ncols]
             heights, edges = _share_heights(arr, self.bins, lo, hi)
             width = edges[1] - edges[0]
             centers = (edges[:-1] + edges[1:]) / 2
-            ax.bar(centers, heights, width=width, color=colour, alpha=0.8)
+            ax.bar(centers, heights, width=width, color=color, alpha=0.8)
             style_grid_cell(ax, label_lines)
             if clip is not None:
                 clipped_i = int(np.count_nonzero((arr < lo) | (arr > hi)))
@@ -275,7 +276,7 @@ class ScalarPlotter(Plotter):
 
         Args:
             key: Scalar value key used for labels and output path context.
-            series: ``(colour, label lines, values)`` per method in first-seen order.
+            series: ``(color, label lines, values)`` per method in first-seen order.
             out: Directory where the combined grouped PDF should be written.
         """
         all_values = np.concatenate([arr for _, _, arr in series])
@@ -290,13 +291,13 @@ class ScalarPlotter(Plotter):
         offsets = (np.arange(n_methods) - (n_methods - 1) / 2) * sub_width
 
         fig, ax = plt.subplots(figsize=(7, 4.2))
-        for idx, (colour, label_lines, arr) in enumerate(series):
+        for idx, (color, label_lines, arr) in enumerate(series):
             heights, _ = _share_heights(arr, self.bins, lo, hi)
             ax.bar(
                 centers + offsets[idx],
                 heights,
                 width=sub_width,
-                color=colour,
+                color=color,
                 alpha=0.9,
                 edgecolor="white",
                 linewidth=0.4,
@@ -324,15 +325,15 @@ class ScalarPlotter(Plotter):
 
         Args:
             key: Scalar value key used for labels and output path context.
-            series: ``(colour, label lines, values)`` per method in first-seen order.
+            series: ``(color, label lines, values)`` per method in first-seen order.
             out: Directory where the combined box plot PDF should be written.
         """
         n = len(series)
 
         fig, ax = plt.subplots(figsize=(max(4.5, 1.2 * n), 4.2))
         bp = ax.boxplot([arr for _, _, arr in series], positions=range(n), vert=True, patch_artist=True)
-        for patch, (colour, _, _) in zip(bp["boxes"], series):
-            patch.set_facecolor(colour)
+        for patch, (color, _, _) in zip(bp["boxes"], series):
+            patch.set_facecolor(color)
             patch.set_alpha(0.7)
         ax.set_xticks(range(n))
         _set_method_xticklabels(ax, [label_lines for _, label_lines, _ in series])
@@ -355,7 +356,7 @@ class ScalarPlotter(Plotter):
 
         Args:
             key: Scalar value key used for labels and output path context.
-            series: ``(colour, label lines, values)`` per method in first-seen order.
+            series: ``(color, label lines, values)`` per method in first-seen order.
             out: Directory where the combined violin PDF should be written.
         """
         n = len(series)
@@ -364,8 +365,8 @@ class ScalarPlotter(Plotter):
         vp = ax.violinplot([arr for _, _, arr in series], positions=range(n), showmedians=True, showextrema=True)
         bodies = vp["bodies"]
         assert isinstance(bodies, list)
-        for body, (colour, _, _) in zip(bodies, series):
-            body.set_facecolor(colour)
+        for body, (color, _, _) in zip(bodies, series):
+            body.set_facecolor(color)
             body.set_alpha(0.7)
         ax.set_xticks(range(n))
         _set_method_xticklabels(ax, [label_lines for _, label_lines, _ in series])
@@ -467,7 +468,7 @@ def _clip_note(clip: tuple[float, float, int] | None) -> str:
     if clip is None or clip[2] == 0:
         return ""
     lo, hi, clipped = clip
-    return f"{clipped} values outside [{lo:.4g}, {hi:.4g}] not shown"
+    return f"{clipped} values outside [{format_decimal(lo, 4)}, {format_decimal(hi, 4)}] not shown"
 
 
 def _add_clip_note(ax: Axes, clip: tuple[float, float, int] | None) -> None:
@@ -484,7 +485,7 @@ def _add_clip_note(ax: Axes, clip: tuple[float, float, int] | None) -> None:
     note = _clip_note(clip)
     if not note:
         return
-    ax.set_title(note, loc="right", fontsize=6.5, color=COLOUR_ACCENT_RED)
+    ax.set_title(note, loc="right", fontsize=6.5, color=COLOR_ACCENT_RED)
 
 
 def _add_cell_clip_note(ax: Axes, clip: tuple[float, float, int] | None) -> None:
@@ -508,7 +509,7 @@ def _add_cell_clip_note(ax: Axes, clip: tuple[float, float, int] | None) -> None
         fontsize=5,
         verticalalignment="top",
         horizontalalignment="left",
-        color=COLOUR_ACCENT_RED,
+        color=COLOR_ACCENT_RED,
     )
 
 
@@ -536,5 +537,10 @@ def _add_stats_text(ax: Axes, arr: np.ndarray) -> None:
         ax: Matplotlib axis to annotate.
         arr: One-dimensional scalar values with shape ``(N,)``.
     """
-    text = f"n={len(arr)}\n" f"mean={np.mean(arr):.4g}\n" f"std={np.std(arr):.4g}\n" f"median={np.median(arr):.4g}"
+    text = (
+        f"n={len(arr)}\n"
+        f"mean={format_decimal(float(np.mean(arr)), 4)}\n"
+        f"std={format_decimal(float(np.std(arr)), 4)}\n"
+        f"median={format_decimal(float(np.median(arr)), 4)}"
+    )
     annotate_box(ax, text, 0.97, 0.95, "right", "top", monospace=False)

@@ -31,17 +31,18 @@ from matplotlib.lines import Line2D
 from ..result import AnalysisResults
 from .base import Plotter
 from .common import (
-    COLOUR_ACCENT_GREEN,
-    COLOUR_ACCENT_RED,
-    COLOUR_TARGET,
+    COLOR_ACCENT_GREEN,
+    COLOR_ACCENT_RED,
+    COLOR_TARGET,
     add_subtitle,
     compact_layout,
-    method_colour,
+    format_decimal,
+    method_color,
     style_axis,
 )
 from .registry import PlotterRegistry
 
-# Method mean statistics: label lines, colour, mean target, mean prediction,
+# Method mean statistics: label lines, color, mean target, mean prediction,
 # target std, prediction std, best-percent prediction mean/std, worst-percent
 # prediction mean/std.
 _MethodMeans = tuple[
@@ -110,11 +111,11 @@ class MeanSpectrumPlotter(Plotter):
                 worst_std = ranking_data["worst_prediction_std"]
                 percent = float(ranking_data["percent"])
 
-                colour = method_colour(len(methods))
+                color = method_color(len(methods))
                 methods.append(
                     (
                         label.lines,
-                        colour,
+                        color,
                         target_mean,
                         pred_mean,
                         target_std,
@@ -130,7 +131,7 @@ class MeanSpectrumPlotter(Plotter):
                 combo_dir.mkdir(parents=True, exist_ok=True)
                 subtitle = "\n".join(label.lines)
 
-                self._mean_figure(target_mean, pred_mean, pred_std, subtitle, colour, combo_dir / "mean_spectrum.pdf")
+                self._mean_figure(target_mean, pred_mean, pred_std, subtitle, color, combo_dir / "mean_spectrum.pdf")
                 self._tail_figure(
                     target_mean,
                     pred_mean,
@@ -140,10 +141,10 @@ class MeanSpectrumPlotter(Plotter):
                     worst_std,
                     percent,
                     subtitle,
-                    colour,
+                    color,
                     combo_dir / "tail_means.pdf",
                 )
-                self._spread_figure(target_std, pred_std, subtitle, colour, combo_dir / "spread.pdf")
+                self._spread_figure(target_std, pred_std, subtitle, color, combo_dir / "spread.pdf")
 
         if not methods:
             logging.info("    No samples selected, skipping.")
@@ -165,7 +166,7 @@ class MeanSpectrumPlotter(Plotter):
         worst_std: np.ndarray,
         percent: float,
         subtitle: str,
-        colour: str,
+        color: str,
         out: Path,
     ) -> None:
         """Write one figure comparing the mean prediction with its best/worst tails.
@@ -179,33 +180,33 @@ class MeanSpectrumPlotter(Plotter):
             worst_std: Per-channel prediction std of the worst ``percent`` samples.
             percent: Tail size in percent, as configured on the aggregator.
             subtitle: Plot subtitle text describing prediction and selector context.
-            colour: Method colour used for the mean prediction curve.
+            color: Method color used for the mean prediction curve.
             out: Destination PDF path.
         """
         fig, ax = plt.subplots(figsize=(6.5, 3.6))
         x = np.arange(len(pred_mean))
-        ax.plot(x, target_mean, color=COLOUR_TARGET, linewidth=1.4, linestyle=":", label="Target mean")
-        ax.plot(x, pred_mean, color=colour, linewidth=2.0, label="Total prediction mean")
+        ax.plot(x, target_mean, color=COLOR_TARGET, linewidth=1.4, linestyle=":", label="Target mean")
+        ax.plot(x, pred_mean, color=color, linewidth=2.0, label="Total prediction mean")
         ax.fill_between(
             x,
             best_mean - best_std,
             best_mean + best_std,
-            color=COLOUR_ACCENT_GREEN,
+            color=COLOR_ACCENT_GREEN,
             alpha=0.15,
             linewidth=0,
-            label=f"Best {percent:g}% +/- 1 std",
+            label=f"Best {format_decimal(percent, 4)}% +/- 1 std",
         )
-        ax.plot(x, best_mean, color=COLOUR_ACCENT_GREEN, linewidth=1.8, label=f"Best {percent:g}% mean")
+        ax.plot(x, best_mean, color=COLOR_ACCENT_GREEN, linewidth=1.8, label=f"Best {format_decimal(percent, 4)}% mean")
         ax.fill_between(
             x,
             worst_mean - worst_std,
             worst_mean + worst_std,
-            color=COLOUR_ACCENT_RED,
+            color=COLOR_ACCENT_RED,
             alpha=0.15,
             linewidth=0,
-            label=f"Worst {percent:g}% +/- 1 std",
+            label=f"Worst {format_decimal(percent, 4)}% +/- 1 std",
         )
-        ax.plot(x, worst_mean, color=COLOUR_ACCENT_RED, linewidth=1.8, label=f"Worst {percent:g}% mean")
+        ax.plot(x, worst_mean, color=COLOR_ACCENT_RED, linewidth=1.8, label=f"Worst {format_decimal(percent, 4)}% mean")
         ax.set_xlabel("Energy")
         ax.set_ylabel("Intensity")
         ax.legend(fontsize=8, framealpha=0.9)
@@ -221,7 +222,7 @@ class MeanSpectrumPlotter(Plotter):
         pred_mean: np.ndarray,
         pred_std: np.ndarray,
         subtitle: str,
-        colour: str,
+        color: str,
         out: Path,
     ) -> None:
         """Write one figure comparing the mean prediction and mean target spectra.
@@ -231,22 +232,22 @@ class MeanSpectrumPlotter(Plotter):
             pred_mean: Per-channel mean predicted spectrum.
             pred_std: Per-channel prediction standard deviation.
             subtitle: Plot subtitle text describing prediction and selector context.
-            colour: Method colour used for the prediction curve.
+            color: Method color used for the prediction curve.
             out: Destination PDF path.
         """
         fig, ax = plt.subplots(figsize=(6.5, 3.6))
         x = np.arange(len(pred_mean))
-        ax.plot(x, target_mean, color=COLOUR_TARGET, linewidth=1.6, label="Target mean")
+        ax.plot(x, target_mean, color=COLOR_TARGET, linewidth=1.6, label="Target mean")
         ax.fill_between(
             x,
             pred_mean - pred_std,
             pred_mean + pred_std,
-            color=colour,
+            color=color,
             alpha=0.25,
             linewidth=0,
             label="Prediction +/- 1 std",
         )
-        ax.plot(x, pred_mean, color=colour, linewidth=2.0, label="Prediction mean")
+        ax.plot(x, pred_mean, color=color, linewidth=2.0, label="Prediction mean")
         ax.set_xlabel("Energy")
         ax.set_ylabel("Intensity")
         ax.legend(fontsize=8, framealpha=0.9)
@@ -261,7 +262,7 @@ class MeanSpectrumPlotter(Plotter):
         target_std: np.ndarray,
         pred_std: np.ndarray,
         subtitle: str,
-        colour: str,
+        color: str,
         out: Path,
     ) -> None:
         """Write one figure comparing per-channel prediction and target spread.
@@ -273,13 +274,13 @@ class MeanSpectrumPlotter(Plotter):
             target_std: Per-channel target standard deviation.
             pred_std: Per-channel prediction standard deviation.
             subtitle: Plot subtitle text describing prediction and selector context.
-            colour: Method colour used for the prediction spread curve.
+            color: Method color used for the prediction spread curve.
             out: Destination PDF path.
         """
         fig, ax = plt.subplots(figsize=(6.5, 3.6))
         x = np.arange(len(pred_std))
-        ax.plot(x, target_std, color=COLOUR_TARGET, linewidth=1.8, label="Target std")
-        ax.plot(x, pred_std, color=colour, linewidth=1.8, label="Prediction std")
+        ax.plot(x, target_std, color=COLOR_TARGET, linewidth=1.8, label="Target std")
+        ax.plot(x, pred_std, color=color, linewidth=1.8, label="Prediction std")
         ax.set_xlabel("Energy")
         ax.set_ylabel("Standard deviation")
         ax.legend(fontsize=8, framealpha=0.9)
@@ -291,11 +292,11 @@ class MeanSpectrumPlotter(Plotter):
 
     @staticmethod
     def _legend_with_styles(ax: Axes, extra: list[tuple[str, str]]) -> None:
-        """Rebuild the axis legend with grey style entries appended.
+        """Rebuild the axis legend with gray style entries appended.
 
         Args:
             ax: Matplotlib axis whose legend should be extended.
-            extra: ``(label, linestyle)`` pairs to append as grey proxy entries.
+            extra: ``(label, linestyle)`` pairs to append as gray proxy entries.
         """
         handles, labels = ax.get_legend_handles_labels()
         existing = set(labels)
@@ -327,8 +328,8 @@ class MeanSpectrumPlotter(Plotter):
         """Write one combined figure overlaying all mean prediction/target spectra.
 
         When all methods share the same target mean it is drawn once as a
-        grey dotted line; otherwise one dotted target curve per method is
-        drawn in the method colour.
+        gray dotted line; otherwise one dotted target curve per method is
+        drawn in the method color.
 
         Args:
             methods: Method mean statistics in first-seen order.
@@ -340,16 +341,16 @@ class MeanSpectrumPlotter(Plotter):
             ax.plot(
                 np.arange(len(shared_target)),
                 shared_target,
-                color=COLOUR_TARGET,
+                color=COLOR_TARGET,
                 linewidth=1.6,
                 linestyle=":",
                 label="Target mean",
             )
-        for label_lines, colour, target_mean, pred_mean, *_ in methods:
+        for label_lines, color, target_mean, pred_mean, *_ in methods:
             x = np.arange(len(pred_mean))
             if shared_target is None:
-                ax.plot(x, target_mean, color=colour, linewidth=1.4, linestyle=":")
-            ax.plot(x, pred_mean, color=colour, linewidth=2.0, label="\n".join(label_lines))
+                ax.plot(x, target_mean, color=color, linewidth=1.4, linestyle=":")
+            ax.plot(x, pred_mean, color=color, linewidth=2.0, label="\n".join(label_lines))
         ax.set_xlabel("Energy")
         ax.set_ylabel("Intensity")
         MeanSpectrumPlotter._legend_with_styles(ax, [("Prediction mean", "-"), ("Target mean", ":")])
@@ -363,8 +364,8 @@ class MeanSpectrumPlotter(Plotter):
         """Write one combined figure overlaying per-method tail, prediction, and target means.
 
         When all methods share the same target mean it is drawn once as a
-        grey dotted line; otherwise one dotted target curve per method is
-        drawn in the method colour.
+        gray dotted line; otherwise one dotted target curve per method is
+        drawn in the method color.
 
         Args:
             methods: Method mean statistics in first-seen order.
@@ -379,24 +380,24 @@ class MeanSpectrumPlotter(Plotter):
             ax.plot(
                 np.arange(len(shared_target)),
                 shared_target,
-                color=COLOUR_TARGET,
+                color=COLOR_TARGET,
                 linewidth=1.6,
                 linestyle=":",
                 label="Target mean",
             )
-        for label_lines, colour, target_mean, pred_mean, _, _, best_mean, _, worst_mean, _ in methods:
+        for label_lines, color, target_mean, pred_mean, _, _, best_mean, _, worst_mean, _ in methods:
             tail_mean = best_mean if direction == "best" else worst_mean
             x = np.arange(len(tail_mean))
             if shared_target is None:
-                ax.plot(x, target_mean, color=colour, linewidth=1.4, linestyle=":")
-            ax.plot(x, pred_mean, color=colour, linewidth=1.6, linestyle="--")
-            ax.plot(x, tail_mean, color=colour, linewidth=2.0, label="\n".join(label_lines))
+                ax.plot(x, target_mean, color=color, linewidth=1.4, linestyle=":")
+            ax.plot(x, pred_mean, color=color, linewidth=1.6, linestyle="--")
+            ax.plot(x, tail_mean, color=color, linewidth=2.0, label="\n".join(label_lines))
         ax.set_xlabel("Energy")
         ax.set_ylabel("Intensity")
         MeanSpectrumPlotter._legend_with_styles(
             ax,
             [
-                (f"{direction.capitalize()} {percent:g}% mean", "-"),
+                (f"{direction.capitalize()} {format_decimal(percent, 4)}% mean", "-"),
                 ("Total prediction mean", "--"),
                 ("Target mean", ":"),
             ],

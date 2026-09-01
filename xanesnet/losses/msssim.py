@@ -116,7 +116,7 @@ class MultiScale_SSIM(Loss):
             weights: Per-scale weights.  Uniform when ``None``.
 
         Returns:
-            Normalised weight tensor ``(num_scales,)``.
+            Normalized weight tensor ``(num_scales,)``.
         """
         num_scales = len(self._fractions)
         if weights is not None:

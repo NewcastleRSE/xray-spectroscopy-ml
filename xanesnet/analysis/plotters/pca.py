@@ -35,7 +35,7 @@ from ..result import AnalysisResults
 from ..selectors import Selector
 from ..utils import as_float_vector
 from .base import Plotter
-from .common import add_subtitle, compact_layout, method_colour, style_axis
+from .common import add_subtitle, compact_layout, method_color, style_axis
 from .registry import PlotterRegistry
 
 
@@ -180,7 +180,7 @@ class PcaPlotter(Plotter):
         for sel_idx in sorted(set(groups)):
             mask = group_ids == sel_idx
             coords = [projections[mask, dim] for dim in dims]
-            kwargs: dict[str, Any] = {"color": method_colour(sel_idx), "s": 18, "alpha": 0.85}
+            kwargs: dict[str, Any] = {"color": method_color(sel_idx), "s": 18, "alpha": 0.85}
             if len(dims) == 3:
                 kwargs["depthshade"] = False
             ax.scatter(*coords, label=str(selectors[sel_idx]), **kwargs)

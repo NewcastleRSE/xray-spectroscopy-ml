@@ -18,7 +18,7 @@
 # Citations:
 #   ...
 
-"""End-to-end dry-run test: train, infer, analyse."""
+"""End-to-end dry-run test: train, infer, analyze."""
 
 import logging
 from pathlib import Path
@@ -44,7 +44,7 @@ PIPELINE_ANALYZE = ANALYZE_DIR / "test_analyze.yaml"
 
 @pytest.mark.slow
 def test_full_pipeline(tmp_path: Path) -> None:
-    """Run the complete train, infer, analyse workflow.
+    """Run the complete train, infer, analyze workflow.
 
     Uses the SchNet model pair as a representative pipeline.  All
     intermediate outputs are written under *tmp_path* and cleaned up
@@ -97,7 +97,7 @@ def test_full_pipeline(tmp_path: Path) -> None:
         assert (predictions_dir / "predictions.h5").exists()
         assert (infer_run_dir / "validated_infer_config.yaml").is_file()
 
-        # Analyse
+        # Analyze
         analyze_cli.main(
             [
                 "-i",

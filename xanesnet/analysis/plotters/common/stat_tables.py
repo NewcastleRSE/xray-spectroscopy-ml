@@ -32,6 +32,7 @@ from typing import Any, cast
 
 from ...result import AnalysisResults
 from ...utils import is_scalar_value
+from .formatting import format_decimal
 
 # Aggregator identity: registered aggregator name and its configuration index.
 AggregatorKey = tuple[str, int]
@@ -399,5 +400,5 @@ def _format_row(values: list[float | None], precision: int) -> tuple[list[str], 
     Returns:
         ``(texts, values)`` where missing values render as a dash.
     """
-    texts = [f"{value:.{precision}g}" if value is not None else "-" for value in values]
+    texts = [format_decimal(value, precision) if value is not None else "-" for value in values]
     return texts, list(values)

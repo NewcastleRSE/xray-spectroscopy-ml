@@ -46,7 +46,9 @@ class PredictionBatch(TypedDict):
     energy/channel-wise uncertainty estimate with the same shape as
     ``prediction``. ``sample_id`` identifies the originating raw structure;
     ``target_site_index`` identifies the original atom within that structure
-    when the predictions are site-specific.
+    when the predictions are site-specific. ``time_per_spectrum`` is the
+    forward-pass duration amortized over the spectra produced by the batch.
+    This value is in seconds and covers only the model forward pass.
     """
 
     # Required:
@@ -57,8 +59,7 @@ class PredictionBatch(TypedDict):
     # Optional:
     target_site_index: NotRequired[np.ndarray | torch.Tensor]
     prediction_std: NotRequired[np.ndarray | torch.Tensor]
-    forward_time: NotRequired[np.ndarray | torch.Tensor]
-    forward_time_pass: NotRequired[np.ndarray | torch.Tensor]
+    time_per_spectrum: NotRequired[np.ndarray | torch.Tensor]
 
 
 ###############################################################################

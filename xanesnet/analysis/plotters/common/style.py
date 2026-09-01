@@ -18,17 +18,19 @@
 # Citations:
 #   ...
 
-"""Colours, fonts, and annotations shared by every plotter figure."""
+"""Colors, fonts, and annotations shared by every plotter figure."""
 
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.text import Text
 
+from .formatting import apply_decimal_tick_format
+
 # Palette used to distinguish methods, cycled by method index. The first
-# colours are maximally distinguishable; later colours fill the gaps and are
-# necessarily closer together, so neighbouring entries stay readable even when
-# more methods than colours are drawn.
-METHOD_COLOURS: list[str] = [
+# colors are maximally distinguishable; later colors fill the gaps and are
+# necessarily closer together, so neighboring entries stay readable even when
+# more methods than colors are drawn.
+METHOD_COLORS: list[str] = [
     "#0072b2",  # blue
     "#e69f00",  # orange
     "#009e73",  # bluish green
@@ -51,20 +53,20 @@ METHOD_COLOURS: list[str] = [
     "#98df8a",  # light green
 ]
 
-# Fixed roles that must stay recognisable across all figures. The target is a
-# neutral reference grey and the prediction a warm orange, chosen for clear
+# Fixed roles that must stay recognizable across all figures. The target is a
+# neutral reference gray and the prediction a warm orange, chosen for clear
 # contrast with each other and with the method palette.
-COLOUR_TARGET: str = "#5a5a5a"
-COLOUR_PREDICTION: str = "#e69f00"
+COLOR_TARGET: str = "#5a5a5a"
+COLOR_PREDICTION: str = "#e69f00"
 
-# Accent colours for paired quantities such as best/worst subsets or the two
+# Accent colors for paired quantities such as best/worst subsets or the two
 # terms of an error decomposition, plus warnings drawn onto a figure.
-COLOUR_ACCENT_RED: str = "#e85651"
-COLOUR_ACCENT_GREEN: str = "#3f9e6e"
+COLOR_ACCENT_RED: str = "#e85651"
+COLOR_ACCENT_GREEN: str = "#3f9e6e"
 
 # Neutral tones for annotations that must not compete with the data.
-COLOUR_BOX_EDGE: str = "#bbbbbb"
-COLOUR_SUBTITLE: str = "black"
+COLOR_BOX_EDGE: str = "#bbbbbb"
+COLOR_SUBTITLE: str = "black"
 
 # Uniform font sizes for every plotter figure. Explicit per-call font sizes
 # elsewhere should match these values.
@@ -86,16 +88,16 @@ _X_LABELPAD: float = 7.0
 _Y_LABELPAD: float = 2.5
 
 
-def method_colour(index: int) -> str:
-    """Return the palette colour for a method index (cycling).
+def method_color(index: int) -> str:
+    """Return the palette color for a method index (cycling).
 
     Args:
         index: Zero-based method index in first-seen order.
 
     Returns:
-        Matplotlib-compatible colour string.
+        Matplotlib-compatible color string.
     """
-    return METHOD_COLOURS[index % len(METHOD_COLOURS)]
+    return METHOD_COLORS[index % len(METHOD_COLORS)]
 
 
 def style_axis(ax: Axes, xlabelpad: float = _X_LABELPAD, ylabelpad: float = _Y_LABELPAD) -> None:
@@ -115,6 +117,7 @@ def style_axis(ax: Axes, xlabelpad: float = _X_LABELPAD, ylabelpad: float = _Y_L
     ax.xaxis.label.set_fontsize(FONT_SIZES["axes.labelsize"])
     ax.yaxis.label.set_fontsize(FONT_SIZES["axes.labelsize"])
     ax.tick_params(labelsize=FONT_SIZES["xtick.labelsize"])
+    apply_decimal_tick_format(ax)
 
 
 def add_subtitle(fig: Figure, text: str) -> None:
@@ -127,7 +130,7 @@ def add_subtitle(fig: Figure, text: str) -> None:
         fig: Matplotlib figure to annotate.
         text: Subtitle text.
     """
-    fig.text(0.5, -0.01, text, ha="center", va="top", fontsize=SUBTITLE_FONTSIZE, color=COLOUR_SUBTITLE)
+    fig.text(0.5, -0.01, text, ha="center", va="top", fontsize=SUBTITLE_FONTSIZE, color=COLOR_SUBTITLE)
 
 
 def annotate_box(
@@ -167,5 +170,5 @@ def annotate_box(
         horizontalalignment=horizontal_alignment,
         verticalalignment=vertical_alignment,
         fontfamily="monospace" if monospace else None,
-        bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=alpha, edgecolor=COLOUR_BOX_EDGE),
+        bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=alpha, edgecolor=COLOR_BOX_EDGE),
     )

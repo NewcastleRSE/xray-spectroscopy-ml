@@ -30,26 +30,26 @@ from matplotlib.axes import Axes
 from ..result import AnalysisResults
 from .base import Plotter
 from .common import (
-    COLOUR_ACCENT_GREEN,
-    COLOUR_ACCENT_RED,
+    COLOR_ACCENT_GREEN,
+    COLOR_ACCENT_RED,
     add_subtitle,
     adjust_grid,
     compact_layout,
     finish_grid,
-    method_colour,
+    method_color,
     method_grid,
     style_axis,
     style_grid_cell,
 )
 from .registry import PlotterRegistry
 
-# Label lines, colour, MSE, squared bias, variance.
+# Label lines, color, MSE, squared bias, variance.
 _MethodStats = tuple[list[str], str, np.ndarray, np.ndarray, np.ndarray]
 
-# The two decomposition terms keep fixed colours across every figure so they
-# stay recognisable next to the per-method MSE colour.
-_BIAS_COLOUR = COLOUR_ACCENT_RED
-_VARIANCE_COLOUR = COLOUR_ACCENT_GREEN
+# The two decomposition terms keep fixed colors across every figure so they
+# stay recognizable next to the per-method MSE color.
+_BIAS_COLOR = COLOR_ACCENT_RED
+_VARIANCE_COLOR = COLOR_ACCENT_GREEN
 
 
 @PlotterRegistry.register("bias_variance")
@@ -100,12 +100,12 @@ class BiasVariancePlotter(Plotter):
                     continue
                 stats = (data["mse"], data["bias2"], data["variance"])
 
-                colour = method_colour(len(methods))
-                methods.append((label.lines, colour, *stats))
+                color = method_color(len(methods))
+                methods.append((label.lines, color, *stats))
 
                 combo_dir = root / label.dir_name
                 combo_dir.mkdir(parents=True, exist_ok=True)
-                self._stats_figure(*stats, "\n".join(label.lines), colour, combo_dir / "bias_variance.pdf")
+                self._stats_figure(*stats, "\n".join(label.lines), color, combo_dir / "bias_variance.pdf")
 
         if not methods:
             logging.info("    No samples selected, skipping.")
@@ -116,7 +116,7 @@ class BiasVariancePlotter(Plotter):
         self._stats_grid(methods, combined_dir / "bias_variance_grid.pdf")
 
     @staticmethod
-    def _draw_decomposition(ax: Axes, mse: np.ndarray, bias2: np.ndarray, variance: np.ndarray, colour: str) -> None:
+    def _draw_decomposition(ax: Axes, mse: np.ndarray, bias2: np.ndarray, variance: np.ndarray, color: str) -> None:
         """Draw the three decomposition curves into one axis.
 
         Args:
@@ -124,12 +124,12 @@ class BiasVariancePlotter(Plotter):
             mse: Per-channel mean squared error with shape ``(N,)``.
             bias2: Per-channel squared bias with shape ``(N,)``.
             variance: Per-channel variance with shape ``(N,)``.
-            colour: Method colour used for the MSE curve.
+            color: Method color used for the MSE curve.
         """
         x = np.arange(len(mse))
-        ax.plot(x, mse, color=colour, linewidth=2.0, label="MSE")
-        ax.plot(x, bias2, color=_BIAS_COLOUR, linewidth=1.6, linestyle="--", label="Bias^2")
-        ax.plot(x, variance, color=_VARIANCE_COLOUR, linewidth=1.6, linestyle=":", label="Variance")
+        ax.plot(x, mse, color=color, linewidth=2.0, label="MSE")
+        ax.plot(x, bias2, color=_BIAS_COLOR, linewidth=1.6, linestyle="--", label="Bias^2")
+        ax.plot(x, variance, color=_VARIANCE_COLOR, linewidth=1.6, linestyle=":", label="Variance")
 
     def _stats_figure(
         self,
@@ -137,7 +137,7 @@ class BiasVariancePlotter(Plotter):
         bias2: np.ndarray,
         variance: np.ndarray,
         subtitle: str,
-        colour: str,
+        color: str,
         out: Path,
     ) -> None:
         """Write one decomposition figure for a single method.
@@ -147,11 +147,11 @@ class BiasVariancePlotter(Plotter):
             bias2: Per-channel squared bias with shape ``(N,)``.
             variance: Per-channel variance with shape ``(N,)``.
             subtitle: Plot subtitle text describing prediction and selector context.
-            colour: Method colour used for the MSE curve.
+            color: Method color used for the MSE curve.
             out: Destination PDF path.
         """
         fig, ax = plt.subplots(figsize=(6.5, 3.6))
-        self._draw_decomposition(ax, mse, bias2, variance, colour)
+        self._draw_decomposition(ax, mse, bias2, variance, color)
         ax.set_xlabel("Energy")
         ax.set_ylabel("Loss")
         ax.legend(fontsize=8, framealpha=0.9)
@@ -177,9 +177,9 @@ class BiasVariancePlotter(Plotter):
         fig, axes = method_grid(n, cell_width=3.4, cell_height=2.6)
         ncols = len(axes[0])
 
-        for idx, (label_lines, colour, mse, bias2, variance) in enumerate(methods):
+        for idx, (label_lines, color, mse, bias2, variance) in enumerate(methods):
             ax = axes[idx // ncols][idx % ncols]
-            BiasVariancePlotter._draw_decomposition(ax, mse, bias2, variance, colour)
+            BiasVariancePlotter._draw_decomposition(ax, mse, bias2, variance, color)
             style_grid_cell(ax, label_lines)
             ax.legend(fontsize=6, framealpha=0.9)
 

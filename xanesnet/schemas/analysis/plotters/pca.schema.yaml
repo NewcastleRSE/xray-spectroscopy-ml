@@ -19,6 +19,6 @@ $defs:
           projected.
     description: Pool every selector's descriptor vectors for one reader,
       project them onto their principal components, and plot the groups
-      coloured by selector.
+      colored by selector.
 description: Analysis component schemas used by ``core_analyze`` setup functions
   and analysis registries.

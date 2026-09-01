@@ -39,13 +39,14 @@ from ..selectors import Selector
 from ..utils import is_scalar_value, sample_label
 from .base import Plotter
 from .common import (
-    COLOUR_ACCENT_GREEN,
-    COLOUR_ACCENT_RED,
-    COLOUR_PREDICTION,
-    COLOUR_TARGET,
+    COLOR_ACCENT_GREEN,
+    COLOR_ACCENT_RED,
+    COLOR_PREDICTION,
+    COLOR_TARGET,
     add_subtitle,
     compact_layout,
     draw_structure,
+    format_decimal,
     style_axis,
 )
 from .registry import PlotterRegistry
@@ -85,7 +86,7 @@ class SelectorOverviewPlotter(Plotter):
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
-        err_key: Scalar collector key used to rank and colour selectors. Must
+        err_key: Scalar collector key used to rank and color selectors. Must
             be produced by a configured collector.
     """
 
@@ -182,11 +183,11 @@ class SelectorOverviewPlotter(Plotter):
         global_mean = float(np.mean([entry.mean_error for entry in rows]))
         labels = [f"{entry.label}  (n={entry.n_samples})" for entry in rows]
         means = [entry.mean_error for entry in rows]
-        colours = [COLOUR_ACCENT_GREEN if mean <= global_mean else COLOUR_ACCENT_RED for mean in means]
+        colors = [COLOR_ACCENT_GREEN if mean <= global_mean else COLOR_ACCENT_RED for mean in means]
 
         fig, ax = plt.subplots(figsize=(6.5, max(2.4, 0.35 * len(rows) + 0.9)))
         ys = np.arange(len(rows))
-        ax.barh(ys, means, color=colours, alpha=0.85)
+        ax.barh(ys, means, color=colors, alpha=0.85)
         ax.axvline(global_mean, color="black", linewidth=1.0, linestyle="--", label="mean of selectors shown")
         ax.set_yticks(ys)
         ax.set_yticklabels(labels, fontsize=7)
@@ -252,21 +253,22 @@ class SelectorOverviewPlotter(Plotter):
 
         ax_spec = fig.add_subplot(gs[0, 0])
         x = np.arange(len(target_mean))
-        ax_spec.plot(x, target_mean, color=COLOUR_TARGET, linewidth=1.6, label="Target mean")
+        ax_spec.plot(x, target_mean, color=COLOR_TARGET, linewidth=1.6, label="Target mean")
         ax_spec.fill_between(
             x,
             pred_mean - pred_std,
             pred_mean + pred_std,
-            color=COLOUR_PREDICTION,
+            color=COLOR_PREDICTION,
             alpha=0.25,
             linewidth=0,
             label="Prediction +/- 1 std",
         )
-        ax_spec.plot(x, pred_mean, color=COLOUR_PREDICTION, linewidth=2.0, label="Prediction mean")
+        ax_spec.plot(x, pred_mean, color=COLOR_PREDICTION, linewidth=2.0, label="Prediction mean")
         ax_spec.set_xlabel("Energy")
         ax_spec.set_ylabel("Intensity")
         ax_spec.set_title(
-            f"{entry.label}: n={entry.n_samples}, mean {self.err_key}={entry.mean_error:.4g}, median={median_error:.4g}",
+            f"{entry.label}: n={entry.n_samples}, mean {self.err_key}={format_decimal(entry.mean_error, 4)}, "
+            f"median={format_decimal(median_error, 4)}",
             loc="left",
         )
         ax_spec.legend(fontsize=8, framealpha=0.9)
@@ -285,7 +287,7 @@ class SelectorOverviewPlotter(Plotter):
                     legend_fontsize=5.0,
                     show_scale=False,
                 )
-            ax.set_title(f"{sample_label(sample)}  {self.err_key}={error:.3g}", fontsize=5.5)
+            ax.set_title(f"{sample_label(sample)}  {self.err_key}={format_decimal(error, 3)}", fontsize=5.5)
         for k in range(len(reps), _N_REPS):
             fig.add_subplot(gs_right[k // 3, k % 3]).axis("off")
 

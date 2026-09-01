@@ -155,7 +155,7 @@ xanesnet analyze \
     -y
 ```
 
-The `-r` option can be supplied multiple times when comparing or aggregating inference runs. Each run's directory name is used as its display name in tables; override with `-d`. Analysis reads each run's `validated_infer_config.yaml` and, when its datasource is available, supplies selectors with the matched raw `structure`. If this context cannot be loaded, analysis continues with prediction data only.
+The `-r` option can be supplied multiple times when comparing or aggregating inference runs. Each run's directory name is used as its display name in tables; override with `-d`. Analysis reads each run's `validated_infer_config.yaml` and, when its datasource is available, supplies selectors with the matched raw `structure`. If this context cannot be loaded, analysis continues with prediction data only. Set `preload: true` in the analysis config to load predictions and matched structures into memory during setup (default: `false`).
 
 ### Python Entry Point
 

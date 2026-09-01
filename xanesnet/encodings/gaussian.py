@@ -51,7 +51,7 @@ class GaussianEncoding(SpectraEncoding):
         encoding_type: Identifier string for this encoding type.
         widths: Gaussian standard deviations in spectral grid points (bins),
             one basis family per entry.
-        basis_stride: Spacing between Gaussian centres in grid points.
+        basis_stride: Spacing between Gaussian centers in grid points.
         num_points: Number of points ``N`` in the spectra to encode.
         nonneg_output: Whether decoded spectra are clamped to non-negative
             values.

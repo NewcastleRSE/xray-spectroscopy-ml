@@ -32,7 +32,7 @@ class WCCLoss(Loss):
     """Weighted cross-correlation (WCC) loss.
 
     Computes the WCC similarity between predictions and targets using a
-    Gaussian weight function centred at zero lag, following the method of
+    Gaussian weight function centered at zero lag, following the method of
     Kallman et al. [1].
 
     References:

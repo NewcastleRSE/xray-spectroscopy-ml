@@ -35,11 +35,13 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Circle
 from pymatgen.core import Molecule, Structure
 
+from .formatting import format_decimal
+
 # Absolute ase radii used before the frame fit; the target site is drawn
-# larger so it stands out among its neighbours.
+# larger so it stands out among its neighbors.
 _TARGET_SITE_RADIUS: float = 0.75
 _DEFAULT_SITE_RADIUS: float = 0.45
-_RING_COLOUR: str = "#111111"
+_RING_COLOR: str = "#111111"
 
 # The drawing frame spans [-0.5, 0.5] and the structure fills this fraction
 # of it, leaving room for the element legend.
@@ -70,7 +72,7 @@ def draw_structure(
 ) -> None:
     """Draw one structure as a ball projection into a fixed-size frame.
 
-    A compact legend lists the element colours (plus the target-site marker
+    A compact legend lists the element colors (plus the target-site marker
     when present). When ``target_site_index`` is given, that atom is enlarged
     and circled with a bold ring. A scale bar at the bottom right shows the
     physical size of the frame in Angstrom.
@@ -105,7 +107,7 @@ def draw_structure(
             radii, highlight = _site_style(len(atoms), target_site_index)
             writer = plot_vars_cls(atoms, rotation="10x,20y,0z", radii=radii, scale=1, show_unit_cell=0)
             positions = np.asarray(writer.positions[:, :2], dtype=float)
-            colours = np.asarray(writer.colors, dtype=float)
+            colors = np.asarray(writer.colors, dtype=float)
             atom_radii = np.asarray(writer.d, dtype=float) / 2.0
             fit_radii = atom_radii.copy()
             if highlight:
@@ -113,12 +115,12 @@ def draw_structure(
                 fit_radii[target_site_index] *= _RING_SCALE
             pos, scale = _fit_frame(positions, fit_radii, frame_ratio)
             radii_scaled = atom_radii * scale
-            for (x, y), radius, colour in zip(pos, radii_scaled, colours):
+            for (x, y), radius, color in zip(pos, radii_scaled, colors):
                 ax.add_patch(
                     Circle(
                         (float(x), float(y)),
                         float(radius),
-                        facecolor=tuple(float(v) for v in colour),
+                        facecolor=tuple(float(v) for v in color),
                         edgecolor="black",
                         linewidth=0.5,
                         zorder=2,
@@ -128,7 +130,7 @@ def draw_structure(
                 assert target_site_index is not None
                 _add_target_site_ring(ax, pos[target_site_index], float(radii_scaled[target_site_index] * _RING_SCALE))
             _frame_axes(ax, frame_ratio)
-            _add_element_legend(ax, atoms, colours, highlight, fontsize=legend_fontsize)
+            _add_element_legend(ax, atoms, colors, highlight, fontsize=legend_fontsize)
             if show_scale:
                 _add_scale_bar(ax, scale, frame_ratio)
             return
@@ -222,7 +224,7 @@ def _add_scale_bar(ax: Axes, scale: float, frame_ratio: float) -> None:
     """
     if not np.isfinite(scale) or scale <= 0.0:
         return
-    label = f"{_SCALE_BAR_LENGTH / scale:.3g} Angstrom"
+    label = f"{format_decimal(_SCALE_BAR_LENGTH / scale, 3)} Angstrom"
     half = _STRUCTURE_FRAME_HALF
     x1 = half - 0.05
     y = -half * frame_ratio + (1.0 - _STRUCTURE_FILL) * half * frame_ratio / 2.0
@@ -245,13 +247,13 @@ def _add_scale_bar(ax: Axes, scale: float, frame_ratio: float) -> None:
     )
 
 
-def _add_element_legend(ax: Axes, atoms: Any, colours: np.ndarray, has_target: bool, fontsize: float = 5.0) -> None:
-    """Add a compact legend explaining the element colours.
+def _add_element_legend(ax: Axes, atoms: Any, colors: np.ndarray, has_target: bool, fontsize: float = 5.0) -> None:
+    """Add a compact legend explaining the element colors.
 
     Args:
         ax: Matplotlib axis holding the structure.
         atoms: ASE ``Atoms`` object whose elements should be listed.
-        colours: Per-atom RGB colour triples with shape ``(N, 3)``.
+        colors: Per-atom RGB color triples with shape ``(N, 3)``.
         has_target: Whether to append a target-site marker entry.
         fontsize: Legend font size.
     """
@@ -262,7 +264,7 @@ def _add_element_legend(ax: Axes, atoms: Any, colours: np.ndarray, has_target: b
     handles: list[Any] = []
     labels: list[str] = []
     seen: set[str] = set()
-    for number, colour in zip(atoms.get_atomic_numbers(), colours):
+    for number, color in zip(atoms.get_atomic_numbers(), colors):
         symbol = chemical_symbols[int(number)]
         if symbol in seen:
             continue
@@ -273,7 +275,7 @@ def _add_element_legend(ax: Axes, atoms: Any, colours: np.ndarray, has_target: b
                 [0],
                 marker="o",
                 color="w",
-                markerfacecolor=tuple(float(v) for v in colour),
+                markerfacecolor=tuple(float(v) for v in color),
                 markeredgecolor="black",
                 markersize=0.9 * fontsize,
                 linestyle="",
@@ -332,7 +334,7 @@ def _structure_scatter(
             [projected[target_site_index, 1]],
             s=420,
             facecolors="none",
-            edgecolors=_RING_COLOUR,
+            edgecolors=_RING_COLOR,
             linewidths=2.0,
             zorder=5,
         )
@@ -354,7 +356,7 @@ def _add_target_site_ring(ax: Axes, xy: np.ndarray, ring_radius: float) -> None:
         (float(xy[0]), float(xy[1])),
         radius=ring_radius,
         fill=False,
-        edgecolor=_RING_COLOUR,
+        edgecolor=_RING_COLOR,
         linewidth=2.0,
         zorder=10,
     )
@@ -376,7 +378,7 @@ def _target_site_handle(markersize: float) -> Line2D:
         marker="o",
         color="w",
         markerfacecolor="none",
-        markeredgecolor=_RING_COLOUR,
+        markeredgecolor=_RING_COLOR,
         markersize=markersize,
         linestyle="",
     )

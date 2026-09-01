@@ -35,16 +35,18 @@ from .common import (
     add_subtitle,
     adjust_grid,
     annotate_box,
+    apply_decimal_tick_format,
     compact_layout,
     finish_grid,
-    method_colour,
+    format_decimal,
+    method_color,
     method_grid,
     style_axis,
     style_grid_cell,
 )
 from .registry import PlotterRegistry
 
-# Label lines, colour, flattened targets, flattened predictions.
+# Label lines, color, flattened targets, flattened predictions.
 _MethodPoints = tuple[list[str], str, np.ndarray, np.ndarray]
 
 
@@ -93,12 +95,12 @@ class ParityPlotter(Plotter):
                     continue
 
                 targets, preds = points
-                colour = method_colour(len(methods))
-                methods.append((label.lines, colour, targets, preds))
+                color = method_color(len(methods))
+                methods.append((label.lines, color, targets, preds))
 
                 combo_dir = root / label.dir_name
                 combo_dir.mkdir(parents=True, exist_ok=True)
-                self._parity_figure(targets, preds, "\n".join(label.lines), colour, combo_dir / "parity.pdf")
+                self._parity_figure(targets, preds, "\n".join(label.lines), color, combo_dir / "parity.pdf")
 
         if not methods:
             logging.info("    No samples selected, skipping.")
@@ -152,7 +154,7 @@ class ParityPlotter(Plotter):
         targets: np.ndarray,
         preds: np.ndarray,
         subtitle: str,
-        colour: str,
+        color: str,
         out: Path,
     ) -> None:
         """Write one parity figure for a single method.
@@ -161,12 +163,13 @@ class ParityPlotter(Plotter):
             targets: Flattened target intensities with shape ``(M,)``.
             preds: Flattened predicted intensities with shape ``(M,)``.
             subtitle: Plot subtitle text describing prediction and selector context.
-            colour: Method colour used for the density colormap.
+            color: Method color used for the density colormap.
             out: Destination PDF path.
         """
         fig, ax = plt.subplots(figsize=(6.5, 5.2))
-        self._draw_parity_panel(ax, targets, preds, colour, gridsize=80)
-        fig.colorbar(ax.collections[-1], ax=ax, label="count")
+        self._draw_parity_panel(ax, targets, preds, color, gridsize=80)
+        colorbar = fig.colorbar(ax.collections[-1], ax=ax, label="count")
+        apply_decimal_tick_format(colorbar.ax)
         ax.set_xlabel("Target intensity")
         ax.set_ylabel("Predicted intensity")
         ax.legend(fontsize=8, framealpha=0.9, loc="upper left")
@@ -178,17 +181,17 @@ class ParityPlotter(Plotter):
         plt.close(fig)
 
     @staticmethod
-    def _draw_parity_panel(ax: Axes, targets: np.ndarray, preds: np.ndarray, colour: str, gridsize: int) -> None:
+    def _draw_parity_panel(ax: Axes, targets: np.ndarray, preds: np.ndarray, color: str, gridsize: int) -> None:
         """Draw one parity density panel with its identity line.
 
         Args:
             ax: Matplotlib axis to draw on.
             targets: Flattened target intensities with shape ``(M,)``.
             preds: Flattened predicted intensities with shape ``(M,)``.
-            colour: Method colour used for the density colormap.
+            color: Method color used for the density colormap.
             gridsize: Number of hexagons along each axis.
         """
-        cmap = LinearSegmentedColormap.from_list("parity_density", ["#ffffff", colour])
+        cmap = LinearSegmentedColormap.from_list("parity_density", ["#ffffff", color])
         poly = ax.hexbin(targets, preds, gridsize=gridsize, mincnt=1, cmap=cmap)
         counts = poly.get_array()
         if counts is not None and counts.size:
@@ -216,8 +219,8 @@ class ParityPlotter(Plotter):
             preds: Flattened predicted intensities with shape ``(M,)``.
         """
         rmse, mae, r2 = self._parity_metrics(targets, preds)
-        r2_text = f"{r2:.4g}" if r2 is not None else "n/a"
-        text = f"n={len(targets)}\nRMSE={rmse:.4g}\nMAE={mae:.4g}\nR2={r2_text}"
+        r2_text = format_decimal(r2, 4) if r2 is not None else "n/a"
+        text = f"n={len(targets)}\nRMSE={format_decimal(rmse, 4)}" f"\nMAE={format_decimal(mae, 4)}\nR2={r2_text}"
         annotate_box(ax, text, 0.98, 0.02, "right", "bottom")
 
     def _parity_grid(self, methods: list[_MethodPoints], out: Path) -> None:
@@ -239,11 +242,18 @@ class ParityPlotter(Plotter):
         fig, axes = method_grid(n, cell_width=2.4, cell_height=2.4, width_margin=0.3, height_margin=0.55)
         ncols = len(axes[0])
 
-        for idx, (label_lines, colour, targets, preds) in enumerate(methods):
+        for idx, (label_lines, color, targets, preds) in enumerate(methods):
             ax = axes[idx // ncols][idx % ncols]
-            self._draw_parity_panel(ax, targets, preds, colour, gridsize=40)
+            self._draw_parity_panel(ax, targets, preds, color, gridsize=40)
             rmse, _, _ = self._parity_metrics(targets, preds)
-            ax.text(0.02, 0.98, f"RMSE={rmse:.3g}", transform=ax.transAxes, fontsize=5.5, verticalalignment="top")
+            ax.text(
+                0.02,
+                0.98,
+                f"RMSE={format_decimal(rmse, 3)}",
+                transform=ax.transAxes,
+                fontsize=5.5,
+                verticalalignment="top",
+            )
             style_grid_cell(ax, label_lines)
 
         finish_grid(axes, n, "Target intensity", "Predicted intensity")

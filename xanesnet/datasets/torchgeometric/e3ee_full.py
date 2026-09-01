@@ -84,7 +84,7 @@ class E3EEFullDataset(TorchGeometricDataset):
     flagged in ``target_site_mask``; the training loop selects those rows via
     the mask (same pattern as SchNet / DimeNet).
 
-    All edges are computed once per structure. Target-site-centred triplet paths
+    All edges are computed once per structure. Target-site-centered triplet paths
     are computed for every site independently (with ``max_paths_per_site``
     paths each) and tagged with ``path_center`` so that the model can scatter
     them into the per-atom layout.
