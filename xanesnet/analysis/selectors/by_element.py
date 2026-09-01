@@ -41,6 +41,9 @@ from .registry import SelectorRegistry
 class ElementSelector(Selector):
     """Select predictions whose target site has one of the configured elements.
 
+    Requires:
+        Matched raw structures: provided by a structure-matched prediction reader.
+
     Args:
         selector_type: Registered selector name from the analysis configuration.
         data_source: Prediction reader to select samples from.
@@ -102,5 +105,5 @@ class ElementSelector(Selector):
         return signature
 
     def __str__(self) -> str:
-        """Return the short display label of this plotter."""
+        """Return the short display label of this selector."""
         return f"{self.selector_type} {', '.join(self.elements)}"

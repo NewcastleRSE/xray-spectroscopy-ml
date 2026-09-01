@@ -40,15 +40,8 @@ class IndexSelector(Selector):
     """
 
     def __init__(self, selector_type: str, data_source: PredictionReader, indices: list[int]) -> None:
-        """Initialize an explicit-index selector.
-
-        Raises:
-            ValueError: If any configured index is negative.
-        """
+        """Initialize an explicit-index selector."""
         super().__init__(selector_type, data_source)
-
-        if any(i < 0 for i in indices):
-            raise ValueError("IndexSelector does not support negative indices")
 
         self.indices = set(indices)
 

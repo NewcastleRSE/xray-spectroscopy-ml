@@ -57,14 +57,15 @@ _CLUSTER_CACHE: dict[tuple[Any, ...], _Clustering] = {}
 class StructureClusterSelector(Selector):
     """Select the samples of one structure cluster.
 
-    During setup every sample that carries a structure is embedded with a
-    XANESNET descriptor, the embeddings are standardized, and agglomerative
-    hierarchical clustering (ward linkage) partitions the samples. One selector
-    instance keeps the samples of a single ``cluster_id``; ``-1`` selects the
-    ``others`` bucket holding samples from clusters smaller than
-    ``min_cluster_size``. With ``cluster_id=None`` the selector expands into one
-    instance per cluster. The clustering is computed once per prediction reader
-    and reused across the expanded per-cluster selector instances.
+    Structures are embedded with a descriptor and partitioned by agglomerative
+    hierarchical clustering (ward linkage). One instance keeps the samples of a
+    single ``cluster_id``; ``-1`` selects the ``others`` bucket holding samples
+    from clusters smaller than ``min_cluster_size``. With ``cluster_id=None``
+    the selector expands into one instance per cluster. Clustering is computed
+    once per reader and reused across expanded instances.
+
+    Requires:
+        Matched raw structures: provided by a structure-matched prediction reader.
 
     Args:
         selector_type: Registered selector name from the analysis configuration.

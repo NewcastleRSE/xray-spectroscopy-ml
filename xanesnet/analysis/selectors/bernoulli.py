@@ -41,15 +41,8 @@ class BernoulliSelector(Selector):
     """
 
     def __init__(self, selector_type: str, data_source: PredictionReader, p: float) -> None:
-        """Initialize the selector and draw the retained sample indices.
-
-        Raises:
-            ValueError: If ``p`` is outside the inclusive range ``[0, 1]``.
-        """
+        """Initialize the selector and draw the retained sample indices."""
         super().__init__(selector_type, data_source)
-
-        if not 0.0 <= p <= 1.0:
-            raise ValueError("p must be in [0, 1]")
 
         self.p = p
         self._selected_indices: list[int] = [i for i in range(len(data_source)) if random.random() < p]
