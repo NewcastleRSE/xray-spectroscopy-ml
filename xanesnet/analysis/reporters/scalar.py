@@ -24,12 +24,12 @@ import csv
 import logging
 from pathlib import Path
 
-from xanesnet.analysis.utils import ScalarValue
 from xanesnet.serialization.jsonl_stream import JSONLStream
 
 from ..result import AnalysisResults
 from ..sample_data import iter_aligned, merged_scalars
 from ..selectors import Selector
+from ..utils import ScalarValue, sample_key
 from .base import Reporter
 from .registry import ReporterRegistry
 
@@ -37,6 +37,9 @@ from .registry import ReporterRegistry
 @ReporterRegistry.register("scalar")
 class ScalarReporter(Reporter):
     """Write per-sample scalar values from selectors and collectors as CSV files.
+
+    Requires:
+        Scalar collector output (optional).
 
     Args:
         reporter_type: Registered reporter name from the analysis configuration.
@@ -79,19 +82,20 @@ class ScalarReporter(Reporter):
     ) -> None:
         """Write one CSV per scalar field found in selected samples and collector values.
 
-        Each CSV uses ``sample_id`` as the first column and one scalar field as the second column.
+        Each CSV uses ``sample_id`` and ``target_site_index`` as identity
+        columns followed by one scalar field.
 
         Args:
             selector: Selector over prediction samples for one prediction reader and selector pair.
             stream: Optional collector result stream aligned with ``selector``.
             output_dir: Directory where CSV files should be written.
         """
-        rows_by_key: dict[str, list[tuple[str, ScalarValue]]] = {}
+        rows_by_key: dict[str, list[tuple[str, int | None, ScalarValue]]] = {}
 
         for sample, record in iter_aligned(selector, stream):
-            sample_id = str(sample["sample_id"])
+            sample_id, target_site_index = sample_key(sample)
             for key, value in merged_scalars(sample, record).items():
-                rows_by_key.setdefault(key, []).append((sample_id, value))
+                rows_by_key.setdefault(key, []).append((sample_id, target_site_index, value))
 
         if not rows_by_key:
             logging.info("      No scalar data found, skipping.")
@@ -101,5 +105,5 @@ class ScalarReporter(Reporter):
             filepath = output_dir / f"{key}.csv"
             with open(filepath, "w", newline="") as f:
                 writer = csv.writer(f)
-                writer.writerow(["sample_id", key])
+                writer.writerow(["sample_id", "target_site_index", key])
                 writer.writerows(rows)

@@ -23,7 +23,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import Any
 
 import yaml
 
@@ -40,13 +40,11 @@ from .registry import ReporterRegistry
 class StatisticsReporter(Reporter):
     """Write aggregated statistics as structured files.
 
-    Produces one file per (selector, predictions_reader, aggregator) combination.
-    Each file includes a ``metadata`` section identifying the producing method
-    and aggregator and a ``statistics`` section containing the aggregation
-    output. Full component configurations are recorded in ``selectors.yaml``
-    and ``aggregators.yaml`` next to the report.
+    Produces one file per (selector, prediction reader, aggregator)
+    combination, with a ``metadata`` section and a ``statistics`` section.
 
-    Supported formats: ``yaml``, ``json``.
+    Requires:
+        Aggregated statistics: provided by at least one aggregator.
 
     Args:
         reporter_type: Registered reporter name from the analysis configuration.
@@ -57,22 +55,14 @@ class StatisticsReporter(Reporter):
             feed a plotter.
     """
 
-    SUPPORTED_FORMATS: ClassVar[tuple[str, str]] = ("yaml", "json")
-
     def __init__(
         self,
         reporter_type: str,
         format: str,
         aggregator_types: list[str] | None,
     ) -> None:
-        """Initialize a statistics reporter.
-
-        Raises:
-            ValueError: If ``format`` is not one of ``SUPPORTED_FORMATS``.
-        """
+        """Initialize a statistics reporter."""
         super().__init__(reporter_type)
-        if format not in self.SUPPORTED_FORMATS:
-            raise ValueError(f"Unsupported format '{format}'. Choose from {self.SUPPORTED_FORMATS}")
         self.format = format
         self.aggregator_types = aggregator_types
 
@@ -135,7 +125,7 @@ class StatisticsReporter(Reporter):
 
         Args:
             report: Report payload produced by ``_build_report``.
-            filepath: Destination file path. The suffix should match ``self.format``.
+            filepath: Destination file path.
         """
         with open(filepath, "w") as f:
             if self.format == "yaml":
