@@ -51,15 +51,16 @@ class PcaPlotter(Plotter):
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
+        latex_font: Render figures in a LaTeX-style serif font when ``True``.
         descriptor_key: Collector key holding the descriptor vectors.
     """
 
-    def __init__(self, plotter_type: str, descriptor_key: str) -> None:
+    def __init__(self, plotter_type: str, descriptor_key: str, latex_font: bool) -> None:
         """Initialize a PCA plotter."""
-        super().__init__(plotter_type)
+        super().__init__(plotter_type, latex_font=latex_font)
         self.descriptor_key = descriptor_key
 
-    def plot(self, results: AnalysisResults, output_dir: Path) -> None:
+    def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
         """Write one 2D and one 3D PCA scatter per prediction reader.
 
         Args:

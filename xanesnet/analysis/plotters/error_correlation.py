@@ -57,16 +57,17 @@ class ErrorCorrelationPlotter(Plotter):
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
+        latex_font: Render figures in a LaTeX-style serif font when ``True``.
         sort_key: Scalar collector key used as the per-sample error. Must be
             produced by a configured collector.
     """
 
-    def __init__(self, plotter_type: str, sort_key: str) -> None:
+    def __init__(self, plotter_type: str, sort_key: str, latex_font: bool) -> None:
         """Initialize an error correlation plotter."""
-        super().__init__(plotter_type)
+        super().__init__(plotter_type, latex_font=latex_font)
         self.sort_key = sort_key
 
-    def plot(self, results: AnalysisResults, output_dir: Path) -> None:
+    def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
         """Write the pairwise error correlation grid and per-pair figures.
 
         Args:

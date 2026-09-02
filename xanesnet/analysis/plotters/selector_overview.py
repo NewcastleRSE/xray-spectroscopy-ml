@@ -86,16 +86,17 @@ class SelectorOverviewPlotter(Plotter):
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
+        latex_font: Render figures in a LaTeX-style serif font when ``True``.
         err_key: Scalar collector key used to rank and color selectors. Must
             be produced by a configured collector.
     """
 
-    def __init__(self, plotter_type: str, err_key: str) -> None:
+    def __init__(self, plotter_type: str, err_key: str, latex_font: bool) -> None:
         """Initialize a selector-overview plotter."""
-        super().__init__(plotter_type)
+        super().__init__(plotter_type, latex_font=latex_font)
         self.err_key = err_key
 
-    def plot(self, results: AnalysisResults, output_dir: Path) -> None:
+    def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
         """Write a per-reader selector scoreboard and per-selector detail pages.
 
         Args:

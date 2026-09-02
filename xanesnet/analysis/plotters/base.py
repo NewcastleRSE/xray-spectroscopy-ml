@@ -27,6 +27,7 @@ from xanesnet.serialization.config import Config
 
 from ..result import AnalysisResults
 from ..utils import component_repr
+from .common.style import font_context
 
 
 class Plotter(ABC):
@@ -36,17 +37,34 @@ class Plotter(ABC):
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
+        latex_font: Render figures in a LaTeX-style serif font when ``True``.
 
     Attributes:
         plotter_type: Registered plotter name from the analysis configuration.
+        latex_font: Whether figures use the LaTeX-style serif font.
     """
 
-    def __init__(self, plotter_type: str) -> None:
+    def __init__(self, plotter_type: str, latex_font: bool) -> None:
         """Initialize a plotter instance."""
         self.plotter_type = plotter_type
+        self.latex_font = latex_font
+
+    def plot(
+        self,
+        results: AnalysisResults,
+        output_dir: Path,
+    ) -> None:
+        """Generate plot files from analysis results.
+
+        Args:
+            results: Analysis pipeline outputs to plot.
+            output_dir: Directory where plot files should be written.
+        """
+        with font_context(self.latex_font):
+            self._plot(results, output_dir)
 
     @abstractmethod
-    def plot(
+    def _plot(
         self,
         results: AnalysisResults,
         output_dir: Path,
@@ -66,7 +84,7 @@ class Plotter(ABC):
         Returns:
             Configuration values needed to recreate this plotter.
         """
-        return Config({"plotter_type": self.plotter_type})
+        return Config({"plotter_type": self.plotter_type, "latex_font": self.latex_font})
 
     def __str__(self) -> str:
         """Return the short display label of this plotter."""

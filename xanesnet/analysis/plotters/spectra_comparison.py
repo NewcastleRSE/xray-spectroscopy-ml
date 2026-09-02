@@ -65,18 +65,19 @@ class SpectraComparisonPlotter(Plotter):
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
+        latex_font: Render figures in a LaTeX-style serif font when ``True``.
         n_samples: Number of best and worst samples plotted per method.
         sort_key: Scalar collector key used to rank samples. Must be produced
             by a configured collector.
     """
 
-    def __init__(self, plotter_type: str, n_samples: int, sort_key: str) -> None:
+    def __init__(self, plotter_type: str, n_samples: int, sort_key: str, latex_font: bool) -> None:
         """Initialize a best/worst spectra comparison plotter."""
-        super().__init__(plotter_type)
+        super().__init__(plotter_type, latex_font=latex_font)
         self.n_samples = n_samples
         self.sort_key = sort_key
 
-    def plot(self, results: AnalysisResults, output_dir: Path) -> None:
+    def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
         """Write best/worst spectra PDFs with structure panels where available.
 
         Args:

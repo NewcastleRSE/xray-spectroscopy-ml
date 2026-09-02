@@ -62,15 +62,16 @@ class AllSpectraPlotter(Plotter):
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
+        latex_font: Render figures in a LaTeX-style serif font when ``True``.
         max_pages: Maximum number of pages per PDF. ``None`` writes all selected samples.
     """
 
-    def __init__(self, plotter_type: str, max_pages: int | None) -> None:
+    def __init__(self, plotter_type: str, max_pages: int | None, latex_font: bool) -> None:
         """Initialize an all-spectra comparison plotter."""
-        super().__init__(plotter_type)
+        super().__init__(plotter_type, latex_font=latex_font)
         self.max_pages = max_pages
 
-    def plot(self, results: AnalysisResults, output_dir: Path) -> None:
+    def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
         """Write one multi-page spectra PDF per prediction-reader/selector pair.
 
         Args:

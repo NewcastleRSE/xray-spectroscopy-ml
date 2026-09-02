@@ -63,13 +63,14 @@ class BiasVariancePlotter(Plotter):
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
+        latex_font: Render figures in a LaTeX-style serif font when ``True``.
     """
 
-    def __init__(self, plotter_type: str) -> None:
+    def __init__(self, plotter_type: str, latex_font: bool) -> None:
         """Initialize a bias-variance plotter."""
-        super().__init__(plotter_type)
+        super().__init__(plotter_type, latex_font=latex_font)
 
-    def plot(self, results: AnalysisResults, output_dir: Path) -> None:
+    def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
         """Write per-method decomposition PDFs and a combined grid.
 
         Args:

@@ -61,12 +61,12 @@ class StatTableLatexPlotter(Plotter):
         sort_key: str | None,
     ) -> None:
         """Initialize a LaTeX statistics table plotter."""
-        super().__init__(plotter_type)
+        super().__init__(plotter_type, latex_font=False)
         self.stat_keys = stat_keys
         self.precision = precision
         self.sort_key = sort_key
 
-    def plot(self, results: AnalysisResults, output_dir: Path) -> None:
+    def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
         """Write LaTeX sources and compiled PDFs for aggregated scalar statistics.
 
         Args:

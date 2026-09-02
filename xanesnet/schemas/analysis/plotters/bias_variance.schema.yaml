@@ -11,6 +11,11 @@ $defs:
       plotter_type:
         const: bias_variance
         description: Registered plotter name from the analysis configuration.
+      latex_font:
+        type: boolean
+        default: true
+        description: Render text and mathtext in a LaTeX-style serif (STIX/Times)
+          font. When false, matplotlib's default sans-serif is used.
     description: Plot the per-channel MSE split into squared bias and variance
       per method plus a combined grid. Requires a ``bias_variance`` aggregator.
 description: Analysis component schemas used by ``core_analyze`` setup functions

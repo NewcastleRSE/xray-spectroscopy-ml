@@ -65,15 +65,16 @@ class ScalarPlotter(Plotter):
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
+        latex_font: Render figures in a LaTeX-style serif font when ``True``.
         bins: Number of histogram bins.
     """
 
-    def __init__(self, plotter_type: str, bins: int) -> None:
+    def __init__(self, plotter_type: str, bins: int, latex_font: bool) -> None:
         """Initialize a scalar distribution plotter."""
-        super().__init__(plotter_type)
+        super().__init__(plotter_type, latex_font=latex_font)
         self.bins = bins
 
-    def plot(self, results: AnalysisResults, output_dir: Path) -> None:
+    def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
         """Create per-method distribution plots and combined per-key figures.
 
         Args:

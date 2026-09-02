@@ -11,6 +11,11 @@ $defs:
       plotter_type:
         const: parity
         description: Registered plotter name from the analysis configuration.
+      latex_font:
+        type: boolean
+        default: true
+        description: Render text and mathtext in a LaTeX-style serif (STIX/Times)
+          font. When false, matplotlib's default sans-serif is used.
     description: Plot predicted-versus-target intensity parity with RMSE, MAE,
       and R2 annotations plus a combined per-method grid.
 description: Analysis component schemas used by ``core_analyze`` setup functions

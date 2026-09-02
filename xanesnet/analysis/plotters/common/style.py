@@ -20,6 +20,9 @@
 
 """Colors, fonts, and annotations shared by every plotter figure."""
 
+from contextlib import AbstractContextManager, nullcontext
+
+from matplotlib import rc_context
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.text import Text
@@ -172,3 +175,22 @@ def annotate_box(
         fontfamily="monospace" if monospace else None,
         bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=alpha, edgecolor=COLOR_BOX_EDGE),
     )
+
+
+LATEX_FONT_PARAMS: dict[str, object] = {
+    "font.family": "serif",
+    "font.serif": ["STIXGeneral", "DejaVu Serif"],
+    "mathtext.fontset": "stix",
+}
+
+
+def font_context(latex_font: bool) -> AbstractContextManager[None]:
+    """Return a context manager applying a LaTeX-style font when enabled.
+
+    Args:
+        latex_font: When ``True``, return a context manager that applies the
+            LaTeX-style serif font for its duration;
+    """
+    if latex_font:
+        return rc_context(LATEX_FONT_PARAMS)
+    return nullcontext()
