@@ -95,6 +95,23 @@ class GaussianEncoding(SpectraEncoding):
             stride=basis_stride,
         )
 
+    def output_size(self, input_size: int) -> int:
+        """Return the Gaussian coefficient width for an input spectrum.
+
+        Args:
+            input_size: Number of points in the input spectrum.
+
+        Returns:
+            Number of Gaussian basis coefficients.
+
+        Raises:
+            ValueError: If ``input_size`` does not match ``num_points`` used
+                to construct the basis.
+        """
+        if input_size != self.num_points:
+            raise ValueError(f"GaussianEncoding expected input width {self.num_points}, got {input_size}.")
+        return len(self.widths) * ((input_size + self.basis_stride - 1) // self.basis_stride)
+
     def encode(self, targets: torch.Tensor, elements: torch.Tensor | None = None) -> torch.Tensor:
         """Fit Gaussian basis coefficients to target spectra.
 
