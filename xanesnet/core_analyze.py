@@ -419,8 +419,9 @@ def _run_reporters(reporters: list[Reporter], results: AnalysisResults, save_dir
     Args:
         reporters: Reporter instances to execute.
         results: Collected and aggregated analysis results.
-        save_dir: Root output directory; reports are written under
-            ``<save_dir>/reports/``.
+        save_dir: Root output directory; each reporter receives a unique
+            directory under ``<save_dir>/reports/`` named after its string
+            label and configuration order, for example ``statistics_000``.
     """
     if not reporters:
         return
@@ -430,7 +431,10 @@ def _run_reporters(reporters: list[Reporter], results: AnalysisResults, save_dir
     for idx, reporter in enumerate(reporters):
         started = time.perf_counter()
         logging.info(f"  Reporter {idx + 1}/{len(reporters)}: {reporter!r}")
-        reporter.report(results, report_dir)
+        reporter_dir = report_dir / f"{str(reporter)}_{idx:03d}"
+        reporter_dir.mkdir(parents=True, exist_ok=True)
+        logging.info(f"    Output directory: '{reporter_dir}'.")
+        reporter.report(results, reporter_dir)
         logging.info(f"    Done in {_format_duration(time.perf_counter() - started)}.")
 
 
@@ -440,8 +444,9 @@ def _run_plotters(plotters: list[Plotter], results: AnalysisResults, save_dir: P
     Args:
         plotters: Plotter instances to execute.
         results: Collected and aggregated analysis results.
-        save_dir: Root output directory; plots are written under
-            ``<save_dir>/plots/``.
+        save_dir: Root output directory; each plotter receives a unique
+            directory under ``<save_dir>/plots/`` named after its string label
+            and configuration order, for example ``scalar_000``.
     """
     if not plotters:
         return
@@ -451,7 +456,10 @@ def _run_plotters(plotters: list[Plotter], results: AnalysisResults, save_dir: P
     for idx, plotter in enumerate(plotters):
         started = time.perf_counter()
         logging.info(f"  Plotter {idx + 1}/{len(plotters)}: {plotter!r}")
-        plotter.plot(results, plot_dir)
+        plotter_dir = plot_dir / f"{str(plotter)}_{idx:03d}"
+        plotter_dir.mkdir(parents=True, exist_ok=True)
+        logging.info(f"    Output directory: '{plotter_dir}'.")
+        plotter.plot(results, plotter_dir)
         logging.info(f"    Done in {_format_duration(time.perf_counter() - started)}.")
 
 
