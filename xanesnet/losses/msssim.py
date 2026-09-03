@@ -26,6 +26,10 @@ import torch.nn.functional as F
 from .base import Loss
 from .registry import LossRegistry
 
+# TODO MSSSIM has the auto data_range feature. Note that currently when resuming
+# TODO training from a checkpoint the running min/max is not restored, so the data_range will \
+# TODO be re-inferred from the resumed training batches.
+
 
 @LossRegistry.register("msssim")
 class MultiScale_SSIM(Loss):
