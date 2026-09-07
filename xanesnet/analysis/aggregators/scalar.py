@@ -48,7 +48,7 @@ class ScalarAggregator(Aggregator):
 
     Args:
         aggregator_type: Registered aggregator name from the analysis configuration.
-        percentiles: Percentiles.
+        percentiles: Percentile levels in ``[0, 100]``.
     """
 
     def __init__(self, aggregator_type: str, percentiles: list[float]) -> None:
@@ -119,7 +119,11 @@ class ScalarAggregator(Aggregator):
 
     @property
     def signature(self) -> Config:
-        """Return the scalar aggregator signature."""
+        """Return the scalar aggregator signature.
+
+        Returns:
+            Configuration values needed to recreate this aggregator.
+        """
         signature = super().signature
         signature.update_with_dict({"percentiles": self.percentiles})
         return signature

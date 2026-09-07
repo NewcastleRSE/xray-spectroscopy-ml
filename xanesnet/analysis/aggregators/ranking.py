@@ -177,7 +177,11 @@ class RankingAggregator(Aggregator):
 
     @property
     def signature(self) -> Config:
-        """Return the ranking aggregator signature."""
+        """Return the ranking aggregator signature.
+
+        Returns:
+            Configuration values needed to recreate this aggregator.
+        """
         signature = super().signature
         signature.update_with_dict({"sort_key": self.sort_key, "percent": self.percent, "group_keys": self.group_keys})
         return signature
