@@ -33,7 +33,6 @@ from xanesnet.serialization.config import Config
 
 from ..base import SavePathFn, TorchDataset
 from ..registry import DatasetRegistry
-from .descriptor import SPECTRUM_KEYS
 
 
 @dataclass
@@ -192,30 +191,27 @@ class MultiheadDataset(TorchDataset):
             Number of processed absorber samples written.
         """
         pmg_obj = self.datasource[idx]
-        for key in SPECTRUM_KEYS:
-            if key in pmg_obj.site_properties.keys():
-                break
-        else:
-            logging.warning(f"No XANES spectrum found for sample {idx} ({pmg_obj.properties['sample_id']}); skipping.")
+        if "spectrum" not in pmg_obj.site_properties:
+            logging.warning(f"No spectrum found for sample {idx} ({pmg_obj.properties['sample_id']}); skipping.")
             return 0
 
-        xanes = np.array(pmg_obj.site_properties[key], dtype=object)
-        xanes_idxs: list[int] = np.where(xanes != None)[0].tolist()
+        spectra = np.array(pmg_obj.site_properties["spectrum"], dtype=object)
+        target_site_indices: list[int] = np.where(spectra != None)[0].tolist()
 
         descriptor_features = []
         for descriptor in self.descriptor_list:
-            feature = descriptor.transform_pmg(pmg_obj, site_index=xanes_idxs)
+            feature = descriptor.transform_pmg(pmg_obj, site_index=target_site_indices)
             descriptor_features.append(feature)
         descriptor_features = np.concatenate(descriptor_features, axis=1)
 
         head_idx = torch.tensor(pmg_obj.properties["subdir_id"], dtype=torch.int64)
 
         seq = 0
-        for site_idx, df in zip(xanes_idxs, descriptor_features):
+        for site_idx, df in zip(target_site_indices, descriptor_features):
             df = torch.tensor(df, dtype=torch.float32)
             element = torch.tensor(pmg_obj.atomic_numbers[site_idx], dtype=torch.int64)
 
-            spectrum = pmg_obj.site_properties[key][site_idx]
+            spectrum = pmg_obj.site_properties["spectrum"][site_idx]
             energies = torch.tensor(spectrum["energies"], dtype=torch.float32)
             intensities = torch.tensor(spectrum["intensities"], dtype=torch.float32)
 

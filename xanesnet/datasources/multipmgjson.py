@@ -46,17 +46,23 @@ class MultiPMGJSONSource(DataSource):
     Args:
         datasource_type: Identifier string for this datasource type.
         root_path: Path to the root directory containing the subdirectories.
+        spectrum_key: Site-property key under which the spectrum is stored
+            in the pymatgen objects. The datasource remaps it to
+            ``"spectrum"`` so that downstream code always sees a uniform
+            key.
     """
 
     def __init__(
         self,
         datasource_type: str,
         root_path: str,
+        spectrum_key: str,
     ) -> None:
         """Initialize ``MultiPMGJSONSource``."""
         super().__init__(datasource_type)
 
         self.root_path = root_path
+        self.spectrum_key = spectrum_key
 
         self.sample_ids: dict[str, list[str]] = self._get_file_dictionary()
         self._subdir_ids: dict[str, int] = {
@@ -101,6 +107,11 @@ class MultiPMGJSONSource(DataSource):
         structure.properties["sample_id"] = file
         structure.properties["subdir_name"] = subdir
         structure.properties["subdir_id"] = self._subdir_ids[subdir]
+
+        if self.spectrum_key != "spectrum" and self.spectrum_key in structure.site_properties:
+            structure.add_site_property("spectrum", structure.site_properties[self.spectrum_key])
+            structure.remove_site_property(self.spectrum_key)
+
         return structure
 
     def _get_file_dictionary(self) -> dict[str, list[str]]:
