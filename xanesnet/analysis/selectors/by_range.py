@@ -72,7 +72,11 @@ class IndexRangeSelector(Selector):
 
     @property
     def signature(self) -> Config:
-        """Return the selector signature."""
+        """Return the selector signature.
+
+        Returns:
+            Configuration values needed to recreate this selector.
+        """
         signature = super().signature
         signature.update_with_dict({"start": self.start, "end": self.end})
         return signature

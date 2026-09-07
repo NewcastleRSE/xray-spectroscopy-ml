@@ -99,11 +99,15 @@ class ElementSelector(Selector):
 
     @property
     def signature(self) -> Config:
-        """Return the selector signature."""
+        """Return the selector signature.
+
+        Returns:
+            Configuration values needed to recreate this selector.
+        """
         signature = super().signature
         signature.update_with_dict({"elements": self.elements})
         return signature
 
     def __str__(self) -> str:
         """Return the short display label of this selector."""
-        return f"{self.selector_type} {', '.join(self.elements)}"
+        return f"{', '.join(self.elements)}"

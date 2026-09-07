@@ -65,7 +65,11 @@ class IndexSelector(Selector):
 
     @property
     def signature(self) -> Config:
-        """Return the selector signature."""
+        """Return the selector signature.
+
+        Returns:
+            Configuration values needed to recreate this selector.
+        """
         signature = super().signature
         signature.update_with_dict({"indices": sorted(self.indices)})
         return signature

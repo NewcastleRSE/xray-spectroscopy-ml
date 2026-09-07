@@ -49,8 +49,10 @@ class Selector(ABC, Iterable[PredictionSample]):
     def expand_selectors(self) -> list["Selector"]:
         """Return the selectors this selector expands into.
 
-        Most selectors expand into themselves;
-        an expanding selector returns one selector per cluster.
+        Most selectors only return themselves.
+
+        Returns:
+            Selectors to run for this configuration.
         """
         return [self]
 

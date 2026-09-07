@@ -143,6 +143,10 @@ class StructureClusterSelector(Selector):
         ``others`` bucket (``-1``) when present. With an explicit ``cluster_id``
         it returns only that cluster, or an empty list when the cluster does not
         exist.
+
+        Returns:
+            One selector per requested cluster, or an empty list when an
+            explicit cluster does not exist.
         """
         if self.cluster_id is not None:
             if self.cluster_id == OTHERS_LABEL and not self.has_others:
@@ -175,7 +179,11 @@ class StructureClusterSelector(Selector):
 
     @property
     def signature(self) -> Config:
-        """Return the selector signature."""
+        """Return the selector signature.
+
+        Returns:
+            Configuration values needed to recreate this selector.
+        """
         signature = super().signature
         signature.update_with_dict(
             {
@@ -200,7 +208,19 @@ def _get_clustering(
     distance_fraction: float,
     min_cluster_size: int,
 ) -> _Clustering:
-    """Return the cached clustering for one reader and descriptor config."""
+    """Return the cached clustering for one reader and descriptor config.
+
+    Args:
+        data_source: Structure-matched prediction reader to cluster.
+        descriptor: Descriptor configuration used to embed each structure.
+        cluster_distance: Optional linkage-distance cut.
+        distance_fraction: Fraction of the maximum linkage height used when
+            ``cluster_distance`` is ``None``.
+        min_cluster_size: Minimum size of a retained cluster.
+
+    Returns:
+        Cached or newly computed clustering result.
+    """
     key = (
         id(data_source),
         repr(sorted(descriptor.as_dict().items())),
@@ -223,6 +243,17 @@ def _compute_clustering(
     min_cluster_size: int,
 ) -> _Clustering:
     """Embed, standardize, and cluster every structure of one reader.
+
+    Args:
+        data_source: Structure-matched prediction reader to cluster.
+        descriptor: Descriptor configuration used to embed each structure.
+        cluster_distance: Optional linkage-distance cut.
+        distance_fraction: Fraction of the maximum linkage height used when
+            ``cluster_distance`` is ``None``.
+        min_cluster_size: Minimum size of a retained cluster.
+
+    Returns:
+        Cluster membership and the IDs available for selector expansion.
 
     Raises:
         ConfigError: If fewer than two structures are available.
