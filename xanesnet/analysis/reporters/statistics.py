@@ -141,7 +141,11 @@ class StatisticsReporter(Reporter):
 
     @property
     def signature(self) -> Config:
-        """Return the statistics reporter signature."""
+        """Return the statistics reporter signature.
+
+        Returns:
+            Configuration values needed to recreate this reporter.
+        """
         signature = super().signature
         signature.update_with_dict({"format": self.format, "aggregator_types": self.aggregator_types})
         return signature
