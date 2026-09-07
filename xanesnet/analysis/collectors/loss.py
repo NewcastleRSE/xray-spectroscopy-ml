@@ -68,6 +68,10 @@ class LossCollector(Collector):
             Mapping from ``loss_type`` to the scalar loss value, or from
             ``<loss_type>_energy`` to the per-channel loss vector when
             ``energy_resolved`` is enabled.
+
+        Raises:
+            ValueError: If an energy-resolved loss does not have shape
+                ``(1, N)``.
         """
         pred_torch = torch.as_tensor(sample["prediction"], dtype=torch.float32)
         target_torch = torch.as_tensor(sample["target"], dtype=torch.float32)
@@ -89,7 +93,11 @@ class LossCollector(Collector):
 
     @property
     def signature(self) -> Config:
-        """Return the collector signature."""
+        """Return the collector signature.
+
+        Returns:
+            Configuration values needed to recreate this collector.
+        """
         signature = super().signature
         signature.update_with_dict({"loss": self.loss_config.as_dict(), "energy_resolved": self.energy_resolved})
         return signature

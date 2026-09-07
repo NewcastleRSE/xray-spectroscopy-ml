@@ -67,7 +67,11 @@ class DescriptorCollector(Collector):
 
     @property
     def signature(self) -> Config:
-        """Return the collector signature."""
+        """Return the collector signature.
+
+        Returns:
+            Configuration values needed to recreate this collector.
+        """
         signature = super().signature
         signature.update_with_dict({"descriptor": self.descriptor_config.as_dict()})
         return signature
