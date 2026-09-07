@@ -33,7 +33,7 @@ $defs:
         type: integer
         minimum: 1
         default: 100000
-        description: Number of absorber rows buffered before prediction data is flushed to disk.
+        description: Number of target-site rows buffered before prediction data is flushed to disk.
       model_device_policy:
         $ref: ../runner_types.schema.yaml#/$defs/modelDevicePolicy
         default: all

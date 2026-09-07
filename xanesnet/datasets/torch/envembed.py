@@ -37,8 +37,6 @@ from xanesnet.utils.math import SpectralBasis, gaussian_fit
 from ..base import SavePathFn, TorchDataset
 from ..registry import DatasetRegistry
 
-SPECTRUM_KEYS = ["XANES", "XANES_K"]  # TODO maybe put this somewhere more central?
-
 
 @dataclass
 class EnvEmbedData:
@@ -47,14 +45,14 @@ class EnvEmbedData:
     Attributes:
         descriptor_features: Per-site descriptor tensor with shape ``(n_sites, n_features)``
             or ``(batch, max_sites, n_features)``.
-        distance_features: Per-site absorber distance tensor with shape ``(n_sites,)`` or
+        distance_features: Per-site distance-to-target-site tensor with shape ``(n_sites,)`` or
             ``(batch, max_sites)`` in **Angstrom**.
         intensities: Spectrum intensity tensor with shape ``(n_energies,)`` or ``(batch, n_energies)``.
         energies: Energy grid tensor with shape ``(n_energies,)`` or ``(batch, n_energies)``.
         c_star: Gaussian basis coefficient tensor.
         lengths: Original per-sample site counts for padded batches.
         sample_id: Sample identifier metadata for one sample or a batch.
-        element: Absorber atomic number as a scalar tensor for one sample, or
+        element: Target-site atomic number as a scalar tensor for one sample, or
             ``(batch,)`` for a batch. Consumed by element-aware spectra
             encodings.
         basis: Spectral basis attached at runtime and excluded from saved state.
@@ -165,7 +163,7 @@ class EnvEmbedData:
 
 @DatasetRegistry.register("envembed")
 class EnvEmbedDataset(TorchDataset):
-    """Dataset that creates absorber-centered environment embeddings.
+    """Dataset that creates target-site-centered environment embeddings.
 
     Args:
         dataset_type: Registered dataset type name.
@@ -229,20 +227,17 @@ class EnvEmbedDataset(TorchDataset):
             save_path_fn: Callback that maps per-item sample sequence numbers to output paths.
 
         Returns:
-            Number of processed absorber samples written.
+            Number of processed target-site samples written.
         """
         assert self.basis is not None, "Spectral basis must be set up successfully."
 
         pmg_obj = self.datasource[idx]
-        for key in SPECTRUM_KEYS:
-            if key in pmg_obj.site_properties.keys():
-                break
-        else:
-            logging.warning(f"No XANES spectrum found for sample {idx} ({pmg_obj.properties['sample_id']}); skipping.")
+        if "spectrum" not in pmg_obj.site_properties:
+            logging.warning(f"No spectrum found for sample {idx} ({pmg_obj.properties['sample_id']}); skipping.")
             return 0
 
-        xanes = np.array(pmg_obj.site_properties[key], dtype=object)
-        xanes_idxs: list[int] = np.where(xanes != None)[0].tolist()  # noqa: E711
+        spectra = np.array(pmg_obj.site_properties["spectrum"], dtype=object)
+        target_site_indices: list[int] = np.where(spectra != None)[0].tolist()  # noqa: E711
 
         # Compute descriptor features (all sites for env embedding)
         descriptor_features_list = []
@@ -253,24 +248,24 @@ class EnvEmbedDataset(TorchDataset):
         descriptor_features = torch.tensor(descriptor_features_np, dtype=torch.float32)
 
         seq = 0
-        for site_idx in xanes_idxs:
-            # XANES
-            spectrum = pmg_obj.site_properties[key][site_idx]
+        for site_idx in target_site_indices:
+            # Spectrum
+            spectrum = pmg_obj.site_properties["spectrum"][site_idx]
             energies = torch.tensor(spectrum["energies"], dtype=torch.float32)
             intensities = torch.tensor(spectrum["intensities"], dtype=torch.float32)
 
-            # Absorber atomic number
+            # Target-site atomic number
             element = torch.tensor(pmg_obj.atomic_numbers[site_idx], dtype=torch.int64)
 
             # Build per-site environment: descriptor features + distance features
             # For periodic structures with env_radius, this finds all neighbors
             # (incl. periodic images) within the radius. For molecules, unchanged.
             site_descs, site_dists = self._build_site_environment(
-                pmg_obj, absorber_idx=site_idx, all_descriptors=descriptor_features
+                pmg_obj, target_site_idx=site_idx, all_descriptors=descriptor_features
             )
 
             # Gaussian
-            c_star = gaussian_fit(basis=self.basis, xanes=intensities)
+            c_star = gaussian_fit(basis=self.basis, intensities=intensities)
 
             # Create Data object
             data = EnvEmbedData(
@@ -299,15 +294,15 @@ class EnvEmbedDataset(TorchDataset):
         else:
             logging.info("Creating spectral basis from datasource")
             first_data = next(iter(self.datasource))
-            for key in SPECTRUM_KEYS:
-                if key in first_data.site_properties.keys():
-                    break
-            else:
-                raise ValueError("No XANES spectrum found in datasource to set up spectral basis.")
+            if "spectrum" not in first_data.site_properties:
+                raise ValueError("No spectrum found in datasource to set up spectral basis.")
 
-            xanes = np.array(first_data.site_properties[key], dtype=object)
-            xanes_idxs: list[int] = np.where(xanes != None)[0].tolist()
-            energies = torch.tensor(first_data.site_properties[key][xanes_idxs[0]]["energies"], dtype=torch.float32)
+            spectra = np.array(first_data.site_properties["spectrum"], dtype=object)
+            target_site_indices: list[int] = np.where(spectra != None)[0].tolist()
+            energies = torch.tensor(
+                first_data.site_properties["spectrum"][target_site_indices[0]]["energies"],
+                dtype=torch.float32,
+            )
             self.basis = SpectralBasis(
                 energies=energies,
                 widths_eV=self.widths_eV,
@@ -318,33 +313,33 @@ class EnvEmbedDataset(TorchDataset):
     def _build_site_environment(
         self,
         pmg_obj: Molecule | Structure,
-        absorber_idx: int,
+        target_site_idx: int,
         all_descriptors: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Build descriptor and distance features for one absorber environment.
+        """Build descriptor and distance features for one target-site environment.
 
         For periodic structures with ``env_radius`` set, this uses
         ``Structure.get_neighbors`` to find atoms, including periodic images,
         within the configured radius in **Angstrom**. Returned descriptors and
-        distances place the absorber at index 0.
+        distances place the target site at index 0.
 
         For molecules, or when ``env_radius`` is ``None``, the method returns
         the original all-atom descriptors and distances unchanged.
 
         Args:
-            pmg_obj: Structure or molecule that contains the absorber.
-            absorber_idx: Index of the absorbing atom.
+            pmg_obj: Structure or molecule that contains the target site.
+            target_site_idx: Index of the target site.
             all_descriptors: Descriptor tensor for all sites with shape ``(n_sites, n_features)``.
 
         Returns:
             Pair of descriptor features and distances for the selected environment.
         """
         if self.env_radius is not None and isinstance(pmg_obj, Structure):
-            neighbors = pmg_obj.get_neighbors(pmg_obj[absorber_idx], r=self.env_radius)
+            neighbors = pmg_obj.get_neighbors(pmg_obj[target_site_idx], r=self.env_radius)
 
-            # Absorber at index 0
-            absorber_desc = all_descriptors[absorber_idx].unsqueeze(0)  # (1, H)
-            absorber_dist = torch.zeros(1, dtype=torch.float32)
+            # Target site at index 0
+            target_site_desc = all_descriptors[target_site_idx].unsqueeze(0)  # (1, H)
+            target_site_dist = torch.zeros(1, dtype=torch.float32)
 
             if len(neighbors) > 0:
                 # Sort by distance for deterministic ordering
@@ -353,30 +348,30 @@ class EnvEmbedDataset(TorchDataset):
                 neighbor_dists = torch.tensor([n.nn_distance for n in neighbors], dtype=torch.float32)
                 neighbor_descs = all_descriptors[neighbor_indices]  # (N_neighbors, H)
 
-                desc = torch.cat([absorber_desc, neighbor_descs], dim=0)
-                dist = torch.cat([absorber_dist, neighbor_dists], dim=0)
+                desc = torch.cat([target_site_desc, neighbor_descs], dim=0)
+                dist = torch.cat([target_site_dist, neighbor_dists], dim=0)
             else:
-                desc = absorber_desc
-                dist = absorber_dist
+                desc = target_site_desc
+                dist = target_site_dist
 
             return desc, dist
         else:
             # Molecule or no env_radius: preserve original behavior
-            return all_descriptors, self._distances_to_absorber(pmg_obj, absorber_idx=absorber_idx)
+            return all_descriptors, self._distances_to_target_site(pmg_obj, target_site_idx=target_site_idx)
 
     @staticmethod
-    def _distances_to_absorber(data: Molecule | Structure, absorber_idx: int) -> torch.Tensor:
-        """Compute all-site distances to one absorber.
+    def _distances_to_target_site(data: Molecule | Structure, target_site_idx: int) -> torch.Tensor:
+        """Compute all-site distances to one target site.
 
         Args:
             data: Structure or molecule with Cartesian coordinates.
-            absorber_idx: Index of the absorbing atom.
+            target_site_idx: Index of the target site.
 
         Returns:
             Distance tensor with shape ``(n_sites,)`` in **Angstrom**.
         """
         pos = data.cart_coords
-        ref = pos[absorber_idx]
+        ref = pos[target_site_idx]
         d = np.linalg.norm(pos - ref, axis=1)
         return torch.tensor(d, dtype=torch.float32)
 

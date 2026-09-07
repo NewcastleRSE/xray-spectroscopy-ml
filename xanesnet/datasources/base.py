@@ -25,13 +25,8 @@ Every ``DataSource`` returns a :class:`pymatgen.core.Molecule` or
 
 * ``properties["sample_id"]`` -- the unique sample identifier, always present.
 * When the datasource carries spectral data, the spectrum is attached via
-  ``add_site_property("XANES", ...)`` as a **per-site** list where the
-  absorbing sites hold ``{"energies": ndarray, "intensities": ndarray}`` and
-  every non-absorbing site holds ``None``.
+  ``add_site_property("spectrum", ...)`` as a **per-site** list.
 """
-
-# TODO 'XANES' mentioned explicitly above. Can we make this agnostic to
-# TODO spectroscopic technique?
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterator

@@ -44,17 +44,23 @@ class PMGJSONSource(DataSource):
     Args:
         datasource_type: Identifier string for this datasource type.
         json_path: Path to the directory containing the ``.json`` files.
+        spectrum_key: Site-property key under which the spectrum is stored
+            in the pymatgen objects. The datasource remaps it to
+            ``"spectrum"`` so that downstream code always sees a uniform
+            key.
     """
 
     def __init__(
         self,
         datasource_type: str,
         json_path: str,
+        spectrum_key: str,
     ) -> None:
         """Initialize ``PMGJSONSource``."""
         super().__init__(datasource_type)
 
         self.json_path = json_path
+        self.spectrum_key = spectrum_key
 
         self.sample_ids: list[str] = self._get_file_list()
 
@@ -83,12 +89,19 @@ class PMGJSONSource(DataSource):
 
         Returns:
             The deserialised pymatgen ``Molecule`` or ``Structure`` at
-            position ``idx``, with ``sample_id`` stored in ``properties``.
+            position ``idx``, with ``sample_id`` stored in ``properties``
+            and the spectrum accessible under ``"spectrum"``.
         """
         file = self.sample_ids[idx]
         json_file = Path(self.json_path) / f"{file}.json"
         structure = self.load_json(json_file)
         structure.properties["sample_id"] = file
+
+        # Ensure spectrum is always under the uniform "spectrum" key.
+        if self.spectrum_key != "spectrum" and self.spectrum_key in structure.site_properties:
+            structure.add_site_property("spectrum", structure.site_properties[self.spectrum_key])
+            structure.remove_site_property(self.spectrum_key)
+
         return structure
 
     def _get_file_list(self) -> list[str]:

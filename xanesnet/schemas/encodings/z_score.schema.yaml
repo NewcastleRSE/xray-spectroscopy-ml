@@ -31,12 +31,12 @@ $defs:
       per_element:
         type: boolean
         default: false
-        description: Whether statistics are selected per absorbing element (true) or shared across all
+        description: Whether statistics are selected per target-site element (true) or shared across all
           elements (false). When true, ``mean`` and ``std`` hold one row per entry of ``elements``.
       elements:
         $ref: ../shared/value_types.schema.yaml#/$defs/nullablePositiveIntegerArrayOrAuto
-        description: Absorber atomic numbers aligned row-wise with ``mean`` and ``std`` when
+        description: Target-site atomic numbers aligned row-wise with ``mean`` and ``std`` when
           ``per_element`` is true; may be the training-time ``auto`` token, which resolves to all
           elements observed in the training data. ``null`` when ``per_element`` is false.
-    description: Per-point or global z-score standardization encoding, optionally keyed by absorbing element.
+    description: Per-point or global z-score standardization encoding, optionally keyed by target-site element.
 description: Encoding schemas backed by ``SpectraEncodingRegistry`` classes and encoding constructor signatures.

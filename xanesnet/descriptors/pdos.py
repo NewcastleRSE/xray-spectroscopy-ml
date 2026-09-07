@@ -39,7 +39,7 @@ class PDOS(Descriptor):
 
     Transforms a molecular system into a Gaussian-broadened pDOS computed via
     xTB (tblite) or pySCF, targeting p-channel (and optionally d-channel)
-    contributions on the absorber site.
+    contributions on the target site.
 
     Args:
         descriptor_type: Identifier string for this descriptor type.
@@ -110,7 +110,7 @@ class PDOS(Descriptor):
         Args:
             system: The atomic system. Must contain ``info['q']`` and ``info['s']``
                 keys when ``use_charge`` or ``use_spin`` are ``True``.
-            site_index: Index of the absorber site. ``None`` is not supported.
+            site_index: Index of the target site. ``None`` is not supported.
                 Defaults to ``0``.
 
         Returns:
@@ -162,7 +162,7 @@ class PDOS(Descriptor):
 
         Args:
             system: The atomic system.
-            site_index: Index of the absorber site.
+            site_index: Index of the target site.
 
         Returns:
             Broadened pDOS array of shape ``(num_points,)`` or ``(2 * num_points,)``
@@ -248,7 +248,7 @@ class PDOS(Descriptor):
 
         Args:
             system: The atomic system.
-            site_index: Index of the absorber site.
+            site_index: Index of the target site.
 
         Returns:
             Broadened pDOS array of shape ``(num_points,)`` or ``(2 * num_points,)``

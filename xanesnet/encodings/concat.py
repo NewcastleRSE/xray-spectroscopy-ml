@@ -70,7 +70,7 @@ class ConcatEncoding(SpectraEncoding):
 
         Args:
             targets: Ground-truth target spectra ``(B, N)``.
-            elements: Optional per-sample absorber atomic numbers ``(B,)``,
+            elements: Optional per-sample target-site atomic numbers ``(B,)``,
                 forwarded to each sub-encoding.
 
         Returns:
@@ -96,7 +96,7 @@ class ConcatEncoding(SpectraEncoding):
         Args:
             predictions: Model predictions in the concatenated encoded space
                 ``(B, sum(M_i))``.
-            elements: Optional per-sample absorber atomic numbers ``(B,)``,
+            elements: Optional per-sample target-site atomic numbers ``(B,)``,
                 forwarded to each sub-decoding.
 
         Returns:

@@ -5,7 +5,7 @@
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../../genindex.html"><link rel="search" title="Search" href="../../../../search.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>xanesnet.graphs.utils.absorber_paths - XANESNET 0.1.0</title>
+        <title>xanesnet.graphs.utils.target_site_paths - XANESNET 0.1.0</title>
       <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -342,9 +342,9 @@
 </li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../../../xanesnet.graphs.html">xanesnet.graphs package</a><input aria-label="Toggle navigation of xanesnet.graphs package" class="toctree-checkbox" id="toctree-checkbox-23" name="toctree-checkbox-23" role="switch" type="checkbox"/><label for="toctree-checkbox-23"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l4 has-children"><a class="reference internal" href="../../../../xanesnet.graphs.utils.html">xanesnet.graphs.utils package</a><input aria-label="Toggle navigation of xanesnet.graphs.utils package" class="toctree-checkbox" id="toctree-checkbox-24" name="toctree-checkbox-24" role="switch" type="checkbox"/><label for="toctree-checkbox-24"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l5"><a class="reference internal" href="../../../../xanesnet.graphs.utils.absorber_paths.html">xanesnet.graphs.utils.absorber_paths module</a></li>
 <li class="toctree-l5"><a class="reference internal" href="../../../../xanesnet.graphs.utils.directional_indices.html">xanesnet.graphs.utils.directional_indices module</a></li>
 <li class="toctree-l5"><a class="reference internal" href="../../../../xanesnet.graphs.utils.symmetrize.html">xanesnet.graphs.utils.symmetrize module</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../../xanesnet.graphs.utils.target_site_paths.html">xanesnet.graphs.utils.target_site_paths module</a></li>
 <li class="toctree-l5"><a class="reference internal" href="../../../../xanesnet.graphs.utils.triplets.html">xanesnet.graphs.utils.triplets module</a></li>
 </ul>
 </li>
@@ -378,13 +378,13 @@
 <li class="toctree-l5 has-children"><a class="reference internal" href="../../../../xanesnet.models.e3ee.layers.html">xanesnet.models.e3ee.layers package</a><input aria-label="Toggle navigation of xanesnet.models.e3ee.layers package" class="toctree-checkbox" id="toctree-checkbox-29" name="toctree-checkbox-29" role="switch" type="checkbox"/><label for="toctree-checkbox-29"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l6"><a class="reference internal" href="../../../../xanesnet.models.e3ee.layers.atom_encoder.html">xanesnet.models.e3ee.layers.atom_encoder module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="../../../../xanesnet.models.e3ee.layers.basic.html">xanesnet.models.e3ee.layers.basic module</a></li>
-<li class="toctree-l6"><a class="reference internal" href="../../../../xanesnet.models.e3ee.layers.branch_absorber.html">xanesnet.models.e3ee.layers.branch_absorber module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="../../../../xanesnet.models.e3ee.layers.branch_attention.html">xanesnet.models.e3ee.layers.branch_attention module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="../../../../xanesnet.models.e3ee.layers.branch_convolution.html">xanesnet.models.e3ee.layers.branch_convolution module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="../../../../xanesnet.models.e3ee.layers.branch_eq_attention.html">xanesnet.models.e3ee.layers.branch_eq_attention module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="../../../../xanesnet.models.e3ee.layers.branch_equivariant.html">xanesnet.models.e3ee.layers.branch_equivariant module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="../../../../xanesnet.models.e3ee.layers.branch_fusion.html">xanesnet.models.e3ee.layers.branch_fusion module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="../../../../xanesnet.models.e3ee.layers.branch_path.html">xanesnet.models.e3ee.layers.branch_path module</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../xanesnet.models.e3ee.layers.branch_target_site.html">xanesnet.models.e3ee.layers.branch_target_site module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="../../../../xanesnet.models.e3ee.layers.interactions.html">xanesnet.models.e3ee.layers.interactions module</a></li>
 </ul>
 </li>
@@ -400,7 +400,7 @@
 <li class="toctree-l5 has-children"><a class="reference internal" href="../../../../xanesnet.models.e3ee_full.layers.html">xanesnet.models.e3ee_full.layers package</a><input aria-label="Toggle navigation of xanesnet.models.e3ee_full.layers package" class="toctree-checkbox" id="toctree-checkbox-32" name="toctree-checkbox-32" role="switch" type="checkbox"/><label for="toctree-checkbox-32"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l6"><a class="reference internal" href="../../../../xanesnet.models.e3ee_full.layers.atom_encoder.html">xanesnet.models.e3ee_full.layers.atom_encoder module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="../../../../xanesnet.models.e3ee_full.layers.basic.html">xanesnet.models.e3ee_full.layers.basic module</a></li>
-<li class="toctree-l6"><a class="reference internal" href="../../../../xanesnet.models.e3ee_full.layers.branch_absorber.html">xanesnet.models.e3ee_full.layers.branch_absorber module</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../xanesnet.models.e3ee_full.layers.branch_all_atom.html">xanesnet.models.e3ee_full.layers.branch_all_atom module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="../../../../xanesnet.models.e3ee_full.layers.branch_attention.html">xanesnet.models.e3ee_full.layers.branch_attention module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="../../../../xanesnet.models.e3ee_full.layers.branch_convolution.html">xanesnet.models.e3ee_full.layers.branch_convolution module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="../../../../xanesnet.models.e3ee_full.layers.branch_eq_attention.html">xanesnet.models.e3ee_full.layers.branch_eq_attention module</a></li>
@@ -605,7 +605,7 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <h1>Source code for xanesnet.graphs.utils.absorber_paths</h1><div class="highlight"><pre>
+          <h1>Source code for xanesnet.graphs.utils.target_site_paths</h1><div class="highlight"><pre>
 <span></span><span class="c1"># SPDX-License-Identifier: GPL-3.0-or-later</span>
 <span class="c1">#</span>
 <span class="c1"># XANESNET</span>
@@ -626,39 +626,41 @@
 <span class="c1"># Citations:</span>
 <span class="c1">#   ...</span>
 
-<span class="sd">&quot;&quot;&quot;Absorber-centred 3-body path enumeration for XANESNET graph inputs.&quot;&quot;&quot;</span>
+<span class="sd">&quot;&quot;&quot;Target-site-centred 3-body path enumeration for XANESNET graph inputs.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pymatgen.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">Molecule</span><span class="p">,</span> <span class="n">Structure</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_absorber_neighbors</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_target_site_neighbors</span><span class="p">(</span>
     <span class="n">pmg_obj</span><span class="p">:</span> <span class="n">Structure</span> <span class="o">|</span> <span class="n">Molecule</span><span class="p">,</span>
-    <span class="n">absorber_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">target_site_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">cutoff</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the neighbors of the absorber site within ``cutoff``.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the neighbours of the target site within ``cutoff``.</span>
 
-<span class="sd">    For periodic ``Structure`` objects, uses pymatgen&#39;s PBC-aware neighbor</span>
+<span class="sd">    For periodic ``Structure`` objects, uses pymatgen&#39;s PBC-aware neighbour</span>
 <span class="sd">    search so that ``neighbor_coords`` are the Cartesian coordinates of the</span>
-<span class="sd">    correct periodic images. For ``Molecule`` objects, uses plain Euclidean</span>
-<span class="sd">    distances.</span>
+<span class="sd">    correct periodic images. Zero-distance self-neighbours (the target site</span>
+<span class="sd">    in its own unit cell) are filtered out; periodic images of the target</span>
+<span class="sd">    site at finite distance are retained. For ``Molecule`` objects, uses</span>
+<span class="sd">    plain Euclidean distances and excludes the target site itself.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pmg_obj: The periodic structure or molecule.</span>
-<span class="sd">        absorber_idx: Index of the absorbing atom in ``pmg_obj``.</span>
-<span class="sd">        cutoff: Maximum neighbor distance in **angstroms**.</span>
+<span class="sd">        target_site_idx: Index of the target site in ``pmg_obj``.</span>
+<span class="sd">        cutoff: Maximum neighbour distance in **angstroms**.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A tuple ``(neighbor_indices, neighbor_coords)`` where</span>
 <span class="sd">        ``neighbor_indices`` is ``(N,)`` int64 and ``neighbor_coords`` is</span>
 <span class="sd">        ``(N, 3)`` float64.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">abs_coord</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pmg_obj</span><span class="o">.</span><span class="n">cart_coords</span><span class="p">[</span><span class="n">absorber_idx</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">target_coord</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pmg_obj</span><span class="o">.</span><span class="n">cart_coords</span><span class="p">[</span><span class="n">target_site_idx</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pmg_obj</span><span class="p">,</span> <span class="n">Structure</span><span class="p">):</span>
-        <span class="n">neighbors</span> <span class="o">=</span> <span class="n">pmg_obj</span><span class="o">.</span><span class="n">get_neighbors</span><span class="p">(</span><span class="n">pmg_obj</span><span class="p">[</span><span class="n">absorber_idx</span><span class="p">],</span> <span class="n">r</span><span class="o">=</span><span class="n">cutoff</span><span class="p">)</span>
+        <span class="n">neighbors</span> <span class="o">=</span> <span class="n">pmg_obj</span><span class="o">.</span><span class="n">get_neighbors</span><span class="p">(</span><span class="n">pmg_obj</span><span class="p">[</span><span class="n">target_site_idx</span><span class="p">],</span> <span class="n">r</span><span class="o">=</span><span class="n">cutoff</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">neighbors</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">(</span>
                 <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">),</span>
@@ -666,28 +668,30 @@
             <span class="p">)</span>
         <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">n</span><span class="o">.</span><span class="n">index</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">neighbors</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
         <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">n</span><span class="o">.</span><span class="n">coords</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">neighbors</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">idx</span><span class="p">,</span> <span class="n">coords</span>
+        <span class="n">nn_dists</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">n</span><span class="o">.</span><span class="n">nn_distance</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">neighbors</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">keep</span> <span class="o">=</span> <span class="n">nn_dists</span> <span class="o">&gt;</span> <span class="mf">1e-8</span>
+        <span class="k">return</span> <span class="n">idx</span><span class="p">[</span><span class="n">keep</span><span class="p">],</span> <span class="n">coords</span><span class="p">[</span><span class="n">keep</span><span class="p">]</span>
 
-    <span class="c1"># Molecule: filter by Euclidean distance, exclude absorber itself.</span>
+    <span class="c1"># Molecule: filter by Euclidean distance, excluding the target site itself.</span>
     <span class="n">all_coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pmg_obj</span><span class="o">.</span><span class="n">cart_coords</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
-    <span class="n">dists</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">all_coords</span> <span class="o">-</span> <span class="n">abs_coord</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-    <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">dists</span> <span class="o">&lt;=</span> <span class="n">cutoff</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pmg_obj</span><span class="p">))</span> <span class="o">!=</span> <span class="n">absorber_idx</span><span class="p">)</span>
+    <span class="n">dists</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">all_coords</span> <span class="o">-</span> <span class="n">target_coord</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">dists</span> <span class="o">&lt;=</span> <span class="n">cutoff</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pmg_obj</span><span class="p">))</span> <span class="o">!=</span> <span class="n">target_site_idx</span><span class="p">)</span>
     <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">mask</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
     <span class="n">coords</span> <span class="o">=</span> <span class="n">all_coords</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">idx</span><span class="p">,</span> <span class="n">coords</span>
 
 
-<div class="viewcode-block" id="build_absorber_paths">
-<a class="viewcode-back" href="../../../../xanesnet.graphs.utils.absorber_paths.html#xanesnet.graphs.utils.absorber_paths.build_absorber_paths">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">build_absorber_paths</span><span class="p">(</span>
+<div class="viewcode-block" id="build_target_site_paths">
+<a class="viewcode-back" href="../../../../xanesnet.graphs.utils.target_site_paths.html#xanesnet.graphs.utils.target_site_paths.build_target_site_paths">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_target_site_paths</span><span class="p">(</span>
     <span class="n">pmg_obj</span><span class="p">:</span> <span class="n">Structure</span> <span class="o">|</span> <span class="n">Molecule</span><span class="p">,</span>
-    <span class="n">absorber_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">target_site_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">cutoff</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">max_paths</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enumerate absorber-centred 3-body paths ``(absorber, j, k)``.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enumerate target-site-centred 3-body paths ``(target_site, j, k)``.</span>
 
-<span class="sd">    Both ``j`` and ``k`` must be within ``cutoff`` of the absorber. For</span>
+<span class="sd">    Both ``j`` and ``k`` must be within ``cutoff`` of the target site. For</span>
 <span class="sd">    periodic structures, ``j`` and ``k`` may be periodic images; their scalar</span>
 <span class="sd">    geometry is computed from pymatgen image Cartesian coordinates. Paths are</span>
 <span class="sd">    ordered by ascending ``r0j + r0k + 0.5 * rjk`` (a proxy for path</span>
@@ -695,23 +699,23 @@
 
 <span class="sd">    Args:</span>
 <span class="sd">        pmg_obj: The periodic structure or molecule.</span>
-<span class="sd">        absorber_idx: Index of the absorbing atom in ``pmg_obj``.</span>
-<span class="sd">        cutoff: Neighbor cutoff radius in **angstroms**.</span>
+<span class="sd">        target_site_idx: Index of the target site in ``pmg_obj``.</span>
+<span class="sd">        cutoff: Neighbour cutoff radius in **angstroms**.</span>
 <span class="sd">        max_paths: Maximum number of paths to return.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Dictionary with the following ``torch.Tensor`` entries (all ``(P,)``):</span>
 
-<span class="sd">                - ``path_j``: int64 -- structure-global atom index of ``j``.</span>
-<span class="sd">                - ``path_k``: int64 -- structure-global atom index of ``k``.</span>
-<span class="sd">        - ``path_r0j``: float32 -- absorber-j distance in **angstroms**.</span>
-<span class="sd">        - ``path_r0k``: float32 -- absorber-k distance in **angstroms**.</span>
-<span class="sd">        - ``path_rjk``: float32 -- j-k distance in **angstroms**.</span>
-<span class="sd">        - ``path_cosangle``: float32 -- cosine of the angle at the absorber</span>
-<span class="sd">          (range ``[-1, 1]``).</span>
+<span class="sd">        - ``path_j``: int64 -- structure-global atom index of ``j``.</span>
+<span class="sd">        - ``path_k``: int64 -- structure-global atom index of ``k``.</span>
+<span class="sd">        - ``path_r0j``: float32 -- target-site-to-``j`` distance in **angstroms**.</span>
+<span class="sd">        - ``path_r0k``: float32 -- target-site-to-``k`` distance in **angstroms**.</span>
+<span class="sd">        - ``path_rjk``: float32 -- ``j``-to-``k`` distance in **angstroms**.</span>
+<span class="sd">        - ``path_cosangle``: float32 -- cosine of the angle at the target</span>
+<span class="sd">          site (range ``[-1, 1]``).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">neigh_idx</span><span class="p">,</span> <span class="n">neigh_coords</span> <span class="o">=</span> <span class="n">_absorber_neighbors</span><span class="p">(</span><span class="n">pmg_obj</span><span class="p">,</span> <span class="n">absorber_idx</span><span class="p">,</span> <span class="n">cutoff</span><span class="p">)</span>
-    <span class="n">abs_coord</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pmg_obj</span><span class="o">.</span><span class="n">cart_coords</span><span class="p">[</span><span class="n">absorber_idx</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">neigh_idx</span><span class="p">,</span> <span class="n">neigh_coords</span> <span class="o">=</span> <span class="n">_target_site_neighbors</span><span class="p">(</span><span class="n">pmg_obj</span><span class="p">,</span> <span class="n">target_site_idx</span><span class="p">,</span> <span class="n">cutoff</span><span class="p">)</span>
+    <span class="n">target_coord</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pmg_obj</span><span class="o">.</span><span class="n">cart_coords</span><span class="p">[</span><span class="n">target_site_idx</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
 
     <span class="n">n</span> <span class="o">=</span> <span class="n">neigh_idx</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
@@ -724,13 +728,13 @@
             <span class="s2">&quot;path_cosangle&quot;</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span>
         <span class="p">}</span>
 
-    <span class="c1"># Enumerate ordered index pairs (j &lt; k over the neighbor list ordering).</span>
+    <span class="c1"># Enumerate ordered index pairs (j &lt; k over the neighbour-list ordering).</span>
     <span class="n">ii</span><span class="p">,</span> <span class="n">jj</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">triu_indices</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
-    <span class="n">cj</span> <span class="o">=</span> <span class="n">neigh_coords</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span>  <span class="c1"># [P, 3]</span>
-    <span class="n">ck</span> <span class="o">=</span> <span class="n">neigh_coords</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span>  <span class="c1"># [P, 3]</span>
-    <span class="n">vj</span> <span class="o">=</span> <span class="n">cj</span> <span class="o">-</span> <span class="n">abs_coord</span>
-    <span class="n">vk</span> <span class="o">=</span> <span class="n">ck</span> <span class="o">-</span> <span class="n">abs_coord</span>
+    <span class="n">cj</span> <span class="o">=</span> <span class="n">neigh_coords</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span>
+    <span class="n">ck</span> <span class="o">=</span> <span class="n">neigh_coords</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span>
+    <span class="n">vj</span> <span class="o">=</span> <span class="n">cj</span> <span class="o">-</span> <span class="n">target_coord</span>
+    <span class="n">vk</span> <span class="o">=</span> <span class="n">ck</span> <span class="o">-</span> <span class="n">target_coord</span>
     <span class="n">vjk</span> <span class="o">=</span> <span class="n">ck</span> <span class="o">-</span> <span class="n">cj</span>
 
     <span class="n">r0j</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">vj</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>

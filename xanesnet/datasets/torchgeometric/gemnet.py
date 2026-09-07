@@ -21,7 +21,7 @@
 """GemNet and GemNet-OC PyTorch Geometric dataset implementation."""
 
 import logging
-from typing import Any, Protocol
+from typing import Any
 
 import numpy as np
 import torch
@@ -40,8 +40,6 @@ from xanesnet.serialization.config import Config
 
 from ..base import SavePathFn, TorchGeometricDataset
 from ..registry import DatasetRegistry
-
-SPECTRUM_KEYS = ["XANES", "XANES_K"]
 
 
 class GemNetData(Data):
@@ -148,8 +146,12 @@ class GemNetData(Data):
         return super().__cat_dim__(key, value, *args, **kwargs)
 
 
-class GemNetBatch(Protocol):
-    """Protocol for batches emitted by ``GemNetDataset.collate_fn``."""
+class GemNetBatch(Batch):
+    """Typed PyG batch emitted by ``GemNetDataset.collate_fn``.
+
+    Calling :meth:`~torch_geometric.data.Batch.from_data_list` on this class
+    preserves the concrete batch type while PyG adds its batching metadata.
+    """
 
     x: torch.Tensor
     pos: torch.Tensor
@@ -163,7 +165,7 @@ class GemNetBatch(Protocol):
     id3_reduce_ca: torch.Tensor
     id3_expand_ba: torch.Tensor
     Kidx3: torch.Tensor
-    absorber_mask: torch.Tensor
+    target_site_mask: torch.Tensor
     energies: torch.Tensor
     intensities: torch.Tensor
     sample_id: list[str]
@@ -274,28 +276,25 @@ class GemNetDataset(TorchGeometricDataset):
             ``1`` when the graph was saved, otherwise ``0`` when skipped.
         """
         pmg_obj = self.datasource[idx]
-        for key in SPECTRUM_KEYS:
-            if key in pmg_obj.site_properties.keys():
-                break
-        else:
+        if "spectrum" not in pmg_obj.site_properties:
             logging.warning(
-                f"No XANES spectrum found for sample {idx} ({pmg_obj.properties.get('sample_id', '')}); skipping."
+                f"No spectrum found for sample {idx} " f"({pmg_obj.properties.get('sample_id', '')}); skipping."
             )
             return 0
 
-        xanes = np.array(pmg_obj.site_properties[key], dtype=object)
-        xanes_idxs: list[int] = np.where(xanes != None)[0].tolist()  # noqa: E711
-        if len(xanes_idxs) == 0:
-            logging.warning(f"No absorbers for sample {idx}; skipping.")
+        spectra = np.array(pmg_obj.site_properties["spectrum"], dtype=object)
+        target_site_indices: list[int] = np.where(spectra != None)[0].tolist()  # noqa: E711
+        if len(target_site_indices) == 0:
+            logging.warning(f"No target sites for sample {idx}; skipping.")
             return 0
 
-        xanes = xanes[xanes_idxs]
-        intensities = np.stack([x["intensities"] for x in xanes]).astype(np.float32)
-        energies = np.stack([x["energies"] for x in xanes]).astype(np.float32)
+        spectra = spectra[target_site_indices]
+        intensities = np.stack([x["intensities"] for x in spectra]).astype(np.float32)
+        energies = np.stack([x["energies"] for x in spectra]).astype(np.float32)
 
         n_atoms = len(pmg_obj.atomic_numbers)
-        absorber_mask = torch.zeros(n_atoms, dtype=torch.bool)
-        absorber_mask[xanes_idxs] = True
+        target_site_mask = torch.zeros(n_atoms, dtype=torch.bool)
+        target_site_mask[target_site_indices] = True
 
         atomic_numbers = torch.tensor(pmg_obj.atomic_numbers, dtype=torch.int64)
         cart_coords = torch.tensor(pmg_obj.cart_coords, dtype=torch.float32)
@@ -329,7 +328,7 @@ class GemNetDataset(TorchGeometricDataset):
             "Kidx3": Kidx3,
             "energies": torch.tensor(energies, dtype=torch.float32),
             "intensities": torch.tensor(intensities, dtype=torch.float32),
-            "absorber_mask": absorber_mask,
+            "target_site_mask": target_site_mask,
             "sample_id": pmg_obj.properties["sample_id"],
         }
 
@@ -454,7 +453,7 @@ class GemNetDataset(TorchGeometricDataset):
         self._save_data(struct, save_path_fn(0))
         return 1
 
-    def collate_fn(self, batch: list[BaseData]) -> Batch:
+    def collate_fn(self, batch: list[BaseData]) -> GemNetBatch:
         """Collate GemNet graph samples into one PyG batch.
 
         Args:
@@ -462,16 +461,16 @@ class GemNetDataset(TorchGeometricDataset):
 
         Returns:
             PyG batch with target tensors and file names concatenated over
-            absorber sites.
+            target sites.
         """
-        fields_to_cat = ["energies", "intensities", "absorber_mask"]
-        batched = Batch.from_data_list(batch, exclude_keys=[*fields_to_cat, "sample_id"])
+        fields_to_cat = ["energies", "intensities", "target_site_mask"]
+        batched = GemNetBatch.from_data_list(batch, exclude_keys=[*fields_to_cat, "sample_id"])
         for field in fields_to_cat:
             setattr(batched, field, torch.cat([getattr(d, field) for d in batch], dim=0))
         batched.sample_id = [
             str(getattr(data, "sample_id"))
             for data in batch
-            for _ in range(int(getattr(data, "absorber_mask").sum().item()))
+            for _ in range(int(getattr(data, "target_site_mask").sum().item()))
         ]
         return batched
 

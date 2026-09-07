@@ -18,7 +18,7 @@
 # Citations:
 #   ...
 
-"""Absorber-agnostic equivariant atom encoder with spherical-harmonics message passing."""
+"""Target-site-agnostic equivariant atom encoder with spherical-harmonics message passing."""
 
 from typing import cast
 
@@ -31,12 +31,12 @@ from .interactions import EquivariantInteractionBlock
 
 
 class EquivariantAtomEncoder(nn.Module):
-    """Absorber-agnostic equivariant atom encoder with spherical-harmonics message passing.
+    """Target-site-agnostic equivariant atom encoder with spherical-harmonics message passing.
 
-    Unlike the single-absorber E3EE encoder, this variant is absorber-agnostic:
-    the scalar node input contains only the element embedding -- no absorber
+    Unlike the single-target-site E3EE encoder, this variant is target-site-agnostic:
+    the scalar node input contains only the element embedding -- no target-site
     flag is used. The encoder produces a per-atom equivariant feature for every
-    atom in the padded layout, suitable for dense (all-absorber) prediction.
+    atom in the padded layout, suitable for dense (all-target-site) prediction.
 
     Args:
         max_z: Maximum atomic number supported by the element embedding.
@@ -124,7 +124,7 @@ class EquivariantAtomEncoder(nn.Module):
         device = z.device
         bsz, n_atoms = z.shape
 
-        # Scalar input: element embedding only (no absorber flag).
+        # Scalar input: element embedding only (no target-site flag).
         zf = self.z_emb(z)
         scalar_in = zf
 

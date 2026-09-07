@@ -66,10 +66,10 @@ class AffineEncoding(SpectraEncoding):
     * **Shared** (``per_element=False``): ``shift`` and ``scale`` are 1-D
       tensors - per-point vectors of length ``N`` for point-by-point transforms
       or length-one tensors for a single global transform - applied to every
-      sample regardless of its absorbing element.
+    sample regardless of its target-site element.
     * **Element-aware** (``per_element=True``): ``shift`` and ``scale`` are 2-D
       ``(E, D)`` lookup tables with one row per known element; the row applied
-      to each sample is selected from the sample's absorber atomic number. Rows
+    to each sample is selected from the sample's target-site atomic number. Rows
       have length ``N`` for point-by-point transforms or length one for a single
       global transform per element.
 
@@ -86,7 +86,7 @@ class AffineEncoding(SpectraEncoding):
         scale: Divisor applied during encoding, shaped like ``shift``.
             Subclasses should ensure scale values are non-zero (typically by
             clamping near-zero entries to ``1.0``).
-        per_element: Whether ``shift`` and ``scale`` are selected per absorbing
+        per_element: Whether ``shift`` and ``scale`` are selected per target-site
             element (``True``) or shared across all samples (``False``).
         elements: Atomic numbers aligned row-wise with ``shift`` and ``scale``
             when ``per_element`` is true; ignored otherwise.
@@ -159,7 +159,7 @@ class AffineEncoding(SpectraEncoding):
         """Return the shift and scale tensors to apply on ``device``.
 
         Args:
-            elements: Per-sample absorber atomic numbers ``(B,)``; required only
+            elements: Per-sample target-site atomic numbers ``(B,)``; required only
                 when this encoding is element-aware.
             device: Device the returned parameter tensors should live on.
 
@@ -180,7 +180,7 @@ class AffineEncoding(SpectraEncoding):
         """Select per-sample shift and scale rows from the element lookup.
 
         Args:
-            elements: Per-sample absorber atomic numbers ``(B,)``.
+            elements: Per-sample target-site atomic numbers ``(B,)``.
             device: Device the returned parameter tensors should live on.
 
         Returns:
@@ -219,7 +219,7 @@ class AffineEncoding(SpectraEncoding):
 
         Args:
             targets: Ground-truth target spectra ``(B, N)``.
-            elements: Per-sample absorber atomic numbers ``(B,)``. Required when
+            elements: Per-sample target-site atomic numbers ``(B,)``. Required when
                 this encoding is element-aware and ignored otherwise.
 
         Returns:
@@ -237,7 +237,7 @@ class AffineEncoding(SpectraEncoding):
 
         Args:
             predictions: Model predictions in the transformed space ``(B, N)``.
-            elements: Per-sample absorber atomic numbers ``(B,)``. Required when
+            elements: Per-sample target-site atomic numbers ``(B,)``. Required when
                 this encoding is element-aware and ignored otherwise.
 
         Returns:

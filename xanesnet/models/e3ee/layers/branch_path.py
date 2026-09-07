@@ -83,9 +83,9 @@ class PairElementEnergyScattering(nn.Module):
         return self.mlp(torch.cat([ej, ek, ef], dim=-1))
 
 
-class AbsorberPathAggregator(nn.Module):
+class TargetSitePathAggregator(nn.Module):
     """
-    3-body absorber-centred path aggregator for paths (absorber, j, k).
+    3-body target-site-centred path aggregator for paths (target site, j, k).
 
     Consumes precomputed flat triplet scalars (``r0j``, ``r0k``, ``rjk``,
     ``cos(angle)``) and per-path flat atom indices into the padded ``B * N``
@@ -110,7 +110,7 @@ class AbsorberPathAggregator(nn.Module):
         out_dim: int,
         cutoff: float,
     ) -> None:
-        """Initialize ``AbsorberPathAggregator``."""
+        """Initialize ``TargetSitePathAggregator``."""
         super().__init__()
         self.cutoff = cutoff
         self.out_dim = out_dim
@@ -156,10 +156,10 @@ class AbsorberPathAggregator(nn.Module):
             e_feat: Energy RBF features, shape ``(nE, e_dim)``.
             path_j: Flat atom indices for leg j (into B*N), shape ``(P,)``.
             path_k: Flat atom indices for leg k (into B*N), shape ``(P,)``.
-            path_r0j: Absorber-to-j distance in **Angstrom**, shape ``(P,)``.
-            path_r0k: Absorber-to-k distance in **Angstrom**, shape ``(P,)``.
+            path_r0j: Target-site-to-j distance in **Angstrom**, shape ``(P,)``.
+            path_r0k: Target-site-to-k distance in **Angstrom**, shape ``(P,)``.
             path_rjk: j-to-k distance in **Angstrom**, shape ``(P,)``.
-            path_cosangle: Cosine of the j-absorber-k angle, shape ``(P,)``.
+            path_cosangle: Cosine of the j-target-site-k angle, shape ``(P,)``.
             path_batch: Batch index per path (0..B-1), shape ``(P,)``.
             bsz: Batch size.
 

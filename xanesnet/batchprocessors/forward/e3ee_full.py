@@ -35,7 +35,7 @@ class E3EEFullBatchProcessor(ForwardBatchProcessor):
     """Batch processor for E3EEFull dataset + E3EEFull model.
 
     The model emits per-atom spectra ``(B, N_max, nE)``; this processor
-    selects absorber-site rows via ``absorber_mask`` for loss computation
+    selects target-site rows via ``target_site_mask`` for loss computation
     (same pattern as SchNet/DimeNet).
     """
 
@@ -51,7 +51,7 @@ class E3EEFullBatchProcessor(ForwardBatchProcessor):
         return {
             "x": batch.x,
             "mask": batch.mask,
-            "absorber_mask": batch.absorber_mask,
+            "target_site_mask": batch.target_site_mask,
             "edge_src": batch.edge_src,
             "edge_dst": batch.edge_dst,
             "edge_weight": batch.edge_weight,
@@ -71,16 +71,16 @@ class E3EEFullBatchProcessor(ForwardBatchProcessor):
         }
 
     def prediction_preparation(self, batch: E3EEFullBatch, predictions: torch.Tensor) -> torch.Tensor:
-        """Select absorber-site spectra from the padded per-atom output.
+        """Select target-site spectra from the padded per-atom output.
 
         Args:
-            batch: Collated E3EEFull batch carrying ``absorber_mask``. ``(B, N_max)``
+            batch: Collated E3EEFull batch carrying ``target_site_mask``. ``(B, N_max)``
             predictions: Per-atom output tensor. ``(B, N_max, nE)``
 
         Returns:
-            Spectra for absorber atoms only. ``(n_abs, nE)``
+            Spectra for target-site atoms only. ``(n_targets, nE)``
         """
-        return predictions[batch.absorber_mask]
+        return predictions[batch.target_site_mask]
 
     def target_preparation(self, batch: E3EEFullBatch) -> torch.Tensor:
         """Prepare target spectra from an E3EEFull batch.
@@ -89,22 +89,22 @@ class E3EEFullBatchProcessor(ForwardBatchProcessor):
             batch: Collated E3EEFull batch.
 
         Returns:
-            Target spectra for absorber atoms only. ``(n_abs, n_energies)``
+            Target spectra for target-site atoms only. ``(n_targets, n_energies)``
         """
         return batch.intensities
 
     def element_preparation(self, batch: E3EEFullBatch) -> torch.Tensor | None:
-        """Extract absorber atomic numbers from an E3EEFull batch.
+        """Extract target-site atomic numbers from an E3EEFull batch.
 
-        Selects atomic numbers at absorber positions via ``absorber_mask``.
+        Selects atomic numbers at target-site positions via ``target_site_mask``.
 
         Args:
             batch: Collated E3EEFull batch.
 
         Returns:
-            Absorber atomic numbers. ``(n_abs,)``
+            Target-site atomic numbers. ``(n_targets,)``
         """
-        return batch.x[batch.absorber_mask]
+        return batch.x[batch.target_site_mask]
 
     def sample_id_extraction(self, batch: E3EEFullBatch) -> np.ndarray:
         """Extract file names from an E3EEFull batch.
@@ -113,6 +113,6 @@ class E3EEFullBatchProcessor(ForwardBatchProcessor):
             batch: Collated E3EEFull batch.
 
         Returns:
-            Array of file name strings. ``(n_abs,)``
+            Array of file name strings. ``(n_target_sites,)``
         """
         return np.array(batch.sample_id, dtype=str)

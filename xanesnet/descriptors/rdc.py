@@ -81,7 +81,7 @@ class RDC(Descriptor):
         Args:
             system: The atomic system.
             site_index: Site index, list of site indices, or ``None`` for all sites.
-                Defaults to ``0`` (the absorber site).
+                Defaults to ``0`` (the target site).
 
         Returns:
             Descriptor array ``(S, G)`` where ``S`` is the number of selected sites
@@ -107,11 +107,11 @@ class RDC(Descriptor):
         j_arr: np.ndarray,
         d_arr: np.ndarray,
     ) -> np.ndarray:
-        """Compute the RDC fingerprint for a single absorber site.
+        """Compute the RDC fingerprint for a single target site.
 
         Args:
             system: The atomic system.
-            site_index: Index of the absorber site.
+            site_index: Index of the target site.
             i_arr: Source atom indices from the neighbor list ``(P,)``.
             j_arr: Target atom indices from the neighbor list ``(P,)``.
             d_arr: Pairwise distances from the neighbor list ``(P,)``. **A**.

@@ -61,7 +61,7 @@ class EnsembleInferencer(Inferencer):
         drop_last: Whether to drop the last incomplete batch.
         num_workers: Number of data-loader worker processes.
         inferencer_type: Identifier string for this inferencer type.
-        buffer_size: Number of absorber rows buffered before prediction data is
+        buffer_size: Number of target-site rows buffered before prediction data is
             flushed to disk.
         model_device_policy: Device-placement policy for ensemble members.
             Supported values are ``"all"`` and ``"sequential"``.
@@ -165,16 +165,16 @@ class EnsembleInferencer(Inferencer):
             predictions_mean = stacked_predictions.mean(dim=0)
             predictions_std = stacked_predictions.std(dim=0, unbiased=False)
 
-            n_absorbers = predictions_mean.shape[0]
+            n_target_sites = predictions_mean.shape[0]
             wall_time = end_time - start_time
             forward_time = torch.full(
-                (n_absorbers,),
-                wall_time / n_absorbers if n_absorbers > 0 else 0.0,
+                (n_target_sites,),
+                wall_time / n_target_sites if n_target_sites > 0 else 0.0,
                 dtype=torch.float32,
                 device=self.device,
             )
             forward_time_pass = torch.full(
-                (n_absorbers,),
+                (n_target_sites,),
                 wall_time,
                 dtype=torch.float32,
                 device=self.device,

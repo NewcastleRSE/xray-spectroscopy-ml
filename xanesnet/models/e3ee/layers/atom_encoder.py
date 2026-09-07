@@ -102,7 +102,7 @@ class EquivariantAtomEncoder(nn.Module):
         self,
         z: torch.Tensor,
         mask: torch.Tensor,
-        absorber_index: torch.Tensor,
+        target_site_index: torch.Tensor,
         edge_src: torch.Tensor,
         edge_dst: torch.Tensor,
         edge_weight: torch.Tensor,
@@ -113,7 +113,7 @@ class EquivariantAtomEncoder(nn.Module):
         Args:
             z: Atomic numbers (int64), shape ``(B, N)``.
             mask: Valid-atom mask, shape ``(B, N)``.
-            absorber_index: Absorber atom index per sample (0..N-1), shape ``(B,)``.
+            target_site_index: Target-site atom index per sample (0..N-1), shape ``(B,)``.
             edge_src: Source flat indices into ``B*N``, shape ``(E,)``.
             edge_dst: Destination flat indices into ``B*N``, shape ``(E,)``.
             edge_weight: Edge lengths in **Angstrom** (PBC-correct), shape ``(E,)``.
@@ -125,13 +125,13 @@ class EquivariantAtomEncoder(nn.Module):
         device = z.device
         bsz, n_atoms = z.shape
 
-        # Scalar input: element embedding + absorber flag (no distance).
-        abs_flag = torch.zeros(bsz, n_atoms, dtype=torch.float32, device=device)
+        # Scalar input: element embedding + target-site flag (no distance).
+        target_site_flag = torch.zeros(bsz, n_atoms, dtype=torch.float32, device=device)
         batch_arange = torch.arange(bsz, device=device)
-        abs_flag[batch_arange, absorber_index] = 1.0
+        target_site_flag[batch_arange, target_site_index] = 1.0
 
         zf = self.z_emb(z)
-        scalar_in = torch.cat([zf, abs_flag.unsqueeze(-1)], dim=-1)
+        scalar_in = torch.cat([zf, target_site_flag.unsqueeze(-1)], dim=-1)
 
         x = self.input_lin(scalar_in.reshape(bsz * n_atoms, self.input_scalar_dim))
         flat_mask = mask.reshape(bsz * n_atoms)

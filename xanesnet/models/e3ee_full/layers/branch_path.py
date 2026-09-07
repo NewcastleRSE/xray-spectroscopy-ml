@@ -153,13 +153,13 @@ class AllAtomPathAggregator(nn.Module):
             z_flat: Atomic numbers (flat), shape ``(B*N,)``.
             pair_elem_energy: Pre-constructed element-pair energy scattering module.
             e_feat: Energy RBF features, shape ``(nE, e_dim)``.
-            path_center: Flat absorber-site index per path into ``B*N``, shape ``(P,)``.
+            path_center: Flat target-site index per path into ``B*N``, shape ``(P,)``.
             path_j: Flat atom index for leg j into ``B*N``, shape ``(P,)``.
             path_k: Flat atom index for leg k into ``B*N``, shape ``(P,)``.
-            path_r0j: Absorber-to-j distance in **A**, shape ``(P,)``.
-            path_r0k: Absorber-to-k distance in **A**, shape ``(P,)``.
+            path_r0j: Target-site-to-j distance in **A**, shape ``(P,)``.
+            path_r0k: Target-site-to-k distance in **A**, shape ``(P,)``.
             path_rjk: j-to-k distance in **A**, shape ``(P,)``.
-            path_cosangle: Cosine of the j-absorber-k angle, shape ``(P,)``.
+            path_cosangle: Cosine of the j-target-site-k angle, shape ``(P,)``.
             bsz: Batch size.
             n_atoms: Padded atoms per sample (N_max).
 

@@ -48,7 +48,7 @@ class ScaleEncoding(AffineEncoding):
       (a length-``N`` vector) or is a single global scalar shared across all
       points.
     * ``per_element`` selects whether a separate factor is used for each
-      absorbing element (chosen per sample from its atomic number) or a single
+    target-site element (chosen per sample from its atomic number) or a single
       factor is shared across all elements.
 
     When ``per_element`` is false, ``factor`` is a flat list. When it is true,
@@ -56,7 +56,7 @@ class ScaleEncoding(AffineEncoding):
 
     Zero or near-zero factors (below ``1e-12``) are silently replaced with
     ``1.0``, which is equivalent to skipping scaling at those points. This
-    handles flat spectral regions (e.g. the pre-edge) where the per-point
+    handles flat spectral regions where the per-point
     standard deviation vanishes.
 
     Args:
@@ -66,7 +66,7 @@ class ScaleEncoding(AffineEncoding):
             ``elements``) when true.
         per_point: Whether scaling is applied per spectrum point (``True``) or
             globally with a single shared factor (``False``).
-        per_element: Whether the factor is selected per absorbing element
+        per_element: Whether the factor is selected per target-site element
             (``True``) or shared across all elements (``False``).
         elements: Atomic numbers aligned row-wise with ``factor`` when
             ``per_element`` is true; ignored otherwise.
@@ -92,7 +92,7 @@ class ScaleEncoding(AffineEncoding):
             factor_tensor = torch.tensor(factor, dtype=torch.float32)
 
         # Replace near-zero factors with 1.0 (identity scaling) so that flat
-        # spectral regions (e.g. pre-edge where std \approx 0) do not cause
+        # spectral regions where std \approx 0 do not cause
         # division-by-zero during encoding.
         factor_tensor = torch.where(
             factor_tensor < 1e-12,

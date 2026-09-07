@@ -30,13 +30,14 @@ import numpy as np
 import torch
 from matplotlib.patches import Patch
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
-from pymatgen.core import Element
+from pymatgen.core import Element, Structure
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from graph_tester import (
+    _cell_corner_coords,
     compute_voronoi_facets,
     load_sample,
     plot_edges,
@@ -119,35 +120,35 @@ def _draw_directed_edges(
     return n_pbc
 
 
-def _absorber_slice(
+def _target_site_slice(
     att_edge_index: torch.Tensor,
     att_edge_weight: torch.Tensor,
     att_edge_vec: torch.Tensor,
-    absorber_idx: int,
+    target_site_idx: int,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Return the absorber-sourced attention subgraph with a self-loop prepended.
+    """Return the target-site-sourced attention subgraph with a self-loop prepended.
 
     Args:
         att_edge_index: Attention edge indices with shape ``(2, E)``.
         att_edge_weight: Attention edge distances with shape ``(E,)`` in **angstrom**.
         att_edge_vec: Attention edge vectors with shape ``(E, 3)`` in **angstrom**.
-        absorber_idx: Atom index used as the attention query source.
+        target_site_idx: Atom index used as the attention query source.
 
     Returns:
-        Source indices, destination indices, distances, and vectors for the absorber slice.
+        Source indices, destination indices, distances, and vectors for the target-site slice.
         The first entry is the zero-distance self-loop used by ``E3EEDataset.prepare``.
     """
     src = att_edge_index[0]
     dst = att_edge_index[1]
-    sel = src == absorber_idx
+    sel = src == target_site_idx
     dst_site = torch.cat(
         [
-            torch.tensor([absorber_idx], dtype=torch.int64),
+            torch.tensor([target_site_idx], dtype=torch.int64),
             dst[sel].to(dtype=torch.int64),
         ],
         dim=0,
     )
-    src_site = torch.full_like(dst_site, absorber_idx)
+    src_site = torch.full_like(dst_site, target_site_idx)
     weight_site = torch.cat(
         [
             torch.zeros(1, dtype=torch.float32),
@@ -198,7 +199,7 @@ def main() -> None:
     p.add_argument("--att-cov-radii-scale", type=float, default=1.5)
 
     # Drawing / output params.
-    p.add_argument("--absorber-idx", type=int, default=0)
+    p.add_argument("--target-site-idx", type=int, default=0)
     p.add_argument("--no-atom-labels", action="store_true")
     p.add_argument("--save", type=Path, default=None)
     p.add_argument("--no-show", action="store_true")
@@ -206,12 +207,12 @@ def main() -> None:
 
     pmg_obj = load_sample(args.json_dir, args.index, args.file)
     stem = pmg_obj.properties.get("sample_id", "<unknown>")
-    is_periodic = hasattr(pmg_obj, "lattice")
+    is_periodic = isinstance(pmg_obj, Structure)
     coords = np.array(pmg_obj.cart_coords, dtype=np.float64)
     atomic_numbers = np.array(pmg_obj.atomic_numbers, dtype=np.int64)
     n_atoms = len(pmg_obj)
-    if not (0 <= args.absorber_idx < n_atoms):
-        raise SystemExit(f"--absorber-idx {args.absorber_idx} out of range [0, {n_atoms})")
+    if not (0 <= args.target_site_idx < n_atoms):
+        raise SystemExit(f"--target-site-idx {args.target_site_idx} out of range [0, {n_atoms})")
 
     main_mfa = _coerce_min_facet_area(args.min_facet_area)
     att_mfa = _coerce_min_facet_area(args.att_min_facet_area)
@@ -252,14 +253,12 @@ def main() -> None:
     att_vec_np = att_edge_vec.numpy()
     att_w_np = att_edge_weight.numpy()
 
-    abs_src_np, abs_dst_np, abs_w_np, abs_vec_np = _absorber_slice(
-        att_edge_index, att_edge_weight, att_edge_vec, args.absorber_idx
+    target_src_np, target_dst_np, target_w_np, target_vec_np = _target_site_slice(
+        att_edge_index, att_edge_weight, att_edge_vec, args.target_site_idx
     )
 
     vis_points = coords.copy()
     if is_periodic:
-        from graph_tester import _cell_corner_coords  # type: ignore[attr-defined]
-
         vis_points = np.vstack([vis_points, _cell_corner_coords(pmg_obj)])
     if edge_vec_np.shape[0] > 0:
         vis_points = np.vstack([vis_points, coords[edge_src] + edge_vec_np])
@@ -267,7 +266,7 @@ def main() -> None:
         vis_points = np.vstack([vis_points, coords[att_src_np] + att_vec_np])
 
     label_atoms = (not args.no_atom_labels) and (n_atoms <= 60)
-    abs_sym = Element.from_Z(int(atomic_numbers[args.absorber_idx])).symbol
+    target_site_symbol = Element.from_Z(int(atomic_numbers[args.target_site_idx])).symbol
 
     fig = plt.figure(figsize=(20, 14))
     gs = fig.add_gridspec(
@@ -283,7 +282,7 @@ def main() -> None:
     )
     ax_main = fig.add_subplot(gs[0, 0], projection="3d")
     ax_att = fig.add_subplot(gs[0, 1], projection="3d")
-    ax_abs = fig.add_subplot(gs[0, 2], projection="3d")
+    ax_target_site = fig.add_subplot(gs[0, 2], projection="3d")
     ax_hist_main = fig.add_subplot(gs[1, 0])
     ax_hist_att = fig.add_subplot(gs[1, 1])
     ax_hist_deg = fig.add_subplot(gs[1, 2])
@@ -293,7 +292,7 @@ def main() -> None:
         pmg_obj,
         coords,
         atomic_numbers,
-        args.absorber_idx,
+        args.target_site_idx,
         vis_points,
         is_periodic,
         f"Main graph ({args.graph_method}, E={edge_index.shape[1]})",
@@ -315,7 +314,7 @@ def main() -> None:
         pmg_obj,
         coords,
         atomic_numbers,
-        args.absorber_idx,
+        args.target_site_idx,
         vis_points,
         is_periodic,
         f"Attention graph ({args.att_graph_method}, E={att_edge_index.shape[1]})",
@@ -338,47 +337,48 @@ def main() -> None:
         att_legend.append(Patch(color=(0.85, 0.30, 0.10, 0.45), label="att edge (PBC)"))
     ax_att.legend(handles=att_legend, loc="upper left", fontsize=8)
 
-    n_abs_edges = abs_dst_np.size
+    n_target_site_edges = target_dst_np.size
     setup_axis(
-        ax_abs,
+        ax_target_site,
         pmg_obj,
         coords,
         atomic_numbers,
-        args.absorber_idx,
+        args.target_site_idx,
         vis_points,
         is_periodic,
-        f"Absorber slice from {abs_sym}{args.absorber_idx} " f"(E={n_abs_edges}, +1 self-loop)",
+        f"Target-site slice from {target_site_symbol}{args.target_site_idx} "
+        f"(E={n_target_site_edges}, +1 self-loop)",
         label_atoms,
     )
-    has_vec = np.linalg.norm(abs_vec_np, axis=-1) > 1e-9
-    n_pbc_abs = _draw_directed_edges(
-        ax_abs,
+    has_vec = np.linalg.norm(target_vec_np, axis=-1) > 1e-9
+    n_pbc_target_site = _draw_directed_edges(
+        ax_target_site,
         coords,
-        abs_src_np[has_vec],
-        abs_dst_np[has_vec],
-        abs_vec_np[has_vec],
+        target_src_np[has_vec],
+        target_dst_np[has_vec],
+        target_vec_np[has_vec],
         is_periodic,
         color_intra=(0.85, 0.25, 0.55, 0.85),
         color_pbc=(0.85, 0.30, 0.10, 0.55),
         width_intra=1.6,
         width_pbc=0.6,
     )
-    ax_abs.scatter(
-        coords[args.absorber_idx, 0],
-        coords[args.absorber_idx, 1],
-        coords[args.absorber_idx, 2],
+    ax_target_site.scatter(
+        coords[args.target_site_idx, 0],
+        coords[args.target_site_idx, 1],
+        coords[args.target_site_idx, 2],
         s=320,
         facecolors="none",
         edgecolors=(0.85, 0.25, 0.55, 0.9),
         linewidths=1.5,
     )
-    abs_legend = [
-        Patch(color=(0.85, 0.25, 0.55, 0.85), label="absorber -> key"),
-        Patch(color="none", label=f"self-loop ({abs_sym}{args.absorber_idx})"),
+    target_site_legend = [
+        Patch(color=(0.85, 0.25, 0.55, 0.85), label="target site -> key"),
+        Patch(color="none", label=f"self-loop ({target_site_symbol}{args.target_site_idx})"),
     ]
     if is_periodic:
-        abs_legend.insert(1, Patch(color=(0.85, 0.30, 0.10, 0.55), label="PBC crossing"))
-    ax_abs.legend(handles=abs_legend, loc="upper left", fontsize=8)
+        target_site_legend.insert(1, Patch(color=(0.85, 0.30, 0.10, 0.55), label="PBC crossing"))
+    ax_target_site.legend(handles=target_site_legend, loc="upper left", fontsize=8)
 
     if edge_w_np.size:
         ax_hist_main.hist(edge_w_np, bins=30, color="steelblue", edgecolor="white")
@@ -429,7 +429,7 @@ def main() -> None:
     print(f"sample:          {stem}")
     print(f"kind:            {'periodic Structure' if is_periodic else 'Molecule'}")
     print(f"# atoms:         {n_atoms}")
-    print(f"absorber:        idx={args.absorber_idx}  ({abs_sym})")
+    print(f"target site:     idx={args.target_site_idx}  ({target_site_symbol})")
     print("-" * 66)
     print(f"MAIN  cutoff={args.cutoff}  max_nbrs={args.max_neighbors}  method={args.graph_method}")
     print(f"  # edges: {edge_index.shape[1]}  PBC crossings: {n_pbc_main}")
@@ -454,14 +454,14 @@ def main() -> None:
         print(f"  !! {isolated_att.size} isolated atom(s) in att graph: {isolated_att.tolist()}")
     print("-" * 66)
     print(
-        f"absorber slice ({abs_sym}{args.absorber_idx}): "
-        f"{int(has_vec.sum())} edges + 1 self-loop  (PBC: {n_pbc_abs})"
+        f"target-site slice ({target_site_symbol}{args.target_site_idx}): "
+        f"{int(has_vec.sum())} edges + 1 self-loop  (PBC: {n_pbc_target_site})"
     )
     print("=" * 66)
 
     fig.suptitle(
         f"{'periodic Structure' if is_periodic else 'Molecule'}  .  {stem}  "
-        f".  absorber={abs_sym}{args.absorber_idx}  "
+        f".  target site={target_site_symbol}{args.target_site_idx}  "
         f".  main: {args.graph_method}/{args.cutoff}A  "
         f".  att: {args.att_graph_method}/{args.att_cutoff}A",
         fontsize=11,

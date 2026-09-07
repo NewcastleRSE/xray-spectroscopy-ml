@@ -44,16 +44,16 @@ from .branch_equivariant import EnergyIrrepModulation
 
 class EnergyConditionedAtomConvolution(nn.Module):
     """
-    Invariant SchNet/PaiNN-style convolution producing a per-(absorber, energy)
+    Invariant SchNet/PaiNN-style convolution producing a per-(target-site, energy)
     latent.
 
-    For each sample's absorber::
+    For each sample's target site::
 
-        m_{abs<-j} = MLP(h_j, z_j, RBF(dist), is_abs)         # SchNet message
-        m_{abs<-j} *= cos_envelope(dist)
-        [optional] m_{abs<-j} *= sigmoid(MLP(h_abs, h_j, RBF))  # PaiNN gate
-        m_abs = sum_j  (j in att-graph)                        # sum aggregation
-        out_abs[e] = MLP(EnergyMod_scalar(m_abs, e_feat))      # energy mod
+        m_{target<-j} = MLP(h_j, z_j, RBF(dist), is_target_site)  # SchNet message
+        m_{target<-j} *= cos_envelope(dist)
+        [optional] m_{target<-j} *= sigmoid(MLP(h_target_site, h_j, RBF))  # PaiNN gate
+        m_target = sum_j  (j in att-graph)                       # sum aggregation
+        out_target[e] = MLP(EnergyMod_scalar(m_target, e_feat))   # energy mod
 
     Energy conditioning runs after aggregation, so per-edge tensors carry no
     ``nE`` axis (large activation-memory saving).
@@ -64,7 +64,7 @@ class EnergyConditionedAtomConvolution(nn.Module):
         hidden_dim: Hidden dimension of all internal MLPs.
         latent_dim: Output (latent) dimension.
         att_cutoff: Radius of the attention neighborhood graph in Angstrom.
-        rbf_dim: Number of Gaussian RBF bases for the absorber->atom distance.
+        rbf_dim: Number of Gaussian RBF bases for the target-site-to-atom distance.
         max_z: Maximum atomic number supported by the element embedding.
         z_emb_dim: Embedding dimension for atomic numbers.
         use_gate: If ``True``, apply a PaiNN-style learned scalar edge gate.
@@ -133,7 +133,7 @@ class EnergyConditionedAtomConvolution(nn.Module):
         z: torch.Tensor,
         mask: torch.Tensor,
         e_feat: torch.Tensor,
-        absorber_index: torch.Tensor,
+        target_site_index: torch.Tensor,
         att_dst: torch.Tensor,
         att_dist: torch.Tensor,
     ) -> torch.Tensor:
@@ -144,9 +144,9 @@ class EnergyConditionedAtomConvolution(nn.Module):
             z: Atomic numbers, shape ``(B, N)``.
             mask: Valid-atom mask, shape ``(B, N)``.
             e_feat: Energy RBF features, shape ``(nE, dE)``.
-            absorber_index: Absorber index per sample, shape ``(B,)``.
-            att_dst: Flat destination indices into ``B*N`` (absorber's neighbors), shape ``(E_att,)``.
-            att_dist: Absorber-to-atom distances in **Angstrom**, shape ``(E_att,)``.
+            target_site_index: Target-site index per sample, shape ``(B,)``.
+            att_dst: Flat destination indices into ``B*N`` (target-site neighbors), shape ``(E_att,)``.
+            att_dist: Target-site-to-atom distances in **Angstrom**, shape ``(E_att,)``.
 
         Returns:
             Latent tensor of shape ``(B, nE, latent_dim)``.
@@ -157,7 +157,7 @@ class EnergyConditionedAtomConvolution(nn.Module):
         dtype = h.dtype
         flat = bsz * n_atoms
 
-        # Build per-atom (B, N) scope, distance, and is_abs.
+        # Build per-atom (B, N) scope, distance, and target-site indicator.
         att_mask_flat = torch.zeros(flat, dtype=torch.bool, device=device)
         att_mask_flat[att_dst] = True
         att_dist_flat = torch.zeros(flat, dtype=dtype, device=device)
@@ -169,50 +169,50 @@ class EnergyConditionedAtomConvolution(nn.Module):
 
         zr = self.z_emb(z)  # [B, N, z_emb]
         batch_arange = torch.arange(bsz, device=device)
-        is_abs = torch.zeros(bsz, n_atoms, dtype=dtype, device=device)
-        is_abs[batch_arange, absorber_index] = 1.0
+        is_target_site = torch.zeros(bsz, n_atoms, dtype=dtype, device=device)
+        is_target_site[batch_arange, target_site_index] = 1.0
 
         # SchNet-style continuous-filter message per atom (energy-independent).
-        msg_in = torch.cat([h, zr, is_abs.unsqueeze(-1), rbf], dim=-1)
+        msg_in = torch.cat([h, zr, is_target_site.unsqueeze(-1), rbf], dim=-1)
         msg = self.message_mlp(msg_in)  # [B, N, L]
         env = self.envelope(att_dist_bn).unsqueeze(-1)  # [B, N, 1]
         msg = msg * env
 
         # Optional PaiNN-style scalar edge gate.
         if self.use_gate:
-            h_abs = h[batch_arange, absorber_index, :]  # [B, H]
-            h_abs_bn = h_abs.unsqueeze(1).expand(bsz, n_atoms, h_dim)
-            gate_in = torch.cat([h_abs_bn, h, rbf, is_abs.unsqueeze(-1)], dim=-1)
+            h_target_site = h[batch_arange, target_site_index, :]  # [B, H]
+            h_target_site_bn = h_target_site.unsqueeze(1).expand(bsz, n_atoms, h_dim)
+            gate_in = torch.cat([h_target_site_bn, h, rbf, is_target_site.unsqueeze(-1)], dim=-1)
             gate = torch.sigmoid(self.gate_mlp(gate_in))  # [B, N, 1]
             msg = msg * gate
 
         # Mask out atoms outside the attention scope.
         msg = msg * att_mask.unsqueeze(-1).to(dtype=dtype)
 
-        # Pure sum aggregation -> per-absorber scalar feature.
-        m_abs = msg.sum(dim=1)  # [B, L]
+        # Pure sum aggregation -> per-target-site scalar feature.
+        m_target_site = msg.sum(dim=1)  # [B, L]
 
         # Energy conditioning AFTER aggregation: only here does the nE axis
-        # appear, and only on a per-absorber tensor.
+        # appear, and only on a per-target-site tensor.
         e_gate = self.energy_gate(e_feat)  # [nE, L]
-        out = m_abs.unsqueeze(1) * e_gate.unsqueeze(0)  # [B, nE, L]
+        out = m_target_site.unsqueeze(1) * e_gate.unsqueeze(0)  # [B, nE, L]
         return self.out_mlp(out)
 
 
 class EnergyConditionedEquivariantAtomConvolution(nn.Module):
     """
-    NequIP/MACE-style equivariant convolution producing a per-(absorber,
+    NequIP/MACE-style equivariant convolution producing a per-(target-site,
     energy) latent.
 
-    For each sample's absorber::
+    For each sample's target site::
 
-        sh_j = Y(u_{abs->j})
-        v_{abs<-j} = TP(h_full[j], sh_j; W(z_j, RBF, is_abs))   # NequIP message
-        v_{abs<-j} *= cos_envelope(dist)
-        [optional] v_{abs<-j} *= sigmoid(MLP(h_abs, h_j, RBF))   # PaiNN gate
-        v_abs = sum_j v_{abs<-j}                                 # sum agg
-        v_{abs,e} = EnergyIrrepModulation(v_abs, e_feat)         # energy mod
-        out = MLP(invariants(v_{abs,e}))
+        sh_j = Y(u_{target->j})
+        v_{target<-j} = TP(h_full[j], sh_j; W(z_j, RBF, is_target_site))  # NequIP message
+        v_{target<-j} *= cos_envelope(dist)
+        [optional] v_{target<-j} *= sigmoid(MLP(h_target_site, h_j, RBF))  # PaiNN gate
+        v_target = sum_j v_{target<-j}                              # sum agg
+        v_{target,e} = EnergyIrrepModulation(v_target, e_feat)      # energy mod
+        out = MLP(invariants(v_{target,e}))
 
     Args:
         atom_dim: Dimension of invariant per-atom features.
@@ -223,7 +223,7 @@ class EnergyConditionedEquivariantAtomConvolution(nn.Module):
         att_cutoff: Radius of the attention neighborhood graph in Angstrom.
         attention_lmax: Maximum spherical-harmonics order for bond directions.
         attention_irreps: Target irreps of the equivariant message (e.g. ``"32x0e+16x1o"``).
-        rbf_dim: Number of Gaussian RBF bases for the absorber->atom distance.
+        rbf_dim: Number of Gaussian RBF bases for the target-site-to-atom distance.
         max_z: Maximum atomic number supported by the element embedding.
         z_emb_dim: Embedding dimension for atomic numbers.
         use_gate: If ``True``, apply a PaiNN-style learned scalar edge gate.
@@ -298,12 +298,12 @@ class EnergyConditionedEquivariantAtomConvolution(nn.Module):
         z: torch.Tensor,
         mask: torch.Tensor,
         e_feat: torch.Tensor,
-        absorber_index: torch.Tensor,
+        target_site_index: torch.Tensor,
         att_dst: torch.Tensor,
         att_dist: torch.Tensor,
         att_vec: torch.Tensor,
     ) -> torch.Tensor:
-        """Apply equivariant convolution and return per-(absorber, energy) latent.
+        """Apply equivariant convolution and return per-(target-site, energy) latent.
 
         Args:
             h: Invariant atom features ``(B, N, H)``.
@@ -311,10 +311,10 @@ class EnergyConditionedEquivariantAtomConvolution(nn.Module):
             z: Atomic numbers ``(B, N)``.
             mask: Valid-atom mask ``(B, N)``.
             e_feat: Energy RBF embedding ``(nE, e_dim)``.
-            absorber_index: Absorber index per sample ``(B,)``.
+            target_site_index: Target-site index per sample ``(B,)``.
             att_dst: Flat destination indices into ``B*N`` for the attention neighborhood ``(E_att,)``.
-            att_dist: Absorber-to-atom distances ``(E_att,)``.
-            att_vec: Absorber-to-atom displacement vectors ``(E_att, 3)``.
+            att_dist: Target-site-to-atom distances ``(E_att,)``.
+            att_vec: Target-site-to-atom displacement vectors ``(E_att, 3)``.
 
         Returns:
             Latent tensor of shape ``(B, nE, latent_dim)``.
@@ -342,12 +342,12 @@ class EnergyConditionedEquivariantAtomConvolution(nn.Module):
         zr = self.z_emb(z)
         zr_flat = zr.view(flat, -1)
         batch_arange = torch.arange(bsz, device=device)
-        is_abs = torch.zeros(bsz, n_atoms, dtype=dtype, device=device)
-        is_abs[batch_arange, absorber_index] = 1.0
-        is_abs_flat = is_abs.view(flat, 1)
+        is_target_site = torch.zeros(bsz, n_atoms, dtype=dtype, device=device)
+        is_target_site[batch_arange, target_site_index] = 1.0
+        is_target_site_flat = is_target_site.view(flat, 1)
 
         # NequIP-style equivariant message (energy-independent).
-        weight_in = torch.cat([zr_flat, is_abs_flat, rbf_flat], dim=-1)
+        weight_in = torch.cat([zr_flat, is_target_site_flat, rbf_flat], dim=-1)
         tp_weights = self.value_weight_mlp(weight_in)
         h_full_flat = h_full.reshape(flat, self.irreps_node.dim)
         v_e = self.value_tp(h_full_flat, sh, tp_weights)  # [flat, D]
@@ -358,10 +358,10 @@ class EnergyConditionedEquivariantAtomConvolution(nn.Module):
 
         # Optional PaiNN-style scalar gate (single scalar -> equivariance preserved).
         if self.use_gate:
-            h_abs = h[batch_arange, absorber_index, :]
-            h_abs_bn = h_abs.unsqueeze(1).expand(bsz, n_atoms, h_dim)
+            h_target_site = h[batch_arange, target_site_index, :]
+            h_target_site_bn = h_target_site.unsqueeze(1).expand(bsz, n_atoms, h_dim)
             gate_in = torch.cat(
-                [h_abs_bn, h, rbf_flat.view(bsz, n_atoms, -1), is_abs.unsqueeze(-1)],
+                [h_target_site_bn, h, rbf_flat.view(bsz, n_atoms, -1), is_target_site.unsqueeze(-1)],
                 dim=-1,
             )
             gate = torch.sigmoid(self.gate_mlp(gate_in)).view(flat, 1)
@@ -372,9 +372,9 @@ class EnergyConditionedEquivariantAtomConvolution(nn.Module):
 
         # Sum aggregation per sample (NequIP/MACE).
         v_bn = v_e.view(bsz, n_atoms, self.out_irreps.dim)
-        v_abs = v_bn.sum(dim=1)  # [B, D]
+        v_target_site = v_bn.sum(dim=1)  # [B, D]
 
         # Energy conditioning AFTER aggregation -- the only nE-bearing tensor.
-        v_mod = self.energy_mod(v_abs, e_feat)  # [B, nE, D]
+        v_mod = self.energy_mod(v_target_site, e_feat)  # [B, nE, D]
         inv = invariant_features_from_irreps(v_mod, self.out_irreps)  # [B, nE, inv_dim]
         return self.out_mlp(inv)

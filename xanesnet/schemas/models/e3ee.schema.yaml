@@ -83,7 +83,7 @@ $defs:
       use_invariant_branch:
         type: boolean
         default: true
-        description: Enable the invariant absorber branch.
+        description: Enable the invariant target-site branch.
       use_attention_branch:
         type: boolean
         default: true
@@ -91,7 +91,7 @@ $defs:
       use_equivariant_branch:
         type: boolean
         default: true
-        description: Enable the late equivariant absorber head.
+        description: Enable the late equivariant target-site head.
       use_eq_attention_branch:
         type: boolean
         default: false
@@ -152,11 +152,11 @@ $defs:
       out_size:
         $ref: ../shared/value_types.schema.yaml#/$defs/autoPositiveInteger
         description: Number of energy-grid points (output length).
-    description: 'Absorber-centred E3-equivariant model. Architecture: - Equivariant atom encoder (e3nn spherical harmonics
-      message passing) - Branch 1 (optional): invariant absorber features + energy - Branch 2a (optional): energy-conditioned
+    description: 'Target-site-centred E3-equivariant model. Architecture: - Equivariant atom encoder (e3nn spherical harmonics
+      message passing) - Branch 1 (optional): invariant target-site features + energy - Branch 2a (optional): energy-conditioned
       atom attention - Branch 2b (optional): energy-conditioned equivariant atom attention - Branch 2c (optional): energy-conditioned
       invariant convolution (SchNet/PaiNN-style) - Branch 2d (optional): energy-conditioned equivariant convolution (NequIP/MACE-style)
-      - Branch 3 (optional): late equivariant absorber head - Branch 4 (optional): 3-body path scattering'
+      - Branch 3 (optional): late equivariant target-site head - Branch 4 (optional): 3-body path scattering'
   modelTrainE3EE:
     $ref: '#/$defs/modelE3EE'
     description: Training view of modelE3EE; automatic dimension fields may use the case-insensitive auto token.

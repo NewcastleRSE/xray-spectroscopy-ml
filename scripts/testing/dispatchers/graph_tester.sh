@@ -44,8 +44,8 @@ SHOW_VORONOI=false
 NO_ATOM_LABELS=false
 NO_SHOW=false
 
-# Absorber / sampling
-ABSORBER_IDX=0
+# Target-site / sampling
+TARGET_SITE_IDX=0
 MAX_TRIPLETS_DRAWN=60
 MAX_PATHS_DRAWN=60
 MAX_PATHS=128
@@ -60,7 +60,7 @@ args=(
 	"--max-neighbors" "$MAX_NEIGHBORS"
 	"--graph-method" "$GRAPH_METHOD"
 	"--cov-radii-scale" "$COV_RADII_SCALE"
-	"--absorber-idx" "$ABSORBER_IDX"
+	"--target-site-idx" "$TARGET_SITE_IDX"
 	"--max-triplets-drawn" "$MAX_TRIPLETS_DRAWN"
 	"--max-paths-drawn" "$MAX_PATHS_DRAWN"
 	"--max-paths" "$MAX_PATHS"

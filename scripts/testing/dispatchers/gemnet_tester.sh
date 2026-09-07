@@ -64,7 +64,7 @@ OC_MIN_FACET_AREA_AINT=""
 OC_COV_RADII_SCALE_AINT=1.5
 
 # Drawing / output params
-ABSORBER_IDX=0
+TARGET_SITE_IDX=0
 MAX_TRIPLETS_DRAWN=60
 MAX_QUADS_DRAWN=60
 MAX_MIXED_DRAWN=60
@@ -91,7 +91,7 @@ args=(
 	"--oc-cov-radii-scale-aeaint" "$OC_COV_RADII_SCALE_AEAINT"
 	"--oc-graph-method-aint" "$OC_GRAPH_METHOD_AINT"
 	"--oc-cov-radii-scale-aint" "$OC_COV_RADII_SCALE_AINT"
-	"--absorber-idx" "$ABSORBER_IDX"
+	"--target-site-idx" "$TARGET_SITE_IDX"
 	"--max-triplets-drawn" "$MAX_TRIPLETS_DRAWN"
 	"--max-quads-drawn" "$MAX_QUADS_DRAWN"
 	"--max-mixed-drawn" "$MAX_MIXED_DRAWN"

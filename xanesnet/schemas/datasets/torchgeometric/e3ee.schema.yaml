@@ -20,12 +20,12 @@ $defs:
       use_path_branch:
         type: boolean
         default: false
-        description: Whether to precompute absorber-centered paths.
+        description: Whether to precompute target-site-centred paths.
       max_paths_per_structure:
         type: integer
         minimum: 1
         default: 128
-        description: Maximum absorber paths saved per structure.
+        description: Maximum target-site paths saved per structure.
       root:
         type: string
         description: Directory that stores processed ``.pth`` files.
@@ -58,5 +58,5 @@ $defs:
       dataset_type:
         const: e3ee
         description: Registered dataset type name.
-    description: E3EE dataset that emits one graph sample per absorber site.
+    description: E3EE dataset that emits one graph sample per target site.
 description: Dataset schemas backed by ``DatasetRegistry`` classes and dataset constructor signatures.

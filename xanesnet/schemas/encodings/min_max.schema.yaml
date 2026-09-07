@@ -31,14 +31,14 @@ $defs:
       per_element:
         type: boolean
         default: false
-        description: Whether bounds are selected per absorbing element (true) or shared across all
+        description: Whether bounds are selected per target-site element (true) or shared across all
           elements (false). When true, ``minimum`` and ``maximum`` hold one row per entry of
           ``elements``.
       elements:
         $ref: ../shared/value_types.schema.yaml#/$defs/nullablePositiveIntegerArrayOrAuto
-        description: Absorber atomic numbers aligned row-wise with ``minimum`` and ``maximum`` when
+        description: Target-site atomic numbers aligned row-wise with ``minimum`` and ``maximum`` when
           ``per_element`` is true; may be the training-time ``auto`` token, which resolves to all
           elements observed in the training data. ``null`` when ``per_element`` is false.
     description: Per-point or global min-max normalization encoding into the unit interval, optionally
-      keyed by absorbing element.
+      keyed by target-site element.
 description: Encoding schemas backed by ``SpectraEncodingRegistry`` classes and encoding constructor signatures.

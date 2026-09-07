@@ -48,7 +48,7 @@ class MinMaxEncoding(AffineEncoding):
       (a length-``N`` vector) or are a single global scalar shared across all
       points.
     * ``per_element`` selects whether a separate set of bounds is used for each
-      absorbing element (chosen per sample from its atomic number) or a single
+    target-site element (chosen per sample from its atomic number) or a single
       set is shared across all elements.
 
     When ``per_element`` is false, ``minimum`` and ``maximum`` are flat lists.
@@ -56,7 +56,7 @@ class MinMaxEncoding(AffineEncoding):
 
     Zero or near-zero spans (``maximum - minimum`` below ``1e-12``) are
     silently replaced with ``1.0``, which is equivalent to skipping scaling at
-    those points. This handles flat spectral regions (e.g. the pre-edge) where
+    those points. This handles flat spectral regions where
     all training spectra share the same value.
 
     Args:
@@ -67,7 +67,7 @@ class MinMaxEncoding(AffineEncoding):
         maximum: Maxima used during normalization, shaped like ``minimum``.
         per_point: Whether normalization is applied per spectrum point
             (``True``) or globally with a single shared statistic (``False``).
-        per_element: Whether bounds are selected per absorbing element
+        per_element: Whether bounds are selected per target-site element
             (``True``) or shared across all elements (``False``).
         elements: Atomic numbers aligned row-wise with ``minimum`` and
             ``maximum`` when ``per_element`` is true; ignored otherwise.
@@ -107,7 +107,7 @@ class MinMaxEncoding(AffineEncoding):
 
         span = maximum_tensor - minimum_tensor
         # Replace near-zero spans with 1.0 (identity scaling) so that flat
-        # spectral regions (e.g. pre-edge where max \approx min) do not cause
+        # spectral regions where max \approx min do not cause
         # division-by-zero during encoding.
         span = torch.where(
             span < 1e-12,

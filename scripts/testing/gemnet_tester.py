@@ -473,7 +473,7 @@ def main() -> None:
     p.add_argument("--oc-cov-radii-scale-aint", type=float, default=None)
 
     # Drawing params
-    p.add_argument("--absorber-idx", type=int, default=0)
+    p.add_argument("--target-site-idx", type=int, default=0)
     p.add_argument("--max-triplets-drawn", type=int, default=60)
     p.add_argument("--max-quads-drawn", type=int, default=60)
     p.add_argument("--max-mixed-drawn", type=int, default=60)
@@ -488,8 +488,8 @@ def main() -> None:
     coords = np.array(pmg_obj.cart_coords, dtype=np.float64)
     atomic_numbers = np.array(pmg_obj.atomic_numbers, dtype=np.int64)
     n_atoms = len(pmg_obj)
-    if not (0 <= args.absorber_idx < n_atoms):
-        raise SystemExit(f"--absorber-idx {args.absorber_idx} out of range [0, {n_atoms})")
+    if not (0 <= args.target_site_idx < n_atoms):
+        raise SystemExit(f"--target-site-idx {args.target_site_idx} out of range [0, {n_atoms})")
 
     min_facet_area = args.min_facet_area
     if min_facet_area is not None and not min_facet_area.endswith("%"):
@@ -639,7 +639,7 @@ def main() -> None:
         vis_points = np.concatenate([vis_points, coords[edge_src] + edge_vec_np], axis=0)
 
     label_atoms = (not args.no_atom_labels) and (n_atoms <= 60)
-    abs_sym = Element.from_Z(int(atomic_numbers[args.absorber_idx])).symbol
+    target_site_symbol = Element.from_Z(int(atomic_numbers[args.target_site_idx])).symbol
 
     edge_panels: list[EdgePanel] = [
         (
@@ -706,7 +706,9 @@ def main() -> None:
     n_pbc_main = 0
     for i, (title, es, ed, evec, col) in enumerate(edge_panels):
         ax = fig.add_subplot(gs[0, i], projection="3d")
-        setup_axis(ax, pmg_obj, coords, atomic_numbers, args.absorber_idx, vis_points, is_periodic, title, label_atoms)
+        setup_axis(
+            ax, pmg_obj, coords, atomic_numbers, args.target_site_idx, vis_points, is_periodic, title, label_atoms
+        )
         if es.size == 0:
             ax.text2D(0.5, 0.5, "empty graph", ha="center", va="center", transform=ax.transAxes, color="gray")
             continue
@@ -732,7 +734,7 @@ def main() -> None:
                 pmg_obj,
                 coords,
                 atomic_numbers,
-                args.absorber_idx,
+                args.target_site_idx,
                 vis_points,
                 is_periodic,
                 f"Triplets c-a-b  (T={id3_reduce_ca.numel()}, <={args.max_triplets_drawn} drawn)",
@@ -756,7 +758,7 @@ def main() -> None:
                     pmg_obj,
                     coords,
                     atomic_numbers,
-                    args.absorber_idx,
+                    args.target_site_idx,
                     vis_points,
                     is_periodic,
                     f"Quadruplets c-a-b-d  (Q={quad['id4_reduce_ca'].numel()}, <={args.max_quads_drawn} drawn)",
@@ -791,7 +793,7 @@ def main() -> None:
                     pmg_obj,
                     coords,
                     atomic_numbers,
-                    args.absorber_idx,
+                    args.target_site_idx,
                     vis_points,
                     is_periodic,
                     "Quadruplets (none)",
@@ -804,7 +806,7 @@ def main() -> None:
                 pmg_obj,
                 coords,
                 atomic_numbers,
-                args.absorber_idx,
+                args.target_site_idx,
                 vis_points,
                 is_periodic,
                 f"Mixed triplets a2e  (T={n_a2e}, <={args.max_mixed_drawn} drawn)",
@@ -831,7 +833,7 @@ def main() -> None:
                 pmg_obj,
                 coords,
                 atomic_numbers,
-                args.absorber_idx,
+                args.target_site_idx,
                 vis_points,
                 is_periodic,
                 f"Mixed triplets e2a  (T={n_e2a}, <={args.max_mixed_drawn} drawn)",
@@ -969,7 +971,7 @@ def main() -> None:
     print(f"sample:          {stem}")
     print(f"kind:            {'periodic Structure' if is_periodic else 'Molecule'}")
     print(f"# atoms:         {n_atoms}")
-    print(f"absorber:        idx={args.absorber_idx}  ({abs_sym})")
+    print(f"target site:     idx={args.target_site_idx}  ({target_site_symbol})")
     print(f"graph method:    {args.graph_method}")
     print(f"main cutoff:     {args.cutoff} A   max_neighbors: {args.max_neighbors}")
     if args.quadruplets:
@@ -1081,7 +1083,7 @@ def main() -> None:
 
     fig.suptitle(
         f"{'periodic Structure' if is_periodic else 'Molecule'}  .  {stem}  "
-        f".  absorber={abs_sym}{args.absorber_idx}  .  method={args.graph_method}  "
+        f".  target site={target_site_symbol}{args.target_site_idx}  .  method={args.graph_method}  "
         f".  cutoff={args.cutoff}"
         + (f"  .  int={int_cutoff}" if args.quadruplets else "")
         + (f"  .  OC(aea={oc_cutoff_aeaint}, aa={oc_cutoff_aint})" if args.oc else ""),

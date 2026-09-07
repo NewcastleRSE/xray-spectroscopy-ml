@@ -44,7 +44,7 @@ class E3EEFullDatasetMp(MpDatasetMixin, E3EEFullDataset):
         att_graph_builder: Attention graph builder configuration.
         use_path_branch: Whether to precompute site-centered paths.
         max_paths_per_site: Maximum paths saved per site.
-        use_absorber_mask: Whether attention/path data are limited to absorber sites.
+        use_target_site_mask: Whether attention/path data are limited to target sites.
         num_workers: Requested worker process count.
     """
 
@@ -62,7 +62,7 @@ class E3EEFullDatasetMp(MpDatasetMixin, E3EEFullDataset):
         att_graph_builder: Config,
         use_path_branch: bool,
         max_paths_per_site: int,
-        use_absorber_mask: bool,
+        use_target_site_mask: bool,
         num_workers: int | None,
     ) -> None:
         """Initialize a multiprocessing full-structure E3EE dataset."""
@@ -78,6 +78,6 @@ class E3EEFullDatasetMp(MpDatasetMixin, E3EEFullDataset):
             att_graph_builder=att_graph_builder,
             use_path_branch=use_path_branch,
             max_paths_per_site=max_paths_per_site,
-            use_absorber_mask=use_absorber_mask,
+            use_target_site_mask=use_target_site_mask,
         )
         self.num_workers = num_workers

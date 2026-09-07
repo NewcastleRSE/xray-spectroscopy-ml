@@ -111,7 +111,7 @@ class BatchProcessor(ABC):
         """Post-process raw model predictions before loss computation.
 
         The default implementation returns predictions unchanged. Override in subclasses
-        to apply masking or other per-batch transformations (e.g. selecting absorber atoms
+        to apply masking or other per-batch transformations (e.g. selecting target sites
         from a per-atom output tensor).
 
         Args:
@@ -153,10 +153,10 @@ class BatchProcessor(ABC):
         return self.target_preparation(batch)
 
     def element_preparation(self, batch: Any) -> torch.Tensor | None:
-        """Extract per-target absorber atomic numbers from a batch.
+        """Extract per-target-site atomic numbers from a batch.
 
         The returned tensor is aligned row-wise with :meth:`target_preparation`,
-        carrying the absorbing element's atomic number for each target spectrum.
+        carrying the target-site element's atomic number for each target spectrum.
         The default implementation returns ``None``, indicating that no element
         information is available for this dataset/model combination.
 
@@ -170,7 +170,7 @@ class BatchProcessor(ABC):
         return None
 
     def element_preparation_single(self, dataset: "Dataset", index: int) -> torch.Tensor | None:
-        """Extract absorber atomic numbers from a single dataset sample.
+        """Extract target-site atomic numbers from a single dataset sample.
 
         Collates the sample at ``index`` into a batch of size 1 and delegates
         to :meth:`element_preparation`.
@@ -197,7 +197,7 @@ class BatchProcessor(ABC):
 
         Args:
             inputs: Input dict returned by :meth:`input_preparation`.
-            elements: Optional per-sample absorber atomic numbers ``(B,)``
+            elements: Optional per-sample target-site atomic numbers ``(B,)``
                 forwarded to element-aware encodings.
 
         Returns:
@@ -215,7 +215,7 @@ class BatchProcessor(ABC):
 
         Args:
             targets: Raw target tensor from :meth:`target_preparation`.
-            elements: Optional per-sample absorber atomic numbers ``(B,)``
+            elements: Optional per-sample target-site atomic numbers ``(B,)``
                 forwarded to element-aware encodings.
 
         Returns:
@@ -235,7 +235,7 @@ class BatchProcessor(ABC):
         Args:
             predictions: Model output tensor after
                 :meth:`prediction_preparation`.
-            elements: Optional per-sample absorber atomic numbers ``(B,)``
+            elements: Optional per-sample target-site atomic numbers ``(B,)``
                 forwarded to element-aware decodings.
 
         Returns:

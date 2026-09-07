@@ -16,14 +16,7 @@ Deep learning for theoretical X-ray spectroscopy.
 
 ## Overview
 
-XANESNET is a Python codebase for machine-learning simulation and analysis of structure-spectra relationships. It was originally developed for, but is not limited to, X-ray absorption near-edge structure (XANES) spectra.
-The current version mainly supports the forward prediction workflow from structure to spectra: train models on structures and spectra, run checkpointed inference, and analyze prediction outputs.
-
-- **Supported now:** forward mapping from molecular or periodic structural inputs to spectra.
-- **Planned later:** reverse mapping from spectra back to properties or structural information.
-
-The project provides a suite of architectures and training strategies: from simple descriptor-based neural networks to more advanced invariant and equivariant graph neural networks.
-The main goal of this work is to make machine-learning research in spectroscopy more accessible, reproducible, extendable, and comparable. This should ultimately support faster research progress and the development of new, more accurate, and explainable ML models for spectra prediction.
+We present XANESNET, a PyTorch-based, open-source software framework for machine learning in spectroscopy. The framework integrates training, inference, and automated analysis within a plugin-based architecture. Its modular design allows users to compare, combine, and extend different methods without modifying the core codebase, providing a flexible and reusable framework rather than a single-purpose implementation. XANESNET supports forward prediction from structure to spectrum and inverse inference from spectra to structures or properties. A unified data pipeline uniformly handles molecular and periodic systems, while the framework remains agnostic to the spectroscopic technique. We demonstrate its use for learning structure-spectrum relationships in X-ray absorption spectroscopy. By prioritizing extensibility and reproducibility, XANESNET aims to accelerate and make more accessible machine-learning research in spectroscopy.
 
 ## Highlights
 
@@ -124,7 +117,7 @@ More details are in [tools/config-ui/README.md](tools/config-ui/README.md).
 
 ## Usage
 
-XANESNET runs are driven by YAML configuration files. The supported workflow today is forward XANES prediction: prepare structure/spectrum data, train a model, infer spectra with a saved checkpoint, and analyze prediction files. Examples live in [configs/](configs/), including [configs/in_mlp.yaml](configs/in_mlp.yaml), [configs/in_mlp_infer.yaml](configs/in_mlp_infer.yaml), and [configs/analyze_example.yaml](configs/analyze_example.yaml).
+XANESNET runs are driven by YAML configuration files. The supported workflow today is forward spectrum prediction: prepare structure/spectrum data, train a model, infer spectra with a saved checkpoint, and analyze prediction files. Examples live in [configs/](configs/), including [configs/in_mlp.yaml](configs/in_mlp.yaml), [configs/in_mlp_infer.yaml](configs/in_mlp_infer.yaml), and [configs/analyze_example.yaml](configs/analyze_example.yaml).
 
 ### Train
 
@@ -194,6 +187,10 @@ At a high level, a config contains:
 - `strategy`: single model or ensemble training/inference behavior
 
 The config UI reads the same schemas through [tools/config-ui/src/schemas](tools/config-ui/src/schemas), a symlink to [xanesnet/schemas/](xanesnet/schemas/).
+
+## Testing
+
+See [tests/README.md](tests/README.md) and [run_tests.sh](run_tests.sh).
 
 ## People and Attribution
 

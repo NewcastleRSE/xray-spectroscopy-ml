@@ -4,6 +4,7 @@ device: cpu
 datasource:
   datasource_type: pmgjson
   json_path: ./data/toy_data/
+  spectrum_key: "XANES"
 
 dataset:
   dataset_type: geometrygraph
@@ -13,8 +14,8 @@ dataset:
   split_ratios: [0.8, 0.2]
   graph_builder:
     graph_builder_type: radius
-    cutoff: 5.0
-    max_num_neighbors: 32
+    cutoff: 3.0
+    max_num_neighbors: 16
 
 encodings:
   - encoding_type: identity
@@ -27,7 +28,7 @@ model:
   num_filters: 32
   num_interactions: 2
   num_gaussians: 25
-  cutoff: 5.0
+  cutoff: 3.0
 
 trainer:
   trainer_type: basic

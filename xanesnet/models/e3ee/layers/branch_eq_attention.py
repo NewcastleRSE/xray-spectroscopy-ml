@@ -45,7 +45,7 @@ class EnergyConditionedEquivariantAtomAttention(nn.Module):
         att_cutoff: Radius of the attention neighborhood graph in Angstrom.
         attention_lmax: Maximum spherical-harmonics order for bond directions.
         attention_irreps: Target irreps of the equivariant values (e.g. ``"32x0e+16x1o"``).
-        rbf_dim: Number of Gaussian RBF bases for the absorber->atom distance.
+        rbf_dim: Number of Gaussian RBF bases for the target-site-to-atom distance.
         max_z: Maximum atomic number supported by the element embedding.
         z_emb_dim: Embedding dimension for atomic numbers.
         n_heads: Number of attention heads used for invariant scoring.
@@ -89,7 +89,7 @@ class EnergyConditionedEquivariantAtomAttention(nn.Module):
         self.value_envelope = CosineCutoff(self.att_cutoff)
 
         # Equivariant value: TP(full encoder irreps, SH(u)) -> out irreps,
-        # with weights conditioned on the per-atom RBF / element / absorber flag.
+        # with weights conditioned on the per-atom RBF / element / target-site flag.
         self.value_tp = FullyConnectedTensorProduct(
             self.irreps_node,
             self.sh_irreps,
@@ -146,7 +146,7 @@ class EnergyConditionedEquivariantAtomAttention(nn.Module):
         z: torch.Tensor,
         mask: torch.Tensor,
         e_feat: torch.Tensor,
-        absorber_index: torch.Tensor,
+        target_site_index: torch.Tensor,
         att_dst: torch.Tensor,
         att_dist: torch.Tensor,
         att_vec: torch.Tensor,
@@ -160,10 +160,10 @@ class EnergyConditionedEquivariantAtomAttention(nn.Module):
             z: Atomic numbers, shape ``(B, N)``.
             mask: Valid-atom mask, shape ``(B, N)``.
             e_feat: Energy RBF features, shape ``(nE, dE)``.
-            absorber_index: Absorber index per sample, shape ``(B,)``.
+            target_site_index: Target-site index per sample, shape ``(B,)``.
             att_dst: Flat destination indices into ``B*N``, shape ``(E_att,)``.
-            att_dist: Absorber-to-atom distances in **Angstrom**, shape ``(E_att,)``.
-            att_vec: Absorber-to-atom displacement vectors in **Angstrom**, shape ``(E_att, 3)``.
+            att_dist: Target-site-to-atom distances in **Angstrom**, shape ``(E_att,)``.
+            att_vec: Target-site-to-atom displacement vectors in **Angstrom**, shape ``(E_att, 3)``.
 
         Returns:
             Latent tensor of shape ``(B, nE, latent_dim)``.
@@ -188,16 +188,16 @@ class EnergyConditionedEquivariantAtomAttention(nn.Module):
         sh = o3.spherical_harmonics(self.sh_irreps, u, normalize=True, normalization="component")
         rbf_flat = self.dist_rbf(att_dist_flat)  # [flat, rbf_dim]
 
-        # Element / absorber flag features.
+        # Element / target-site flag features.
         zr = self.z_emb(z)  # [B, N, z_emb_dim]
         zr_flat = zr.view(flat, -1)
         batch_arange = torch.arange(bsz, device=device)
-        is_abs = torch.zeros(bsz, n_atoms, dtype=h.dtype, device=device)
-        is_abs[batch_arange, absorber_index] = 1.0
-        is_abs_flat = is_abs.view(flat, 1)
+        is_target_site = torch.zeros(bsz, n_atoms, dtype=h.dtype, device=device)
+        is_target_site[batch_arange, target_site_index] = 1.0
+        is_target_site_flat = is_target_site.view(flat, 1)
 
         # Equivariant value (energy-independent).
-        weight_in = torch.cat([zr_flat, is_abs_flat, rbf_flat], dim=-1)
+        weight_in = torch.cat([zr_flat, is_target_site_flat, rbf_flat], dim=-1)
         tp_weights = self.value_weight_mlp(weight_in)  # [flat, weight_numel]
         h_full_flat = h_full.reshape(flat, self.irreps_node.dim)
         v_irrep = self.value_tp(h_full_flat, sh, tp_weights)  # [flat, out_irreps.dim]
@@ -212,10 +212,10 @@ class EnergyConditionedEquivariantAtomAttention(nn.Module):
         v_mod = v_mod.view(bsz, n_atoms, n_energies, self.out_irreps.dim)
 
         # Invariant scoring.
-        h_abs = h[batch_arange, absorber_index, :]  # [B, H]
+        h_target_site = h[batch_arange, target_site_index, :]  # [B, H]
         q_in = torch.cat(
             [
-                h_abs.unsqueeze(1).expand(bsz, n_energies, h_dim),
+                h_target_site.unsqueeze(1).expand(bsz, n_energies, h_dim),
                 e_feat.unsqueeze(0).expand(bsz, n_energies, e_dim),
             ],
             dim=-1,
@@ -223,7 +223,7 @@ class EnergyConditionedEquivariantAtomAttention(nn.Module):
         q = self.query_mlp(q_in)  # [B, nE, L]
 
         atom_static = torch.cat(
-            [h, zr, is_abs.unsqueeze(-1), rbf_flat.view(bsz, n_atoms, -1)],
+            [h, zr, is_target_site.unsqueeze(-1), rbf_flat.view(bsz, n_atoms, -1)],
             dim=-1,
         )
         k = self.key_mlp(atom_static)  # [B, N, L]

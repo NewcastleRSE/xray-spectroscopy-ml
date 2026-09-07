@@ -93,7 +93,7 @@ class CombinedEncoding(SpectraEncoding):
 
         Args:
             targets: Ground-truth target spectra ``(B, N)``.
-            elements: Optional per-sample absorber atomic numbers ``(B,)``,
+            elements: Optional per-sample target-site atomic numbers ``(B,)``,
                 forwarded to each component encoding.
 
         Returns:
@@ -108,7 +108,7 @@ class CombinedEncoding(SpectraEncoding):
 
         Args:
             predictions: Model predictions in the encoded space ``(B, M)``.
-            elements: Optional per-sample absorber atomic numbers ``(B,)``,
+            elements: Optional per-sample target-site atomic numbers ``(B,)``,
                 forwarded to each component decoding.
 
         Returns:

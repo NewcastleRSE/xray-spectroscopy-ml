@@ -42,8 +42,8 @@ class E3EEDatasetMp(MpDatasetMixin, E3EEDataset):
         split_indexfile: Optional path to split indices.
         graph_builder: Main graph builder configuration.
         att_graph_builder: Attention graph builder configuration.
-        use_path_branch: Whether to precompute absorber-centered paths.
-        max_paths_per_structure: Maximum absorber paths saved per structure.
+        use_path_branch: Whether to precompute target-site-centered paths.
+        max_paths_per_structure: Maximum target-site paths saved per structure.
         num_workers: Requested worker process count.
     """
 

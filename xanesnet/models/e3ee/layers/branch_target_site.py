@@ -18,7 +18,7 @@
 # Citations:
 #   ...
 
-"""Dense invariant energy-dependent branch applied to every atom in E3EEFull."""
+"""Invariant target-site branch for E3EE."""
 
 import torch
 import torch.nn as nn
@@ -26,16 +26,13 @@ import torch.nn as nn
 from .basic import MLP
 
 
-class AllAtomEnergyBranch(nn.Module):
-    """Energy-dependent branch applied to every atom's invariant features.
-
-    Broadcasts the energy embedding over all atoms and passes the concatenation
-    through an MLP to produce per-(atom, energy) latent vectors.
+class EnergyConditionedTargetSiteBranch(nn.Module):
+    """Energy-dependent branch based on invariant target-site features.
 
     Args:
-        atom_dim: Dimension of invariant per-atom features.
+        atom_dim: Dimension of the invariant target-site feature vector.
         e_dim: Dimension of the energy RBF embedding.
-        hidden_dim: Hidden dimension of the internal MLP.
+        hidden_dim: Hidden dimension of the MLP.
         out_dim: Output (latent) dimension.
     """
 
@@ -46,7 +43,7 @@ class AllAtomEnergyBranch(nn.Module):
         hidden_dim: int,
         out_dim: int,
     ) -> None:
-        """Initialize ``AllAtomEnergyBranch``."""
+        """Initialize ``EnergyConditionedTargetSiteBranch``."""
         super().__init__()
         self.mlp = MLP(
             in_dim=atom_dim + e_dim,
@@ -55,19 +52,19 @@ class AllAtomEnergyBranch(nn.Module):
             n_layers=3,
         )
 
-    def forward(self, h_all: torch.Tensor, e_feat: torch.Tensor) -> torch.Tensor:
-        """Compute per-(atom, energy) latent vectors.
+    def forward(self, target_features: torch.Tensor, e_feat: torch.Tensor) -> torch.Tensor:
+        """Compute a latent representation from target-site features and energy.
 
         Args:
-            h_all: Invariant features for every atom, shape ``(B, N, H)``.
+            target_features: Target-site invariant features, shape ``(B, H)``.
             e_feat: Energy RBF features, shape ``(nE, dE)``.
 
         Returns:
-            Latent tensor of shape ``(B, N, nE, out_dim)``.
+            Latent tensor of shape ``(B, nE, latent_dim)``.
         """
-        bsz, n_atoms, h_dim = h_all.shape
+        bsz, h_dim = target_features.shape
         n_energies, e_dim = e_feat.shape
 
-        ha = h_all.unsqueeze(2).expand(bsz, n_atoms, n_energies, h_dim)
-        ef = e_feat.view(1, 1, n_energies, e_dim).expand(bsz, n_atoms, n_energies, e_dim)
-        return self.mlp(torch.cat([ha, ef], dim=-1))
+        expanded_target_features = target_features.unsqueeze(1).expand(bsz, n_energies, h_dim)
+        expanded_energy_features = e_feat.unsqueeze(0).expand(bsz, n_energies, e_dim)
+        return self.mlp(torch.cat([expanded_target_features, expanded_energy_features], dim=-1))

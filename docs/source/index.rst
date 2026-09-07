@@ -3,9 +3,8 @@ XANESNET Documentation
 
 Welcome to the XANESNET documentation.
 
-XANESNET is a Python codebase for machine-learning simulation and analysis of
-structure-spectra relationships. It was originally developed for, but is not
-limited to, X-ray absorption near-edge structure (XANES) spectra.
+We present XANESNET, a PyTorch-based, open-source software framework for machine learning in spectroscopy. The framework integrates training, inference, and automated analysis within a plugin-based architecture. Its modular design allows users to compare, combine, and extend different methods without modifying the core codebase, providing a flexible and reusable framework rather than a single-purpose implementation. XANESNET supports forward prediction from structure to spectrum and inverse inference from spectra to structures or properties. A unified data pipeline uniformly handles molecular and periodic systems, while the framework remains agnostic to the spectroscopic technique. We demonstrate its use for learning structure-spectrum relationships in X-ray absorption spectroscopy. By prioritizing extensibility and reproducibility, XANESNET aims to accelerate and make more accessible machine-learning research in spectroscopy.
+
 
 The :doc:`overview` summarises the supported workflows and points to the
 project README, configuration examples, and interactive config UI. The full

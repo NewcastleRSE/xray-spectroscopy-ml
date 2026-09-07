@@ -106,7 +106,7 @@ class Runner(ABC):
             collate_fn=self.dataset.collate_fn,
             drop_last=drop_last,
             num_workers=self.num_workers,
-            pin_memory=True,
+            pin_memory=torch.device(self.device).type == "cuda",
             persistent_workers=False if self.num_workers == 0 else True,
             prefetch_factor=None if self.num_workers == 0 else 2,
         )

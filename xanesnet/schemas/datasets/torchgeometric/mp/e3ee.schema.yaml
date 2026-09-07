@@ -20,12 +20,12 @@ $defs:
       use_path_branch:
         type: boolean
         default: false
-        description: Whether to precompute absorber-centered paths.
+        description: Whether to precompute target-site-centred paths.
       max_paths_per_structure:
         type: integer
         minimum: 1
         default: 128
-        description: Maximum absorber paths saved per structure.
+        description: Maximum target-site paths saved per structure.
       num_workers:
         type:
         - integer

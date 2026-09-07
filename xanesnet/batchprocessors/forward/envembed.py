@@ -67,13 +67,13 @@ class EnvEmbedBatchProcessor(ForwardBatchProcessor):
         return batch.intensities  # type: ignore[return-value]
 
     def element_preparation(self, batch: EnvEmbedData) -> torch.Tensor | None:
-        """Extract absorber atomic numbers from an EnvEmbed batch.
+        """Extract target-site atomic numbers from an EnvEmbed batch.
 
         Args:
             batch: Collated EnvEmbed batch.
 
         Returns:
-            Per-sample absorber atomic numbers ``(batch_size,)``, or
+            Per-sample target-site atomic numbers ``(batch_size,)``, or
             ``None`` if the dataset was built without element information.
         """
         return batch.element

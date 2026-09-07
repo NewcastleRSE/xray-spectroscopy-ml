@@ -34,6 +34,10 @@ from xanesnet.batchprocessors import BatchProcessor, InverseBatchProcessor
 from xanesnet.datasets import Dataset
 from xanesnet.utils.exceptions import ConfigError
 
+# Fixed data-loader settings for the statistics pass.
+STATISTICS_BATCH_SIZE: int = 32
+STATISTICS_NUM_WORKERS: int = 4
+
 
 class SpectralStatistics:
     """Streaming per-point statistics over training spectra.
@@ -132,7 +136,7 @@ class SpectralStatisticsCollector:
     """Overall and per-element streaming statistics over training spectra.
 
     Maintains one :class:`SpectralStatistics` accumulator across all spectra
-    and one accumulator per absorbing element.  Spectral rows are routed to
+    and one accumulator per target-site element. Spectral rows are routed to
     their element bucket using the atomic numbers supplied alongside each
     batch; when no element information is available only the overall
     accumulator is updated.
@@ -148,7 +152,7 @@ class SpectralStatisticsCollector:
 
         Args:
             spectra: Training spectra ``(B, N)``.
-            elements: Per-row absorber atomic numbers ``(B,)``, or ``None``
+            elements: Per-row target-site atomic numbers ``(B,)``, or ``None``
                 when the batch carries no element information.
         """
         self.overall.update(spectra)
@@ -188,14 +192,17 @@ class SpectralStatisticsCollector:
 
 
 def collect_spectral_statistics(dataset: Dataset, batchprocessor: BatchProcessor) -> SpectralStatisticsCollector:
-    """Accumulate training spectral statistics in a single pass.
+    """Accumulate training spectral statistics in a single batched pass.
 
     Iterates the training subset (or the whole dataset when no split is
-    configured) and folds each spectral sample into a running
-    :class:`SpectralStatisticsCollector`, which maintains both overall and
-    per-absorbing-element statistics.  For forward batch processors the
-    spectrum is the model target; for inverse batch processors it is the
-    spectral input (under
+    configured) with the dataset's own data loader, so samples are loaded in
+    parallel worker processes and collated in batches instead of one at a
+    time. The batch size and worker count are the fixed module constants
+    ``STATISTICS_BATCH_SIZE`` and ``STATISTICS_NUM_WORKERS``. Each batch is
+    folded into a running :class:`SpectralStatisticsCollector`, which
+    maintains both overall and per-target-site-element statistics. For
+    forward batch processors the spectrum is the model target; for inverse
+    batch processors it is the spectral input (under
     :attr:`~xanesnet.batchprocessors.InverseBatchProcessor.spectra_input_key`).
     Only fixed-size accumulators are held in memory, so the full spectral
     matrix is never materialized.
@@ -207,15 +214,27 @@ def collect_spectral_statistics(dataset: Dataset, batchprocessor: BatchProcessor
     Returns:
         Streaming statistics over the training spectra.
     """
-    subset = dataset.train_subset
-    indices = list(subset.indices) if subset is not None else range(len(dataset))
+    subset = dataset.train_subset if dataset.train_subset is not None else dataset
+
+    dataloader_cls = dataset.get_dataloader()
+    dataloader = dataloader_cls(
+        subset,
+        batch_size=STATISTICS_BATCH_SIZE,
+        shuffle=False,
+        collate_fn=dataset.collate_fn,
+        drop_last=False,
+        num_workers=STATISTICS_NUM_WORKERS,
+        pin_memory=False,
+        persistent_workers=STATISTICS_NUM_WORKERS > 0,
+        prefetch_factor=2 if STATISTICS_NUM_WORKERS > 0 else None,
+    )
 
     collector = SpectralStatisticsCollector()
-    for index in tqdm(indices, desc="Collecting spectral statistics"):
+    for batch in tqdm(dataloader, desc="Collecting spectral statistics"):
         if isinstance(batchprocessor, InverseBatchProcessor):
-            spectra = batchprocessor.input_preparation_single(dataset, index)[batchprocessor.spectra_input_key]
+            spectra = batchprocessor.input_preparation(batch)[batchprocessor.spectra_input_key]
         else:
-            spectra = batchprocessor.target_preparation_single(dataset, index)
-        elements = batchprocessor.element_preparation_single(dataset, index)
+            spectra = batchprocessor.target_preparation(batch)
+        elements = batchprocessor.element_preparation(batch)
         collector.update(spectra, elements)
     return collector

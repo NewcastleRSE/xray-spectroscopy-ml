@@ -48,7 +48,7 @@ class Inferencer(Runner):
         drop_last: Whether to drop the last incomplete batch.
         num_workers: Number of data-loader worker processes.
         inferencer_type: Identifier string for the concrete inferencer type.
-        buffer_size: Number of absorber rows buffered before prediction data is
+        buffer_size: Number of target-site rows buffered before prediction data is
             flushed to disk.
     """
 

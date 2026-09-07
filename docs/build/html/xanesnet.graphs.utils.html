@@ -3,7 +3,7 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="xanesnet.graphs.utils.absorber_paths module" href="xanesnet.graphs.utils.absorber_paths.html"><link rel="prev" title="xanesnet.graphs package" href="xanesnet.graphs.html">
+<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="xanesnet.graphs.utils.directional_indices module" href="xanesnet.graphs.utils.directional_indices.html"><link rel="prev" title="xanesnet.graphs package" href="xanesnet.graphs.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
         <title>xanesnet.graphs.utils package - XANESNET 0.1.0</title>
@@ -343,9 +343,9 @@
 </li>
 <li class="toctree-l3 current has-children"><a class="reference internal" href="xanesnet.graphs.html">xanesnet.graphs package</a><input aria-label="Toggle navigation of xanesnet.graphs package" checked="" class="toctree-checkbox" id="toctree-checkbox-23" name="toctree-checkbox-23" role="switch" type="checkbox"/><label for="toctree-checkbox-23"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l4 current has-children current-page"><a class="current reference internal" href="#">xanesnet.graphs.utils package</a><input aria-label="Toggle navigation of xanesnet.graphs.utils package" checked="" class="toctree-checkbox" id="toctree-checkbox-24" name="toctree-checkbox-24" role="switch" type="checkbox"/><label for="toctree-checkbox-24"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l5"><a class="reference internal" href="xanesnet.graphs.utils.absorber_paths.html">xanesnet.graphs.utils.absorber_paths module</a></li>
 <li class="toctree-l5"><a class="reference internal" href="xanesnet.graphs.utils.directional_indices.html">xanesnet.graphs.utils.directional_indices module</a></li>
 <li class="toctree-l5"><a class="reference internal" href="xanesnet.graphs.utils.symmetrize.html">xanesnet.graphs.utils.symmetrize module</a></li>
+<li class="toctree-l5"><a class="reference internal" href="xanesnet.graphs.utils.target_site_paths.html">xanesnet.graphs.utils.target_site_paths module</a></li>
 <li class="toctree-l5"><a class="reference internal" href="xanesnet.graphs.utils.triplets.html">xanesnet.graphs.utils.triplets module</a></li>
 </ul>
 </li>
@@ -379,13 +379,13 @@
 <li class="toctree-l5 has-children"><a class="reference internal" href="xanesnet.models.e3ee.layers.html">xanesnet.models.e3ee.layers package</a><input aria-label="Toggle navigation of xanesnet.models.e3ee.layers package" class="toctree-checkbox" id="toctree-checkbox-29" name="toctree-checkbox-29" role="switch" type="checkbox"/><label for="toctree-checkbox-29"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee.layers.atom_encoder.html">xanesnet.models.e3ee.layers.atom_encoder module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee.layers.basic.html">xanesnet.models.e3ee.layers.basic module</a></li>
-<li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee.layers.branch_absorber.html">xanesnet.models.e3ee.layers.branch_absorber module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee.layers.branch_attention.html">xanesnet.models.e3ee.layers.branch_attention module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee.layers.branch_convolution.html">xanesnet.models.e3ee.layers.branch_convolution module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee.layers.branch_eq_attention.html">xanesnet.models.e3ee.layers.branch_eq_attention module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee.layers.branch_equivariant.html">xanesnet.models.e3ee.layers.branch_equivariant module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee.layers.branch_fusion.html">xanesnet.models.e3ee.layers.branch_fusion module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee.layers.branch_path.html">xanesnet.models.e3ee.layers.branch_path module</a></li>
+<li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee.layers.branch_target_site.html">xanesnet.models.e3ee.layers.branch_target_site module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee.layers.interactions.html">xanesnet.models.e3ee.layers.interactions module</a></li>
 </ul>
 </li>
@@ -401,7 +401,7 @@
 <li class="toctree-l5 has-children"><a class="reference internal" href="xanesnet.models.e3ee_full.layers.html">xanesnet.models.e3ee_full.layers package</a><input aria-label="Toggle navigation of xanesnet.models.e3ee_full.layers package" class="toctree-checkbox" id="toctree-checkbox-32" name="toctree-checkbox-32" role="switch" type="checkbox"/><label for="toctree-checkbox-32"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee_full.layers.atom_encoder.html">xanesnet.models.e3ee_full.layers.atom_encoder module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee_full.layers.basic.html">xanesnet.models.e3ee_full.layers.basic module</a></li>
-<li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee_full.layers.branch_absorber.html">xanesnet.models.e3ee_full.layers.branch_absorber module</a></li>
+<li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee_full.layers.branch_all_atom.html">xanesnet.models.e3ee_full.layers.branch_all_atom module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee_full.layers.branch_attention.html">xanesnet.models.e3ee_full.layers.branch_attention module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee_full.layers.branch_convolution.html">xanesnet.models.e3ee_full.layers.branch_convolution module</a></li>
 <li class="toctree-l6"><a class="reference internal" href="xanesnet.models.e3ee_full.layers.branch_eq_attention.html">xanesnet.models.e3ee_full.layers.branch_eq_attention module</a></li>
@@ -620,17 +620,13 @@
 <span id="xanesnet-graphs-utils-package"></span><h1>xanesnet.graphs.utils package<a class="headerlink" href="#module-xanesnet.graphs.utils" title="Link to this heading">¶</a></h1>
 <p>Shared graph-construction utilities used by <code class="xref py py-class docutils literal notranslate"><span class="pre">GraphBuilder</span></code> subclasses.</p>
 <p>The functions here operate on already-built edge lists (symmetrisation,
-truncation) and on already-built graphs (absorber-centered paths, triplet
+truncation) and on already-built graphs (target-site-centred paths, triplet
 angles, and direction-aware higher-order indices). They are model-agnostic
 and reused across builders and downstream dataset code.</p>
 <section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="xanesnet.graphs.utils.absorber_paths.html">xanesnet.graphs.utils.absorber_paths module</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="xanesnet.graphs.utils.absorber_paths.html#xanesnet.graphs.utils.absorber_paths.build_absorber_paths"><code class="docutils literal notranslate"><span class="pre">build_absorber_paths()</span></code></a></li>
-</ul>
-</li>
 <li class="toctree-l1"><a class="reference internal" href="xanesnet.graphs.utils.directional_indices.html">xanesnet.graphs.utils.directional_indices module</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="xanesnet.graphs.utils.directional_indices.html#xanesnet.graphs.utils.directional_indices.compute_id_swap"><code class="docutils literal notranslate"><span class="pre">compute_id_swap()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="xanesnet.graphs.utils.directional_indices.html#xanesnet.graphs.utils.directional_indices.compute_triplets"><code class="docutils literal notranslate"><span class="pre">compute_triplets()</span></code></a></li>
@@ -641,6 +637,10 @@ and reused across builders and downstream dataset code.</p>
 <li class="toctree-l1"><a class="reference internal" href="xanesnet.graphs.utils.symmetrize.html">xanesnet.graphs.utils.symmetrize module</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="xanesnet.graphs.utils.symmetrize.html#xanesnet.graphs.utils.symmetrize.truncate_per_source"><code class="docutils literal notranslate"><span class="pre">truncate_per_source()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="xanesnet.graphs.utils.symmetrize.html#xanesnet.graphs.utils.symmetrize.symmetrize_directed_edges"><code class="docutils literal notranslate"><span class="pre">symmetrize_directed_edges()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="xanesnet.graphs.utils.target_site_paths.html">xanesnet.graphs.utils.target_site_paths module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="xanesnet.graphs.utils.target_site_paths.html#xanesnet.graphs.utils.target_site_paths.build_target_site_paths"><code class="docutils literal notranslate"><span class="pre">build_target_site_paths()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="xanesnet.graphs.utils.triplets.html">xanesnet.graphs.utils.triplets module</a><ul>
@@ -657,12 +657,12 @@ and reused across builders and downstream dataset code.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="xanesnet.graphs.utils.absorber_paths.html">
+          <a class="next-page" href="xanesnet.graphs.utils.directional_indices.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">xanesnet.graphs.utils.absorber_paths module</div>
+                <div class="title">xanesnet.graphs.utils.directional_indices module</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>

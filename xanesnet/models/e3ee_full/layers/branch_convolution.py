@@ -121,7 +121,7 @@ class AllAtomAtomConvolution(nn.Module):
         att_src: torch.Tensor,
         att_dst: torch.Tensor,
         att_dist: torch.Tensor,
-        absorber_mask: torch.Tensor | None = None,
+        target_site_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Compute invariant convolution branch latent.
 
@@ -133,8 +133,8 @@ class AllAtomAtomConvolution(nn.Module):
             att_src: Flat source indices (receivers) into ``B*N``, shape ``(E_att,)``.
             att_dst: Flat destination indices (senders) into ``B*N``, shape ``(E_att,)``.
             att_dist: Pair distances in **A**, shape ``(E_att,)``.
-            absorber_mask: Optional ``(B, N)`` bool mask; if given, restrict receivers
-                to absorber sites.
+            target_site_mask: Optional ``(B, N)`` bool mask; if given, restrict receivers
+                to target sites.
 
         Returns:
             Latent tensor of shape ``(B, N, nE, latent_dim)``.
@@ -151,8 +151,8 @@ class AllAtomAtomConvolution(nn.Module):
 
         # Restrict edges to active receivers x valid senders.
         src_active = mask_flat.clone()
-        if absorber_mask is not None:
-            src_active = src_active & absorber_mask.reshape(flat)
+        if target_site_mask is not None:
+            src_active = src_active & target_site_mask.reshape(flat)
         edge_active = src_active[att_src] & mask_flat[att_dst]
 
         ea_src = att_src[edge_active]
@@ -198,7 +198,7 @@ class AllAtomAtomConvolution(nn.Module):
 class AllAtomEquivariantAtomConvolution(nn.Module):
     """NequIP/MACE-style equivariant convolution branch.
 
-    For every active receiver atom (or absorber when ``use_absorber_mask`` is enabled):
+    For every active receiver atom (or target site when ``use_target_site_mask`` is enabled):
 
     - ``sh_{a<-j} = Y(u_{a<-j})`` -- spherical harmonics of bond direction.
     - ``v_{a<-j} = TP(h_full[j], sh_{a<-j}; W(z_j, RBF, is_self))``
@@ -307,7 +307,7 @@ class AllAtomEquivariantAtomConvolution(nn.Module):
         att_dst: torch.Tensor,
         att_dist: torch.Tensor,
         att_vec: torch.Tensor,
-        absorber_mask: torch.Tensor | None = None,
+        target_site_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Compute equivariant convolution branch latent.
 
@@ -321,8 +321,8 @@ class AllAtomEquivariantAtomConvolution(nn.Module):
             att_dst: Flat destination indices (senders) into ``B*N``, shape ``(E_att,)``.
             att_dist: Pair distances in **A**, shape ``(E_att,)``.
             att_vec: Pair displacement vectors in **A**, shape ``(E_att, 3)``.
-            absorber_mask: Optional ``(B, N)`` bool mask; if given, restrict receivers
-                to absorber sites.
+            target_site_mask: Optional ``(B, N)`` bool mask; if given, restrict receivers
+                to target sites.
 
         Returns:
             Latent tensor of shape ``(B, N, nE, latent_dim)``.
@@ -339,8 +339,8 @@ class AllAtomEquivariantAtomConvolution(nn.Module):
         mask_flat = mask.reshape(flat)
 
         src_active = mask_flat.clone()
-        if absorber_mask is not None:
-            src_active = src_active & absorber_mask.reshape(flat)
+        if target_site_mask is not None:
+            src_active = src_active & target_site_mask.reshape(flat)
         edge_active = src_active[att_src] & mask_flat[att_dst]
 
         ea_src = att_src[edge_active]

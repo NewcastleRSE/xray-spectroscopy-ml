@@ -35,7 +35,7 @@ class GemNetBatchProcessor(ForwardBatchProcessor):
     """Batch processor for ``GemNetDataset`` + GemNet.
 
     Forwards precomputed graph indices (triplet, optional quadruplet) and
-    selects absorber-site predictions via ``absorber_mask``.
+    selects target-site predictions via ``target_site_mask``.
     """
 
     def input_preparation(self, batch: GemNetBatch) -> dict[str, torch.Tensor | None]:
@@ -75,16 +75,16 @@ class GemNetBatchProcessor(ForwardBatchProcessor):
         return inputs
 
     def prediction_preparation(self, batch: GemNetBatch, predictions: torch.Tensor) -> torch.Tensor:
-        """Select absorber-site predictions from the per-atom output.
+        """Select target-site predictions from the per-atom output.
 
         Args:
-            batch: Collated GemNet batch carrying ``absorber_mask``.
+            batch: Collated GemNet batch carrying ``target_site_mask``.
             predictions: Per-atom output tensor. ``(num_atoms_total, num_targets)``
 
         Returns:
-            Predictions for absorber atoms only. ``(n_abs, num_targets)``
+            Predictions for target sites only. ``(n_target_sites, num_targets)``
         """
-        return predictions[batch.absorber_mask]
+        return predictions[batch.target_site_mask]
 
     def target_preparation(self, batch: GemNetBatch) -> torch.Tensor:
         """Prepare target spectra from a GemNet batch.
@@ -93,22 +93,22 @@ class GemNetBatchProcessor(ForwardBatchProcessor):
             batch: Collated GemNet batch.
 
         Returns:
-            Target spectra for absorber atoms only. ``(n_abs, n_energies)``
+            Target spectra for target sites only. ``(n_target_sites, n_energies)``
         """
         return batch.intensities
 
     def element_preparation(self, batch: GemNetBatch) -> torch.Tensor | None:
-        """Extract absorber atomic numbers from a GemNet batch.
+        """Extract target-site atomic numbers from a GemNet batch.
 
-        Selects atomic numbers at absorber positions via ``absorber_mask``.
+        Selects atomic numbers at target-site positions via ``target_site_mask``.
 
         Args:
             batch: Collated GemNet batch.
 
         Returns:
-            Absorber atomic numbers. ``(n_abs,)``
+            Target-site atomic numbers. ``(n_target_sites,)``
         """
-        return batch.x[batch.absorber_mask]
+        return batch.x[batch.target_site_mask]
 
     def sample_id_extraction(self, batch: GemNetBatch) -> np.ndarray:
         """Extract file names from a GemNet batch.
@@ -117,6 +117,6 @@ class GemNetBatchProcessor(ForwardBatchProcessor):
             batch: Collated GemNet batch.
 
         Returns:
-            Array of file name strings. ``(n_abs,)``
+            Array of file name strings. ``(n_target_sites,)``
         """
         return np.array(batch.sample_id, dtype=str)

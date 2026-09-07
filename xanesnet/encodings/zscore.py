@@ -47,7 +47,7 @@ class ZScoreEncoding(AffineEncoding):
       (a length-``N`` vector) or are a single global scalar shared across all
       points.
     * ``per_element`` selects whether a separate set of statistics is used for
-      each absorbing element (chosen per sample from its atomic number) or a
+    each target-site element (chosen per sample from its atomic number) or a
       single set is shared across all elements.
 
     When ``per_element`` is false, ``mean`` and ``std`` are flat lists. When it
@@ -56,7 +56,7 @@ class ZScoreEncoding(AffineEncoding):
     Zero or near-zero standard deviations (below ``1e-12``) are silently
     replaced with ``1.0``, which is equivalent to skipping scaling at those
     points (only centering is applied). This handles flat spectral regions
-    (e.g. the pre-edge) where the per-point standard deviation vanishes.
+    where the per-point standard deviation vanishes.
 
     Args:
         encoding_type: Identifier string for this encoding type.
@@ -67,7 +67,7 @@ class ZScoreEncoding(AffineEncoding):
             ``mean``.
         per_point: Whether standardization is applied per spectrum point
             (``True``) or globally with a single shared statistic (``False``).
-        per_element: Whether statistics are selected per absorbing element
+        per_element: Whether statistics are selected per target-site element
             (``True``) or shared across all elements (``False``).
         elements: Atomic numbers aligned row-wise with ``mean`` and ``std`` when
             ``per_element`` is true; ignored otherwise.
@@ -103,7 +103,7 @@ class ZScoreEncoding(AffineEncoding):
             scale = torch.tensor(std, dtype=torch.float32)
 
         # Replace near-zero std values with 1.0 (identity scaling) so that
-        # flat spectral regions (e.g. pre-edge where std \approx 0) do not
+        # flat spectral regions where std \approx 0 do not
         # cause division-by-zero during encoding.
         scale = torch.where(
             scale < 1e-12,

@@ -15,5 +15,9 @@ $defs:
       json_path:
         type: string
         description: Path to the directory containing the ``.json`` files.
+      spectrum_key:
+        type: string
+        description: Raw pymatgen site-property key that contains the spectrum. Defaults to ``"spectrum"``; set this to match a source dataset's property name.
+        default: spectrum
     description: Datasource for pymatgen JSON files in a single directory.
 description: Datasource schemas backed by ``DataSourceRegistry`` classes and datasource constructor signatures.

@@ -34,8 +34,6 @@ from xanesnet.serialization.config import Config
 from ..base import SavePathFn, TorchDataset
 from ..registry import DatasetRegistry
 
-SPECTRUM_KEYS = ["XANES", "XANES_K"]  # TODO maybe put this somewhere more central?
-
 
 @dataclass
 class DescriptorData:
@@ -46,7 +44,7 @@ class DescriptorData:
         y: Model target tensor, commonly ``(n_energies,)`` or ``(batch, n_energies)``.
         energies: Energy grid tensor with shape ``(n_energies,)`` or ``(batch, n_energies)``.
         sample_id: Sample identifier metadata for one sample or a batch.
-        element: Absorber atomic number as a scalar tensor for one sample, or
+        element: Target-site atomic number as a scalar tensor for one sample, or
             ``(batch,)`` for a batch. Consumed by element-aware spectra
             encodings.
     """
@@ -191,36 +189,33 @@ class DescriptorDataset(TorchDataset):
             save_path_fn: Callback that maps per-item sample sequence numbers to output paths.
 
         Returns:
-            Number of processed absorber samples written.
+            Number of processed target-site samples written.
         """
         pmg_obj = self.datasource[idx]
-        for key in SPECTRUM_KEYS:
-            if key in pmg_obj.site_properties.keys():
-                break
-        else:
-            logging.warning(f"No XANES spectrum found for sample {idx} ({pmg_obj.properties['sample_id']}); skipping.")
+        if "spectrum" not in pmg_obj.site_properties:
+            logging.warning(f"No spectrum found for sample {idx} ({pmg_obj.properties['sample_id']}); skipping.")
             return 0
 
-        xanes = np.array(pmg_obj.site_properties[key], dtype=object)
-        xanes_idxs: list[int] = np.where(xanes != None)[0].tolist()
+        spectra = np.array(pmg_obj.site_properties["spectrum"], dtype=object)
+        target_site_indices: list[int] = np.where(spectra != None)[0].tolist()
 
         # Compute descriptor features
         descriptor_features = []
         for descriptor in self.descriptor_list:
-            feature = descriptor.transform_pmg(pmg_obj, site_index=xanes_idxs)
+            feature = descriptor.transform_pmg(pmg_obj, site_index=target_site_indices)
             descriptor_features.append(feature)
         descriptor_features = np.concatenate(descriptor_features, axis=1)
 
         seq = 0
-        for site_idx, df in zip(xanes_idxs, descriptor_features):
+        for site_idx, df in zip(target_site_indices, descriptor_features):
             # descriptor features
             df = torch.tensor(df, dtype=torch.float32)
 
-            # Absorber atomic number
+            # Target-site atomic number
             element = torch.tensor(pmg_obj.atomic_numbers[site_idx], dtype=torch.int64)
 
-            # XANES
-            spectrum = pmg_obj.site_properties[key][site_idx]
+            # Spectrum
+            spectrum = pmg_obj.site_properties["spectrum"][site_idx]
             energies = torch.tensor(spectrum["energies"], dtype=torch.float32)
             intensities = torch.tensor(spectrum["intensities"], dtype=torch.float32)
 

@@ -66,7 +66,7 @@ class MACE(Descriptor):
         Args:
             system: The atomic system.
             site_index: Site index, list of site indices, or ``None`` for all sites.
-                Defaults to ``0`` (the absorber site).
+                Defaults to ``0`` (the target site).
 
         Returns:
             Descriptor array ``(S, D)`` where ``S`` is the number of selected sites

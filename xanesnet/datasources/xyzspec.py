@@ -18,7 +18,7 @@
 # Citations:
 #   ...
 
-"""Datasource for paired XYZ coordinate files and XANES spectra."""
+"""Datasource for paired XYZ coordinate files and spectra."""
 
 from collections.abc import Iterator
 from pathlib import Path
@@ -32,10 +32,12 @@ from xanesnet.utils.filesystem import list_filestems
 from .base import DataSource
 from .registry import DataSourceRegistry
 
+# TODO Document somewhere how exactly the spectrum files are expected to look like.
+
 
 @DataSourceRegistry.register("xyzspec")
 class XYZSpecSource(DataSource):
-    """Datasource for paired XYZ coordinate files and XANES spectra.
+    """Datasource for paired XYZ coordinate files and spectra files.
 
     Expects two directories: one with ``.xyz`` files and one with ``.txt``
     spectra files. File stems (names without extension) must match between the
@@ -44,14 +46,14 @@ class XYZSpecSource(DataSource):
     Args:
         datasource_type: Identifier string for this datasource type.
         xyz_path: Path to the directory containing the ``.xyz`` files.
-        xanes_path: Path to the directory containing the ``.txt`` spectra files.
+        spectra_path: Path to the directory containing the ``.txt`` spectra files.
     """
 
     def __init__(
         self,
         datasource_type: str,
         xyz_path: str,
-        xanes_path: str,
+        spectra_path: str,
     ) -> None:
         """Initialize ``XYZSpecSource``."""
         super().__init__(datasource_type)
@@ -60,7 +62,7 @@ class XYZSpecSource(DataSource):
         # TODO We might change this in the future to allow only one of them.
         # TODO This can be beneficial for prediction datasets without spectra.
         self.xyz_path = xyz_path
-        self.xanes_path = xanes_path
+        self.spectra_path = spectra_path
 
         self.sample_ids: list[str] = self._get_file_list()
 
@@ -88,29 +90,29 @@ class XYZSpecSource(DataSource):
             idx: Zero-based index into the datasource.
 
         Returns:
-            A ``Molecule`` with ``XANES`` site property and ``sample_id``
+            A ``Molecule`` with ``"spectrum"`` site property and ``sample_id``
             stored in ``properties``.
         """
         file = self.sample_ids[idx]
         xyz_file = Path(self.xyz_path) / f"{file}.xyz"
-        xanes_file = Path(self.xanes_path) / f"{file}.txt"
+        spectra_file = Path(self.spectra_path) / f"{file}.txt"
 
         molecule = self.load_xyz(xyz_file)
-        energies, intensities = self.load_xanes(xanes_file)
+        energies, intensities = self.load_spectrum(spectra_file)
         spectra_list: list[dict[str, np.ndarray] | None] = [None for _ in molecule.sites]
         spectra_list[0] = {
             "energies": energies,
             "intensities": intensities,
         }
-        molecule.add_site_property("XANES", spectra_list)
+        molecule.add_site_property("spectrum", spectra_list)
         molecule.properties["sample_id"] = file
         return molecule
 
     def _get_file_list(self) -> list[str]:
-        """Build the sorted list of sample identifiers common to both ``xyz_path`` and ``xanes_path``.
+        """Build the sorted list of sample identifiers common to both ``xyz_path`` and ``spectra_path``.
 
         Only ``.xyz`` files from ``xyz_path`` and ``.txt`` files from
-        ``xanes_path`` are considered. Unrelated files are ignored.
+        ``spectra_path`` are considered. Unrelated files are ignored.
 
         Returns:
             Sorted list of matched sample identifiers.
@@ -120,27 +122,27 @@ class XYZSpecSource(DataSource):
                 ``.xyz``/``.txt`` sample identifiers are found.
         """
         xyz_path = Path(self.xyz_path)
-        xanes_path = Path(self.xanes_path)
+        spectra_path = Path(self.spectra_path)
 
         if not xyz_path.is_dir():
             raise ResourceError(f"XYZ directory does not exist: {xyz_path}")
-        if not xanes_path.is_dir():
-            raise ResourceError(f"XANES directory does not exist: {xanes_path}")
+        if not spectra_path.is_dir():
+            raise ResourceError(f"Spectra directory does not exist: {spectra_path}")
 
         xyz_stems = set(list_filestems(xyz_path, suffixes=".xyz"))
-        xanes_stems = set(list_filestems(xanes_path, suffixes=".txt"))
-        sample_ids = sorted(list(xyz_stems & xanes_stems))
+        spectra_stems = set(list_filestems(spectra_path, suffixes=".txt"))
+        sample_ids = sorted(list(xyz_stems & spectra_stems))
 
         if not sample_ids:
-            raise ResourceError(f"No matching .xyz and .txt files found in: {xyz_path} and {xanes_path}")
+            raise ResourceError(f"No matching .xyz and .txt files found in: {xyz_path} and {spectra_path}")
 
         return sample_ids
 
     @staticmethod
-    def load_xanes(file_path: Path) -> tuple[np.ndarray, np.ndarray]:
-        """Load a XANES spectrum from an FDMNES output text file.
+    def load_spectrum(file_path: Path) -> tuple[np.ndarray, np.ndarray]:
+        """Load a spectrum from a two-column simulation output text file.
 
-        Skips the two-line FDMNES header block at the top of the file.
+        Skips the required two-line header block at the top of the file.
 
         Args:
             file_path: Path to the ``.txt`` spectra file.
@@ -151,13 +153,13 @@ class XYZSpecSource(DataSource):
         with open(file_path, "r") as f:
             lines = f.readlines()
 
-        # pop the FDMNES header block
+        # Skip the required header block.
         for _ in range(2):
             lines.pop(0)
 
-        xanes_block = [lines.pop(0).split() for _ in range(len(lines))]
-        energies = np.array([line[0] for line in xanes_block], dtype="float32")
-        intensities = np.array([line[1] for line in xanes_block], dtype="float32")
+        spectrum_block = [lines.pop(0).split() for _ in range(len(lines))]
+        energies = np.array([line[0] for line in spectrum_block], dtype="float32")
+        intensities = np.array([line[1] for line in spectrum_block], dtype="float32")
 
         return energies, intensities
 

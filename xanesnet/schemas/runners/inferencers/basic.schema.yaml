@@ -33,6 +33,6 @@ $defs:
         type: integer
         minimum: 1
         default: 100000
-        description: Number of absorber rows buffered before prediction data is flushed to disk.
+        description: Number of target-site rows buffered before prediction data is flushed to disk.
     description: Basic single-process inferencer.
 description: Runner schemas backed by trainer and inferencer registries.

@@ -36,7 +36,7 @@ class EnergyConditionedAtomAttention(nn.Module):
         hidden_dim: Hidden dimension of all internal MLPs.
         latent_dim: Output (latent) dimension; must be divisible by ``n_heads``.
         att_cutoff: Radius of the attention neighborhood graph in Angstrom.
-        rbf_dim: Number of Gaussian RBF bases for the absorber->atom distance.
+        rbf_dim: Number of Gaussian RBF bases for the target-site-to-atom distance.
         max_z: Maximum atomic number supported by the element embedding.
         z_emb_dim: Embedding dimension for atomic numbers.
         n_heads: Number of attention heads.
@@ -79,7 +79,7 @@ class EnergyConditionedAtomAttention(nn.Module):
             n_layers=3,
         )
 
-        # atom_static = [h, zr, is_abs, rbf(dist_from_absorber)].
+        # atom_static = [h, zr, is_target_site, rbf(distance_from_target_site)].
         atom_static_dim = atom_dim + z_emb_dim + 1 + rbf_dim
         self.key_mlp = MLP(
             in_dim=atom_static_dim,
@@ -121,7 +121,7 @@ class EnergyConditionedAtomAttention(nn.Module):
         z: torch.Tensor,
         mask: torch.Tensor,
         e_feat: torch.Tensor,
-        absorber_index: torch.Tensor,
+        target_site_index: torch.Tensor,
         att_dst: torch.Tensor,
         att_dist: torch.Tensor,
     ) -> torch.Tensor:
@@ -132,9 +132,9 @@ class EnergyConditionedAtomAttention(nn.Module):
             z: Atomic numbers, shape ``(B, N)``.
             mask: Valid-atom mask (encoder scope), shape ``(B, N)``.
             e_feat: Energy RBF features, shape ``(nE, dE)``.
-            absorber_index: Absorber index per sample, shape ``(B,)``.
+            target_site_index: Target-site index per sample, shape ``(B,)``.
             att_dst: Flat destination indices into ``B*N`` (attention scope), shape ``(E_att,)``.
-            att_dist: Absorber-to-atom distances in **Angstrom**, shape ``(E_att,)``.
+            att_dist: Target-site-to-atom distances in **Angstrom**, shape ``(E_att,)``.
 
         Returns:
             Latent tensor of shape ``(B, nE, latent_dim)``.
@@ -145,11 +145,11 @@ class EnergyConditionedAtomAttention(nn.Module):
         flat = bsz * n_atoms
 
         batch_arange = torch.arange(bsz, device=device)
-        h_abs = h[batch_arange, absorber_index, :]  # [B, H]
+        h_target_site = h[batch_arange, target_site_index, :]  # [B, H]
 
         q_in = torch.cat(
             [
-                h_abs.unsqueeze(1).expand(bsz, n_energies, h_dim),
+                h_target_site.unsqueeze(1).expand(bsz, n_energies, h_dim),
                 e_feat.unsqueeze(0).expand(bsz, n_energies, e_dim),
             ],
             dim=-1,
@@ -165,10 +165,10 @@ class EnergyConditionedAtomAttention(nn.Module):
         rbf = self.dist_rbf(att_dist_flat.view(bsz, n_atoms))  # [B, N, rbf]
 
         zr = self.z_emb(z)  # [B, N, z_emb_dim]
-        is_abs = torch.zeros(bsz, n_atoms, dtype=h.dtype, device=device)
-        is_abs[batch_arange, absorber_index] = 1.0
+        is_target_site = torch.zeros(bsz, n_atoms, dtype=h.dtype, device=device)
+        is_target_site[batch_arange, target_site_index] = 1.0
 
-        atom_static = torch.cat([h, zr, is_abs.unsqueeze(-1), rbf], dim=-1)
+        atom_static = torch.cat([h, zr, is_target_site.unsqueeze(-1), rbf], dim=-1)
         k = self.key_mlp(atom_static)  # [B, N, L]
         v = self.value_mlp(atom_static)  # [B, N, L]
         env = self.value_envelope(att_dist_flat.view(bsz, n_atoms))  # [B, N]

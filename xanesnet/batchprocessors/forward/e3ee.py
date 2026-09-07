@@ -34,7 +34,7 @@ from .base import ForwardBatchProcessor
 class E3EEBatchProcessor(ForwardBatchProcessor):
     """Batch processor for E3EE dataset + E3EE model.
 
-    Forwards padded node features, edge tensors, and absorber-path indices to
+    Forwards padded node features, edge tensors, and target-site path indices to
     the model. Targets are per-sample spectra (no per-atom masking needed
     since the dataset already provides one spectrum per sample).
     """
@@ -51,7 +51,7 @@ class E3EEBatchProcessor(ForwardBatchProcessor):
         return {
             "x": batch.x,
             "mask": batch.mask,
-            "absorber_index": batch.absorber_index,
+            "target_site_index": batch.target_site_index,
             "edge_src": batch.edge_src,
             "edge_dst": batch.edge_dst,
             "edge_weight": batch.edge_weight,
@@ -81,18 +81,18 @@ class E3EEBatchProcessor(ForwardBatchProcessor):
         return batch.intensities
 
     def element_preparation(self, batch: E3EEBatch) -> torch.Tensor | None:
-        """Extract absorber atomic numbers from an E3EE batch.
+        """Extract target-site atomic numbers from an E3EE batch.
 
-        Gathers the atomic number at each sample's absorber index from the
+        Gathers the atomic number at each sample's target-site index from the
         padded node features ``x``.
 
         Args:
             batch: Collated E3EE batch.
 
         Returns:
-            Absorber atomic numbers. ``(batch_size,)``
+            Target-site atomic numbers. ``(batch_size,)``
         """
-        return batch.x[torch.arange(batch.x.size(0), device=batch.x.device), batch.absorber_index]
+        return batch.x[torch.arange(batch.x.size(0), device=batch.x.device), batch.target_site_index]
 
     def sample_id_extraction(self, batch: E3EEBatch) -> np.ndarray:
         """Extract file names from an E3EE batch.

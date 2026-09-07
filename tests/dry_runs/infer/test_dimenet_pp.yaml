@@ -4,6 +4,7 @@ device: cpu
 datasource:
   datasource_type: pmgjson
   json_path: ./data/toy_data/
+  spectrum_key: "XANES"
 
 dataset:
   root: ./data/processed/toy_data_dimenet_pp_test/

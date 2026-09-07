@@ -14,8 +14,8 @@ authors = [
     { name = "Thomas Penfold" },
 ]
 keywords = [
-    "xanes",
-    "x-ray absorption spectroscopy",
+    "spectroscopy",
+    "spectra prediction",
     "machine learning",
     "deep learning",
     "materials science",

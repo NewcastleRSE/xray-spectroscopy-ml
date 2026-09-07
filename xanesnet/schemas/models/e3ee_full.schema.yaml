@@ -9,11 +9,11 @@ $defs:
     - model_type
     - out_size
     properties:
-      use_absorber_mask:
+      use_target_site_mask:
         type: boolean
         default: true
         description: If ``True``, restrict query/receiver/center-site selection in the attention, convolution, and path branches
-          to absorber atoms, and zero final predictions on non-absorber atoms via ``absorber_mask``.
+          to target-site atoms, and zero final predictions on non-target-site atoms via ``target_site_mask``.
       max_z:
         type: integer
         minimum: 1
@@ -157,7 +157,7 @@ $defs:
       out_size:
         $ref: ../shared/value_types.schema.yaml#/$defs/autoPositiveInteger
         description: Number of energy-grid points (``nE``).
-    description: Multi-absorber E3-equivariant model.
+    description: Multi-target-site E3-equivariant model.
   modelTrainE3EEFull:
     $ref: '#/$defs/modelE3EEFull'
     description: Training view of modelE3EEFull; automatic dimension fields may use the case-insensitive auto token.

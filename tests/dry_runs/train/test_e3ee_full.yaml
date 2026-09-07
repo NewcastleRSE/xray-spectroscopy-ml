@@ -4,6 +4,7 @@ device: cpu
 datasource:
   datasource_type: pmgjson
   json_path: ./data/toy_data/
+  spectrum_key: "XANES"
 
 dataset:
   dataset_type: e3ee_full
@@ -13,15 +14,15 @@ dataset:
   split_ratios: [0.8, 0.2]
   graph_builder:
     graph_builder_type: radius
-    cutoff: 6.0
-    max_num_neighbors: 32
+    cutoff: 4.0
+    max_num_neighbors: 16
   att_graph_builder:
     graph_builder_type: radius
-    cutoff: 10.0
-    max_num_neighbors: 32
+    cutoff: 6.0
+    max_num_neighbors: 16
   use_path_branch: False
   max_paths_per_site: 32
-  use_absorber_mask: True
+  use_target_site_mask: True
 
 encodings:
   - encoding_type: identity
@@ -33,7 +34,7 @@ model:
   atom_emb_dim: 16
   atom_hidden_dim: 32
   atom_layers: 2
-  local_cutoff: 6.0
+  local_cutoff: 4.0
   rbf_dim: 8
   energy_rbf_dim: 8
   scatter_dim: 32
@@ -51,13 +52,13 @@ model:
   use_equivariant_branch: True
   use_path_branch: False
   fusion_mode: cat
-  use_absorber_mask: True
+  use_target_site_mask: True
   residual_scale_init: 0.1
   attention_heads: 2
   attention_rbf_dim: 8
   attention_lmax: 1
   attention_irreps: "16x0e + 8x1o"
-  att_cutoff: 10.0
+  att_cutoff: 6.0
   conv_use_gate: True
 
 trainer:

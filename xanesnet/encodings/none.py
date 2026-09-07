@@ -52,7 +52,7 @@ class NoneEncoding(SpectraEncoding):
 
         Args:
             targets: Ground-truth target spectra ``(B, N)``.
-            elements: Optional per-sample absorber atomic numbers ``(B,)``.
+            elements: Optional per-sample target-site atomic numbers ``(B,)``.
                 Ignored: this encoding is element-independent.
 
         Returns:
@@ -65,7 +65,7 @@ class NoneEncoding(SpectraEncoding):
 
         Args:
             predictions: Model predictions ``(B, N)``.
-            elements: Optional per-sample absorber atomic numbers ``(B,)``.
+            elements: Optional per-sample target-site atomic numbers ``(B,)``.
                 Ignored: this encoding is element-independent.
 
         Returns:

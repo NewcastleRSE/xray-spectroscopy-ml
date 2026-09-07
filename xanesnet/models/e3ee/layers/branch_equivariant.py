@@ -18,7 +18,7 @@
 # Citations:
 #   ...
 
-"""Equivariant absorber head and energy-irrep modulation for E3EE."""
+"""Equivariant target-site head and energy-irrep modulation for E3EE."""
 
 from typing import cast
 
@@ -30,15 +30,15 @@ from ..utils import invariant_feature_dim, invariant_features_from_irreps
 from .basic import MLP
 
 
-class EnergyConditionedEquivariantAbsorberHead(nn.Module):
+class EnergyConditionedEquivariantTargetSiteHead(nn.Module):
     """
-    Late equivariant absorber head.
+    Late equivariant target-site head.
 
-    Applies energy-conditioned irrep-wise modulation to the absorber
+    Applies energy-conditioned irrep-wise modulation to the target-site
     equivariant feature, converts to invariants, then projects.
 
     Args:
-        irreps_node: Irreps of the absorber equivariant features.
+        irreps_node: Irreps of the target-site equivariant features.
         e_dim: Dimension of the energy RBF embedding.
         hidden_dim: Hidden dimension used in the modulation and output MLPs.
         out_dim: Output (latent) dimension.
@@ -51,7 +51,7 @@ class EnergyConditionedEquivariantAbsorberHead(nn.Module):
         hidden_dim: int,
         out_dim: int,
     ) -> None:
-        """Initialize ``EnergyConditionedEquivariantAbsorberHead``."""
+        """Initialize ``EnergyConditionedEquivariantTargetSiteHead``."""
         super().__init__()
         self.irreps_node = cast(o3.Irreps, o3.Irreps(irreps_node))
         self.mod = EnergyIrrepModulation(self.irreps_node, e_dim=e_dim, hidden_dim=hidden_dim)
@@ -64,17 +64,17 @@ class EnergyConditionedEquivariantAbsorberHead(nn.Module):
             n_layers=3,
         )
 
-    def forward(self, h_abs_full: torch.Tensor, e_feat: torch.Tensor) -> torch.Tensor:
-        """Extract invariants from absorber equivariant features and project to latent.
+    def forward(self, h_target_site_full: torch.Tensor, e_feat: torch.Tensor) -> torch.Tensor:
+        """Extract invariants from target-site equivariant features and project to latent.
 
         Args:
-            h_abs_full: Equivariant absorber features, shape ``(B, D)``.
+            h_target_site_full: Equivariant target-site features, shape ``(B, D)``.
             e_feat: Energy RBF features, shape ``(nE, e_dim)``.
 
         Returns:
             Latent tensor of shape ``(B, nE, out_dim)``.
         """
-        h_mod = self.mod(h_abs_full, e_feat)  # [B, nE, D]
+        h_mod = self.mod(h_target_site_full, e_feat)  # [B, nE, D]
         inv = invariant_features_from_irreps(h_mod, self.irreps_node)  # [B, nE, inv_dim]
         return self.out_mlp(inv)
 

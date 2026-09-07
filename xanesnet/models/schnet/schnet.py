@@ -18,7 +18,7 @@
 # Citations:
 #   ...
 
-"""SchNet continuous-filter convolutional neural network for XANES prediction."""
+"""SchNet continuous-filter convolutional neural network for spectra prediction."""
 
 import math
 
@@ -37,7 +37,7 @@ from ..registry import ModelRegistry
 class SchNet(Model):
     """SchNet continuous-filter convolutional neural network for molecular property prediction.
 
-    Adapted for XANES spectral prediction. Architecture follows the original SchNet paper with
+    Adapted for spectra prediction. Architecture follows the original SchNet paper with
     interaction blocks built from continuous-filter convolutions (CFConv) and ShiftedSoftplus
     activations.
 

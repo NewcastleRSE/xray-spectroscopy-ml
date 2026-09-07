@@ -20,7 +20,6 @@
 
 """Parametrised dry-run tests: train then infer for every model pair."""
 
-
 import logging
 from pathlib import Path
 
@@ -29,7 +28,7 @@ import pytest
 from xanesnet import infer as infer_cli
 from xanesnet import train as train_cli
 
-from .conftest import collect_model_pairs, find_checkpoint
+from .conftest import cleanup_processed_data, collect_model_pairs, find_checkpoint
 
 MODEL_PAIRS = collect_model_pairs()
 BASIC_PAIRS = [(t, i) for t, i in MODEL_PAIRS if "ensemble" not in t.stem]
@@ -48,12 +47,17 @@ def _run_train(train_path: Path, out_dir: Path) -> Path:
     Returns:
         Path to the created run directory (inside *out_dir*).
     """
-    train_cli.main([
-        "-i", str(train_path),
-        "-o", str(out_dir),
-        "-n", "test",
-        "--yes",
-    ])
+    train_cli.main(
+        [
+            "-i",
+            str(train_path),
+            "-o",
+            str(out_dir),
+            "-n",
+            "test",
+            "--yes",
+        ]
+    )
     run_dirs = sorted(out_dir.glob("train_test_*"))
     assert run_dirs, f"No run directory created under {out_dir}"
     return run_dirs[-1]
@@ -70,13 +74,19 @@ def _run_infer(infer_path: Path, checkpoint_path: Path, out_dir: Path) -> Path:
     Returns:
         Path to the created run directory (inside *out_dir*).
     """
-    infer_cli.main([
-        "-i", str(infer_path),
-        "-m", str(checkpoint_path),
-        "-o", str(out_dir),
-        "-n", "test",
-        "--yes",
-    ])
+    infer_cli.main(
+        [
+            "-i",
+            str(infer_path),
+            "-m",
+            str(checkpoint_path),
+            "-o",
+            str(out_dir),
+            "-n",
+            "test",
+            "--yes",
+        ]
+    )
     run_dirs = sorted(out_dir.glob("infer_test_*"))
     assert run_dirs, f"No run directory created under {out_dir}"
     return run_dirs[-1]
@@ -94,14 +104,17 @@ def test_train_and_infer(train_path: Path, infer_path: Path, tmp_path: Path) -> 
     """
     logging.info("Dry run: %s", train_path.stem)
 
-    train_run_dir = _run_train(train_path, tmp_path / "train")
-    ckpt_path = find_checkpoint(train_run_dir)
+    try:
+        train_run_dir = _run_train(train_path, tmp_path / "train")
+        ckpt_path = find_checkpoint(train_run_dir)
 
-    infer_run_dir = _run_infer(infer_path, ckpt_path, tmp_path / "infer")
-    predictions_dir = infer_run_dir / "predictions"
-    assert predictions_dir.is_dir()
-    assert (predictions_dir / "predictions.h5").exists()
-    assert (predictions_dir / "WRITER_INFO.txt").exists()
+        infer_run_dir = _run_infer(infer_path, ckpt_path, tmp_path / "infer")
+        predictions_dir = infer_run_dir / "predictions"
+        assert predictions_dir.is_dir()
+        assert (predictions_dir / "predictions.h5").exists()
+        assert (predictions_dir / "WRITER_INFO.txt").exists()
+    finally:
+        cleanup_processed_data(train_path)
 
 
 @pytest.mark.slow
@@ -118,11 +131,14 @@ def test_train_and_ensemble_infer(train_path: Path, infer_path: Path, tmp_path: 
     """
     logging.info("Ensemble dry run: %s", train_path.stem)
 
-    train_run_dir = _run_train(train_path, tmp_path / "train")
-    ckpt_path = find_checkpoint(train_run_dir)
+    try:
+        train_run_dir = _run_train(train_path, tmp_path / "train")
+        ckpt_path = find_checkpoint(train_run_dir)
 
-    infer_run_dir = _run_infer(infer_path, ckpt_path, tmp_path / "infer")
-    predictions_dir = infer_run_dir / "predictions"
-    assert predictions_dir.is_dir()
-    assert (predictions_dir / "predictions.h5").exists()
-    assert (predictions_dir / "WRITER_INFO.txt").exists()
+        infer_run_dir = _run_infer(infer_path, ckpt_path, tmp_path / "infer")
+        predictions_dir = infer_run_dir / "predictions"
+        assert predictions_dir.is_dir()
+        assert (predictions_dir / "predictions.h5").exists()
+        assert (predictions_dir / "WRITER_INFO.txt").exists()
+    finally:
+        cleanup_processed_data(train_path)
