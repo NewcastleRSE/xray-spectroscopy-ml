@@ -11,17 +11,24 @@ $defs:
       plotter_type:
         const: pca
         description: Registered plotter name from the analysis configuration.
+      plot_size:
+        $ref: plotters.schema.yaml#/$defs/plotSize
       latex_font:
-        type: boolean
-        default: true
-        description: Render text and mathtext in a LaTeX-style serif (STIX/Times)
-          font. When false, matplotlib's default sans-serif is used.
+        $ref: plotters.schema.yaml#/$defs/latexFont
       descriptor_key:
         type: string
         minLength: 1
         default: descriptor
         description: Collector key holding the descriptor vectors that are
           projected.
+      legend_position:
+        type: string
+        enum:
+        - inside
+        - outside
+        default: outside
+        description: Place the selector legend inside the axes or outside the
+          plot on the right.
     description: Pool every selector's descriptor vectors for one reader,
       project them onto their principal components, and plot the groups
       colored by selector.

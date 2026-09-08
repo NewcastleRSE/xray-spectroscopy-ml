@@ -12,11 +12,10 @@ $defs:
       plotter_type:
         const: error_correlation
         description: Registered plotter name from the analysis configuration.
+      plot_size:
+        $ref: plotters.schema.yaml#/$defs/plotSize
       latex_font:
-        type: boolean
-        default: true
-        description: Render text and mathtext in a LaTeX-style serif (STIX/Times)
-          font. When false, matplotlib's default sans-serif is used.
+        $ref: plotters.schema.yaml#/$defs/latexFont
       sort_key:
         type: string
         description: Scalar collector key used as the per-sample error. Must be

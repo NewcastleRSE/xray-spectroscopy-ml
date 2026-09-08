@@ -2,6 +2,25 @@ $schema: https://json-schema.org/draft/2020-12/schema
 $id: plotters.schema.yaml
 title: XANESNET plotter configuration schemas
 $defs:
+  plotSize:
+    type: string
+    enum:
+    - small
+    - default
+    default: default
+    description: Shared figure size and rendering profile.
+  latexFont:
+    type: boolean
+    default: true
+    description: Render text and mathtext in a LaTeX-style serif (STIX/Times)
+      font. When false, matplotlib's default sans-serif is used.
+  legendPosition:
+    type: string
+    enum:
+    - inside
+    - outside
+    default: inside
+    description: Place axis legends inside the axes or outside them on the right.
   plotter:
     oneOf:
     - $ref: scalar.schema.yaml#/$defs/plotterScalar

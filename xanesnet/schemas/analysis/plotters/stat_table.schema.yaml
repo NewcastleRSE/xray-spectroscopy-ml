@@ -11,11 +11,10 @@ $defs:
       plotter_type:
         const: stat_table
         description: Registered plotter name from the analysis configuration.
+      plot_size:
+        $ref: plotters.schema.yaml#/$defs/plotSize
       latex_font:
-        type: boolean
-        default: true
-        description: Render text and mathtext in a LaTeX-style serif (STIX/Times)
-          font. When false, matplotlib's default sans-serif is used.
+        $ref: plotters.schema.yaml#/$defs/latexFont
       stat_keys:
         type: array
         items:

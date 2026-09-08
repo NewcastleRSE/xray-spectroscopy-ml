@@ -11,11 +11,12 @@ $defs:
       plotter_type:
         const: spectra_all
         description: Registered plotter name from the analysis configuration.
+      plot_size:
+        $ref: plotters.schema.yaml#/$defs/plotSize
       latex_font:
-        type: boolean
-        default: true
-        description: Render text and mathtext in a LaTeX-style serif (STIX/Times)
-          font. When false, matplotlib's default sans-serif is used.
+        $ref: plotters.schema.yaml#/$defs/latexFont
+      legend_position:
+        $ref: plotters.schema.yaml#/$defs/legendPosition
       max_pages:
         type:
         - integer

@@ -11,6 +11,8 @@ $defs:
       plotter_type:
         const: stat_table_latex
         description: Registered plotter name from the analysis configuration.
+      plot_size:
+        $ref: plotters.schema.yaml#/$defs/plotSize
       stat_keys:
         type: array
         items:
