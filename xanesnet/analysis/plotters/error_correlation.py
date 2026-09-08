@@ -24,7 +24,6 @@ import logging
 from itertools import repeat
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 
@@ -34,9 +33,16 @@ from xanesnet.utils.exceptions import ConfigError
 
 from ..result import AnalysisResults
 from ..selectors import Selector
-from ..utils import SampleKey, is_scalar_value, sample_key, sample_key_sort_key
+from ..utils import (
+    SampleKey,
+    is_scalar_value,
+    one_line_label,
+    sample_key,
+    sample_key_sort_key,
+)
 from .base import Plotter
-from .common import add_subtitle, compact_layout, method_color, style_axis
+from .common.layout import add_grid_label, matrix_grid, save_figure, single_panel
+from .common.style import PlotSize, add_note, method_color
 from .registry import PlotterRegistry
 
 # Label lines, color, compound sample identity to per-sample error.
@@ -60,11 +66,12 @@ class ErrorCorrelationPlotter(Plotter):
         latex_font: Render figures in a LaTeX-style serif font when ``True``.
         sort_key: Scalar collector key used as the per-sample error. Must be
             produced by a configured collector.
+        plot_size: Shared figure size profile: ``"small"`` or ``"default"``.
     """
 
-    def __init__(self, plotter_type: str, sort_key: str, latex_font: bool) -> None:
+    def __init__(self, plotter_type: str, sort_key: str, latex_font: bool, plot_size: PlotSize) -> None:
         """Initialize an error correlation plotter."""
-        super().__init__(plotter_type, latex_font=latex_font)
+        super().__init__(plotter_type, latex_font=latex_font, plot_size=plot_size)
         self.sort_key = sort_key
 
     def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
@@ -126,6 +133,10 @@ class ErrorCorrelationPlotter(Plotter):
 
         Returns:
             Mapping from ``(sample_id, target_site_index)`` to the error value.
+
+        Raises:
+            ConfigError: If ``sort_key`` is missing or non-scalar, or if a
+                compound sample identity occurs more than once.
         """
         errors: dict[SampleKey, float] = {}
         for sample, record in zip(selector, stream if stream is not None else repeat({})):
@@ -141,8 +152,7 @@ class ErrorCorrelationPlotter(Plotter):
             errors[identity] = float(value)
         return errors
 
-    @staticmethod
-    def _correlation_grid(methods: list[_MethodErrors], out: Path) -> None:
+    def _correlation_grid(self, methods: list[_MethodErrors], out: Path) -> None:
         """Write one grid figure with pairwise error correlation panels.
 
         Diagonal cells carry the method labels; lower-triangle cells compare
@@ -154,22 +164,19 @@ class ErrorCorrelationPlotter(Plotter):
         """
         n = len(methods)
 
-        fig, axes = plt.subplots(n, n, figsize=(2.6 * n, 2.4 * n), sharex=True, sharey=True, squeeze=False)
-
+        fig, axes = matrix_grid(
+            n,
+            n,
+            self.style,
+            geometry="square",
+            width_margin=0.8,
+            height_margin=0.8,
+        )
         for i in range(n):
             for j in range(n):
                 ax = axes[i][j]
                 if i == j:
-                    ax.axis("off")
-                    ax.text(
-                        0.5,
-                        0.5,
-                        "\n".join(methods[i][0]),
-                        transform=ax.transAxes,
-                        ha="center",
-                        va="center",
-                        fontsize=6,
-                    )
+                    add_grid_label(ax, methods[i][0], self.style)
                     continue
                 if j > i:
                     ax.axis("off")
@@ -178,31 +185,26 @@ class ErrorCorrelationPlotter(Plotter):
                 pair = ErrorCorrelationPlotter._pair_values(methods[i][2], methods[j][2])
                 if pair is None:
                     ax.axis("off")
-                    ax.text(
-                        0.5,
-                        0.5,
-                        "no common samples",
-                        transform=ax.transAxes,
-                        ha="center",
-                        va="center",
-                        fontsize=6,
-                        color="gray",
-                    )
+                    add_grid_label(ax, ["no common samples"], self.style, color="gray")
                     continue
 
                 xs, ys = pair
-                ErrorCorrelationPlotter._draw_pair_panel(ax, xs, ys, methods[i][1], fontsize=5.5)
-                ax.tick_params(labelsize=5.5)
+                self._draw_pair_panel(ax, xs, ys, methods[i][1])
 
         for j in range(n):
-            axes[n - 1][j].set_xlabel("  |  ".join(methods[j][0]), fontsize=5.5)
+            axes[n - 1][j].set_xlabel(
+                "error",
+                fontsize=self.style.fontsize("axis_label"),
+                labelpad=self.style.spacing("label_pad"),
+            )
         for i in range(n):
-            axes[i][0].set_ylabel("  |  ".join(methods[i][0]), fontsize=5.5)
+            axes[i][0].set_ylabel(
+                "error",
+                fontsize=self.style.fontsize("axis_label"),
+                labelpad=self.style.spacing("label_pad"),
+            )
 
-        compact_layout(fig, rect=(0.03, 0.04, 1.0, 0.99))
-        add_subtitle(fig, "lower panels: error of row method vs error of column method on common samples")
-        fig.savefig(out, bbox_inches="tight")
-        plt.close(fig)
+        save_figure(fig, out)
 
     @staticmethod
     def _pair_values(
@@ -223,8 +225,7 @@ class ErrorCorrelationPlotter(Plotter):
             return None
         return np.array([errors_i[s] for s in common]), np.array([errors_j[s] for s in common])
 
-    @staticmethod
-    def _draw_pair_panel(ax: Axes, xs: np.ndarray, ys: np.ndarray, color: str, fontsize: float) -> None:
+    def _draw_pair_panel(self, ax: Axes, xs: np.ndarray, ys: np.ndarray, color: str) -> None:
         """Draw one pairwise error scatter with identity line and annotation.
 
         Args:
@@ -232,25 +233,23 @@ class ErrorCorrelationPlotter(Plotter):
             xs: Error values of the row method with shape ``(M,)``.
             ys: Error values of the column method with shape ``(M,)``.
             color: Method color used for the scatter.
-            fontsize: Font size used for the annotation text.
         """
         lo = min(float(xs.min()), float(ys.min()))
         hi = max(float(xs.max()), float(ys.max()))
-        ax.plot([lo, hi], [lo, hi], color="black", linewidth=0.8, linestyle="--")
-        ax.scatter(xs, ys, s=6, alpha=0.5, color=color)
+        ax.plot(
+            [lo, hi],
+            [lo, hi],
+            color="black",
+            linewidth=self.style.linewidth("grid_reference"),
+            linestyle="--",
+        )
+        ax.scatter(xs, ys, s=self.style.scatter_size("error_correlation"), alpha=0.5, color=color)
         r = _pearson(xs, ys)
         note = f"r={r:.2f}" if r is not None else "r=n/a"
-        ax.text(
-            0.02,
-            0.98,
-            f"{note}\nn={len(xs)}",
-            transform=ax.transAxes,
-            fontsize=fontsize,
-            verticalalignment="top",
-        )
+        add_note(ax, f"{note}\nn={len(xs)}", self.style, location="upper left")
 
-    @staticmethod
     def _pair_figure(
+        self,
         xs: np.ndarray,
         ys: np.ndarray,
         row_label_lines: list[str],
@@ -268,19 +267,19 @@ class ErrorCorrelationPlotter(Plotter):
             color: Method color used for the scatter.
             out: Destination PDF path.
         """
-        fig, ax = plt.subplots(figsize=(4.8, 4.0))
-        ErrorCorrelationPlotter._draw_pair_panel(ax, xs, ys, color, fontsize=8)
-        ax.set_xlabel("  |  ".join(col_label_lines))
-        ax.set_ylabel("  |  ".join(row_label_lines))
-        style_axis(ax)
-        add_subtitle(fig, f"{row_label_lines[0]} (y) vs {col_label_lines[0]} (x) on common samples")
-        compact_layout(fig)
-        fig.savefig(out, bbox_inches="tight")
-        plt.close(fig)
+        fig, ax = single_panel(self.style, "square")
+        self._draw_pair_panel(ax, xs, ys, color)
+        ax.set_xlabel(one_line_label(col_label_lines))
+        ax.set_ylabel(one_line_label(row_label_lines))
+        save_figure(fig, out)
 
     @property
     def signature(self) -> Config:
-        """Return the error correlation plotter signature."""
+        """Return the error correlation plotter signature.
+
+        Returns:
+            Configuration values needed to recreate this plotter.
+        """
         signature = super().signature
         signature.update_with_dict({"sort_key": self.sort_key})
         return signature

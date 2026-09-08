@@ -28,8 +28,12 @@ import matplotlib.pyplot as plt
 from xanesnet.serialization.config import Config
 
 from ..result import AnalysisResults
+from ..utils import one_line_label
 from .base import Plotter
 from .common import stat_tables
+from .common.formatting import truncate_text
+from .common.layout import save_figure
+from .common.style import PlotSize
 from .registry import PlotterRegistry
 
 _MARK_COLORS: dict[str, str] = {"best": "#d5f5d5", "worst": "#f5d5d5"}
@@ -56,6 +60,7 @@ class StatTablePlotter(Plotter):
         precision: Number of significant digits used when formatting table values.
         sort_key: Scalar value key whose first statistic orders the combined
             table rows. ``None`` uses the first value key.
+        plot_size: Shared figure size profile: ``"small"`` or ``"default"``.
     """
 
     def __init__(
@@ -65,9 +70,10 @@ class StatTablePlotter(Plotter):
         precision: int,
         sort_key: str | None,
         latex_font: bool,
+        plot_size: PlotSize,
     ) -> None:
         """Initialize a statistics table plotter."""
-        super().__init__(plotter_type, latex_font=latex_font)
+        super().__init__(plotter_type, latex_font=latex_font, plot_size=plot_size)
         self.stat_keys = stat_keys
         self.precision = precision
         self.sort_key = sort_key
@@ -112,8 +118,7 @@ class StatTablePlotter(Plotter):
 
         logging.info(f"    Wrote table PDFs to '{root}'.")
 
-    @staticmethod
-    def _render_table(table: stat_tables.SingleTable, filepath: Path) -> None:
+    def _render_table(self, table: stat_tables.SingleTable, filepath: Path) -> None:
         """Render a single comparison table to a PDF using Matplotlib.
 
         Args:
@@ -121,12 +126,11 @@ class StatTablePlotter(Plotter):
             filepath: Destination PDF path.
         """
         row_labels = table.row_labels
-        col_labels = _annotate_sort_column(table.col_labels, table.sort_col)
+        col_labels = _annotate_sort_column(table.col_labels, table.sort_col, self.style.table_label_width())
         cell_colors = _cell_colors(table.cell_marks)
 
         n_rows, n_cols = len(row_labels), len(col_labels)
-        fig_width = max(4, 1.4 * n_cols + 2)
-        fig_height = max(1.6, 0.38 * n_rows + 1.2)
+        fig_width, fig_height = self.style.figsize((max(4, 1.4 * n_cols + 2), max(1.6, 0.38 * n_rows + 1.2)))
 
         fig, ax = plt.subplots(figsize=(fig_width, fig_height))
         ax.axis("off")
@@ -140,23 +144,22 @@ class StatTablePlotter(Plotter):
             cellLoc="center",
         )
         mpl_table.auto_set_font_size(False)
-        mpl_table.set_fontsize(8)
-        mpl_table.scale(1, 1.2)
+        mpl_table.set_fontsize(self.style.fontsize("table"))
+        mpl_table.scale(1, 1.2 * self.style.layout_scale)
 
         for (r, c), cell in mpl_table.get_celld().items():
-            cell.PAD = 0.03
+            cell.PAD = self.style.spacing("table_pad")
             if r == 0:
                 cell.set_facecolor("#f0f0f0")
                 cell.set_text_props(weight="bold")
             if c == -1:
-                cell.set_text_props(fontsize=7, ha="right")
+                cell.set_text_props(fontsize=self.style.fontsize("table"), ha="right")
 
-        fig.tight_layout()
-        fig.savefig(filepath, bbox_inches="tight")
-        plt.close(fig)
+        fig.tight_layout(pad=self.style.table_tight_layout_pad)
+        save_figure(fig, filepath, self.style)
 
-    @staticmethod
     def _render_combined_table(
+        self,
         table: stat_tables.CombinedTable,
         row_label_lines: dict[str, list[str]],
         filepath: Path,
@@ -169,14 +172,17 @@ class StatTablePlotter(Plotter):
                 merged group cells.
             filepath: Destination PDF path.
         """
-        value_cols = _annotate_sort_column(table.value_cols, table.sort_col)
+        value_cols = _annotate_sort_column(
+            [stat_tables.value_display_label(value_key) for value_key in table.value_cols],
+            table.sort_col,
+            self.style.table_label_width(),
+        )
         cell_colors = [["white"] + colors_row for colors_row in _cell_colors(table.cell_marks)]
 
         n_rows = len(table.cell_text)
         n_cols = 1 + len(value_cols)
-        fontsize = 8 if n_rows <= 12 else 7
-        fig_width = max(4, 1.1 * n_cols + 2)
-        fig_height = max(2.0, 0.3 * n_rows + 1.4)
+        fontsize = self.style.fontsize("table")
+        fig_width, fig_height = self.style.figsize((max(4, 1.1 * n_cols + 2), max(2.0, 0.3 * n_rows + 1.4)))
 
         fig, ax = plt.subplots(figsize=(fig_width, fig_height))
         ax.axis("off")
@@ -191,41 +197,40 @@ class StatTablePlotter(Plotter):
         )
         mpl_table.auto_set_font_size(False)
         mpl_table.set_fontsize(fontsize)
-        mpl_table.scale(1, 1.15)
+        mpl_table.scale(1, 1.15 * self.style.layout_scale)
 
         for (r, c), cell in mpl_table.get_celld().items():
-            cell.PAD = 0.03
+            cell.PAD = self.style.spacing("table_pad")
             if r == 0:
                 cell.set_facecolor("#f0f0f0")
                 cell.set_text_props(weight="bold", fontsize=fontsize)
                 continue
             if c == 0:
-                cell.set_text_props(fontsize=fontsize - 1, ha="left")
+                cell.set_text_props(fontsize=self.style.fontsize("table"), ha="left")
             elif c == -1:
-                cell.set_text_props(fontsize=7, ha="left")
+                cell.set_text_props(fontsize=self.style.fontsize("table"), ha="left")
 
         # Merge the row-label cell of each method group across its sub-rows.
-        # The reader name and selector are spread over the first sub-rows so
-        # long prediction names do not widen the label column.
+        # Keep the reader name and selector on one line in the merged label
+        # column, matching every other method label in the analysis output.
         for group_idx, (start, end) in enumerate(table.groups):
             lines = row_label_lines[table.row_labels[group_idx]]
             for r in range(start, end + 1):
                 cell = mpl_table[r + 1, -1]
                 cell.visible_edges = "LR" + ("T" if r == start else "") + ("B" if r == end else "")
                 cell.set_facecolor("#eef1f8")
-                if end == start:
-                    cell.get_text().set_text("  |  ".join(lines))
-                else:
-                    line = lines[r - start] if r - start < len(lines) else ""
-                    cell.get_text().set_text(line)
+                cell.get_text().set_text(one_line_label(lines) if r == start else "")
 
-        fig.tight_layout()
-        fig.savefig(filepath, bbox_inches="tight")
-        plt.close(fig)
+        fig.tight_layout(pad=self.style.table_tight_layout_pad)
+        save_figure(fig, filepath, self.style)
 
     @property
     def signature(self) -> Config:
-        """Return the statistics table plotter signature."""
+        """Return the statistics table plotter signature.
+
+        Returns:
+            Configuration values needed to recreate this plotter.
+        """
         signature = super().signature
         signature.update_with_dict(
             {"stat_keys": self.stat_keys, "precision": self.precision, "sort_key": self.sort_key}
@@ -233,17 +238,21 @@ class StatTablePlotter(Plotter):
         return signature
 
 
-def _annotate_sort_column(labels: list[str], sort_col: int) -> list[str]:
+def _annotate_sort_column(labels: list[str], sort_col: int, max_width: int) -> list[str]:
     """Append the sort indicator to the header of the sorting column.
 
     Args:
         labels: Column header labels.
         sort_col: Index of the column whose values order the rows.
+        max_width: Maximum rendered width of each label.
 
     Returns:
         Header labels with the sort indicator appended to the sorting column.
     """
-    return [label + _SORT_INDICATOR if idx == sort_col else label for idx, label in enumerate(labels)]
+    return [
+        truncate_text(label, max_width) + (_SORT_INDICATOR if idx == sort_col else "")
+        for idx, label in enumerate(labels)
+    ]
 
 
 def _cell_colors(cell_marks: list[list[str | None]]) -> list[list[str]]:

@@ -22,7 +22,6 @@
 
 import logging
 import random
-from itertools import repeat
 from pathlib import Path
 from typing import Any
 
@@ -31,19 +30,19 @@ import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 
 from xanesnet.serialization.config import Config
-from xanesnet.serialization.jsonl_stream import JSONLStream
 from xanesnet.serialization.prediction_readers import PredictionSample
 from xanesnet.utils.exceptions import ConfigError
 
 from ..result import AnalysisResults
 from ..selectors import Selector
-from ..utils import sample_key, sample_key_sort_key
+from ..utils import one_line_label, sample_key, sample_key_sort_key
 from .base import Plotter
-from .common import (
+from .common.spectra_pages import (
     combined_spectra_page_figure,
     spectra_page_figure,
     spectra_structure_page_figure,
 )
+from .common.style import PlotSize
 from .registry import PlotterRegistry
 
 
@@ -57,19 +56,29 @@ class AllSpectraPlotter(Plotter):
     samples common to all readers.
 
     Requires:
-        Scalar collector output (optional): annotated on each page.
         Matched raw structures (optional): shown alongside the spectra.
 
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
         latex_font: Render figures in a LaTeX-style serif font when ``True``.
         max_pages: Maximum number of pages per PDF. ``None`` writes all selected samples.
+        legend_position: Place spectra legends ``"inside"`` the axes or
+            ``"outside"`` them on the right.
+        plot_size: Shared figure size profile: ``"small"`` or ``"default"``.
     """
 
-    def __init__(self, plotter_type: str, max_pages: int | None, latex_font: bool) -> None:
+    def __init__(
+        self,
+        plotter_type: str,
+        max_pages: int | None,
+        legend_position: str,
+        latex_font: bool,
+        plot_size: PlotSize,
+    ) -> None:
         """Initialize an all-spectra comparison plotter."""
-        super().__init__(plotter_type, latex_font=latex_font)
+        super().__init__(plotter_type, latex_font=latex_font, plot_size=plot_size)
         self.max_pages = max_pages
+        self.legend_position = legend_position
 
     def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
         """Write one multi-page spectra PDF per prediction-reader/selector pair.
@@ -91,17 +100,15 @@ class AllSpectraPlotter(Plotter):
             for sel_idx, selector in enumerate(reader_selectors):
                 logging.info(f"      Selector {sel_idx + 1}/{len(reader_selectors)}.")
                 label = results.method_label(reader_idx, sel_idx)
-                stream = results.collector_stream(reader_idx, sel_idx)
                 pdf_path = root / f"{label.dir_name}.pdf"
 
-                self._plot_to_pdf(selector, stream, pdf_path, "\n".join(label.lines))
+                self._plot_to_pdf(selector, pdf_path, one_line_label(label.lines))
 
         self._plot_combined(results, root)
 
     def _plot_to_pdf(
         self,
         selector: Selector,
-        stream: JSONLStream | None,
         pdf_path: Path,
         subtitle: str,
     ) -> None:
@@ -109,24 +116,31 @@ class AllSpectraPlotter(Plotter):
 
         Args:
             selector: Selector over prediction samples for one prediction reader and selector pair.
-            stream: Optional collector result stream aligned with ``selector``.
             pdf_path: Destination PDF path.
             subtitle: Subtitle text describing prediction and selector context.
         """
-        entries: list[tuple[PredictionSample, dict[str, Any]]] = list(
-            zip(selector, stream if stream is not None else repeat({}))
-        )
+        entries = list(selector)
         if not entries:
             return
         entries = _random_subset(entries, self.max_pages)
 
         with PdfPages(pdf_path) as pdf:
-            for sample, col_scalars in entries:
+            for sample in entries:
                 if sample.get("structure") is not None:
-                    fig = spectra_structure_page_figure(sample, col_scalars, subtitle)
+                    fig = spectra_structure_page_figure(
+                        sample,
+                        subtitle,
+                        self.style,
+                        legend_position=self.legend_position,
+                    )
                 else:
-                    fig = spectra_page_figure(sample, col_scalars, subtitle)
-                pdf.savefig(fig, bbox_inches="tight")
+                    fig = spectra_page_figure(
+                        sample,
+                        subtitle,
+                        self.style,
+                        legend_position=self.legend_position,
+                    )
+                pdf.savefig(fig)
                 plt.close(fig)
 
     def _plot_combined(self, results: AnalysisResults, root: Path) -> None:
@@ -142,6 +156,9 @@ class AllSpectraPlotter(Plotter):
             results: Analysis pipeline outputs to plot.
             root: Root ``spectra_plots`` directory; combined PDFs are written
                 under ``<root>/combined/``.
+
+        Raises:
+            ConfigError: If duplicate records share a compound sample identity.
         """
         if len(results.selectors) < 2:
             return
@@ -150,16 +167,14 @@ class AllSpectraPlotter(Plotter):
         combined_root = root / "combined"
 
         for sel_idx in range(n_common_selectors):
-            by_reader: list[dict[tuple[str, int | None], tuple[PredictionSample, dict[str, Any]]]] = []
+            by_reader: list[dict[tuple[str, int | None], PredictionSample]] = []
             for reader_idx in range(len(results.selectors)):
-                entries: dict[tuple[str, int | None], tuple[PredictionSample, dict[str, Any]]] = {}
-                stream = results.collector_stream(reader_idx, sel_idx)
-                aligned = zip(results.selectors[reader_idx][sel_idx], stream if stream is not None else repeat({}))
-                for sample, col_scalars in aligned:
+                entries: dict[tuple[str, int | None], PredictionSample] = {}
+                for sample in results.selectors[reader_idx][sel_idx]:
                     identity = sample_key(sample)
                     if identity in entries:
                         raise ConfigError(f"Duplicate prediction record for sample identity {identity!r}.")
-                    entries[identity] = (sample, col_scalars)
+                    entries[identity] = sample
                 by_reader.append(entries)
 
             common_keys = set.intersection(*(set(entries) for entries in by_reader))
@@ -168,24 +183,36 @@ class AllSpectraPlotter(Plotter):
 
             selected_keys = _random_subset(sorted(common_keys, key=sample_key_sort_key), self.max_pages)
             selector_type = results.selectors[0][sel_idx].selector_type
-            subtitle = str(results.selectors[0][sel_idx])
+            subtitle = one_line_label([" / ".join(results.prediction_names), str(results.selectors[0][sel_idx])])
 
             combined_root.mkdir(parents=True, exist_ok=True)
             pdf_path = combined_root / f"sel_{sel_idx:03d}_{selector_type}.pdf"
             with PdfPages(pdf_path) as pdf:
                 for identity in selected_keys:
-                    sample = by_reader[0][identity][0]
+                    sample = by_reader[0][identity]
                     target = np.asarray(sample["target"]).ravel()
-                    predictions = [np.asarray(entries[identity][0]["prediction"]).ravel() for entries in by_reader]
-                    fig = combined_spectra_page_figure(sample, results.prediction_names, predictions, target, subtitle)
-                    pdf.savefig(fig, bbox_inches="tight")
+                    predictions = [np.asarray(entries[identity]["prediction"]).ravel() for entries in by_reader]
+                    fig = combined_spectra_page_figure(
+                        sample,
+                        results.prediction_names,
+                        predictions,
+                        target,
+                        subtitle,
+                        self.style,
+                        legend_position=self.legend_position,
+                    )
+                    pdf.savefig(fig)
                     plt.close(fig)
 
     @property
     def signature(self) -> Config:
-        """Return the all-spectra plotter signature."""
+        """Return the all-spectra plotter signature.
+
+        Returns:
+            Configuration values needed to recreate this plotter.
+        """
         signature = super().signature
-        signature.update_with_dict({"max_pages": self.max_pages})
+        signature.update_with_dict({"max_pages": self.max_pages, "legend_position": self.legend_position})
         return signature
 
 

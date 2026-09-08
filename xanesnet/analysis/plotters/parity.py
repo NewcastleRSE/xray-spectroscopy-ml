@@ -23,27 +23,24 @@
 import logging
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.colors import LinearSegmentedColormap, LogNorm
 
 from ..result import AnalysisResults
 from ..selectors import Selector
+from ..utils import one_line_label
 from .base import Plotter
-from .common import (
-    add_subtitle,
-    adjust_grid,
-    annotate_box,
-    apply_decimal_tick_format,
-    compact_layout,
+from .common.formatting import format_decimal
+from .common.layout import (
+    add_colorbar,
     finish_grid,
-    format_decimal,
-    method_color,
     method_grid,
-    style_axis,
+    save_figure,
+    single_panel,
     style_grid_cell,
 )
+from .common.style import PlotSize, add_note, method_color, set_context_title
 from .registry import PlotterRegistry
 
 # Label lines, color, flattened targets, flattened predictions.
@@ -62,11 +59,12 @@ class ParityPlotter(Plotter):
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
         latex_font: Render figures in a LaTeX-style serif font when ``True``.
+        plot_size: Shared figure size profile: ``"small"`` or ``"default"``.
     """
 
-    def __init__(self, plotter_type: str, latex_font: bool) -> None:
+    def __init__(self, plotter_type: str, latex_font: bool, plot_size: PlotSize) -> None:
         """Initialize a parity plotter."""
-        super().__init__(plotter_type, latex_font=latex_font)
+        super().__init__(plotter_type, latex_font=latex_font, plot_size=plot_size)
 
     def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
         """Write per-method parity PDFs and a combined parity grid.
@@ -101,7 +99,7 @@ class ParityPlotter(Plotter):
 
                 combo_dir = root / label.dir_name
                 combo_dir.mkdir(parents=True, exist_ok=True)
-                self._parity_figure(targets, preds, "\n".join(label.lines), color, combo_dir / "parity.pdf")
+                self._parity_figure(targets, preds, one_line_label(label.lines), color, combo_dir / "parity.pdf")
 
         if not methods:
             logging.info("    No samples selected, skipping.")
@@ -167,22 +165,16 @@ class ParityPlotter(Plotter):
             color: Method color used for the density colormap.
             out: Destination PDF path.
         """
-        fig, ax = plt.subplots(figsize=(6.5, 5.2))
+        fig, ax = single_panel(self.style, "square", extra_bottom=0.45)
         self._draw_parity_panel(ax, targets, preds, color, gridsize=80)
-        colorbar = fig.colorbar(ax.collections[-1], ax=ax, label="count")
-        apply_decimal_tick_format(colorbar.ax)
+        add_colorbar(fig, ax.collections[-1], self.style, orientation="horizontal", label="")
         ax.set_xlabel("Target intensity")
         ax.set_ylabel("Predicted intensity")
-        ax.legend(fontsize=8, framealpha=0.9, loc="upper left")
-        style_axis(ax)
         self._add_metrics_text(ax, targets, preds)
-        add_subtitle(fig, subtitle)
-        compact_layout(fig)
-        fig.savefig(out, bbox_inches="tight")
-        plt.close(fig)
+        set_context_title(ax, subtitle, self.style)
+        save_figure(fig, out)
 
-    @staticmethod
-    def _draw_parity_panel(ax: Axes, targets: np.ndarray, preds: np.ndarray, color: str, gridsize: int) -> None:
+    def _draw_parity_panel(self, ax: Axes, targets: np.ndarray, preds: np.ndarray, color: str, gridsize: int) -> None:
         """Draw one parity density panel with its identity line.
 
         Args:
@@ -204,7 +196,13 @@ class ParityPlotter(Plotter):
         poly.set_norm(LogNorm(vmin=1.0, vmax=max(2.0, vmax)))
         lo = min(float(targets.min()), float(preds.min()))
         hi = max(float(targets.max()), float(preds.max()))
-        ax.plot([lo, hi], [lo, hi], color="black", linewidth=1.2, linestyle="--", label="y = x")
+        ax.plot(
+            [lo, hi],
+            [lo, hi],
+            color="black",
+            linewidth=self.style.linewidth("identity"),
+            linestyle="--",
+        )
         ax.set_xlim(lo, hi)
         ax.set_ylim(lo, hi)
         # Keep the axes box square so the identity line stays at 45 degrees
@@ -222,7 +220,7 @@ class ParityPlotter(Plotter):
         rmse, mae, r2 = self._parity_metrics(targets, preds)
         r2_text = format_decimal(r2, 4) if r2 is not None else "n/a"
         text = f"n={len(targets)}\nRMSE={format_decimal(rmse, 4)}" f"\nMAE={format_decimal(mae, 4)}\nR2={r2_text}"
-        annotate_box(ax, text, 0.98, 0.02, "right", "bottom")
+        add_note(ax, text, self.style, location="lower right")
 
     def _parity_grid(self, methods: list[_MethodPoints], out: Path) -> None:
         """Write one combined figure with a per-method parity density grid.
@@ -240,26 +238,23 @@ class ParityPlotter(Plotter):
         # equal aspect, so the cell size must match to avoid skewed density
         # clouds and a stretched identity line. The manual adjust keeps the
         # cells as large and close together as possible.
-        fig, axes = method_grid(n, cell_width=2.4, cell_height=2.4, width_margin=0.3, height_margin=0.55)
+        fig, axes = method_grid(
+            n,
+            self.style,
+            geometry="square",
+            width_margin=0.45,
+            height_margin=0.55,
+        )
         ncols = len(axes[0])
 
         for idx, (label_lines, color, targets, preds) in enumerate(methods):
             ax = axes[idx // ncols][idx % ncols]
             self._draw_parity_panel(ax, targets, preds, color, gridsize=40)
             rmse, _, _ = self._parity_metrics(targets, preds)
-            ax.text(
-                0.02,
-                0.98,
-                f"RMSE={format_decimal(rmse, 3)}",
-                transform=ax.transAxes,
-                fontsize=5.5,
-                verticalalignment="top",
-            )
-            style_grid_cell(ax, label_lines)
+            add_note(ax, f"RMSE={format_decimal(rmse, 3)}", self.style, location="upper left")
+            style_grid_cell(ax, label_lines, self.style)
 
-        finish_grid(axes, n, "Target intensity", "Predicted intensity")
-        adjust_grid(fig, left=0.16, right=0.92, top=0.87, bottom=0.16)
-
+        finish_grid(axes, n, "Target intensity", "Predicted intensity", self.style)
         vmax = 2.0
         for row in axes:
             for ax in row:
@@ -277,7 +272,17 @@ class ParityPlotter(Plotter):
                 for coll in ax.collections:
                     coll.set_norm(norm)
 
-        cax = fig.add_axes((0.94, 0.16, 0.02, 0.71))
-        fig.colorbar(axes[0][0].collections[0], cax=cax, label="count")
-        fig.savefig(out, bbox_inches="tight")
-        plt.close(fig)
+        fig.canvas.draw()
+        grid_right = max(ax.get_position().x1 for row in axes for ax in row)
+        grid_bottom = min(ax.get_position().y0 for row in axes for ax in row)
+        grid_top = max(ax.get_position().y1 for row in axes for ax in row)
+        cbar_gap = self.style.grid_gaps()[0] / fig.get_figwidth()
+        cbar_width = self.style.grid_margins()[1] / fig.get_figwidth()
+        add_colorbar(
+            fig,
+            axes[0][0].collections[0],
+            self.style,
+            rect=(grid_right + cbar_gap, grid_bottom, cbar_width, grid_top - grid_bottom),
+            label="count",
+        )
+        save_figure(fig, out)

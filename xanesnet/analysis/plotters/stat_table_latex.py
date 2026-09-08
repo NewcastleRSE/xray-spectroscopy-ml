@@ -26,8 +26,11 @@ from pathlib import Path
 from xanesnet.serialization.config import Config
 
 from ..result import AnalysisResults
+from ..utils import one_line_label
 from .base import Plotter
 from .common import latex, stat_tables
+from .common.formatting import truncate_text
+from .common.style import PlotSize
 from .registry import PlotterRegistry
 
 # Marker appended to the header of the column whose values order the rows.
@@ -51,6 +54,7 @@ class StatTableLatexPlotter(Plotter):
         precision: Number of significant digits used when formatting table values.
         sort_key: Scalar value key whose first statistic orders the combined
             table rows. ``None`` uses the first value key.
+        plot_size: Shared figure size profile: ``"small"`` or ``"default"``.
     """
 
     def __init__(
@@ -59,9 +63,10 @@ class StatTableLatexPlotter(Plotter):
         stat_keys: list[str],
         precision: int,
         sort_key: str | None,
+        plot_size: PlotSize,
     ) -> None:
         """Initialize a LaTeX statistics table plotter."""
-        super().__init__(plotter_type, latex_font=False)
+        super().__init__(plotter_type, latex_font=False, plot_size=plot_size)
         self.stat_keys = stat_keys
         self.precision = precision
         self.sort_key = sort_key
@@ -93,15 +98,15 @@ class StatTableLatexPlotter(Plotter):
             self._write(agg_dir / f"{value_key}.tex", self._single_table_body(table, value_key))
 
         for (agg_type, agg_idx), rows in source.combined.items():
-            value_keys = source.value_order.get((agg_type, agg_idx), [])
+            available_value_keys = source.value_order.get((agg_type, agg_idx), [])
             table = stat_tables.build_combined_table(
-                rows, source.row_order, value_keys, self.stat_keys, self.precision, self.sort_key
+                rows, source.row_order, available_value_keys, self.stat_keys, self.precision, self.sort_key
             )
             if table is None:
                 continue
             agg_dir = root / stat_tables.aggregator_dir_name(agg_type, agg_idx)
             agg_dir.mkdir(parents=True, exist_ok=True)
-            stem = stat_tables.combined_stem(value_keys)
+            stem = stat_tables.combined_stem(available_value_keys)
             self._write(agg_dir / f"{stem}.tex", self._combined_table_body(table, source.row_label_lines))
 
         logging.info(f"    Wrote LaTeX tables to '{root}'.")
@@ -110,10 +115,8 @@ class StatTableLatexPlotter(Plotter):
         """Build the LaTeX table float for a single-value statistics table.
 
         Rows are the methods and columns the statistic keys; best and worst
-        cells are highlighted with ``\\cellcolor``. The table is scaled to
-        ``\\textwidth`` (change to ``\\columnwidth`` directly in the generated
-        code for two-column layouts) and wrapped in a float with a placeholder
-        caption and label.
+        cells are highlighted with ``cellcolor`` and wrapped in a top-float
+        table with a compact publication font.
 
         Args:
             table: Laid-out single-value table.
@@ -123,21 +126,22 @@ class StatTableLatexPlotter(Plotter):
             Complete ``table`` float as a LaTeX string.
         """
         col_spec = "l" + "c" * len(table.col_labels)
-        caption = f"PLACEHOLDER: statistics for '{latex.escape_latex(value_key)}'."
+        display_value_key = stat_tables.value_display_label(value_key)
+        caption = f"PLACEHOLDER: statistics for '{latex.escape_latex(display_value_key)}'."
         label = f"tab:stat_{latex.sanitize_label(value_key)}"
         headers = [
-            latex.escape_latex(label) + (_SORT_INDICATOR if idx == table.sort_col else "")
+            latex.escape_latex(truncate_text(label, self.style.table_label_width()))
+            + (_SORT_INDICATOR if idx == table.sort_col else "")
             for idx, label in enumerate(table.col_labels)
         ]
         lines: list[str] = [
-            r"\begin{table}[H]",
-            r"\centering",
-            r"% Width: change \textwidth to \columnwidth for two-column layouts.",
-            r"\resizebox{\textwidth}{!}{%",
-            r"\scriptsize",
+            r"\begin{table}[t]",
+            rf"\caption{{{caption}}}",
+            rf"\label{{{label}}}",
+            latex.LATEX_TABLE_FONT,
             rf"\begin{{tabular}}{{{col_spec}}}",
             r"\hline",
-            r"\rowcolor{gray!12} & " + " & ".join(headers) + r" \\",
+            " & ".join(["", *headers]) + r" \\",
             r"\hline",
         ]
         for r, row_label in enumerate(table.row_labels):
@@ -148,10 +152,7 @@ class StatTableLatexPlotter(Plotter):
         lines.extend(
             [
                 r"\hline",
-                r"\end{tabular}%",
-                "}",
-                rf"\caption{{{caption}}}",
-                rf"\label{{{label}}}",
+                r"\end{tabular}",
                 r"\end{table}",
             ]
         )
@@ -165,12 +166,9 @@ class StatTableLatexPlotter(Plotter):
         """Build the LaTeX table float for the combined statistics table.
 
         Rows are grouped by method with one sub-row per statistic key; the
-        method label is merged across its sub-rows with ``\\multirow`` and
-        stacks the reader name and selector with ``\\shortstack`` when the
-        group has at least two sub-rows. The table is scaled to ``\\textwidth``
-        (change to ``\\columnwidth`` directly in the generated code for
-        two-column layouts) and wrapped in a float with a placeholder caption
-        and label.
+        method label is merged across its sub-rows with ``multirow`` and a
+        left-aligned ``shortstack``. The table is wrapped in a top-float
+        table with placeholder caption and label text.
 
         Args:
             table: Laid-out combined table.
@@ -182,18 +180,23 @@ class StatTableLatexPlotter(Plotter):
         caption = "PLACEHOLDER: combined statistics table."
         label = "tab:stat_combined"
         headers = [
-            latex.escape_latex(value_col) + (_SORT_INDICATOR if idx == table.sort_col else "")
+            latex.escape_latex(
+                truncate_text(
+                    stat_tables.value_display_label(value_col),
+                    self.style.table_label_width(),
+                )
+            )
+            + (_SORT_INDICATOR if idx == table.sort_col else "")
             for idx, value_col in enumerate(table.value_cols)
         ]
         lines: list[str] = [
-            r"\begin{table}[H]",
-            r"\centering",
-            r"% Width: change \textwidth to \columnwidth for two-column layouts.",
-            r"\resizebox{\textwidth}{!}{%",
-            r"\scriptsize",
+            r"\begin{table}[t]",
+            rf"\caption{{{caption}}}",
+            rf"\label{{{label}}}",
+            latex.LATEX_TABLE_FONT,
             rf"\begin{{tabular}}{{ll{'c' * len(table.value_cols)}}}",
             r"\hline",
-            r"\rowcolor{gray!12} & & " + " & ".join(headers) + r" \\",
+            " & & " + " & ".join(headers) + r" \\",
             r"\hline",
         ]
         for group_idx, (start, end) in enumerate(table.groups):
@@ -201,16 +204,7 @@ class StatTableLatexPlotter(Plotter):
                 continue
             n_sub_rows = end - start + 1
             label_lines = row_label_lines[table.row_labels[group_idx]]
-            if n_sub_rows >= 2 and len(label_lines) >= 2:
-                merged_label = (
-                    r"\shortstack[l]{"
-                    + latex.escape_label_line(label_lines[0])
-                    + r"\\"
-                    + latex.escape_label_line(label_lines[1])
-                    + "}"
-                )
-            else:
-                merged_label = latex.escape_label_line("  |  ".join(label_lines))
+            merged_label = latex.escape_label_line(one_line_label(label_lines))
             for r in range(start, end + 1):
                 label_cell = rf"\multirow{{{n_sub_rows}}}{{*}}{{{merged_label}}}" if r == start else ""
                 cells = [label_cell, latex.escape_latex(table.cell_text[r][0])]
@@ -220,10 +214,7 @@ class StatTableLatexPlotter(Plotter):
             lines.append(r"\hline")
         lines.extend(
             [
-                r"\end{tabular}%",
-                "}",
-                rf"\caption{{{caption}}}",
-                rf"\label{{{label}}}",
+                r"\end{tabular}",
                 r"\end{table}",
             ]
         )
@@ -242,9 +233,17 @@ class StatTableLatexPlotter(Plotter):
 
     @property
     def signature(self) -> Config:
-        """Return the LaTeX statistics table plotter signature."""
+        """Return the LaTeX statistics table plotter signature.
+
+        Returns:
+            Configuration values needed to recreate this plotter.
+        """
         signature = super().signature
         signature.update_with_dict(
-            {"stat_keys": self.stat_keys, "precision": self.precision, "sort_key": self.sort_key}
+            {
+                "stat_keys": self.stat_keys,
+                "precision": self.precision,
+                "sort_key": self.sort_key,
+            }
         )
         return signature

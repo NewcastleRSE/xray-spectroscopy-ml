@@ -23,7 +23,6 @@
 import logging
 from itertools import repeat
 from pathlib import Path
-from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -36,17 +35,24 @@ from xanesnet.utils.exceptions import ConfigError
 
 from ..result import AnalysisResults
 from ..selectors import Selector
-from ..utils import SampleKey, is_scalar_value, sample_key, sample_key_sort_key
+from ..utils import (
+    SampleKey,
+    is_scalar_value,
+    one_line_label,
+    sample_key,
+    sample_key_sort_key,
+)
 from .base import Plotter
-from .common import (
+from .common.formatting import format_decimal
+from .common.spectra_pages import (
     combined_spectra_page_figure,
-    format_decimal,
     spectra_page_figure,
     spectra_structure_page_figure,
 )
+from .common.style import PlotSize
 from .registry import PlotterRegistry
 
-_Entry = tuple[PredictionSample, dict[str, Any], float]
+_Entry = tuple[PredictionSample, float]
 
 
 @PlotterRegistry.register("spectra_comparison")
@@ -69,13 +75,25 @@ class SpectraComparisonPlotter(Plotter):
         n_samples: Number of best and worst samples plotted per method.
         sort_key: Scalar collector key used to rank samples. Must be produced
             by a configured collector.
+        legend_position: Place spectra legends ``"inside"`` the axes or
+            ``"outside"`` them on the right.
+        plot_size: Shared figure size profile: ``"small"`` or ``"default"``.
     """
 
-    def __init__(self, plotter_type: str, n_samples: int, sort_key: str, latex_font: bool) -> None:
+    def __init__(
+        self,
+        plotter_type: str,
+        n_samples: int,
+        sort_key: str,
+        legend_position: str,
+        latex_font: bool,
+        plot_size: PlotSize,
+    ) -> None:
         """Initialize a best/worst spectra comparison plotter."""
-        super().__init__(plotter_type, latex_font=latex_font)
+        super().__init__(plotter_type, latex_font=latex_font, plot_size=plot_size)
         self.n_samples = n_samples
         self.sort_key = sort_key
+        self.legend_position = legend_position
 
     def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
         """Write best/worst spectra PDFs with structure panels where available.
@@ -103,7 +121,7 @@ class SpectraComparisonPlotter(Plotter):
                 if not entries:
                     continue
 
-                by_error = sorted(entries, key=lambda entry: entry[2])
+                by_error = sorted(entries, key=lambda entry: entry[1])
                 best = by_error[: self.n_samples]
                 worst = list(reversed(by_error[-self.n_samples :]))
 
@@ -123,7 +141,10 @@ class SpectraComparisonPlotter(Plotter):
             stream: Optional collector result stream aligned with ``selector``.
 
         Returns:
-            ``(sample, collector scalars, error)`` entries in selector order.
+            ``(sample, error)`` entries in selector order.
+
+        Raises:
+            ConfigError: If ``sort_key`` is missing or non-scalar for a sample.
         """
         entries: list[_Entry] = []
         for sample, record in zip(selector, stream if stream is not None else repeat({})):
@@ -133,11 +154,11 @@ class SpectraComparisonPlotter(Plotter):
                     f"Sort key '{self.sort_key}' is missing or not a scalar for sample "
                     f"'{sample['sample_id']}'. Configure a scalar collector that produces this key."
                 )
-            entries.append((sample, record, float(value)))
+            entries.append((sample, float(value)))
         return entries
 
-    @staticmethod
     def _write_pages(
+        self,
         entries: list[_Entry],
         label_lines: list[str],
         pdf_path: Path,
@@ -147,7 +168,7 @@ class SpectraComparisonPlotter(Plotter):
         """Write one multi-page PDF for the best or worst entries of one method.
 
         Args:
-            entries: Ranked ``(sample, collector scalars, error)`` entries, best or worst first.
+            entries: Ranked ``(sample, error)`` entries, best or worst first.
             label_lines: Method label lines used for the page subtitle.
             pdf_path: Destination PDF path.
             direction: ``"best"`` or ``"worst"`` for the page subtitle.
@@ -155,16 +176,26 @@ class SpectraComparisonPlotter(Plotter):
         """
         total = len(entries)
         with PdfPages(pdf_path) as pdf:
-            for rank, (sample, col_scalars, error) in enumerate(entries, start=1):
+            for rank, (sample, error) in enumerate(entries, start=1):
                 subtitle = (
                     f"{direction} #{rank} of {total}  |  {metric}={format_decimal(error, 4)}  |  "
-                    + "  |  ".join(label_lines)
+                    + one_line_label(label_lines)
                 )
                 if sample.get("structure") is not None:
-                    fig = spectra_structure_page_figure(sample, col_scalars, subtitle)
+                    fig = spectra_structure_page_figure(
+                        sample,
+                        subtitle,
+                        self.style,
+                        legend_position=self.legend_position,
+                    )
                 else:
-                    fig = spectra_page_figure(sample, col_scalars, subtitle)
-                pdf.savefig(fig, bbox_inches="tight")
+                    fig = spectra_page_figure(
+                        sample,
+                        subtitle,
+                        self.style,
+                        legend_position=self.legend_position,
+                    )
+                pdf.savefig(fig)
                 plt.close(fig)
 
     def _plot_combined(self, results: AnalysisResults, root: Path) -> None:
@@ -180,6 +211,10 @@ class SpectraComparisonPlotter(Plotter):
             results: Analysis pipeline outputs to plot.
             root: Root ``spectra_comparison`` directory; combined PDFs are
                 written under ``<root>/combined/``.
+
+        Raises:
+            ConfigError: If a ranking value is invalid or duplicate records
+                share a compound sample identity.
         """
         if len(results.selectors) < 2:
             return
@@ -209,7 +244,7 @@ class SpectraComparisonPlotter(Plotter):
             selector_dir = combined_root / f"sel_{sel_idx:03d}_{selector_type}"
 
             for ranking_reader_idx, ranking_entries in enumerate(by_reader):
-                ranking_error = {identity: ranking_entries[identity][2] for identity in common_keys}
+                ranking_error = {identity: ranking_entries[identity][1] for identity in common_keys}
                 ranked = sorted(
                     common_keys,
                     key=lambda identity: (ranking_error[identity], sample_key_sort_key(identity)),
@@ -245,8 +280,8 @@ class SpectraComparisonPlotter(Plotter):
                     "worst",
                 )
 
-    @staticmethod
     def _write_combined_pages(
+        self,
         by_reader: list[dict[SampleKey, _Entry]],
         method_labels: list[str],
         sample_keys: list[SampleKey],
@@ -261,7 +296,7 @@ class SpectraComparisonPlotter(Plotter):
 
         Args:
             by_reader: Per-reader mapping from compound sample identity to its
-                ``(sample, collector scalars, error)`` entry.
+                ``(sample, error)`` entry.
             method_labels: Display name per prediction reader.
             sample_keys: Ranked compound sample identities to render, best or worst first.
             ranking_error: Ranking method's error keyed by compound sample identity.
@@ -281,13 +316,31 @@ class SpectraComparisonPlotter(Plotter):
                     f"{direction} #{rank} of {total}  |  {ranking_method_label} {metric}="
                     f"{format_decimal(ranking_error[identity], 4)}  |  {selector_str}"
                 )
-                fig = combined_spectra_page_figure(sample, method_labels, predictions, target, subtitle)
-                pdf.savefig(fig, bbox_inches="tight")
+                fig = combined_spectra_page_figure(
+                    sample,
+                    method_labels,
+                    predictions,
+                    target,
+                    subtitle,
+                    self.style,
+                    legend_position=self.legend_position,
+                )
+                pdf.savefig(fig)
                 plt.close(fig)
 
     @property
     def signature(self) -> Config:
-        """Return the spectra comparison plotter signature."""
+        """Return the spectra comparison plotter signature.
+
+        Returns:
+            Configuration values needed to recreate this plotter.
+        """
         signature = super().signature
-        signature.update_with_dict({"n_samples": self.n_samples, "sort_key": self.sort_key})
+        signature.update_with_dict(
+            {
+                "n_samples": self.n_samples,
+                "sort_key": self.sort_key,
+                "legend_position": self.legend_position,
+            }
+        )
         return signature

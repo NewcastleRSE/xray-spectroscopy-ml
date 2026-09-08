@@ -27,6 +27,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.figure import Figure
 
@@ -38,21 +39,24 @@ from ..result import AnalysisResults
 from ..selectors import Selector
 from ..utils import is_scalar_value, sample_label
 from .base import Plotter
-from .common import (
+from .common.formatting import format_decimal, shorten_label
+from .common.layout import pad_figure, save_figure, single_panel
+from .common.structures import draw_structure
+from .common.style import (
     COLOR_ACCENT_GREEN,
     COLOR_ACCENT_RED,
     COLOR_PREDICTION,
     COLOR_TARGET,
-    add_subtitle,
-    compact_layout,
-    draw_structure,
-    format_decimal,
+    PlotSize,
+    add_figure_legend,
+    add_legend,
+    set_context_title,
     style_axis,
 )
 from .registry import PlotterRegistry
 
-# Number of representative structures drawn per selector detail page.
-_N_REPS = 9
+# Number of representative structures drawn per selector page.
+_N_REPS = 6
 
 
 @dataclass(frozen=True)
@@ -89,12 +93,23 @@ class SelectorOverviewPlotter(Plotter):
         latex_font: Render figures in a LaTeX-style serif font when ``True``.
         err_key: Scalar collector key used to rank and color selectors. Must
             be produced by a configured collector.
+        plot_size: Shared figure size profile: ``"small"`` or ``"default"``.
+        legend_position: Place the selector-page spectrum legend inside the
+            axes or outside the figure on the right.
     """
 
-    def __init__(self, plotter_type: str, err_key: str, latex_font: bool) -> None:
+    def __init__(
+        self,
+        plotter_type: str,
+        err_key: str,
+        latex_font: bool,
+        plot_size: PlotSize,
+        legend_position: str,
+    ) -> None:
         """Initialize a selector-overview plotter."""
-        super().__init__(plotter_type, latex_font=latex_font)
+        super().__init__(plotter_type, latex_font=latex_font, plot_size=plot_size)
         self.err_key = err_key
+        self.legend_position = legend_position
 
     def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
         """Write a per-reader selector scoreboard and per-selector detail pages.
@@ -182,24 +197,25 @@ class SelectorOverviewPlotter(Plotter):
         """
         rows = sorted(entries, key=lambda entry: entry.mean_error)
         global_mean = float(np.mean([entry.mean_error for entry in rows]))
-        labels = [f"{entry.label}  (n={entry.n_samples})" for entry in rows]
+        labels = [shorten_label([f"{entry.label} (n={entry.n_samples})"], width=22) for entry in rows]
         means = [entry.mean_error for entry in rows]
         colors = [COLOR_ACCENT_GREEN if mean <= global_mean else COLOR_ACCENT_RED for mean in means]
 
-        fig, ax = plt.subplots(figsize=(6.5, max(2.4, 0.35 * len(rows) + 0.9)))
+        fig, ax = single_panel(self.style, "square", width=6.5)
         ys = np.arange(len(rows))
         ax.barh(ys, means, color=colors, alpha=0.85)
-        ax.axvline(global_mean, color="black", linewidth=1.0, linestyle="--", label="mean of selectors shown")
+        ax.axvline(
+            global_mean,
+            color="black",
+            linewidth=self.style.linewidth("reference"),
+            linestyle="--",
+        )
         ax.set_yticks(ys)
-        ax.set_yticklabels(labels, fontsize=7)
+        ax.set_yticklabels(labels, fontsize=self.style.fontsize("tick"))
         ax.invert_yaxis()
         ax.set_xlabel(self.err_key)
-        ax.legend(fontsize=8, framealpha=0.9)
-        style_axis(ax)
-        add_subtitle(fig, subtitle)
-        compact_layout(fig)
-        fig.savefig(out, bbox_inches="tight")
-        plt.close(fig)
+        set_context_title(ax, subtitle, self.style)
+        save_figure(fig, out)
 
     def _selector_pages(self, entries: list[_SelectorEntry], subtitle: str, out: Path) -> None:
         """Write one detail page per selector with structures.
@@ -221,7 +237,10 @@ class SelectorOverviewPlotter(Plotter):
         with PdfPages(out) as pdf:
             for entry in pages:
                 fig = self._selector_page(entry, subtitle)
-                pdf.savefig(fig, bbox_inches="tight")
+                if self.legend_position == "outside":
+                    pdf.savefig(fig, bbox_inches="tight", pad_inches=self.style.canvas_padding()[0])
+                else:
+                    pdf.savefig(fig)
                 plt.close(fig)
 
     def _selector_page(self, entry: _SelectorEntry, subtitle: str) -> Figure:
@@ -249,12 +268,20 @@ class SelectorOverviewPlotter(Plotter):
         structured = [(sample, error) for sample, error in samples if sample.get("structure") is not None]
         reps = sorted(structured, key=lambda pair: abs(pair[1] - median_error))[:_N_REPS]
 
-        fig = plt.figure(figsize=(12, 6))
-        gs = fig.add_gridspec(1, 2, width_ratios=[1.25, 1.45])
+        fig = plt.figure(
+            figsize=self.style.figure_size(
+                "structure_page",
+                width=10.0,
+                width_margin=self.style.legend_margin(self.legend_position),
+            )
+        )
+        gs = fig.add_gridspec(1, 2, width_ratios=[1.25, 1.35])
 
         ax_spec = fig.add_subplot(gs[0, 0])
         x = np.arange(len(target_mean))
-        ax_spec.plot(x, target_mean, color=COLOR_TARGET, linewidth=1.6, label="Target mean")
+        ax_spec.plot(
+            x, target_mean, color=COLOR_TARGET, linewidth=self.style.linewidth("secondary"), label="Target mean"
+        )
         ax_spec.fill_between(
             x,
             pred_mean - pred_std,
@@ -264,41 +291,65 @@ class SelectorOverviewPlotter(Plotter):
             linewidth=0,
             label="Prediction +/- 1 std",
         )
-        ax_spec.plot(x, pred_mean, color=COLOR_PREDICTION, linewidth=2.0, label="Prediction mean")
+        ax_spec.plot(
+            x, pred_mean, color=COLOR_PREDICTION, linewidth=self.style.linewidth("main"), label="Prediction mean"
+        )
         ax_spec.set_xlabel("Energy")
         ax_spec.set_ylabel("Intensity")
         ax_spec.set_title(
-            f"{entry.label}: n={entry.n_samples}, mean {self.err_key}={format_decimal(entry.mean_error, 4)}, "
-            f"median={format_decimal(median_error, 4)}",
+            shorten_label([f"{entry.label} (n={entry.n_samples})"], width=44),
             loc="left",
+            fontsize=self.style.fontsize("title"),
+            pad=self.style.spacing("title_pad"),
         )
-        ax_spec.legend(fontsize=8, framealpha=0.9)
-        style_axis(ax_spec)
+        if self.legend_position == "outside":
+            handles, labels = ax_spec.get_legend_handles_labels()
+            add_figure_legend(fig, handles, labels, self.style, position="outside")
+        else:
+            add_legend(ax_spec, self.style)
+        style_axis(ax_spec, self.style)
 
-        gs_right = gs[0, 1].subgridspec(3, 3, wspace=0.04, hspace=0.14)
+        gs_right = gs[0, 1].subgridspec(2, 3, wspace=0.02, hspace=0.14)
+        structure_axes: list[tuple[Axes, PredictionSample, float]] = []
         for k, (sample, error) in enumerate(reps):
             ax = fig.add_subplot(gs_right[k // 3, k % 3])
-            structure = sample.get("structure")
-            if structure is not None:
-                draw_structure(
-                    ax,
-                    structure,
-                    str(sample["sample_id"]),
-                    sample.get("target_site_index"),
-                    legend_fontsize=5.0,
-                    show_scale=False,
-                )
-            ax.set_title(f"{sample_label(sample)}  {self.err_key}={format_decimal(error, 3)}", fontsize=5.5)
+            structure_axes.append((ax, sample, error))
+            ax.set_title(
+                shorten_label([f"{sample_label(sample)}  {self.err_key}={format_decimal(error, 3)}"], width=24),
+                fontsize=self.style.fontsize("title"),
+                pad=self.style.spacing("title_pad"),
+            )
         for k in range(len(reps), _N_REPS):
             fig.add_subplot(gs_right[k // 3, k % 3]).axis("off")
 
-        add_subtitle(fig, subtitle)
-        fig.subplots_adjust(left=0.04, right=0.98, top=0.93, bottom=0.08, wspace=0.06)
+        fig.subplots_adjust(left=0.03, right=0.98, top=0.86, bottom=0.08, wspace=0.03)
+        pad_figure(fig, self.style)
+        fig.canvas.draw()
+        for ax, sample, _ in structure_axes:
+            structure = sample.get("structure")
+            if structure is None:
+                continue
+            bbox = ax.get_position()
+            frame_ratio = (bbox.height * fig.get_figheight()) / (bbox.width * fig.get_figwidth())
+            draw_structure(
+                ax,
+                structure,
+                str(sample["sample_id"]),
+                self.style,
+                target_site_index=sample.get("target_site_index"),
+                frame_ratio=frame_ratio,
+                show_scale=False,
+            )
+        set_context_title(ax_spec, subtitle, self.style, location="left")
         return fig
 
     @property
     def signature(self) -> Config:
-        """Return the selector-overview plotter signature."""
+        """Return the selector-overview plotter signature.
+
+        Returns:
+            Configuration values needed to recreate this plotter.
+        """
         signature = super().signature
-        signature.update_with_dict({"err_key": self.err_key})
+        signature.update_with_dict({"err_key": self.err_key, "legend_position": self.legend_position})
         return signature

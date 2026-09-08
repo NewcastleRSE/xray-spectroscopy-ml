@@ -35,8 +35,11 @@ from ..result import AnalysisResults
 from ..selectors import Selector
 from ..utils import as_float_vector
 from .base import Plotter
-from .common import add_subtitle, compact_layout, method_color, style_axis
+from .common.layout import finish_single_panel, save_figure
+from .common.style import PlotSize, add_legend, method_color, set_context_title
 from .registry import PlotterRegistry
+
+_PCA_3D_OUTSIDE_LEGEND_ANCHOR = (1.20, 1.0)
 
 
 @PlotterRegistry.register("pca")
@@ -53,12 +56,23 @@ class PcaPlotter(Plotter):
         plotter_type: Registered plotter name from the analysis configuration.
         latex_font: Render figures in a LaTeX-style serif font when ``True``.
         descriptor_key: Collector key holding the descriptor vectors.
+        legend_position: Place the selector legend ``"inside"`` the axes or
+            ``"outside"`` it on the right.
+        plot_size: Shared figure size profile: ``"small"`` or ``"default"``.
     """
 
-    def __init__(self, plotter_type: str, descriptor_key: str, latex_font: bool) -> None:
+    def __init__(
+        self,
+        plotter_type: str,
+        descriptor_key: str,
+        legend_position: str,
+        latex_font: bool,
+        plot_size: PlotSize,
+    ) -> None:
         """Initialize a PCA plotter."""
-        super().__init__(plotter_type, latex_font=latex_font)
+        super().__init__(plotter_type, latex_font=latex_font, plot_size=plot_size)
         self.descriptor_key = descriptor_key
+        self.legend_position = legend_position
 
     def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
         """Write one 2D and one 3D PCA scatter per prediction reader.
@@ -66,6 +80,9 @@ class PcaPlotter(Plotter):
         Args:
             results: Analysis pipeline outputs to plot.
             output_dir: Directory where the ``pca_plots`` tree should be written.
+
+        Raises:
+            ConfigError: If ``descriptor_key`` is missing from a collector record.
         """
         if not results.selectors:
             logging.info("    No selectors available, skipping.")
@@ -160,8 +177,8 @@ class PcaPlotter(Plotter):
         _, _, vt = np.linalg.svd(centered, full_matrices=False)
         return centered @ vt[:n_components].T
 
-    @staticmethod
     def _draw_group_scatter(
+        self,
         ax: Axes,
         projections: np.ndarray,
         groups: list[int],
@@ -181,7 +198,11 @@ class PcaPlotter(Plotter):
         for sel_idx in sorted(set(groups)):
             mask = group_ids == sel_idx
             coords = [projections[mask, dim] for dim in dims]
-            kwargs: dict[str, Any] = {"color": method_color(sel_idx), "s": 18, "alpha": 0.85}
+            kwargs: dict[str, Any] = {
+                "color": method_color(sel_idx),
+                "s": self.style.scatter_size("pca"),
+                "alpha": 0.85,
+            }
             if len(dims) == 3:
                 kwargs["depthshade"] = False
             ax.scatter(*coords, label=str(selectors[sel_idx]), **kwargs)
@@ -205,31 +226,42 @@ class PcaPlotter(Plotter):
             dims: Indices of the components to draw.
             out: Destination PDF path.
         """
-        if len(dims) == 3:
-            from mpl_toolkits.mplot3d import (  # noqa: F401  (registers the 3D projection)
-                Axes3D,
-            )
+        figure_size = self.style.figure_size(
+            "square",
+            width_margin=self.style.legend_margin(self.legend_position),
+        )
+        fig = plt.figure(figsize=figure_size)
 
-            fig = plt.figure(figsize=(6.5, 5.4))
+        if len(dims) == 3:
+            from mpl_toolkits import mplot3d
+
+            _ = mplot3d.Axes3D  # Register the 3D projection.
+
             ax = cast(Any, fig.add_subplot(111, projection="3d"))
+            finish_single_panel(fig, ax, self.style, "square", box_aspect=(1, 1, 1))
             ax.set_zlabel("PC 3")
         else:
-            fig, ax = plt.subplots(figsize=(6.5, 5.2))
+            ax = fig.add_subplot(111)
+            finish_single_panel(fig, ax, self.style, "square")
 
         self._draw_group_scatter(ax, projections, groups, selectors, dims)
         ax.set_xlabel("PC 1")
         ax.set_ylabel("PC 2")
-        ax.legend(fontsize=8, framealpha=0.9)
-        style_axis(ax)
-        add_subtitle(fig, subtitle)
-        compact_layout(fig)
-        fig.savefig(out, bbox_inches="tight")
-        plt.close(fig)
+        legend_kwargs: dict[str, Any] = {}
+        if len(dims) == 3 and self.legend_position == "outside":
+            # 3D panels use part of the outside band for the PC3 axis label.
+            legend_kwargs["bbox_to_anchor"] = _PCA_3D_OUTSIDE_LEGEND_ANCHOR
+        add_legend(ax, self.style, position=self.legend_position, **legend_kwargs)
+        set_context_title(ax, subtitle, self.style)
+        save_figure(fig, out, self.style, bbox_inches="tight")
 
     @property
     def signature(self) -> Config:
-        """Return the PCA plotter signature."""
+        """Return the PCA plotter signature.
+
+        Returns:
+            Configuration values needed to recreate this plotter.
+        """
         signature = super().signature
-        signature.update_with_dict({"descriptor_key": self.descriptor_key})
-        return signature
+        signature.update_with_dict({"descriptor_key": self.descriptor_key, "legend_position": self.legend_position})
         return signature

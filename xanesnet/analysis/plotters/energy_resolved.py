@@ -24,25 +24,23 @@ import logging
 from pathlib import Path
 from typing import Any
 
-import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 
 from xanesnet.serialization.config import Config
 
 from ..result import AnalysisResults
+from ..utils import one_line_label
 from .base import Plotter
-from .common import (
-    add_subtitle,
-    adjust_grid,
-    apply_decimal_tick_format,
-    compact_layout,
+from .common.formatting import apply_decimal_tick_format
+from .common.layout import (
     finish_grid,
-    method_color,
     method_grid,
-    style_axis,
+    save_figure,
+    single_panel,
     style_grid_cell,
 )
+from .common.style import PlotSize, add_legend, method_color, set_context_title
 from .registry import PlotterRegistry
 
 Curve = tuple[np.ndarray, np.ndarray]
@@ -69,6 +67,9 @@ class EnergyResolvedLossPlotter(Plotter):
             logarithmic axis, a positive lower limit is computed instead of zero.
         keys: Energy-resolved loss keys to plot. ``None`` plots every collected
             key.
+        legend_position: Place curve legends ``"inside"`` the axes or
+            ``"outside"`` them on the right.
+        plot_size: Shared figure size profile: ``"small"`` or ``"default"``.
     """
 
     def __init__(
@@ -79,15 +80,18 @@ class EnergyResolvedLossPlotter(Plotter):
         end_index: int | None,
         y_zoom: float | None,
         keys: list[str] | None,
+        legend_position: str,
         latex_font: bool,
+        plot_size: PlotSize,
     ) -> None:
         """Initialize an energy-resolved loss plotter."""
-        super().__init__(plotter_type, latex_font=latex_font)
+        super().__init__(plotter_type, latex_font=latex_font, plot_size=plot_size)
         self.y_scale = y_scale
         self.start_index = start_index
         self.end_index = end_index
         self.y_zoom = y_zoom
         self.keys = keys
+        self.legend_position = legend_position
 
     def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
         """Write per-method and combined energy-resolved loss curve PDFs.
@@ -97,7 +101,7 @@ class EnergyResolvedLossPlotter(Plotter):
             output_dir: Directory where the ``energy_resolved_loss_plots`` tree should be written.
 
         Raises:
-            ConfigError: If no ``vector`` aggregator is configured.
+            StopIteration: If no ``vector`` aggregator result exists.
         """
         root = output_dir / "energy_resolved_loss_plots"
 
@@ -131,7 +135,7 @@ class EnergyResolvedLossPlotter(Plotter):
             combo_dir.mkdir(parents=True, exist_ok=True)
 
             for key, (mean, std) in curves.items():
-                self._curve_figure(mean, std, key, "\n".join(label_lines), color, combo_dir / f"{key}.pdf")
+                self._curve_figure(mean, std, key, one_line_label(label_lines), color, combo_dir / f"{key}.pdf")
 
         combined_dir = root / "combined"
         combined_dir.mkdir(parents=True, exist_ok=True)
@@ -202,19 +206,16 @@ class EnergyResolvedLossPlotter(Plotter):
             color: Method color used for the curve.
             out: Destination PDF path.
         """
-        fig, ax = plt.subplots(figsize=(6.5, 3.6))
+        fig, ax = single_panel(self.style, "energy", legend_position=self.legend_position)
         x = np.arange(len(mean))
-        ax.plot(x, mean, color=color, linewidth=2.0, label="Mean")
+        ax.plot(x, mean, color=color, linewidth=self.style.linewidth("main"), label="Mean")
         ax.fill_between(x, mean - std, mean + std, color=color, alpha=0.25, linewidth=0, label="+/- 1 std")
         ax.set_xlabel("Energy")
         ax.set_ylabel(key)
-        ax.legend(fontsize=8, framealpha=0.9)
-        style_axis(ax)
+        add_legend(ax, self.style, position=self.legend_position)
         self._apply_axis(ax)
-        add_subtitle(fig, subtitle)
-        compact_layout(fig)
-        fig.savefig(out, bbox_inches="tight")
-        plt.close(fig)
+        set_context_title(ax, subtitle, self.style)
+        save_figure(fig, out)
 
     def _combined_grid(
         self,
@@ -234,21 +235,19 @@ class EnergyResolvedLossPlotter(Plotter):
         """
         n = len(series)
 
-        fig, axes = method_grid(n, cell_width=3.4, cell_height=2.6)
+        fig, axes = method_grid(n, self.style, geometry="energy")
         ncols = len(axes[0])
 
         for idx, (color, label_lines, (mean, std)) in enumerate(series):
             ax = axes[idx // ncols][idx % ncols]
             x = np.arange(len(mean))
-            ax.plot(x, mean, color=color, linewidth=1.6)
+            ax.plot(x, mean, color=color, linewidth=self.style.linewidth("secondary"))
             ax.fill_between(x, mean - std, mean + std, color=color, alpha=0.25, linewidth=0)
-            style_grid_cell(ax, label_lines)
+            style_grid_cell(ax, label_lines, self.style)
 
-        finish_grid(axes, n, "Energy", key)
+        finish_grid(axes, n, "Energy", key, self.style)
         self._apply_axis(axes[0][0])
-        adjust_grid(fig, left=0.13, right=0.99, top=0.95, bottom=0.16)
-        fig.savefig(out / f"{key}_grid.pdf", bbox_inches="tight")
-        plt.close(fig)
+        save_figure(fig, out / f"{key}_grid.pdf")
 
     def _combined_overlay(
         self,
@@ -263,23 +262,26 @@ class EnergyResolvedLossPlotter(Plotter):
             series: ``(color, label lines, (mean, std))`` per method in first-seen order.
             out: Directory where the combined overlay PDF should be written.
         """
-        fig, ax = plt.subplots(figsize=(7, 4.2))
+        fig, ax = single_panel(self.style, "energy", legend_position=self.legend_position)
         for color, label_lines, (mean, std) in series:
             x = np.arange(len(mean))
-            ax.plot(x, mean, color=color, linewidth=1.8, label="\n".join(label_lines))
+            ax.plot(
+                x, mean, color=color, linewidth=self.style.linewidth("secondary"), label=one_line_label(label_lines)
+            )
             ax.fill_between(x, mean - std, mean + std, color=color, alpha=0.12, linewidth=0)
         ax.set_xlabel("Energy")
         ax.set_ylabel(key)
-        ax.legend(fontsize=8, framealpha=0.9)
-        style_axis(ax)
+        add_legend(ax, self.style, position=self.legend_position)
         self._apply_axis(ax)
-        compact_layout(fig)
-        fig.savefig(out / f"{key}_overlay.pdf", bbox_inches="tight")
-        plt.close(fig)
+        save_figure(fig, out / f"{key}_overlay.pdf")
 
     @property
     def signature(self) -> Config:
-        """Return the energy-resolved loss plotter signature."""
+        """Return the energy-resolved loss plotter signature.
+
+        Returns:
+            Configuration values needed to recreate this plotter.
+        """
         signature = super().signature
         signature.update_with_dict(
             {
@@ -288,6 +290,7 @@ class EnergyResolvedLossPlotter(Plotter):
                 "end_index": self.end_index,
                 "y_zoom": self.y_zoom,
                 "keys": self.keys,
+                "legend_position": self.legend_position,
             }
         )
         return signature

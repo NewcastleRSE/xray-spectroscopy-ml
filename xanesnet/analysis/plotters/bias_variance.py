@@ -23,31 +23,35 @@
 import logging
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 
+from xanesnet.serialization.config import Config
+
 from ..result import AnalysisResults
+from ..utils import one_line_label
 from .base import Plotter
-from .common import (
+from .common.layout import (
+    finish_grid,
+    method_grid,
+    save_figure,
+    single_panel,
+    style_grid_cell,
+)
+from .common.style import (
     COLOR_ACCENT_GREEN,
     COLOR_ACCENT_RED,
-    add_subtitle,
-    adjust_grid,
-    compact_layout,
-    finish_grid,
+    PlotSize,
+    add_figure_legend,
+    add_legend,
     method_color,
-    method_grid,
-    style_axis,
-    style_grid_cell,
+    set_context_title,
 )
 from .registry import PlotterRegistry
 
 # Label lines, color, MSE, squared bias, variance.
 _MethodStats = tuple[list[str], str, np.ndarray, np.ndarray, np.ndarray]
 
-# The two decomposition terms keep fixed colors across every figure so they
-# stay recognizable next to the per-method MSE color.
 _BIAS_COLOR = COLOR_ACCENT_RED
 _VARIANCE_COLOR = COLOR_ACCENT_GREEN
 
@@ -64,11 +68,22 @@ class BiasVariancePlotter(Plotter):
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
         latex_font: Render figures in a LaTeX-style serif font when ``True``.
+        legend_position: Place the per-method legend ``"inside"`` the axes or
+            ``"outside"`` it on the right. The combined grid keeps one shared
+            legend above its cells.
+        plot_size: Shared figure size profile: ``"small"`` or ``"default"``.
     """
 
-    def __init__(self, plotter_type: str, latex_font: bool) -> None:
+    def __init__(
+        self,
+        plotter_type: str,
+        legend_position: str,
+        latex_font: bool,
+        plot_size: PlotSize,
+    ) -> None:
         """Initialize a bias-variance plotter."""
-        super().__init__(plotter_type, latex_font=latex_font)
+        super().__init__(plotter_type, latex_font=latex_font, plot_size=plot_size)
+        self.legend_position = legend_position
 
     def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
         """Write per-method decomposition PDFs and a combined grid.
@@ -78,7 +93,7 @@ class BiasVariancePlotter(Plotter):
             output_dir: Directory where the ``bias_variance_plots`` tree should be written.
 
         Raises:
-            ConfigError: If no ``bias_variance`` aggregator is configured.
+            StopIteration: If no ``bias_variance`` aggregator result exists.
         """
         if not results.selectors:
             logging.info("    No selectors available, skipping.")
@@ -106,7 +121,7 @@ class BiasVariancePlotter(Plotter):
 
                 combo_dir = root / label.dir_name
                 combo_dir.mkdir(parents=True, exist_ok=True)
-                self._stats_figure(*stats, "\n".join(label.lines), color, combo_dir / "bias_variance.pdf")
+                self._stats_figure(*stats, one_line_label(label.lines), color, combo_dir / "bias_variance.pdf")
 
         if not methods:
             logging.info("    No samples selected, skipping.")
@@ -116,8 +131,9 @@ class BiasVariancePlotter(Plotter):
         combined_dir.mkdir(parents=True, exist_ok=True)
         self._stats_grid(methods, combined_dir / "bias_variance_grid.pdf")
 
-    @staticmethod
-    def _draw_decomposition(ax: Axes, mse: np.ndarray, bias2: np.ndarray, variance: np.ndarray, color: str) -> None:
+    def _draw_decomposition(
+        self, ax: Axes, mse: np.ndarray, bias2: np.ndarray, variance: np.ndarray, color: str
+    ) -> None:
         """Draw the three decomposition curves into one axis.
 
         Args:
@@ -128,9 +144,23 @@ class BiasVariancePlotter(Plotter):
             color: Method color used for the MSE curve.
         """
         x = np.arange(len(mse))
-        ax.plot(x, mse, color=color, linewidth=2.0, label="MSE")
-        ax.plot(x, bias2, color=_BIAS_COLOR, linewidth=1.6, linestyle="--", label="Bias^2")
-        ax.plot(x, variance, color=_VARIANCE_COLOR, linewidth=1.6, linestyle=":", label="Variance")
+        ax.plot(x, mse, color=color, linewidth=self.style.linewidth("main"), label="MSE")
+        ax.plot(
+            x,
+            bias2,
+            color=_BIAS_COLOR,
+            linewidth=self.style.linewidth("secondary"),
+            linestyle="--",
+            label="Bias^2",
+        )
+        ax.plot(
+            x,
+            variance,
+            color=_VARIANCE_COLOR,
+            linewidth=self.style.linewidth("secondary"),
+            linestyle=":",
+            label="Variance",
+        )
 
     def _stats_figure(
         self,
@@ -151,19 +181,15 @@ class BiasVariancePlotter(Plotter):
             color: Method color used for the MSE curve.
             out: Destination PDF path.
         """
-        fig, ax = plt.subplots(figsize=(6.5, 3.6))
+        fig, ax = single_panel(self.style, "energy", legend_position=self.legend_position)
         self._draw_decomposition(ax, mse, bias2, variance, color)
         ax.set_xlabel("Energy")
         ax.set_ylabel("Loss")
-        ax.legend(fontsize=8, framealpha=0.9)
-        style_axis(ax)
-        add_subtitle(fig, subtitle)
-        compact_layout(fig)
-        fig.savefig(out, bbox_inches="tight")
-        plt.close(fig)
+        add_legend(ax, self.style, position=self.legend_position)
+        set_context_title(ax, subtitle, self.style)
+        save_figure(fig, out)
 
-    @staticmethod
-    def _stats_grid(methods: list[_MethodStats], out: Path) -> None:
+    def _stats_grid(self, methods: list[_MethodStats], out: Path) -> None:
         """Write one combined figure with a per-method decomposition grid.
 
         All cells share one x range and one y range so the cells stay directly
@@ -175,16 +201,26 @@ class BiasVariancePlotter(Plotter):
         """
         n = len(methods)
 
-        fig, axes = method_grid(n, cell_width=3.4, cell_height=2.6)
+        fig, axes = method_grid(n, self.style, geometry="energy", height_margin=0.55)
         ncols = len(axes[0])
 
         for idx, (label_lines, color, mse, bias2, variance) in enumerate(methods):
             ax = axes[idx // ncols][idx % ncols]
-            BiasVariancePlotter._draw_decomposition(ax, mse, bias2, variance, color)
-            style_grid_cell(ax, label_lines)
-            ax.legend(fontsize=6, framealpha=0.9)
+            self._draw_decomposition(ax, mse, bias2, variance, color)
+            style_grid_cell(ax, label_lines, self.style)
 
-        finish_grid(axes, n, "Energy", "Loss")
-        adjust_grid(fig, left=0.13, right=0.99, top=0.88, bottom=0.16)
-        fig.savefig(out, bbox_inches="tight")
-        plt.close(fig)
+        finish_grid(axes, n, "Energy", "Loss", self.style)
+        handles, labels = axes[0][0].get_legend_handles_labels()
+        add_figure_legend(fig, handles, labels, self.style, ncol=3, bbox_to_anchor=(0.5, 0.98))
+        save_figure(fig, out)
+
+    @property
+    def signature(self) -> Config:
+        """Return the bias-variance plotter signature.
+
+        Returns:
+            Configuration values needed to recreate this plotter.
+        """
+        signature = super().signature
+        signature.update_with_dict({"legend_position": self.legend_position})
+        return signature

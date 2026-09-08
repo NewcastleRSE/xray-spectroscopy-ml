@@ -24,27 +24,32 @@ import logging
 from itertools import repeat
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 
 from xanesnet.serialization.config import Config
 
 from ..result import AnalysisResults
-from ..utils import ScalarValue, iter_scalar_items
+from ..utils import ScalarValue, iter_scalar_items, one_line_label
 from .base import Plotter
-from .common import (
-    COLOR_ACCENT_RED,
-    add_subtitle,
-    adjust_grid,
-    annotate_box,
-    compact_layout,
+from .common.formatting import format_decimal, shorten_label
+from .common.layout import (
     finish_grid,
-    format_decimal,
-    method_color,
     method_grid,
-    style_axis,
+    reserve_grid_headroom,
+    save_figure,
+    single_panel,
     style_grid_cell,
+)
+from .common.style import (
+    COLOR_ACCENT_RED,
+    FIGURE_SIZES,
+    PlotSize,
+    PlotStyle,
+    add_legend,
+    add_note,
+    method_color,
+    set_context_title,
 )
 from .registry import PlotterRegistry
 
@@ -67,12 +72,23 @@ class ScalarPlotter(Plotter):
         plotter_type: Registered plotter name from the analysis configuration.
         latex_font: Render figures in a LaTeX-style serif font when ``True``.
         bins: Number of histogram bins.
+        legend_position: Place the combined grouped-bar legend ``"inside"``
+            the axes or ``"outside"`` it on the right.
+        plot_size: Shared figure size profile: ``"small"`` or ``"default"``.
     """
 
-    def __init__(self, plotter_type: str, bins: int, latex_font: bool) -> None:
+    def __init__(
+        self,
+        plotter_type: str,
+        bins: int,
+        legend_position: str,
+        latex_font: bool,
+        plot_size: PlotSize,
+    ) -> None:
         """Initialize a scalar distribution plotter."""
-        super().__init__(plotter_type, latex_font=latex_font)
+        super().__init__(plotter_type, latex_font=latex_font, plot_size=plot_size)
         self.bins = bins
+        self.legend_position = legend_position
 
     def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
         """Create per-method distribution plots and combined per-key figures.
@@ -115,7 +131,7 @@ class ScalarPlotter(Plotter):
 
         for dir_name, label_lines, color, values_by_key in series:
             combo_dir = root / dir_name
-            subtitle = "\n".join(label_lines)
+            subtitle = one_line_label(label_lines)
 
             for key, vals in values_by_key.items():
                 key_dir = combo_dir / key
@@ -150,25 +166,22 @@ class ScalarPlotter(Plotter):
             color: Method color used for the histogram bars.
             out: Directory where ``histogram.pdf`` should be written.
         """
-        fig, ax = plt.subplots(figsize=(6.5, 3.6))
+        fig, ax = single_panel(self.style, "square")
         clip = _clip_limits(arr)
         lo, hi = _bin_range(arr, clip)
         heights, edges = _share_heights(arr, self.bins, lo, hi)
         width = edges[1] - edges[0]
         centers = (edges[:-1] + edges[1:]) / 2
         ax.bar(centers, heights, width=width, color=color, alpha=0.55)
+        ax.set_xlim(lo, hi)
         ax.set_xlabel(key)
         ax.set_ylabel("Share (%)")
-        style_axis(ax)
-        add_subtitle(fig, subtitle)
-        _add_clip_note(ax, clip)
-        _add_stats_text(ax, arr)
-        compact_layout(fig)
-        fig.savefig(out / "histogram.pdf", bbox_inches="tight")
-        plt.close(fig)
+        set_context_title(ax, subtitle, self.style)
+        _add_clip_note(ax, clip, self.style)
+        _add_stats_text(ax, arr, self.style)
+        save_figure(fig, out / "histogram.pdf")
 
-    @staticmethod
-    def _boxplot(arr: np.ndarray, key: str, subtitle: str, color: str, out: Path) -> None:
+    def _boxplot(self, arr: np.ndarray, key: str, subtitle: str, color: str, out: Path) -> None:
         """Write a box plot PDF for one scalar key.
 
         Args:
@@ -178,20 +191,19 @@ class ScalarPlotter(Plotter):
             color: Method color used for the box fill.
             out: Directory where ``boxplot.pdf`` should be written.
         """
-        fig, ax = plt.subplots(figsize=(4.5, 3.4))
+        fig, ax = single_panel(self.style, "square")
         bp = ax.boxplot(arr, vert=True, patch_artist=True)
         bp["boxes"][0].set_facecolor(color)
         bp["boxes"][0].set_alpha(0.7)
+        for lines in bp.values():
+            for line in lines:
+                line.set_linewidth(self.style.linewidth("box"))
         ax.set_ylabel(key)
         ax.set_xticklabels([""])
-        style_axis(ax)
-        add_subtitle(fig, subtitle)
-        compact_layout(fig)
-        fig.savefig(out / "boxplot.pdf", bbox_inches="tight")
-        plt.close(fig)
+        set_context_title(ax, subtitle, self.style)
+        save_figure(fig, out / "boxplot.pdf")
 
-    @staticmethod
-    def _violin(arr: np.ndarray, key: str, subtitle: str, color: str, out: Path) -> None:
+    def _violin(self, arr: np.ndarray, key: str, subtitle: str, color: str, out: Path) -> None:
         """Write a violin plot PDF for one scalar key.
 
         Args:
@@ -201,21 +213,19 @@ class ScalarPlotter(Plotter):
             color: Method color used for the violin bodies.
             out: Directory where ``violin.pdf`` should be written.
         """
-        fig, ax = plt.subplots(figsize=(4.5, 3.4))
+        fig, ax = single_panel(self.style, "square")
         vp = ax.violinplot(arr, showmedians=True, showextrema=True)
         bodies = vp["bodies"]
         assert isinstance(bodies, list)
         for body in bodies:
             body.set_facecolor(color)
             body.set_alpha(0.7)
+            body.set_linewidth(self.style.linewidth("box"))
         ax.set_ylabel(key)
         ax.set_xticks([1])
         ax.set_xticklabels([""])
-        style_axis(ax)
-        add_subtitle(fig, subtitle)
-        compact_layout(fig)
-        fig.savefig(out / "violin.pdf", bbox_inches="tight")
-        plt.close(fig)
+        set_context_title(ax, subtitle, self.style)
+        save_figure(fig, out / "violin.pdf")
 
     def _combined_grid(
         self,
@@ -240,7 +250,7 @@ class ScalarPlotter(Plotter):
         clip = _clip_limits(all_values)
         lo, hi = _bin_range(all_values, clip)
 
-        fig, axes = method_grid(n, cell_width=3.0, cell_height=2.2)
+        fig, axes = method_grid(n, self.style, geometry="square")
         ncols = len(axes[0])
 
         for idx, (color, label_lines, arr) in enumerate(series):
@@ -249,20 +259,18 @@ class ScalarPlotter(Plotter):
             width = edges[1] - edges[0]
             centers = (edges[:-1] + edges[1:]) / 2
             ax.bar(centers, heights, width=width, color=color, alpha=0.8)
-            style_grid_cell(ax, label_lines)
+            ax.set_xlim(lo, hi)
+            style_grid_cell(ax, label_lines, self.style)
             if clip is not None:
                 clipped_i = int(np.count_nonzero((arr < lo) | (arr > hi)))
-                _add_cell_clip_note(ax, (lo, hi, clipped_i))
+                _add_cell_clip_note(ax, (lo, hi, clipped_i), self.style)
 
-        finish_grid(axes, n, key, "Share (%)")
+        finish_grid(axes, n, key, "Share (%)", self.style)
 
-        if clip is not None:
-            ymin, ymax = axes[0][0].get_ylim()
-            axes[0][0].set_ylim(ymin, ymax * 1.2)  # headroom for the per-cell notes
+        if clip is not None and clip[2] > 0:
+            reserve_grid_headroom(axes, n)
 
-        adjust_grid(fig, left=0.16, right=0.99, top=0.95, bottom=0.20)
-        fig.savefig(out / f"{key}_grid.pdf", bbox_inches="tight")
-        plt.close(fig)
+        save_figure(fig, out / f"{key}_grid.pdf")
 
     def _combined_grouped(
         self,
@@ -291,7 +299,12 @@ class ScalarPlotter(Plotter):
         sub_width = width / n_methods
         offsets = (np.arange(n_methods) - (n_methods - 1) / 2) * sub_width
 
-        fig, ax = plt.subplots(figsize=(7, 4.2))
+        fig, ax = single_panel(
+            self.style,
+            "square",
+            width=max(FIGURE_SIZES["square"][0], 1.2 * n_methods),
+            legend_position=self.legend_position,
+        )
         for idx, (color, label_lines, arr) in enumerate(series):
             heights, _ = _share_heights(arr, self.bins, lo, hi)
             ax.bar(
@@ -301,17 +314,15 @@ class ScalarPlotter(Plotter):
                 color=color,
                 alpha=0.9,
                 edgecolor="white",
-                linewidth=0.4,
-                label="\n".join(label_lines),
+                linewidth=self.style.linewidth("bar_edge"),
+                label=one_line_label(label_lines),
             )
+            ax.set_xlim(lo, hi)
         ax.set_xlabel(key)
         ax.set_ylabel("Share (%)")
-        _add_clip_note(ax, clip)
-        ax.legend(fontsize=8, framealpha=0.9)
-        style_axis(ax)
-        compact_layout(fig)
-        fig.savefig(out / f"{key}_grouped.pdf", bbox_inches="tight")
-        plt.close(fig)
+        _add_clip_note(ax, clip, self.style)
+        add_legend(ax, self.style, position=self.legend_position, ncol=2)
+        save_figure(fig, out / f"{key}_grouped.pdf")
 
     def _combined_boxplot(
         self,
@@ -331,18 +342,19 @@ class ScalarPlotter(Plotter):
         """
         n = len(series)
 
-        fig, ax = plt.subplots(figsize=(max(4.5, 1.2 * n), 4.2))
+        fig, ax = single_panel(
+            self.style,
+            "square",
+            width=max(FIGURE_SIZES["square"][0], 1.2 * n),
+        )
         bp = ax.boxplot([arr for _, _, arr in series], positions=range(n), vert=True, patch_artist=True)
         for patch, (color, _, _) in zip(bp["boxes"], series):
             patch.set_facecolor(color)
             patch.set_alpha(0.7)
         ax.set_xticks(range(n))
-        _set_method_xticklabels(ax, [label_lines for _, label_lines, _ in series])
+        _set_method_xticklabels(ax, [label_lines for _, label_lines, _ in series], self.style)
         ax.set_ylabel(key)
-        style_axis(ax)
-        compact_layout(fig)
-        fig.savefig(out / f"{key}_boxplot.pdf", bbox_inches="tight")
-        plt.close(fig)
+        save_figure(fig, out / f"{key}_boxplot.pdf")
 
     def _combined_violin(
         self,
@@ -362,7 +374,11 @@ class ScalarPlotter(Plotter):
         """
         n = len(series)
 
-        fig, ax = plt.subplots(figsize=(max(4.5, 1.2 * n), 4.2))
+        fig, ax = single_panel(
+            self.style,
+            "square",
+            width=max(FIGURE_SIZES["square"][0], 1.2 * n),
+        )
         vp = ax.violinplot([arr for _, _, arr in series], positions=range(n), showmedians=True, showextrema=True)
         bodies = vp["bodies"]
         assert isinstance(bodies, list)
@@ -370,18 +386,19 @@ class ScalarPlotter(Plotter):
             body.set_facecolor(color)
             body.set_alpha(0.7)
         ax.set_xticks(range(n))
-        _set_method_xticklabels(ax, [label_lines for _, label_lines, _ in series])
+        _set_method_xticklabels(ax, [label_lines for _, label_lines, _ in series], self.style)
         ax.set_ylabel(key)
-        style_axis(ax)
-        compact_layout(fig)
-        fig.savefig(out / f"{key}_violin.pdf", bbox_inches="tight")
-        plt.close(fig)
+        save_figure(fig, out / f"{key}_violin.pdf")
 
     @property
     def signature(self) -> Config:
-        """Return the scalar plotter signature."""
+        """Return the scalar plotter signature.
+
+        Returns:
+            Configuration values needed to recreate this plotter.
+        """
         signature = super().signature
-        signature.update_with_dict({"bins": self.bins})
+        signature.update_with_dict({"bins": self.bins, "legend_position": self.legend_position})
         return signature
 
 
@@ -398,10 +415,11 @@ def _bin_range(arr: np.ndarray, clip: tuple[float, float, int] | None) -> tuple[
     Returns:
         ``(lo, hi)`` bin edges with ``lo < hi``.
     """
-    if clip is not None:
-        return clip[0], clip[1]
     lo = float(np.min(arr))
     hi = float(np.max(arr))
+    if clip is not None:
+        lo = max(lo, clip[0])
+        hi = min(hi, clip[1])
     if not lo < hi:
         pad = 0.5 * max(abs(lo), 1.0)
         lo -= pad
@@ -468,53 +486,43 @@ def _clip_note(clip: tuple[float, float, int] | None) -> str:
     """
     if clip is None or clip[2] == 0:
         return ""
-    lo, hi, clipped = clip
-    return f"{clipped} values outside [{format_decimal(lo, 4)}, {format_decimal(hi, 4)}] not shown"
+    return f"{clip[2]} outliers"
 
 
-def _add_clip_note(ax: Axes, clip: tuple[float, float, int] | None) -> None:
+def _add_clip_note(ax: Axes, clip: tuple[float, float, int] | None, style: PlotStyle) -> None:
     """Annotate an axis with the number of clipped values, when any.
 
-    The note is anchored to the right end of the title line. The main titles
-    are left-aligned so the note and the title never overlap each other or the
-    plotted data.
+    The note is anchored inside the plot at the upper-right corner.
 
     Args:
         ax: Matplotlib axis to annotate.
         clip: Clip bounds from :func:`_clip_limits` or ``None``.
+        style: Rendering style for the figure.
     """
     note = _clip_note(clip)
     if not note:
         return
-    ax.set_title(note, loc="right", fontsize=6.5, color=COLOR_ACCENT_RED)
+    add_note(ax, note, style, location="upper right", boxed=False, color=COLOR_ACCENT_RED)
 
 
-def _add_cell_clip_note(ax: Axes, clip: tuple[float, float, int] | None) -> None:
+def _add_cell_clip_note(ax: Axes, clip: tuple[float, float, int] | None, style: PlotStyle) -> None:
     """Annotate one grid cell with the number of clipped values, when any.
 
-    The note sits in the top-left corner of the cell; callers reserve headroom
-    above the bars so it never overlaps them.
+    The note sits inside the cell at the upper-right corner; callers reserve
+    headroom above the bars so it never overlaps them.
 
     Args:
         ax: Matplotlib axis to annotate.
         clip: Clip bounds from :func:`_clip_limits` or ``None``.
+        style: Rendering style for the figure.
     """
     note = _clip_note(clip)
     if not note:
         return
-    ax.text(
-        0.02,
-        0.98,
-        note,
-        transform=ax.transAxes,
-        fontsize=5,
-        verticalalignment="top",
-        horizontalalignment="left",
-        color=COLOR_ACCENT_RED,
-    )
+    add_note(ax, note, style, location="upper right", boxed=False, color=COLOR_ACCENT_RED)
 
 
-def _set_method_xticklabels(ax: Axes, label_lines: list[list[str]]) -> None:
+def _set_method_xticklabels(ax: Axes, label_lines: list[list[str]], style: PlotStyle) -> None:
     """Label method tick positions with stacked label lines.
 
     Short label sets are horizontal; long sets are rotated so they do not
@@ -523,20 +531,22 @@ def _set_method_xticklabels(ax: Axes, label_lines: list[list[str]]) -> None:
     Args:
         ax: Matplotlib axis to annotate.
         label_lines: Label lines per method in tick order.
+        style: Rendering style for the figure.
     """
-    labels = ["\n".join(lines) for lines in label_lines]
+    labels = [shorten_label(lines, width=18) for lines in label_lines]
     if len(labels) <= 5:
-        ax.set_xticklabels(labels, fontsize=7)
+        ax.set_xticklabels(labels, fontsize=style.fontsize("tick"))
     else:
-        ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=7)
+        ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=style.fontsize("tick"))
 
 
-def _add_stats_text(ax: Axes, arr: np.ndarray) -> None:
+def _add_stats_text(ax: Axes, arr: np.ndarray, style: PlotStyle) -> None:
     """Add sample count and summary statistics to a plot axis.
 
     Args:
         ax: Matplotlib axis to annotate.
         arr: One-dimensional scalar values with shape ``(N,)``.
+        style: Rendering style for the figure.
     """
     text = (
         f"n={len(arr)}\n"
@@ -544,4 +554,4 @@ def _add_stats_text(ax: Axes, arr: np.ndarray) -> None:
         f"std={format_decimal(float(np.std(arr)), 4)}\n"
         f"median={format_decimal(float(np.median(arr)), 4)}"
     )
-    annotate_box(ax, text, 0.97, 0.95, "right", "top", monospace=False)
+    add_note(ax, text, style, location="upper right")
