@@ -26,7 +26,6 @@ from pathlib import Path
 from xanesnet.serialization.config import Config
 
 from ..result import AnalysisResults
-from ..utils import component_repr
 
 
 class Reporter(ABC):
@@ -74,4 +73,5 @@ class Reporter(ABC):
 
     def __repr__(self) -> str:
         """Return a detailed representation of this reporter."""
-        return component_repr(type(self).__name__, self.signature.as_dict())
+        args = ", ".join(f"{key}={value!r}" for key, value in self.signature.as_dict().items())
+        return f"{type(self).__name__}({args})"

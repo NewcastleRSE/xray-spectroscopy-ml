@@ -26,6 +26,7 @@ from xanesnet.serialization.jsonl_stream import JSONLStream
 
 from .aggregators import AggregatorResult
 from .selectors import Selector
+from .utils import one_line_label
 
 
 @dataclass(frozen=True)
@@ -46,8 +47,12 @@ class MethodLabel:
 
     @property
     def joined(self) -> str:
-        """Return the stacked label lines joined into a single line."""
-        return "  |  ".join(self.lines)
+        """Return the stacked label lines joined into a single line.
+
+        Returns:
+            Display label with non-empty parts separated by ``" | "``.
+        """
+        return one_line_label(self.lines)
 
 
 @dataclass
@@ -74,6 +79,10 @@ class AnalysisResults:
     def collector_stream(self, reader_idx: int, sel_idx: int) -> JSONLStream | None:
         """Return the collector stream of one method, if collectors ran.
 
+        Args:
+            reader_idx: Zero-based prediction reader index.
+            sel_idx: Zero-based selector index within the reader.
+
         Returns:
             Collector output stream aligned with the selector, or ``None``
             when no collectors were configured.
@@ -83,7 +92,19 @@ class AnalysisResults:
         return self.collector_results[reader_idx][sel_idx]
 
     def aggregation(self, reader_idx: int, sel_idx: int, aggregator_type: str) -> AggregatorResult:
-        """Return the result of one aggregator type for one method."""
+        """Return the result of one aggregator type for one method.
+
+        Args:
+            reader_idx: Zero-based prediction reader index.
+            sel_idx: Zero-based selector index within the reader.
+            aggregator_type: Registered aggregator name to find.
+
+        Returns:
+            Matching aggregation result.
+
+        Raises:
+            StopIteration: If no result has the requested aggregator type.
+        """
         return next(
             result
             for result in self.aggregator_results[reader_idx][sel_idx]

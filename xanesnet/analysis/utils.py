@@ -20,7 +20,7 @@
 
 """Shared helpers for the analysis pipeline."""
 
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from numbers import Integral
 from typing import Any, TypeGuard
 
@@ -31,14 +31,21 @@ ScalarValue = int | float | np.integer | np.floating
 VectorValue = list | tuple | np.ndarray | torch.Tensor
 SampleKey = tuple[str, int | None]
 
-# Keys that identify or locate a sample rather than measure it. They are
-# skipped by every stage that summarizes, reports, or plots scalar values, so
-# that identifiers and site indices never appear as if they were metrics.
-SAMPLE_METADATA_KEYS: frozenset[str] = frozenset({"sample_id", "target_site_index"})
+SAMPLE_METADATA_KEYS: set[str] = {"sample_id", "target_site_index"}
 
-# Keys whose values are the raw prediction and target spectra. Spectra are
-# summarized by the ``spectrum`` aggregator, so vector summaries skip them.
-SPECTRUM_KEYS: frozenset[str] = frozenset({"prediction", "target"})
+SPECTRUM_KEYS: set[str] = {"prediction", "target"}
+
+
+def one_line_label(lines: Iterable[str]) -> str:
+    """Join non-empty display-label parts with one shared separator.
+
+    Args:
+        lines: Label parts in display order.
+
+    Returns:
+        A single label with non-empty parts separated by ``" | "``.
+    """
+    return " | ".join(line.strip() for line in lines if line.strip())
 
 
 def sample_key(record: Mapping[str, Any]) -> SampleKey:
@@ -46,6 +53,17 @@ def sample_key(record: Mapping[str, Any]) -> SampleKey:
 
     The target-site index is part of the identity because one structure can
     produce several prediction records.
+
+    Args:
+        record: Prediction or collector record containing ``sample_id`` and
+            optionally ``target_site_index``.
+
+    Returns:
+        ``(sample_id, target_site_index)`` with a normalized string ID and
+        integer site index.
+
+    Raises:
+        TypeError: If ``target_site_index`` is neither an integer nor ``None``.
     """
     sample_id = str(record["sample_id"])
     site_index = record.get("target_site_index")
@@ -55,12 +73,26 @@ def sample_key(record: Mapping[str, Any]) -> SampleKey:
 
 
 def sample_key_sort_key(key: SampleKey) -> tuple[str, int]:
-    """Return a deterministic sort key for a compound sample identity."""
+    """Return a deterministic sort key for a compound sample identity.
+
+    Args:
+        key: Compound sample identity returned by :func:`sample_key`.
+
+    Returns:
+        ``(sample_id, site_index)`` with ``None`` site indices ordered first.
+    """
     return key[0], -1 if key[1] is None else key[1]
 
 
 def sample_label(record: Mapping[str, Any]) -> str:
-    """Return a human-readable label that distinguishes target sites."""
+    """Return a human-readable label that distinguishes target sites.
+
+    Args:
+        record: Prediction or collector record to label.
+
+    Returns:
+        Sample ID, optionally followed by its target-site index.
+    """
     sample_id, site_index = sample_key(record)
     return f"{sample_id} (site {site_index})" if site_index is not None else sample_id
 
@@ -97,8 +129,8 @@ def iter_scalar_items(
     Args:
         record: Prediction sample or collector output mapping.
         include_metadata: Whether to also yield the scalar entries of
-            :data:`SAMPLE_METADATA_KEYS`. Only per-sample views that describe a
-            single sample should enable this; summaries over many samples must
+            :data:`SAMPLE_METADATA_KEYS`. Only per-sample views that describe
+            a single sample should enable this; summaries over many samples must
             not treat identifiers as measurements.
 
     Yields:
@@ -173,17 +205,3 @@ def iter_vector_items(
             continue
         if is_vector_value(value):
             yield key, value
-
-
-def component_repr(type_name: str, config: dict[str, Any]) -> str:
-    """Build the detailed single-line representation of a configured component.
-
-    Args:
-        type_name: Name of the component class.
-        config: Component configuration dictionary from a ``signature``.
-
-    Returns:
-        Representation of the form ``"ClassName(key=value, ...)"``.
-    """
-    args = ", ".join(f"{key}={value!r}" for key, value in config.items())
-    return f"{type_name}({args})"

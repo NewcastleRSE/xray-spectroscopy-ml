@@ -26,8 +26,6 @@ from collections.abc import Iterable, Iterator
 from xanesnet.serialization.config import Config
 from xanesnet.serialization.prediction_readers import PredictionReader, PredictionSample
 
-from ..utils import component_repr
-
 
 class Selector(ABC, Iterable[PredictionSample]):
     """Base class for iterable prediction sample selectors.
@@ -89,4 +87,5 @@ class Selector(ABC, Iterable[PredictionSample]):
 
     def __repr__(self) -> str:
         """Return a detailed representation of this selector."""
-        return component_repr(type(self).__name__, self.signature.as_dict())
+        args = ", ".join(f"{key}={value!r}" for key, value in self.signature.as_dict().items())
+        return f"{type(self).__name__}({args})"

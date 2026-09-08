@@ -26,7 +26,6 @@ from typing import Any
 from xanesnet.serialization.config import Config
 from xanesnet.serialization.prediction_readers import PredictionSample
 
-from ..utils import component_repr
 
 
 class Collector(ABC):
@@ -73,4 +72,5 @@ class Collector(ABC):
 
     def __repr__(self) -> str:
         """Return a detailed representation of this collector."""
-        return component_repr(type(self).__name__, self.signature.as_dict())
+        args = ", ".join(f"{key}={value!r}" for key, value in self.signature.as_dict().items())
+        return f"{type(self).__name__}({args})"

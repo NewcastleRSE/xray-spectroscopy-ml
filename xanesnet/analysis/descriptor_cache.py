@@ -30,14 +30,10 @@ from xanesnet.descriptors import DescriptorRegistry
 from xanesnet.serialization.config import Config
 from xanesnet.serialization.prediction_readers import PredictionReader, PredictionSample
 
-# Descriptor vectors are cached per (descriptor config, sample id, target site)
-# so selector clustering and collector passes share one embedding per
-# structure. ``sample_id`` identifies the same structure across prediction
-# readers that share the same underlying data.
+# Descriptor vectors are cached per (descriptor config, sample id, target site).
 _DESCRIPTOR_CACHE: dict[tuple[Any, ...], np.ndarray] = {}
 
-# Descriptor instances are cached per descriptor config so the embedding object
-# is built once instead of once per clustering or collector pass.
+# Descriptor instances are cached per (descriptor config,).
 _DESCRIPTOR_OBJ_CACHE: dict[str, Any] = {}
 
 

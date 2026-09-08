@@ -28,7 +28,6 @@ from xanesnet.serialization.config import Config
 from xanesnet.serialization.jsonl_stream import JSONLStream
 
 from ..selectors import Selector
-from ..utils import component_repr
 
 
 @dataclass(frozen=True)
@@ -90,4 +89,5 @@ class Aggregator(ABC):
 
     def __repr__(self) -> str:
         """Return a detailed representation of this aggregator."""
-        return component_repr(type(self).__name__, self.signature.as_dict())
+        args = ", ".join(f"{key}={value!r}" for key, value in self.signature.as_dict().items())
+        return f"{type(self).__name__}({args})"
