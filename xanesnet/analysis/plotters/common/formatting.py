@@ -18,9 +18,11 @@
 # Citations:
 #   ...
 
-"""Number-formatting helpers for analysis output."""
+"""Number and display-label formatting helpers for analysis output."""
 
 import math
+from collections.abc import Iterable
+from textwrap import shorten
 
 from matplotlib.axes import Axes
 from matplotlib.ticker import FuncFormatter
@@ -60,6 +62,46 @@ def format_decimal(value: float, precision: int) -> str:
     return text
 
 
+def truncate_text(value: str, width: int) -> str:
+    """Truncate text with an ellipsis when it exceeds ``width`` characters.
+
+    Args:
+        value: Text to truncate.
+        width: Maximum number of characters in the returned text.
+
+    Returns:
+        The original text when it fits, otherwise a prefix ending in ``...``.
+        For widths below four, only the available number of dots is returned.
+
+    Raises:
+        ValueError: If ``width`` is negative.
+    """
+    if width < 0:
+        raise ValueError("width must be non-negative")
+    if len(value) <= width:
+        return value
+    if width <= 3:
+        return "." * width
+    return value[: max(width - 3, 1)].rstrip() + "..."
+
+
+def shorten_label(lines: Iterable[str], width: int = 28) -> str:
+    """Join and shorten label parts at word boundaries.
+
+    This is intended for plot titles and compact cell labels. Use
+    :func:`truncate_text` when a hard character limit is required instead.
+
+    Args:
+        lines: Label parts in display order.
+        width: Maximum label width.
+
+    Returns:
+        One shortened display label.
+    """
+    label = " | ".join(line.strip() for line in lines if line.strip())
+    return shorten(label, width=width, placeholder="...")
+
+
 def apply_decimal_tick_format(ax: Axes, precision: int = 4) -> None:
     """Use plain fixed-point labels for the major ticks on an axes.
 
@@ -72,7 +114,16 @@ def apply_decimal_tick_format(ax: Axes, precision: int = 4) -> None:
         precision: Significant digits retained in each tick label.
     """
 
-    def format_tick(value: float, _position: int) -> str:
+    def format_tick(value: float, _: int) -> str:
+        """Format one tick value with the shared decimal precision.
+
+        Args:
+            value: Numeric tick value.
+            _: Matplotlib's unused tick position argument.
+
+        Returns:
+            Formatted tick label.
+        """
         return format_decimal(value, precision)
 
     formatter = FuncFormatter(format_tick)

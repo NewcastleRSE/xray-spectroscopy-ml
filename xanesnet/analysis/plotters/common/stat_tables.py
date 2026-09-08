@@ -18,13 +18,7 @@
 # Citations:
 #   ...
 
-"""Table data assembly shared by the statistics table plotters.
-
-The Matplotlib and LaTeX statistics table plotters render the same numbers in
-different output formats. This module owns everything up to the rendering step:
-grouping aggregator results by method, laying the values out into rows and
-columns, and marking the best and worst cell of each comparison.
-"""
+"""Table data assembly helpers."""
 
 import logging
 from dataclasses import dataclass
@@ -34,10 +28,7 @@ from ...result import AnalysisResults
 from ...utils import is_scalar_value
 from .formatting import format_decimal
 
-# Aggregator identity: registered aggregator name and its configuration index.
 AggregatorKey = tuple[str, int]
-
-# Statistic values of one method, keyed by statistic name.
 StatValues = dict[str, float]
 
 
@@ -194,6 +185,24 @@ def combined_stem(value_keys: list[str]) -> str:
     return "combined" if "combined" not in value_keys else "combined_table"
 
 
+_VALUE_DISPLAY_LABELS: dict[str, str] = {"time_per_spectrum": "time"}
+
+
+def value_display_label(value_key: str) -> str:
+    """Return the presentation label for a raw scalar value key.
+
+    The raw key remains unchanged for aggregation, sorting, filenames, and
+    LaTeX labels; this mapping affects rendered table text only.
+
+    Args:
+        value_key: Raw scalar value key.
+
+    Returns:
+        Display label for the value key.
+    """
+    return _VALUE_DISPLAY_LABELS.get(value_key, value_key)
+
+
 def _order_rank(value: float | None) -> tuple[int, float]:
     """Return a sort key that places missing values after numeric values.
 
@@ -324,7 +333,12 @@ def build_combined_table(
     groups: list[tuple[int, int]] = []
 
     def add_sub_row(row_label: str, stat_key: str) -> None:
-        """Append one sub-row for the given method and statistic key."""
+        """Append one sub-row for a method and statistic key.
+
+        Args:
+            row_label: Method label whose values should be added.
+            stat_key: Statistic key to add as the sub-row label.
+        """
         raw = [rows[row_label].get(value_key, {}).get(stat_key) for value_key in value_cols]
         text_row, value_row = _format_row(raw, precision)
         cell_text.append([stat_key, *text_row])

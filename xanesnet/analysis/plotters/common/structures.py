@@ -18,16 +18,10 @@
 # Citations:
 #   ...
 
-"""Rendering of atomic structures into a constant-size drawing frame.
-
-Structures are projected with ``ase`` and then centered and scaled so every
-structure fills the same frame regardless of its physical extent. This keeps
-atom sizes comparable between figures and between the cells of a grid. When
-the projection is unavailable, a plain coordinate scatter is drawn instead.
-"""
+"""Rendering of atomic structures into a constant-size drawing frame."""
 
 import logging
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -36,28 +30,15 @@ from matplotlib.patches import Circle
 from pymatgen.core import Molecule, Structure
 
 from .formatting import format_decimal
+from .style import PlotStyle, add_legend
 
-# Absolute ase radii used before the frame fit; the target site is drawn
-# larger so it stands out among its neighbors.
 _TARGET_SITE_RADIUS: float = 0.75
 _DEFAULT_SITE_RADIUS: float = 0.45
 _RING_COLOR: str = "#111111"
-
-# The drawing frame spans [-0.5, 0.5] and the structure fills this fraction
-# of it, leaving room for the element legend.
 _STRUCTURE_FRAME_HALF: float = 0.5
 _STRUCTURE_FILL: float = 0.85
-
-# Length of the scale bar as a fraction of the frame width, and its font size.
 _SCALE_BAR_LENGTH: float = 0.25
-_SCALE_BAR_FONTSIZE: float = 5.0
-
-# Radius of the target-site ring relative to the atom it encircles.
 _RING_SCALE: float = 1.6
-
-# Failures of the optional ase projection path that are recoverable by falling
-# back to the coordinate scatter. Anything else is a programming error and
-# must surface.
 _RENDER_ERRORS = (ValueError, TypeError, IndexError, KeyError, AttributeError)
 
 
@@ -65,9 +46,10 @@ def draw_structure(
     ax: Axes,
     structure: Molecule | Structure,
     sample_id: str,
+    style: PlotStyle,
+    legend_role: str = "legend",
     target_site_index: int | None = None,
     frame_ratio: float = 1.0,
-    legend_fontsize: float = 5.0,
     show_scale: bool = True,
 ) -> None:
     """Draw one structure as a ball projection into a fixed-size frame.
@@ -81,13 +63,14 @@ def draw_structure(
         ax: Matplotlib axis to draw on.
         structure: Pymatgen structure or molecule.
         sample_id: Identifier used in the fallback warning.
+        style: Rendering style for the structure figure.
+        legend_role: Font-size role used for the element legend.
         target_site_index: Index of the target site within ``structure``, or
             ``None`` when unknown.
         frame_ratio: Height/width ratio of the drawing frame. ``1.0`` draws a
             square frame (and enforces equal aspect); other values fill a
             rectangular frame with that ratio while keeping the structure
             undistorted.
-        legend_fontsize: Font size of the compact element legend.
         show_scale: Whether to draw the Angstrom scale bar at the bottom
             right of the frame.
     """
@@ -104,7 +87,7 @@ def draw_structure(
     if plot_vars_cls is not None and adaptor_cls is not None:
         try:
             atoms = adaptor_cls().get_atoms(structure)
-            radii, highlight = _site_style(len(atoms), target_site_index)
+            radii, highlight = _site_style(len(cast(Any, atoms)), target_site_index)
             writer = plot_vars_cls(atoms, rotation="10x,20y,0z", radii=radii, scale=1, show_unit_cell=0)
             positions = np.asarray(writer.positions[:, :2], dtype=float)
             colors = np.asarray(writer.colors, dtype=float)
@@ -122,17 +105,22 @@ def draw_structure(
                         float(radius),
                         facecolor=tuple(float(v) for v in color),
                         edgecolor="black",
-                        linewidth=0.5,
+                        linewidth=style.linewidth("atom"),
                         zorder=2,
                     )
                 )
             if highlight:
                 assert target_site_index is not None
-                _add_target_site_ring(ax, pos[target_site_index], float(radii_scaled[target_site_index] * _RING_SCALE))
-            _frame_axes(ax, frame_ratio)
-            _add_element_legend(ax, atoms, colors, highlight, fontsize=legend_fontsize)
+                _add_target_site_ring(
+                    ax,
+                    pos[target_site_index],
+                    float(radii_scaled[target_site_index] * _RING_SCALE),
+                    style,
+                )
+            _frame_axes(ax, frame_ratio, style)
+            _add_element_legend(ax, atoms, colors, highlight, style, legend_role)
             if show_scale:
-                _add_scale_bar(ax, scale, frame_ratio)
+                _add_scale_bar(ax, scale, frame_ratio, style)
             return
         except _RENDER_ERRORS:
             logging.warning(
@@ -140,15 +128,16 @@ def draw_structure(
                 sample_id,
                 exc_info=True,
             )
-    _structure_scatter(ax, structure, target_site_index, frame_ratio)
+    _structure_scatter(ax, structure, style, target_site_index, frame_ratio, legend_role)
 
 
-def _frame_axes(ax: Axes, frame_ratio: float) -> None:
+def _frame_axes(ax: Axes, frame_ratio: float, style: PlotStyle) -> None:
     """Set the constant drawing frame and its visible box on one axes.
 
     Args:
         ax: Matplotlib axis holding the structure.
         frame_ratio: Height/width ratio of the drawing frame.
+        style: Rendering style for the structure figure.
     """
     half = _STRUCTURE_FRAME_HALF
     ax.set_xlim(-half, half)
@@ -159,7 +148,7 @@ def _frame_axes(ax: Axes, frame_ratio: float) -> None:
     ax.set_yticks([])
     for spine in ax.spines.values():
         spine.set_visible(True)
-        spine.set_linewidth(0.8)
+        spine.set_linewidth(style.linewidth("spine"))
         spine.set_color("black")
 
 
@@ -208,7 +197,7 @@ def _fit_frame(positions: np.ndarray, radii: np.ndarray, frame_ratio: float = 1.
     return (positions - center) * scale, scale
 
 
-def _add_scale_bar(ax: Axes, scale: float, frame_ratio: float) -> None:
+def _add_scale_bar(ax: Axes, scale: float, frame_ratio: float, style: PlotStyle) -> None:
     """Draw a length annotation in Angstrom at the bottom right of a frame.
 
     Projected positions are in Angstrom and scaled into the fixed frame by
@@ -221,6 +210,7 @@ def _add_scale_bar(ax: Axes, scale: float, frame_ratio: float) -> None:
         ax: Matplotlib axis holding the structure.
         scale: Frame units per Angstrom returned by :func:`_fit_frame`.
         frame_ratio: Height/width ratio of the drawing frame.
+        style: Rendering style for the structure figure.
     """
     if not np.isfinite(scale) or scale <= 0.0:
         return
@@ -232,7 +222,7 @@ def _add_scale_bar(ax: Axes, scale: float, frame_ratio: float) -> None:
         [x1 - _SCALE_BAR_LENGTH, x1],
         [y, y],
         color="black",
-        linewidth=1.2,
+        linewidth=style.linewidth("scale_bar"),
         clip_on=False,
         zorder=20,
     )
@@ -242,12 +232,19 @@ def _add_scale_bar(ax: Axes, scale: float, frame_ratio: float) -> None:
         label,
         ha="right",
         va="center",
-        fontsize=_SCALE_BAR_FONTSIZE,
+        fontsize=style.fontsize("annotation"),
         zorder=20,
     )
 
 
-def _add_element_legend(ax: Axes, atoms: Any, colors: np.ndarray, has_target: bool, fontsize: float = 5.0) -> None:
+def _add_element_legend(
+    ax: Axes,
+    atoms: Any,
+    colors: np.ndarray,
+    has_target: bool,
+    style: PlotStyle,
+    legend_role: str,
+) -> None:
     """Add a compact legend explaining the element colors.
 
     Args:
@@ -255,7 +252,8 @@ def _add_element_legend(ax: Axes, atoms: Any, colors: np.ndarray, has_target: bo
         atoms: ASE ``Atoms`` object whose elements should be listed.
         colors: Per-atom RGB color triples with shape ``(N, 3)``.
         has_target: Whether to append a target-site marker entry.
-        fontsize: Legend font size.
+        style: Rendering style for the structure figure.
+        legend_role: Font-size role used for the element legend.
     """
     try:
         from ase.data import chemical_symbols
@@ -275,36 +273,27 @@ def _add_element_legend(ax: Axes, atoms: Any, colors: np.ndarray, has_target: bo
                 [0],
                 marker="o",
                 color="w",
-                markerfacecolor=tuple(float(v) for v in color),
+                markerfacecolor=cast(tuple[float, float, float], tuple(float(v) for v in color[:3])),
                 markeredgecolor="black",
-                markersize=0.9 * fontsize,
+                markersize=0.9 * style.fontsize(legend_role),
                 linestyle="",
             )
         )
         labels.append(symbol)
     if has_target:
-        handles.append(_target_site_handle(markersize=1.2 * fontsize))
-        labels.append(" target site")
+        handles.append(_target_site_handle(markersize=1.2 * style.fontsize(legend_role)))
+        labels.append("X")
     if handles:
-        ax.legend(
-            handles=handles,
-            labels=labels,
-            loc="upper left",
-            fontsize=fontsize,
-            framealpha=0.8,
-            borderpad=0.3,
-            labelspacing=0.35,
-            handlelength=0.7,
-            handletextpad=0.35,
-            borderaxespad=0.35,
-        )
+        add_legend(ax, style, handles=handles, labels=labels, loc="upper left", framealpha=0.8)
 
 
 def _structure_scatter(
     ax: Axes,
     structure: Molecule | Structure,
+    style: PlotStyle,
     target_site_index: int | None = None,
     frame_ratio: float = 1.0,
+    legend_role: str = "legend",
 ) -> None:
     """Draw a fallback atomic-position scatter projection for one structure.
 
@@ -314,9 +303,11 @@ def _structure_scatter(
     Args:
         ax: Matplotlib axis to draw on.
         structure: Pymatgen structure or molecule.
+        style: Rendering style for the structure figure.
         target_site_index: Index of the target site within ``structure``, or
             ``None`` when unknown.
         frame_ratio: Height/width ratio of the fixed drawing frame.
+        legend_role: Font-size role used for the element legend.
     """
     species = [str(site.specie) for site in structure]
     positions = np.asarray([site.coords[:2] for site in structure], dtype=float)
@@ -327,37 +318,43 @@ def _structure_scatter(
     projected = (positions - center) * scale
     for spec in dict.fromkeys(species):
         selected = [index for index, sp in enumerate(species) if sp == spec]
-        ax.scatter(projected[selected, 0], projected[selected, 1], s=140, label=spec)
+        ax.scatter(
+            projected[selected, 0],
+            projected[selected, 1],
+            s=style.scatter_size("structure_atom"),
+            label=spec,
+        )
     if target_site_index is not None and 0 <= target_site_index < len(structure):
         ax.scatter(
             [projected[target_site_index, 0]],
             [projected[target_site_index, 1]],
-            s=420,
+            s=style.scatter_size("structure_target"),
             facecolors="none",
             edgecolors=_RING_COLOR,
-            linewidths=2.0,
+            linewidths=style.linewidth("target_ring"),
             zorder=5,
         )
-        _add_target_site_legend(ax)
+        _add_target_site_legend(ax, style, legend_role)
     else:
-        ax.legend(fontsize=8, framealpha=0.9)
-    _frame_axes(ax, frame_ratio)
+        add_legend(ax, style)
+    _frame_axes(ax, frame_ratio, style)
 
 
-def _add_target_site_ring(ax: Axes, xy: np.ndarray, ring_radius: float) -> None:
+def _add_target_site_ring(ax: Axes, xy: np.ndarray, ring_radius: float, style: PlotStyle) -> None:
     """Draw a bold ring around the rendered target-site atom.
 
     Args:
-        ax: Matplotlib axis to draw on.
+        ax: Matplotlib axis holding the structure.
         xy: Projected image-plane position of the target site.
         ring_radius: Radius of the ring in frame units.
+        style: Rendering style for the structure figure.
     """
     ring = Circle(
         (float(xy[0]), float(xy[1])),
         radius=ring_radius,
         fill=False,
         edgecolor=_RING_COLOR,
-        linewidth=2.0,
+        linewidth=style.linewidth("target_ring"),
         zorder=10,
     )
     ax.add_patch(ring)
@@ -384,13 +381,15 @@ def _target_site_handle(markersize: float) -> Line2D:
     )
 
 
-def _add_target_site_legend(ax: Axes) -> None:
+def _add_target_site_legend(ax: Axes, style: PlotStyle, legend_role: str) -> None:
     """Add a legend entry explaining the target-site highlight marker.
 
     Args:
         ax: Matplotlib axis that contains the target-site marker.
+        style: Rendering style for the structure figure.
+        legend_role: Font-size role used for the element legend.
     """
     handles, labels = ax.get_legend_handles_labels()
-    handles.append(_target_site_handle(markersize=8))
-    labels.append(" target site")
-    ax.legend(handles=handles, labels=labels, fontsize=8, framealpha=0.9)
+    handles.append(_target_site_handle(markersize=1.2 * style.fontsize(legend_role)))
+    labels.append("X")
+    add_legend(ax, style, handles=handles, labels=labels)

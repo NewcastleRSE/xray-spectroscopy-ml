@@ -18,14 +18,7 @@
 # Citations:
 #   ...
 
-"""Helpers for emitting standalone LaTeX documents and compiling them.
-
-Plotters that produce paper-ready tables write a self-contained ``.tex``
-document next to their figure and, when a LaTeX installation is available,
-compile it to a cropped PDF. Everything that is specific to LaTeX syntax,
-escaping, and the external toolchain lives here so plotters only assemble
-table rows.
-"""
+"""Helpers for emitting standalone LaTeX documents and compiling them."""
 
 import logging
 import re
@@ -37,8 +30,6 @@ from pathlib import Path
 from .formatting import format_decimal
 
 LATEX_PREAMBLE: str = r"""\documentclass{article}
-\usepackage{graphicx}
-\usepackage{float}
 \usepackage[table]{xcolor}
 \usepackage{multirow}
 \pagestyle{empty}
@@ -46,11 +37,8 @@ LATEX_PREAMBLE: str = r"""\documentclass{article}
 """
 
 LATEX_FOOTER: str = "\\end{document}\n"
-
-# Background colors used to highlight the best and worst cell of a table.
 LATEX_MARK_COLORS: dict[str, str] = {"best": "green!15", "worst": "red!15"}
-
-# Seconds allowed per external toolchain call before it is abandoned.
+LATEX_TABLE_FONT: str = r"\footnotesize"
 _PROCESS_TIMEOUT: int = 30
 
 
@@ -79,31 +67,20 @@ def escape_latex(text: str) -> str:
 
 
 def escape_label_line(text: str) -> str:
-    """Escape one table label line for LaTeX.
+    """Escape a table label, using a stacked label for pipe-separated parts.
 
     Args:
         text: Plain text label line.
 
     Returns:
-        LaTeX-safe label line with pipe characters rendered in math mode.
+        LaTeX-safe label. Labels such as ``"SchNet | all"`` become a left-
+        aligned ``shortstack`` with one part per line.
     """
-    return escape_latex(text).replace("|", "$|$")
-
-
-def format_number(value: float, precision: int) -> str:
-    """Format a numeric value for LaTeX output.
-
-    Values are always rendered as plain fixed-point decimal text, including
-    values small enough that general formatting would use scientific notation.
-
-    Args:
-        value: Numeric value to format.
-        precision: Number of significant digits.
-
-    Returns:
-        LaTeX-formatted number as a string.
-    """
-    return format_decimal(value, precision)
+    parts = [part.strip() for part in text.split("|")]
+    if len(parts) == 1:
+        return escape_latex(text)
+    lines = r"\\".join(escape_latex(part) for part in parts)
+    return rf"\shortstack[l]{{{lines}}}"
 
 
 def format_cell(value: float | None, mark: str | None, precision: int) -> str:
@@ -117,7 +94,7 @@ def format_cell(value: float | None, mark: str | None, precision: int) -> str:
     Returns:
         LaTeX cell content with an optional ``\\cellcolor`` prefix.
     """
-    text = format_number(value, precision) if value is not None else "-"
+    text = format_decimal(value, precision) if value is not None else "-"
     color = LATEX_MARK_COLORS[mark] if mark is not None else ""
     return rf"\cellcolor{{{color}}} {text}" if color else text
 
@@ -171,7 +148,7 @@ def compile_pdf(tex_path: Path, out_pdf: Path) -> bool:
         proc = _run_tool([exe, "-interaction=nonstopmode", "-halt-on-error", work_tex.name], work_dir)
         compiled_pdf = work_dir / f"{work_tex.stem}.pdf"
         if proc is None or proc.returncode != 0 or not compiled_pdf.exists():
-            logging.warning("    LaTeX compilation failed for %s, keeping the rendered PDF.", tex_path.name)
+            logging.warning("    LaTeX compilation failed for %s; no PDF was produced.", tex_path.name)
             return False
 
         crop_exe = shutil.which("pdfcrop")
