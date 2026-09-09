@@ -269,8 +269,8 @@ class ErrorCorrelationPlotter(Plotter):
         """
         fig, ax = single_panel(self.style, "square")
         self._draw_pair_panel(ax, xs, ys, color)
-        ax.set_xlabel(one_line_label(col_label_lines))
-        ax.set_ylabel(one_line_label(row_label_lines))
+        ax.set_xlabel(one_line_label(row_label_lines))
+        ax.set_ylabel(one_line_label(col_label_lines))
         save_figure(fig, out)
 
     @property
