@@ -198,7 +198,7 @@ class StructureClusterSelector(Selector):
 
     def __str__(self) -> str:
         """Return the short display label of this selector."""
-        return f"{self.selector_type} {self.cluster_id}"
+        return f"C{self.cluster_id}"
 
 
 def _get_clustering(
