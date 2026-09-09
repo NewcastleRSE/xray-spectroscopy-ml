@@ -41,7 +41,7 @@ from ..utils import is_scalar_value, sample_label
 from .base import Plotter
 from .common.formatting import format_decimal, shorten_label
 from .common.layout import pad_figure, save_figure, single_panel
-from .common.structures import draw_structure
+from .common.structures import add_structure_legend, draw_structure
 from .common.style import (
     COLOR_ACCENT_GREEN,
     COLOR_ACCENT_RED,
@@ -314,17 +314,18 @@ class SelectorOverviewPlotter(Plotter):
         for k, (sample, error) in enumerate(reps):
             ax = fig.add_subplot(gs_right[k // 3, k % 3])
             structure_axes.append((ax, sample, error))
-            ax.set_title(
-                shorten_label([f"{sample_label(sample)}  {self.err_key}={format_decimal(error, 3)}"], width=24),
-                fontsize=self.style.fontsize("title"),
-                pad=self.style.spacing("title_pad"),
-            )
+            # ax.set_title(
+            #     shorten_label([f"{sample_label(sample)}  {self.err_key}={format_decimal(error, 3)}"], width=24),
+            #     fontsize=self.style.fontsize("title"),
+            #     pad=self.style.spacing("title_pad"),
+            # )
         for k in range(len(reps), _N_REPS):
             fig.add_subplot(gs_right[k // 3, k % 3]).axis("off")
 
         fig.subplots_adjust(left=0.03, right=0.98, top=0.86, bottom=0.08, wspace=0.03)
         pad_figure(fig, self.style)
         fig.canvas.draw()
+        structure_grid_bbox = gs[0, 1].get_position(fig)
         for ax, sample, _ in structure_axes:
             structure = sample.get("structure")
             if structure is None:
@@ -334,11 +335,27 @@ class SelectorOverviewPlotter(Plotter):
             draw_structure(
                 ax,
                 structure,
-                str(sample["sample_id"]),
                 self.style,
                 target_site_index=sample.get("target_site_index"),
                 frame_ratio=frame_ratio,
                 show_scale=False,
+                show_legend=self.legend_position == "inside",
+            )
+        if self.legend_position == "outside":
+            structure_entries = []
+            for _, sample, _ in structure_axes:
+                structure = sample.get("structure")
+                if structure is not None:
+                    structure_entries.append((structure, sample.get("target_site_index")))
+            add_structure_legend(
+                fig,
+                structure_entries,
+                self.style,
+                outside_anchor=(
+                    structure_grid_bbox.x1 + 0.02,
+                    (structure_grid_bbox.y0 + structure_grid_bbox.y1) / 2.0,
+                ),
+                outside_loc="center left",
             )
         set_context_title(ax_spec, subtitle, self.style, location="left")
         return fig

@@ -33,7 +33,7 @@ from xanesnet.serialization.prediction_readers import PredictionSample
 from ...utils import one_line_label, sample_label
 from .formatting import shorten_label
 from .layout import pad_figure
-from .structures import draw_structure
+from .structures import add_structure_legend, draw_structure
 from .style import (
     COLOR_ACCENT_RED,
     COLOR_PREDICTION,
@@ -110,9 +110,9 @@ def spectra_structure_page_figure(
         fig,
         ax_struct,
         sample.get("structure"),
-        str(sample["sample_id"]),
         style,
         sample.get("target_site_index"),
+        legend_position,
     )
 
     return fig
@@ -176,9 +176,9 @@ def combined_spectra_page_figure(
             fig,
             ax_struct,
             structure,
-            sample_id,
             style,
             sample.get("target_site_index"),
+            legend_position,
         )
 
     return fig
@@ -257,9 +257,9 @@ def _draw_structure_panel(
     fig: Figure,
     ax_struct: Axes,
     structure: Any,
-    sample_id: str,
     style: PlotStyle,
     target_site_index: int | None,
+    legend_position: str,
 ) -> None:
     """Draw a structure into the measured composite-page frame."""
     if structure is None:
@@ -272,12 +272,19 @@ def _draw_structure_panel(
     draw_structure(
         ax_struct,
         structure,
-        sample_id,
         style,
         target_site_index=target_site_index,
         frame_ratio=frame_ratio,
         legend_role="legend",
+        show_legend=legend_position == "inside",
     )
+    if legend_position == "outside":
+        add_structure_legend(
+            fig,
+            [(structure, target_site_index)],
+            style,
+            outside_anchor=(1.06, 0.55),
+        )
     ax_struct.set_title(
         "Structure",
         loc="left",
