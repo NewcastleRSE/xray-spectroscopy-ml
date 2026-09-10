@@ -26,6 +26,7 @@ from typing import Any, Literal, cast
 
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
+from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.figure import Figure
 
 from .formatting import apply_decimal_tick_format, shorten_label
@@ -442,16 +443,16 @@ def reserve_grid_headroom(axes: list[list[Axes]], n_cells: int) -> None:
 
 def save_figure(
     fig: Figure,
-    out: Path,
+    out: Path | PdfPages,
     style: PlotStyle | None = None,
     *,
     bbox_inches: str | None = None,
 ) -> None:
-    """Save one figure to its explicit canvas and close it.
+    """Save and close a figure as a file or a page in an open PDF.
 
     Args:
         fig: Figure to save.
-        out: Destination path.
+        out: Destination path or open multi-page PDF writer.
         style: Optional style used for the shared canvas padding.
         bbox_inches: Optional Matplotlib bounding-box mode, used when an
             artist intentionally extends beyond the axes. Tight saves receive
@@ -464,7 +465,10 @@ def save_figure(
     save_kwargs: dict[str, Any] = {}
     if bbox_inches == "tight" and resolved_style is not None:
         save_kwargs["pad_inches"] = resolved_style.canvas_padding()[0]
-    fig.savefig(out, bbox_inches=bbox_inches, **save_kwargs)
+    if isinstance(out, PdfPages):
+        out.savefig(fig, bbox_inches=bbox_inches, **save_kwargs)
+    else:
+        fig.savefig(out, bbox_inches=bbox_inches, **save_kwargs)
     plt.close(fig)
 
 

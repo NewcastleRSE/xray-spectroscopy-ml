@@ -24,7 +24,6 @@ import logging
 from itertools import repeat
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -44,6 +43,7 @@ from ..utils import (
 )
 from .base import Plotter
 from .common.formatting import format_decimal
+from .common.layout import save_figure
 from .common.spectra_pages import (
     combined_spectra_page_figure,
     spectra_page_figure,
@@ -195,8 +195,7 @@ class SpectraComparisonPlotter(Plotter):
                         self.style,
                         legend_position=self.legend_position,
                     )
-                pdf.savefig(fig)
-                plt.close(fig)
+                save_figure(fig, pdf, self.style)
 
     def _plot_combined(self, results: AnalysisResults, root: Path) -> None:
         """Write combined best/worst pages ranked independently by each reader.
@@ -325,8 +324,7 @@ class SpectraComparisonPlotter(Plotter):
                     self.style,
                     legend_position=self.legend_position,
                 )
-                pdf.savefig(fig)
-                plt.close(fig)
+                save_figure(fig, pdf, self.style)
 
     @property
     def signature(self) -> Config:

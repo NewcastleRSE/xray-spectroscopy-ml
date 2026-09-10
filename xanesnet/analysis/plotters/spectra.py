@@ -25,7 +25,6 @@ import random
 from pathlib import Path
 from typing import Any
 
-import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -37,6 +36,7 @@ from ..result import AnalysisResults
 from ..selectors import Selector
 from ..utils import one_line_label, sample_key, sample_key_sort_key
 from .base import Plotter
+from .common.layout import save_figure
 from .common.spectra_pages import (
     combined_spectra_page_figure,
     spectra_page_figure,
@@ -140,8 +140,7 @@ class AllSpectraPlotter(Plotter):
                         self.style,
                         legend_position=self.legend_position,
                     )
-                pdf.savefig(fig)
-                plt.close(fig)
+                save_figure(fig, pdf, self.style)
 
     def _plot_combined(self, results: AnalysisResults, root: Path) -> None:
         """Write combined spectra pages comparing prediction readers on shared samples.
@@ -201,8 +200,7 @@ class AllSpectraPlotter(Plotter):
                         self.style,
                         legend_position=self.legend_position,
                     )
-                    pdf.savefig(fig)
-                    plt.close(fig)
+                    save_figure(fig, pdf, self.style)
 
     @property
     def signature(self) -> Config:

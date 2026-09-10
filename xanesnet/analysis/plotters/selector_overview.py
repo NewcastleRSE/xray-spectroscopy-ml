@@ -57,6 +57,7 @@ from .registry import PlotterRegistry
 
 # Number of representative structures drawn per selector page.
 _N_REPS = 6
+_STRUCTURE_GRID_GAP = 0.02
 
 
 @dataclass(frozen=True)
@@ -237,11 +238,7 @@ class SelectorOverviewPlotter(Plotter):
         with PdfPages(out) as pdf:
             for entry in pages:
                 fig = self._selector_page(entry, subtitle)
-                if self.legend_position == "outside":
-                    pdf.savefig(fig, bbox_inches="tight", pad_inches=self.style.canvas_padding()[0])
-                else:
-                    pdf.savefig(fig)
-                plt.close(fig)
+                save_figure(fig, pdf, self.style)
 
     def _selector_page(self, entry: _SelectorEntry, subtitle: str) -> Figure:
         """Build one selector page: mean spectrum next to representative structures.
@@ -272,7 +269,7 @@ class SelectorOverviewPlotter(Plotter):
             figsize=self.style.figure_size(
                 "structure_page",
                 width=10.0,
-                width_margin=self.style.legend_margin(self.legend_position),
+                width_margin=self.style.legend_margin("outside"),
             )
         )
         gs = fig.add_gridspec(1, 2, width_ratios=[1.25, 1.35])
@@ -297,8 +294,8 @@ class SelectorOverviewPlotter(Plotter):
         ax_spec.set_xlabel("Energy")
         ax_spec.set_ylabel("Intensity")
         ax_spec.set_title(
-            shorten_label([f"{entry.label} (n={entry.n_samples})"], width=44),
-            loc="left",
+            f"(n={entry.n_samples})",
+            loc="right",
             fontsize=self.style.fontsize("title"),
             pad=self.style.spacing("title_pad"),
         )
@@ -309,23 +306,37 @@ class SelectorOverviewPlotter(Plotter):
             add_legend(ax_spec, self.style)
         style_axis(ax_spec, self.style)
 
-        gs_right = gs[0, 1].subgridspec(2, 3, wspace=0.02, hspace=0.14)
+        gs_right = gs[0, 1].subgridspec(
+            2,
+            3,
+            wspace=_STRUCTURE_GRID_GAP,
+            hspace=_STRUCTURE_GRID_GAP,
+        )
         structure_axes: list[tuple[Axes, PredictionSample, float]] = []
+        structure_grid_axes: list[Axes] = []
         for k, (sample, error) in enumerate(reps):
             ax = fig.add_subplot(gs_right[k // 3, k % 3])
             structure_axes.append((ax, sample, error))
+            structure_grid_axes.append(ax)
             # ax.set_title(
             #     shorten_label([f"{sample_label(sample)}  {self.err_key}={format_decimal(error, 3)}"], width=24),
             #     fontsize=self.style.fontsize("title"),
             #     pad=self.style.spacing("title_pad"),
             # )
         for k in range(len(reps), _N_REPS):
-            fig.add_subplot(gs_right[k // 3, k % 3]).axis("off")
+            ax = fig.add_subplot(gs_right[k // 3, k % 3])
+            ax.axis("off")
+            structure_grid_axes.append(ax)
 
         fig.subplots_adjust(left=0.03, right=0.98, top=0.86, bottom=0.08, wspace=0.03)
         pad_figure(fig, self.style)
         fig.canvas.draw()
-        structure_grid_bbox = gs[0, 1].get_position(fig)
+        structure_grid_x0 = min(axis.get_position().x0 for axis in structure_grid_axes)
+        structure_grid_x1 = max(axis.get_position().x1 for axis in structure_grid_axes)
+        structure_grid_y0 = min(axis.get_position().y0 for axis in structure_grid_axes)
+        structure_grid_y1 = max(axis.get_position().y1 for axis in structure_grid_axes)
+        spectrum_bbox = ax_spec.get_position()
+        structure_grid_gap = structure_grid_x0 - spectrum_bbox.x1
         for ax, sample, _ in structure_axes:
             structure = sample.get("structure")
             if structure is None:
@@ -339,25 +350,29 @@ class SelectorOverviewPlotter(Plotter):
                 target_site_index=sample.get("target_site_index"),
                 frame_ratio=frame_ratio,
                 show_scale=False,
-                show_legend=self.legend_position == "inside",
+                show_legend=False,
             )
-        if self.legend_position == "outside":
-            structure_entries = []
-            for _, sample, _ in structure_axes:
-                structure = sample.get("structure")
-                if structure is not None:
-                    structure_entries.append((structure, sample.get("target_site_index")))
-            add_structure_legend(
-                fig,
-                structure_entries,
-                self.style,
-                outside_anchor=(
-                    structure_grid_bbox.x1 + 0.02,
-                    (structure_grid_bbox.y0 + structure_grid_bbox.y1) / 2.0,
-                ),
-                outside_loc="center left",
-            )
-        set_context_title(ax_spec, subtitle, self.style, location="left")
+        structure_entries = []
+        for _, sample, _ in structure_axes:
+            structure = sample.get("structure")
+            if structure is not None:
+                structure_entries.append((structure, sample.get("target_site_index")))
+        add_structure_legend(
+            fig,
+            structure_entries,
+            self.style,
+            outside_anchor=(
+                structure_grid_x1 + structure_grid_gap,
+                (structure_grid_y0 + structure_grid_y1) / 2.0,
+            ),
+            outside_loc="center left",
+        )
+        set_context_title(
+            ax_spec,
+            shorten_label([f"{subtitle} | {entry.label}"], width=44),
+            self.style,
+            location="left",
+        )
         return fig
 
     @property
