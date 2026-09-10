@@ -15,78 +15,93 @@ collectors:
 
   - collector_type: loss
     loss:
+      loss_type: msssim
+
+  - collector_type: loss
+    loss:
+      loss_type: emd
+
+  - collector_type: loss
+    loss:
       loss_type: mse
     energy_resolved: true
 
-  - collector_type: descriptor
-    descriptor:
-      descriptor_type: mace
-      invariants_only: true
-      num_layers: -1
-      device: cuda
+  - collector_type: loss
+    loss:
+      loss_type: msssim
+    energy_resolved: true
 
 aggregators:
-  # Summary statistics over every scalar sample and collector value.
   - aggregator_type: scalar
     percentiles: [25, 50, 75, 90, 95]
 
-  # Mean and spread of the per-channel collector vectors, e.g. energy-resolved
-  # losses. Required by the 'energy_resolved_loss' plotter.
   - aggregator_type: vector
 
-  # Per-channel spectra statistics. Required by the 'mean_spectrum' plotter.
   - aggregator_type: spectrum
 
-  # Rank samples by a collected scalar and select best/worst percent groups.
-  # Required by the 'mean_spectrum' plotter for its tail curves.
   - aggregator_type: ranking
     sort_key: mse
     percent: 20
     group_keys: [prediction]
 
-  # Per-channel bias/variance decomposition. Required by the 'bias_variance' plotter.
   - aggregator_type: bias_variance
 
 reporters:
   - reporter_type: scalar
+
   - reporter_type: statistics
     format: yaml
-    # Only report the scalar summaries; the other aggregators feed plotters.
     aggregator_types: [scalar]
 
 plotters:
   - plotter_type: scalar
+    plot_size: small
     bins: 50
+    legend_position: outside
 
   - plotter_type: spectra_all
+    plot_size: small
     max_pages: 8
+    legend_position: inside
+
+  - plotter_type: spectra_all
+    plot_size: small
+    max_pages: 8
+    legend_position: outside
 
   - plotter_type: spectra_comparison
+    plot_size: small
     n_samples: 5
     sort_key: mse
+    legend_position: inside
 
   - plotter_type: energy_resolved_loss
+    plot_size: small
+    legend_position: outside
 
   - plotter_type: mean_spectrum
+    plot_size: small
+    legend_position: outside
 
   - plotter_type: parity
+    plot_size: small
 
   - plotter_type: bias_variance
+    plot_size: small
+    legend_position: outside
 
   - plotter_type: error_correlation
+    plot_size: small
     sort_key: mse
 
-  - plotter_type: pca
-
-  - plotter_type: selector_overview
-    err_key: mse
-
   - plotter_type: stat_table
+    plot_size: small
     stat_keys: [mean, std, median, min, max]
     precision: 4
     sort_key: mse
 
   - plotter_type: stat_table_latex
+    plot_size: small
     stat_keys: [mean, std, median, min, max]
     precision: 4
     sort_key: mse

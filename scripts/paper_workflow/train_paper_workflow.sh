@@ -25,24 +25,57 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 cd "$REPO_ROOT"
 
-# Override these values when running the dispatcher with a different output
-# location or run naming scheme, for example: OUT_DIR=/path/to/runs bash ...
 OUT_DIR="${OUT_DIR:-./runs/paper_workflow}"
 MLP_RUN_NAME="${MLP_RUN_NAME:-paper_workflow_mlp}"
 SCHNET_RUN_NAME="${SCHNET_RUN_NAME:-paper_workflow_schnet}"
 
-echo "[1/2] train: configs/paper_workflow/mlp_train.yaml"
-python -m xanesnet.cli train \
-    -i ./configs/paper_workflow/mlp_train.yaml \
-    -o "$OUT_DIR" \
-    -n "$MLP_RUN_NAME" \
-    --yes
+# With no arguments, run every training. Otherwise, arguments select the numbered trainings to run.
+runs=("$@")
+if [[ ${#runs[@]} -eq 0 ]]; then
+    runs=(1 2)
+fi
 
-echo "[2/2] train: configs/paper_workflow/schnet_train.yaml"
-python -m xanesnet.cli train \
-    -i ./configs/paper_workflow/schnet_train.yaml \
-    -o "$OUT_DIR" \
-    -n "$SCHNET_RUN_NAME" \
-    --yes
+for run in "${runs[@]}"; do
+    case "$run" in
+        1 | 2)
+            ;;
+        -h | --help)
+            echo "Usage: $0 [1] [2]"
+            echo "Run both training jobs when no run numbers are provided."
+            exit 0
+            ;;
+        *)
+            echo "ERROR: unknown training number '$run'. Choose 1 or 2." >&2
+            exit 2
+            ;;
+    esac
+done
+
+run_training() {
+    local run="$1"
+
+    case "$run" in
+        1)
+            echo "[1/2] train: configs/paper_workflow/mlp_train.yaml"
+            python -m xanesnet.cli train \
+                -i ./configs/paper_workflow/mlp_train.yaml \
+                -o "$OUT_DIR" \
+                -n "$MLP_RUN_NAME" \
+                --yes
+            ;;
+        2)
+            echo "[2/2] train: configs/paper_workflow/schnet_train.yaml"
+            python -m xanesnet.cli train \
+                -i ./configs/paper_workflow/schnet_train.yaml \
+                -o "$OUT_DIR" \
+                -n "$SCHNET_RUN_NAME" \
+                --yes
+            ;;
+    esac
+}
+
+for run in "${runs[@]}"; do
+    run_training "$run"
+done
 
 echo "Training finished. Results are under: ${OUT_DIR}"

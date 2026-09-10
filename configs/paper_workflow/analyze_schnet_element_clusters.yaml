@@ -2,24 +2,14 @@ seed: 42
 preload: true
 
 selectors:
-  - selector_type: element
-    elements: [Co]
-  - selector_type: element
-    elements: [Cr]
-  - selector_type: element
-    elements: [Cu]
-  - selector_type: element
-    elements: [Fe]
-  - selector_type: element
-    elements: [Mn]
-  - selector_type: element
-    elements: [Ni]
-  - selector_type: element
-    elements: [Ti]
-  - selector_type: element
-    elements: [V]
-  - selector_type: element
-    elements: [Zn]
+  - selector_type: chain
+    chain:
+      - selector_type: element
+        elements: [V]
+      - selector_type: structure_cluster
+        descriptor:
+          descriptor_type: mace
+        distance_fraction: 0.5
 
 collectors:
   - collector_type: loss
@@ -122,11 +112,6 @@ plotters:
     plot_size: small
     err_key: mse
     legend_position: inside
-
-  - plotter_type: selector_overview
-    plot_size: small
-    err_key: mse
-    legend_position: outside
 
   - plotter_type: stat_table
     plot_size: small
