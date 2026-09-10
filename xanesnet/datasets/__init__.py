@@ -29,6 +29,9 @@ from .torch import (
     EnvEmbedData,
     EnvEmbedDataset,
     EnvEmbedDatasetMp,
+    MultiheadData,
+    MultiheadDataset,
+    MultiheadDatasetMp,
 )
 from .torchgeometric import (
     E3EEBatch,
@@ -70,6 +73,9 @@ __all__ = [
     "EnvEmbedDatasetMp",
     "E3EEDatasetMp",
     "E3EEFullDatasetMp",
+    "MultiheadData",
+    "MultiheadDataset",
+    "MultiheadDatasetMp",
     "GemNetDatasetMp",
     "GeometryGraphDatasetMp",
 ]

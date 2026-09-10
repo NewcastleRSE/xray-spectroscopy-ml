@@ -29,10 +29,12 @@ from .gemnet import GemNetBatchProcessor
 from .gemnet_oc import GemNetOCBatchProcessor
 from .geometrygraph_dimenet import GeometryGraphDimeNetBatchProcessor
 from .geometrygraph_schnet import GeometryGraphSchNetBatchProcessor
+from .multihead import MultiheadBatchProcessor
 
 __all__ = [
     "ForwardBatchProcessor",
     "DescriptorMLPBatchProcessor",
+    "MultiheadBatchProcessor",
     "E3EEBatchProcessor",
     "E3EEFullBatchProcessor",
     "EnvEmbedBatchProcessor",
