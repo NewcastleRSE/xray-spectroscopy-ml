@@ -18,20 +18,10 @@
 # Citations:
 #   ...
 
-"""Public API for XANESNET data sources."""
+"""Public API for Multihead layer modules."""
 
-from .base import DataSource
-from .multipmgjson import MultiPMGJSONSource
-from .multixyzspec import MultiXYZSpecSource
-from .pmgjson import PMGJSONSource
-from .registry import DataSourceRegistry
-from .xyzspec import XYZSpecSource
+from .mlp_head import MLPHead
 
 __all__ = [
-    "DataSource",
-    "XYZSpecSource",
-    "DataSourceRegistry",
-    "MultiXYZSpecSource",
-    "MultiPMGJSONSource",
-    "PMGJSONSource",
+    "MLPHead"
 ]

@@ -22,7 +22,8 @@
 
 from .descriptor import DescriptorData, DescriptorDataset
 from .envembed import EnvEmbedData, EnvEmbedDataset
-from .mp import DescriptorDatasetMp, EnvEmbedDatasetMp
+from .mp import DescriptorDatasetMp, EnvEmbedDatasetMp, MultiheadDatasetMp
+from .multihead import MultiheadData, MultiheadDataset
 
 __all__ = [
     "EnvEmbedData",
@@ -31,4 +32,7 @@ __all__ = [
     "DescriptorDataset",
     "DescriptorDatasetMp",
     "EnvEmbedDatasetMp",
+    "MultiheadData",
+    "MultiheadDataset",
+    "MultiheadDatasetMp",
 ]
