@@ -17,6 +17,7 @@ Submodules
    xanesnet.analysis.selectors.by_element
    xanesnet.analysis.selectors.by_index
    xanesnet.analysis.selectors.by_range
+   xanesnet.analysis.selectors.chain
    xanesnet.analysis.selectors.identity
    xanesnet.analysis.selectors.registry
    xanesnet.analysis.selectors.structure_cluster

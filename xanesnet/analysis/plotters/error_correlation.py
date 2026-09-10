@@ -55,8 +55,7 @@ class ErrorCorrelationPlotter(Plotter):
 
     One grid figure draws the pairwise error scatter on the samples shared by
     each method pair, annotated with the Pearson correlation and the number of
-    common samples; one standalone figure per pair shows the same scatter with
-    full axis labels.
+    common samples; one standalone figure per pair shows the same scatter.
 
     Requires:
         Per-sample error values: provided by a scalar collector emitting ``sort_key``.

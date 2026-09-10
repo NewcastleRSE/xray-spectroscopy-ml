@@ -25,6 +25,7 @@ from .bernoulli import BernoulliSelector
 from .by_element import ElementSelector
 from .by_index import IndexSelector
 from .by_range import IndexRangeSelector
+from .chain import ChainSelector
 from .identity import IdentitySelector
 from .registry import SelectorRegistry
 from .structure_cluster import StructureClusterSelector
@@ -36,6 +37,7 @@ __all__ = [
     "IndexRangeSelector",
     "IndexSelector",
     "BernoulliSelector",
+    "ChainSelector",
     "IdentitySelector",
     "StructureClusterSelector",
 ]
