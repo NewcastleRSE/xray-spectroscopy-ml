@@ -74,8 +74,10 @@ if [[ "$needs_mlp" == true ]]; then
     if [[ -z "${MLP_MODEL:-}" ]]; then
         MLP_MODEL="$(latest_checkpoint "$MLP_RUN_NAME")"
     fi
-    if [[ ! -f "$MLP_MODEL" ]]; then
+    if [[ -z "${MLP_MODEL:-}" || ! -f "$MLP_MODEL" ]]; then
         echo "ERROR: no MLP checkpoint found. Set MLP_MODEL or run train_paper_workflow.sh first." >&2
+        echo "       Expected '${OUT_DIR}/train_${MLP_RUN_NAME}_<suffix>/models/final.pth'." >&2
+        echo "       OUT_DIR defaults to './runs/paper_workflow'; set OUT_DIR or MLP_MODEL if it is elsewhere." >&2
         exit 1
     fi
 fi
@@ -84,8 +86,10 @@ if [[ "$needs_schnet" == true ]]; then
     if [[ -z "${SCHNET_MODEL:-}" ]]; then
         SCHNET_MODEL="$(latest_checkpoint "$SCHNET_RUN_NAME")"
     fi
-    if [[ ! -f "$SCHNET_MODEL" ]]; then
+    if [[ -z "${SCHNET_MODEL:-}" || ! -f "$SCHNET_MODEL" ]]; then
         echo "ERROR: no SchNet checkpoint found. Set SCHNET_MODEL or run train_paper_workflow.sh first." >&2
+        echo "       Expected '${OUT_DIR}/train_${SCHNET_RUN_NAME}_<suffix>/models/final.pth'." >&2
+        echo "       OUT_DIR defaults to './runs/paper_workflow'; set OUT_DIR or SCHNET_MODEL if it is elsewhere." >&2
         exit 1
     fi
 fi

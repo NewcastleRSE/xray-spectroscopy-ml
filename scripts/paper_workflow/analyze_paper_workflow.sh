@@ -80,8 +80,10 @@ if [[ "$needs_mlp" == true ]]; then
     if [[ -z "${MLP_RUN:-}" ]]; then
         MLP_RUN="$(latest_infer_run "$MLP_RUN_NAME")"
     fi
-    if [[ ! -d "${MLP_RUN}/predictions" ]]; then
+    if [[ -z "${MLP_RUN:-}" || ! -d "${MLP_RUN}/predictions" ]]; then
         echo "ERROR: no MLP inference run found. Set MLP_RUN or run infer_paper_workflow.sh first." >&2
+        echo "       Expected '${OUT_DIR}/infer_${MLP_RUN_NAME}_<suffix>/' containing predictions/." >&2
+        echo "       OUT_DIR defaults to './runs/paper_workflow'; set OUT_DIR or MLP_RUN if it is elsewhere." >&2
         exit 1
     fi
 fi
@@ -90,8 +92,10 @@ if [[ "$needs_schnet" == true ]]; then
     if [[ -z "${SCHNET_RUN:-}" ]]; then
         SCHNET_RUN="$(latest_infer_run "$SCHNET_RUN_NAME")"
     fi
-    if [[ ! -d "${SCHNET_RUN}/predictions" ]]; then
+    if [[ -z "${SCHNET_RUN:-}" || ! -d "${SCHNET_RUN}/predictions" ]]; then
         echo "ERROR: no SchNet inference run found. Set SCHNET_RUN or run infer_paper_workflow.sh first." >&2
+        echo "       Expected '${OUT_DIR}/infer_${SCHNET_RUN_NAME}_<suffix>/' containing predictions/." >&2
+        echo "       OUT_DIR defaults to './runs/paper_workflow'; set OUT_DIR or SCHNET_RUN if it is elsewhere." >&2
         exit 1
     fi
 fi
