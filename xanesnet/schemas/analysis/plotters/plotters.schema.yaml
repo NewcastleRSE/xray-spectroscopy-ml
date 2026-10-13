@@ -21,6 +21,20 @@ $defs:
     - outside
     default: inside
     description: Place axis legends inside the axes or outside them on the right.
+  channelStartIndex:
+    type:
+    - integer
+    - 'null'
+    minimum: 0
+    default: null
+    description: First zero-based channel index to include; null starts at channel zero.
+  channelEndIndex:
+    type:
+    - integer
+    - 'null'
+    minimum: 0
+    default: null
+    description: One-past-the-end channel index; null includes all remaining channels.
   plotter:
     oneOf:
     - $ref: scalar.schema.yaml#/$defs/plotterScalar

@@ -39,7 +39,8 @@ from xanesnet.serialization.config import Config
 from ..result import AnalysisResults
 from ..utils import one_line_label
 from .base import Plotter
-from .common.formatting import apply_decimal_tick_format
+from .common.channels import CHANNEL_INDEX_LABEL, slice_channels
+from .common.formatting import apply_decimal_tick_format, loss_energy_label
 from .common.layout import (
     finish_grid,
     method_grid,
@@ -163,9 +164,11 @@ class EnergyResolvedLossPlotter(Plotter):
         Returns:
             Mapping from loss key to ``(mean, std)`` curves with shape ``(N,)``.
         """
-        channel_slice = slice(self.start_index, self.end_index)
         return {
-            key: (entry["mean"][channel_slice], entry["std"][channel_slice])
+            key: (
+                slice_channels(entry["mean"], self.start_index, self.end_index),
+                slice_channels(entry["std"], self.start_index, self.end_index),
+            )
             for key, entry in data.items()
             if self.keys is None or key in self.keys
         }
@@ -217,8 +220,8 @@ class EnergyResolvedLossPlotter(Plotter):
         x = np.arange(len(mean))
         ax.plot(x, mean, color=color, linewidth=self.style.linewidth("main"), label="Mean")
         ax.fill_between(x, mean - std, mean + std, color=color, alpha=0.25, linewidth=0, label="+/- 1 std")
-        ax.set_xlabel("Energy")
-        ax.set_ylabel(key)
+        ax.set_xlabel(CHANNEL_INDEX_LABEL)
+        ax.set_ylabel(loss_energy_label(key))
         add_legend(ax, self.style, position=self.legend_position)
         self._apply_axis(ax)
         set_context_title(ax, subtitle, self.style)
@@ -252,7 +255,7 @@ class EnergyResolvedLossPlotter(Plotter):
             ax.fill_between(x, mean - std, mean + std, color=color, alpha=0.25, linewidth=0)
             style_grid_cell(ax, label_lines, self.style)
 
-        finish_grid(axes, n, "Energy", key, self.style)
+        finish_grid(axes, n, CHANNEL_INDEX_LABEL, loss_energy_label(key), self.style)
         self._apply_axis(axes[0][0])
         save_figure(fig, out / f"{key}_grid.pdf")
 
@@ -276,8 +279,8 @@ class EnergyResolvedLossPlotter(Plotter):
                 x, mean, color=color, linewidth=self.style.linewidth("secondary"), label=one_line_label(label_lines)
             )
             ax.fill_between(x, mean - std, mean + std, color=color, alpha=0.12, linewidth=0)
-        ax.set_xlabel("Energy")
-        ax.set_ylabel(key)
+        ax.set_xlabel(CHANNEL_INDEX_LABEL)
+        ax.set_ylabel(loss_energy_label(key))
         add_legend(ax, self.style, position=self.legend_position)
         self._apply_axis(ax)
         save_figure(fig, out / f"{key}_overlay.pdf")

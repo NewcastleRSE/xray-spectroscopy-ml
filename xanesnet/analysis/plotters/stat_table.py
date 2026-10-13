@@ -64,7 +64,9 @@ class StatTablePlotter(Plotter):
         latex_font: Render figures in a LaTeX-style serif font when ``True``.
         stat_keys: Ordered statistic keys used as table columns and as
             sub-rows of the combined table.
-        precision: Number of significant digits used when formatting table values.
+        time_unit: Display unit for ``time_per_spectrum`` values.
+        decimal_places: Fixed number of digits after the decimal point.
+        display_scales: Optional display multipliers keyed by scalar value key.
         sort_key: Scalar value key whose first statistic orders the combined
             table rows. ``None`` uses the first value key.
         plot_size: Shared figure size profile: ``"small"`` or ``"default"``.
@@ -74,16 +76,20 @@ class StatTablePlotter(Plotter):
         self,
         plotter_type: str,
         stat_keys: list[str],
-        precision: int,
         sort_key: str | None,
         latex_font: bool,
         plot_size: PlotSize,
+        time_unit: str,
+        decimal_places: int,
+        display_scales: Config,
     ) -> None:
         """Initialize a statistics table plotter."""
         super().__init__(plotter_type, latex_font=latex_font, plot_size=plot_size)
         self.stat_keys = stat_keys
-        self.precision = precision
         self.sort_key = sort_key
+        self.time_unit = time_unit
+        self.decimal_places = decimal_places
+        self.display_scales = {key: float(value) for key, value in display_scales.as_dict().items()}
 
     def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
         """Write table PDFs for aggregated scalar statistics.
@@ -104,7 +110,14 @@ class StatTablePlotter(Plotter):
             return
 
         for (agg_type, agg_idx, value_key), rows in source.single.items():
-            table = stat_tables.build_single_table(rows, self.stat_keys, self.precision)
+            table = stat_tables.build_single_table(
+                rows,
+                self.stat_keys,
+                self.decimal_places,
+                value_key=value_key,
+                time_unit=self.time_unit,
+                display_scales=self.display_scales,
+            )
             if table is None:
                 continue
             agg_dir = root / stat_tables.aggregator_dir_name(agg_type, agg_idx)
@@ -114,7 +127,14 @@ class StatTablePlotter(Plotter):
         for (agg_type, agg_idx), rows in source.combined.items():
             value_keys = source.value_order.get((agg_type, agg_idx), [])
             table = stat_tables.build_combined_table(
-                rows, source.row_order, value_keys, self.stat_keys, self.precision, self.sort_key
+                rows,
+                source.row_order,
+                value_keys,
+                self.stat_keys,
+                self.decimal_places,
+                self.sort_key,
+                time_unit=self.time_unit,
+                display_scales=self.display_scales,
             )
             if table is None:
                 continue
@@ -180,7 +200,10 @@ class StatTablePlotter(Plotter):
             filepath: Destination PDF path.
         """
         value_cols = _annotate_sort_column(
-            [stat_tables.value_display_label(value_key) for value_key in table.value_cols],
+            [
+                stat_tables.value_display_label(value_key, self.time_unit, self.display_scales)
+                for value_key in table.value_cols
+            ],
             table.sort_col,
             self.style.table_label_width(),
         )
@@ -240,7 +263,13 @@ class StatTablePlotter(Plotter):
         """
         signature = super().signature
         signature.update_with_dict(
-            {"stat_keys": self.stat_keys, "precision": self.precision, "sort_key": self.sort_key}
+            {
+                "stat_keys": self.stat_keys,
+                "time_unit": self.time_unit,
+                "decimal_places": self.decimal_places,
+                "display_scales": self.display_scales,
+                "sort_key": self.sort_key,
+            }
         )
         return signature
 

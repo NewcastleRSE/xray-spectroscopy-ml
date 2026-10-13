@@ -46,6 +46,7 @@ from ..result import AnalysisResults
 from ..selectors import Selector
 from ..utils import is_scalar_value, sample_label
 from .base import Plotter
+from .common.channels import CHANNEL_INDEX_LABEL, channel_indices, slice_channels
 from .common.formatting import format_decimal, shorten_label
 from .common.layout import pad_figure, save_figure, single_panel
 from .common.structures import add_structure_legend, draw_structure
@@ -101,6 +102,8 @@ class SelectorOverviewPlotter(Plotter):
         latex_font: Render figures in a LaTeX-style serif font when ``True``.
         err_key: Scalar collector key used to rank and color selectors. Must
             be produced by a configured collector.
+        start_index: First channel index to plot; ``None`` starts at channel zero.
+        end_index: One-past-the-end channel index; ``None`` includes the remaining channels.
         plot_size: Shared figure size profile: ``"small"`` or ``"default"``.
         legend_position: Place the selector-page spectrum legend inside the
             axes or outside the figure on the right.
@@ -110,6 +113,8 @@ class SelectorOverviewPlotter(Plotter):
         self,
         plotter_type: str,
         err_key: str,
+        start_index: int | None,
+        end_index: int | None,
         latex_font: bool,
         plot_size: PlotSize,
         legend_position: str,
@@ -117,6 +122,8 @@ class SelectorOverviewPlotter(Plotter):
         """Initialize a selector-overview plotter."""
         super().__init__(plotter_type, latex_font=latex_font, plot_size=plot_size)
         self.err_key = err_key
+        self.start_index = start_index
+        self.end_index = end_index
         self.legend_position = legend_position
 
     def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
@@ -264,6 +271,8 @@ class SelectorOverviewPlotter(Plotter):
         samples = entry.samples
         preds = np.stack([np.asarray(sample["prediction"]).ravel() for sample, _ in samples])
         targets = np.stack([np.asarray(sample["target"]).ravel() for sample, _ in samples])
+        preds = slice_channels(preds, self.start_index, self.end_index)
+        targets = slice_channels(targets, self.start_index, self.end_index)
         target_mean = targets.mean(axis=0)
         pred_mean = preds.mean(axis=0)
         pred_std = preds.std(axis=0)
@@ -282,7 +291,7 @@ class SelectorOverviewPlotter(Plotter):
         gs = fig.add_gridspec(1, 2, width_ratios=[1.25, 1.35])
 
         ax_spec = fig.add_subplot(gs[0, 0])
-        x = np.arange(len(target_mean))
+        x = channel_indices(target_mean)
         ax_spec.plot(
             x, target_mean, color=COLOR_TARGET, linewidth=self.style.linewidth("secondary"), label="Target mean"
         )
@@ -298,7 +307,7 @@ class SelectorOverviewPlotter(Plotter):
         ax_spec.plot(
             x, pred_mean, color=COLOR_PREDICTION, linewidth=self.style.linewidth("main"), label="Prediction mean"
         )
-        ax_spec.set_xlabel("Energy")
+        ax_spec.set_xlabel(CHANNEL_INDEX_LABEL)
         ax_spec.set_ylabel("Intensity")
         ax_spec.set_title(
             f"(n={entry.n_samples})",
@@ -390,5 +399,12 @@ class SelectorOverviewPlotter(Plotter):
             Configuration values needed to recreate this plotter.
         """
         signature = super().signature
-        signature.update_with_dict({"err_key": self.err_key, "legend_position": self.legend_position})
+        signature.update_with_dict(
+            {
+                "err_key": self.err_key,
+                "start_index": self.start_index,
+                "end_index": self.end_index,
+                "legend_position": self.legend_position,
+            }
+        )
         return signature

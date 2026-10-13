@@ -41,7 +41,7 @@ trainer:
   shuffle: true
   drop_last: false
   num_workers: 4
-  epochs: 10
+  epochs: 1000000
   learning_rate: 0.001
   optimizer: Adam
   validation_interval: 1
@@ -51,10 +51,14 @@ trainer:
   regularizer:
     regularizer_type: none
   lr_scheduler:
-    lr_scheduler_type: none
+    lr_scheduler_type: linear
+    start_factor: 1.0
+    end_factor: 0.1
+    total_iters: 480
   early_stopper:
-    early_stopper_type: none
+    early_stopper_type: time
     restore_best: true
+    time_limit_seconds: 86400
 
 strategy:
   strategy_type: single

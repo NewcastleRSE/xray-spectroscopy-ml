@@ -107,11 +107,17 @@ plotters:
   - plotter_type: stat_table
     plot_size: default
     stat_keys: ["mean", "std", "median", "min", "max"]
-    precision: 4
+    time_unit: milliseconds
+    decimal_places: 3
+    display_scales:
+      mse: 1000
     sort_key: mse
 
   - plotter_type: stat_table_latex
     plot_size: default
     stat_keys: ["mean", "std", "median", "min", "max"]
-    precision: 4
+    time_unit: milliseconds
+    decimal_places: 3
+    display_scales:
+      mse: 1000
     sort_key: mse

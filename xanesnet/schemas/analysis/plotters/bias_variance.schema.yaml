@@ -17,6 +17,10 @@ $defs:
         $ref: plotters.schema.yaml#/$defs/latexFont
       legend_position:
         $ref: plotters.schema.yaml#/$defs/legendPosition
+      start_index:
+        $ref: plotters.schema.yaml#/$defs/channelStartIndex
+      end_index:
+        $ref: plotters.schema.yaml#/$defs/channelEndIndex
     description: Plot the per-channel MSE split into squared bias and variance
       per method plus a combined grid. Requires a ``bias_variance`` aggregator.
 description: Analysis component schemas used by ``core_analyze`` setup functions

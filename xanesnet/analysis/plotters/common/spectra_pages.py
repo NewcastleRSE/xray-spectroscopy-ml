@@ -38,6 +38,7 @@ from matplotlib.figure import Figure
 from xanesnet.serialization.prediction_readers import PredictionSample
 
 from ...utils import one_line_label, sample_label
+from .channels import CHANNEL_INDEX_LABEL, channel_indices, slice_channels
 from .formatting import shorten_label
 from .layout import pad_figure
 from .structures import add_structure_legend, draw_structure
@@ -61,6 +62,8 @@ def spectra_page_figure(
     subtitle: str,
     style: PlotStyle,
     legend_position: str = "inside",
+    start_index: int | None = None,
+    end_index: int | None = None,
 ) -> Figure:
     """Create a spectra comparison figure for one prediction sample.
 
@@ -70,13 +73,15 @@ def spectra_page_figure(
         style: Rendering style controlling figure geometry and typography.
         legend_position: Whether the spectra legend is inside the axes or
             outside it on the right.
+        start_index: First channel index to plot, or ``None`` for channel zero.
+        end_index: One-past-the-end channel index, or ``None`` for all remaining channels.
 
     Returns:
         Figure with spectra and residual panels.
     """
     fig, ax_spec, ax_res = _create_spectra_page_axes(style, legend_position)
 
-    _draw_sample_page(sample, ax_spec, ax_res, style, legend_position)
+    _draw_sample_page(sample, ax_spec, ax_res, style, legend_position, start_index, end_index)
     _finish_page(fig, ax_spec, subtitle, sample_label(sample), style, has_structure=False)
     return fig
 
@@ -86,6 +91,8 @@ def spectra_structure_page_figure(
     subtitle: str,
     style: PlotStyle,
     legend_position: str = "inside",
+    start_index: int | None = None,
+    end_index: int | None = None,
 ) -> Figure:
     """Create a spectra comparison figure with the matched structure alongside.
 
@@ -95,6 +102,8 @@ def spectra_structure_page_figure(
         style: Rendering style controlling figure geometry and typography.
         legend_position: Whether the spectra legend is inside the axes or
             outside it on the right.
+        start_index: First channel index to plot, or ``None`` for channel zero.
+        end_index: One-past-the-end channel index, or ``None`` for all remaining channels.
 
     Returns:
         Figure with structure, spectra, and residual panels.
@@ -104,7 +113,7 @@ def spectra_structure_page_figure(
         legend_position,
     )
 
-    _draw_sample_page(sample, ax_spec, ax_res, style, legend_position)
+    _draw_sample_page(sample, ax_spec, ax_res, style, legend_position, start_index, end_index)
     _finish_page(
         fig,
         ax_spec,
@@ -133,6 +142,8 @@ def combined_spectra_page_figure(
     subtitle: str,
     style: PlotStyle,
     legend_position: str = "inside",
+    start_index: int | None = None,
+    end_index: int | None = None,
 ) -> Figure:
     """Create a spectra figure overlaying several methods on one sample.
 
@@ -145,6 +156,8 @@ def combined_spectra_page_figure(
         style: Rendering style controlling figure geometry and typography.
         legend_position: Whether the spectra legend is inside the axes or
             outside it on the right.
+        start_index: First channel index to plot, or ``None`` for channel zero.
+        end_index: One-past-the-end channel index, or ``None`` for all remaining channels.
 
     Returns:
         Figure with overlaid spectra and residual panels.
@@ -169,6 +182,8 @@ def combined_spectra_page_figure(
         target,
         style,
         legend_position,
+        start_index,
+        end_index,
     )
     _finish_page(
         fig,
@@ -231,7 +246,7 @@ def _create_structure_page_axes(
     ax_spec = axes["spectra"]
     ax_res = axes["residual"]
     ax_res.sharex(ax_spec)
-    # The residual panel is the shared x-axis owner. Keep energy tick labels
+    # The residual panel is the shared x-axis owner. Keep channel tick labels
     # off the upper spectrum panel to avoid displaying the same values twice.
     ax_spec.tick_params(axis="x", labelbottom=False)
     return fig, ax_struct, ax_spec, ax_res
@@ -308,6 +323,8 @@ def _draw_combined_spectra_panels(
     target: np.ndarray,
     style: PlotStyle,
     legend_position: str,
+    start_index: int | None,
+    end_index: int | None,
 ) -> None:
     """Draw target, predictions, residuals, and legend.
 
@@ -320,8 +337,12 @@ def _draw_combined_spectra_panels(
         style: Rendering style controlling line and legend appearance.
         legend_position: Whether the spectra legend is inside the axes or
             outside it on the right.
+        start_index: First channel index to plot, or ``None`` for channel zero.
+        end_index: One-past-the-end channel index, or ``None`` for all remaining channels.
     """
-    x = np.arange(len(target))
+    target = slice_channels(target, start_index, end_index)
+    predictions = [slice_channels(prediction, start_index, end_index) for prediction in predictions]
+    x = channel_indices(target)
     ax_spec.plot(x, target, label="Target", linewidth=style.linewidth("main"), color=COLOR_TARGET)
     for index, (label, pred) in enumerate(zip(method_labels, predictions)):
         color = method_color(index)
@@ -336,7 +357,7 @@ def _draw_combined_spectra_panels(
         ax_res.plot(x, pred - target, linewidth=style.linewidth("secondary"), color=color)
 
     ax_res.axhline(0, color="black", linewidth=style.linewidth("reference"), linestyle=":")
-    ax_res.set_xlabel("Energy")
+    ax_res.set_xlabel(CHANNEL_INDEX_LABEL)
     add_legend(ax_spec, style, position=legend_position)
     style_axis(ax_spec, style)
     style_axis(ax_res, style)
@@ -348,6 +369,8 @@ def _draw_sample_page(
     ax_res: Axes,
     style: PlotStyle,
     legend_position: str,
+    start_index: int | None,
+    end_index: int | None,
 ) -> None:
     """Draw target, prediction, residual, and sample title.
 
@@ -358,13 +381,25 @@ def _draw_sample_page(
         style: Rendering style controlling line appearance.
         legend_position: Whether the spectra legend is inside the axes or
             outside it on the right.
+        start_index: First channel index to plot, or ``None`` for channel zero.
+        end_index: One-past-the-end channel index, or ``None`` for all remaining channels.
     """
     pred = np.asarray(sample["prediction"]).ravel()
     target = np.asarray(sample["target"]).ravel()
     pred_std_value = sample.get("prediction_std")
     pred_std = np.asarray(pred_std_value).ravel() if pred_std_value is not None else None
 
-    _draw_spectra_panels(ax_spec, ax_res, pred, target, pred_std, style, legend_position)
+    _draw_spectra_panels(
+        ax_spec,
+        ax_res,
+        pred,
+        target,
+        pred_std,
+        style,
+        legend_position,
+        start_index,
+        end_index,
+    )
 
 
 def _draw_spectra_panels(
@@ -375,6 +410,8 @@ def _draw_spectra_panels(
     pred_std: np.ndarray | None,
     style: PlotStyle,
     legend_position: str,
+    start_index: int | None,
+    end_index: int | None,
 ) -> None:
     """Draw target, prediction, uncertainty, residual, and legend.
 
@@ -387,11 +424,18 @@ def _draw_spectra_panels(
         style: Rendering style controlling line and legend appearance.
         legend_position: Whether the spectra legend is inside the axes or
             outside it on the right.
+        start_index: First channel index to plot, or ``None`` for channel zero.
+        end_index: One-past-the-end channel index, or ``None`` for all remaining channels.
     """
-    x = np.arange(len(pred))
+    aligned_pred_std = pred_std is not None and pred_std.shape == pred.shape
+    pred = slice_channels(pred, start_index, end_index)
+    target = slice_channels(target, start_index, end_index)
+    if pred_std is not None and aligned_pred_std:
+        pred_std = slice_channels(pred_std, start_index, end_index)
+    x = channel_indices(pred)
     ax_spec.plot(x, target, label="Target", linewidth=style.linewidth("main"), color=COLOR_TARGET)
     if pred_std is not None:
-        if pred_std.shape == pred.shape:
+        if aligned_pred_std:
             ax_spec.fill_between(
                 x,
                 pred - pred_std,
@@ -405,12 +449,12 @@ def _draw_spectra_panels(
             logging.warning(
                 "Skipping prediction_std shading because shape %s does not match prediction shape %s.",
                 pred_std.shape,
-                pred.shape,
+                len(x),
             )
     ax_spec.plot(x, pred, label="Prediction", linewidth=style.linewidth("main"), color=COLOR_PREDICTION, linestyle="--")
     add_legend(ax_spec, style, position=legend_position)
     ax_res.plot(x, pred - target, color=COLOR_ACCENT_RED, linewidth=style.linewidth("main"))
     ax_res.axhline(0, color="black", linewidth=style.linewidth("reference"), linestyle=":")
-    ax_res.set_xlabel("Energy")
+    ax_res.set_xlabel(CHANNEL_INDEX_LABEL)
     style_axis(ax_spec, style)
     style_axis(ax_res, style)

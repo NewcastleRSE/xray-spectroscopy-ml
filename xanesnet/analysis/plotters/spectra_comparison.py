@@ -82,6 +82,8 @@ class SpectraComparisonPlotter(Plotter):
         n_samples: Number of best and worst samples plotted per method.
         sort_key: Scalar collector key used to rank samples. Must be produced
             by a configured collector.
+        start_index: First channel index to plot; ``None`` starts at channel zero.
+        end_index: One-past-the-end channel index; ``None`` includes the remaining channels.
         legend_position: Place spectra legends ``"inside"`` the axes or
             ``"outside"`` them on the right.
         plot_size: Shared figure size profile: ``"small"`` or ``"default"``.
@@ -92,6 +94,8 @@ class SpectraComparisonPlotter(Plotter):
         plotter_type: str,
         n_samples: int,
         sort_key: str,
+        start_index: int | None,
+        end_index: int | None,
         legend_position: str,
         latex_font: bool,
         plot_size: PlotSize,
@@ -100,6 +104,8 @@ class SpectraComparisonPlotter(Plotter):
         super().__init__(plotter_type, latex_font=latex_font, plot_size=plot_size)
         self.n_samples = n_samples
         self.sort_key = sort_key
+        self.start_index = start_index
+        self.end_index = end_index
         self.legend_position = legend_position
 
     def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
@@ -194,6 +200,8 @@ class SpectraComparisonPlotter(Plotter):
                         subtitle,
                         self.style,
                         legend_position=self.legend_position,
+                        start_index=self.start_index,
+                        end_index=self.end_index,
                     )
                 else:
                     fig = spectra_page_figure(
@@ -201,6 +209,8 @@ class SpectraComparisonPlotter(Plotter):
                         subtitle,
                         self.style,
                         legend_position=self.legend_position,
+                        start_index=self.start_index,
+                        end_index=self.end_index,
                     )
                 save_figure(fig, pdf, self.style)
 
@@ -330,6 +340,8 @@ class SpectraComparisonPlotter(Plotter):
                     subtitle,
                     self.style,
                     legend_position=self.legend_position,
+                    start_index=self.start_index,
+                    end_index=self.end_index,
                 )
                 save_figure(fig, pdf, self.style)
 
@@ -345,6 +357,8 @@ class SpectraComparisonPlotter(Plotter):
             {
                 "n_samples": self.n_samples,
                 "sort_key": self.sort_key,
+                "start_index": self.start_index,
+                "end_index": self.end_index,
                 "legend_position": self.legend_position,
             }
         )

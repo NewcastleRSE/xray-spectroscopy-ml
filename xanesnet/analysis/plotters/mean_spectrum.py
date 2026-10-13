@@ -39,6 +39,7 @@ from xanesnet.serialization.config import Config
 from ..result import AnalysisResults
 from ..utils import one_line_label
 from .base import Plotter
+from .common.channels import CHANNEL_INDEX_LABEL, channel_indices, slice_channels
 from .common.formatting import format_decimal
 from .common.layout import save_figure, single_panel
 from .common.style import (
@@ -83,6 +84,8 @@ class MeanSpectrumPlotter(Plotter):
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
         latex_font: Render figures in a LaTeX-style serif font when ``True``.
+        start_index: First channel index to plot; ``None`` starts at channel zero.
+        end_index: One-past-the-end channel index; ``None`` includes the remaining channels.
         legend_position: Place legends ``"inside"`` the axes or ``"outside"``
             them on the right.
         plot_size: Shared figure size profile: ``"small"`` or ``"default"``.
@@ -91,12 +94,16 @@ class MeanSpectrumPlotter(Plotter):
     def __init__(
         self,
         plotter_type: str,
+        start_index: int | None,
+        end_index: int | None,
         legend_position: str,
         latex_font: bool,
         plot_size: PlotSize,
     ) -> None:
         """Initialize a mean-spectrum plotter."""
         super().__init__(plotter_type, latex_font=latex_font, plot_size=plot_size)
+        self.start_index = start_index
+        self.end_index = end_index
         self.legend_position = legend_position
 
     def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
@@ -132,14 +139,14 @@ class MeanSpectrumPlotter(Plotter):
                 if not spectrum_data or not ranking_data:
                     continue
 
-                target_mean = spectrum_data["target_mean"]
-                pred_mean = spectrum_data["prediction_mean"]
-                target_std = spectrum_data["target_std"]
-                pred_std = spectrum_data["prediction_std"]
-                best_mean = ranking_data["best_prediction_mean"]
-                best_std = ranking_data["best_prediction_std"]
-                worst_mean = ranking_data["worst_prediction_mean"]
-                worst_std = ranking_data["worst_prediction_std"]
+                target_mean = slice_channels(spectrum_data["target_mean"], self.start_index, self.end_index)
+                pred_mean = slice_channels(spectrum_data["prediction_mean"], self.start_index, self.end_index)
+                target_std = slice_channels(spectrum_data["target_std"], self.start_index, self.end_index)
+                pred_std = slice_channels(spectrum_data["prediction_std"], self.start_index, self.end_index)
+                best_mean = slice_channels(ranking_data["best_prediction_mean"], self.start_index, self.end_index)
+                best_std = slice_channels(ranking_data["best_prediction_std"], self.start_index, self.end_index)
+                worst_mean = slice_channels(ranking_data["worst_prediction_mean"], self.start_index, self.end_index)
+                worst_std = slice_channels(ranking_data["worst_prediction_std"], self.start_index, self.end_index)
                 percent = float(ranking_data["percent"])
 
                 color = method_color(len(methods))
@@ -215,7 +222,7 @@ class MeanSpectrumPlotter(Plotter):
             out: Destination PDF path.
         """
         fig, ax = single_panel(self.style, "energy", legend_position=self.legend_position)
-        x = np.arange(len(pred_mean))
+        x = channel_indices(pred_mean)
         ax.plot(
             x,
             target_mean,
@@ -257,7 +264,7 @@ class MeanSpectrumPlotter(Plotter):
             linewidth=self.style.linewidth("emphasis"),
             label=f"Worst {format_decimal(percent, 4)}% mean",
         )
-        ax.set_xlabel("Energy")
+        ax.set_xlabel(CHANNEL_INDEX_LABEL)
         ax.set_ylabel("Intensity")
         add_legend(ax, self.style, position=self.legend_position)
         set_context_title(ax, subtitle, self.style)
@@ -283,7 +290,7 @@ class MeanSpectrumPlotter(Plotter):
             out: Destination PDF path.
         """
         fig, ax = single_panel(self.style, "energy", legend_position=self.legend_position)
-        x = np.arange(len(pred_mean))
+        x = channel_indices(pred_mean)
         ax.plot(x, target_mean, color=COLOR_TARGET, linewidth=self.style.linewidth("secondary"), label="Target mean")
         ax.fill_between(
             x,
@@ -295,7 +302,7 @@ class MeanSpectrumPlotter(Plotter):
             label="Prediction +/- 1 std",
         )
         ax.plot(x, pred_mean, color=color, linewidth=self.style.linewidth("main"), label="Prediction mean")
-        ax.set_xlabel("Energy")
+        ax.set_xlabel(CHANNEL_INDEX_LABEL)
         ax.set_ylabel("Intensity")
         add_legend(ax, self.style, position=self.legend_position)
         set_context_title(ax, subtitle, self.style)
@@ -322,10 +329,10 @@ class MeanSpectrumPlotter(Plotter):
             out: Destination PDF path.
         """
         fig, ax = single_panel(self.style, "energy", legend_position=self.legend_position)
-        x = np.arange(len(pred_std))
+        x = channel_indices(pred_std)
         ax.plot(x, target_std, color=COLOR_TARGET, linewidth=self.style.linewidth("emphasis"), label="Target std")
         ax.plot(x, pred_std, color=color, linewidth=self.style.linewidth("emphasis"), label="Prediction std")
-        ax.set_xlabel("Energy")
+        ax.set_xlabel(CHANNEL_INDEX_LABEL)
         ax.set_ylabel("Standard deviation")
         add_legend(ax, self.style, position=self.legend_position)
         set_context_title(ax, subtitle, self.style)
@@ -387,7 +394,7 @@ class MeanSpectrumPlotter(Plotter):
         shared_target = self._shared_target_mean(methods)
         if shared_target is not None:
             ax.plot(
-                np.arange(len(shared_target)),
+                channel_indices(shared_target),
                 shared_target,
                 color=COLOR_TARGET,
                 linewidth=self.style.linewidth("secondary"),
@@ -395,13 +402,13 @@ class MeanSpectrumPlotter(Plotter):
                 label="Target mean",
             )
         for label_lines, color, target_mean, pred_mean, *_ in methods:
-            x = np.arange(len(pred_mean))
+            x = channel_indices(pred_mean)
             if shared_target is None:
                 ax.plot(x, target_mean, color=color, linewidth=self.style.linewidth("light"), linestyle=":")
             ax.plot(
                 x, pred_mean, color=color, linewidth=self.style.linewidth("main"), label=one_line_label(label_lines)
             )
-        ax.set_xlabel("Energy")
+        ax.set_xlabel(CHANNEL_INDEX_LABEL)
         ax.set_ylabel("Intensity")
         self._legend_with_styles(ax, [("Prediction mean", "-"), ("Target mean", ":")])
         save_figure(fig, out)
@@ -424,7 +431,7 @@ class MeanSpectrumPlotter(Plotter):
         shared_target = self._shared_target_mean(methods)
         if shared_target is not None:
             ax.plot(
-                np.arange(len(shared_target)),
+                channel_indices(shared_target),
                 shared_target,
                 color=COLOR_TARGET,
                 linewidth=self.style.linewidth("secondary"),
@@ -433,14 +440,14 @@ class MeanSpectrumPlotter(Plotter):
             )
         for label_lines, color, target_mean, pred_mean, _, _, best_mean, _, worst_mean, _ in methods:
             tail_mean = best_mean if direction == "best" else worst_mean
-            x = np.arange(len(tail_mean))
+            x = channel_indices(tail_mean)
             if shared_target is None:
                 ax.plot(x, target_mean, color=color, linewidth=self.style.linewidth("light"), linestyle=":")
             ax.plot(x, pred_mean, color=color, linewidth=self.style.linewidth("secondary"), linestyle="--")
             ax.plot(
                 x, tail_mean, color=color, linewidth=self.style.linewidth("main"), label=one_line_label(label_lines)
             )
-        ax.set_xlabel("Energy")
+        ax.set_xlabel(CHANNEL_INDEX_LABEL)
         ax.set_ylabel("Intensity")
         self._legend_with_styles(
             ax,
@@ -460,5 +467,11 @@ class MeanSpectrumPlotter(Plotter):
             Configuration values needed to recreate this plotter.
         """
         signature = super().signature
-        signature.update_with_dict({"legend_position": self.legend_position})
+        signature.update_with_dict(
+            {
+                "start_index": self.start_index,
+                "end_index": self.end_index,
+                "legend_position": self.legend_position,
+            }
+        )
         return signature

@@ -58,7 +58,9 @@ class StatTableLatexPlotter(Plotter):
         plotter_type: Registered plotter name from the analysis configuration.
         stat_keys: Ordered statistic keys used as table columns and as
             sub-rows of the combined table.
-        precision: Number of significant digits used when formatting table values.
+        time_unit: Display unit for ``time_per_spectrum`` values.
+        decimal_places: Fixed number of digits after the decimal point.
+        display_scales: Optional display multipliers keyed by scalar value key.
         sort_key: Scalar value key whose first statistic orders the combined
             table rows. ``None`` uses the first value key.
         plot_size: Shared figure size profile: ``"small"`` or ``"default"``.
@@ -68,15 +70,19 @@ class StatTableLatexPlotter(Plotter):
         self,
         plotter_type: str,
         stat_keys: list[str],
-        precision: int,
         sort_key: str | None,
         plot_size: PlotSize,
+        time_unit: str,
+        decimal_places: int,
+        display_scales: Config,
     ) -> None:
         """Initialize a LaTeX statistics table plotter."""
         super().__init__(plotter_type, latex_font=False, plot_size=plot_size)
         self.stat_keys = stat_keys
-        self.precision = precision
         self.sort_key = sort_key
+        self.time_unit = time_unit
+        self.decimal_places = decimal_places
+        self.display_scales = {key: float(value) for key, value in display_scales.as_dict().items()}
 
     def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
         """Write LaTeX sources and compiled PDFs for aggregated scalar statistics.
@@ -97,7 +103,14 @@ class StatTableLatexPlotter(Plotter):
             return
 
         for (agg_type, agg_idx, value_key), rows in source.single.items():
-            table = stat_tables.build_single_table(rows, self.stat_keys, self.precision)
+            table = stat_tables.build_single_table(
+                rows,
+                self.stat_keys,
+                self.decimal_places,
+                value_key=value_key,
+                time_unit=self.time_unit,
+                display_scales=self.display_scales,
+            )
             if table is None:
                 continue
             agg_dir = root / stat_tables.aggregator_dir_name(agg_type, agg_idx)
@@ -107,7 +120,14 @@ class StatTableLatexPlotter(Plotter):
         for (agg_type, agg_idx), rows in source.combined.items():
             available_value_keys = source.value_order.get((agg_type, agg_idx), [])
             table = stat_tables.build_combined_table(
-                rows, source.row_order, available_value_keys, self.stat_keys, self.precision, self.sort_key
+                rows,
+                source.row_order,
+                available_value_keys,
+                self.stat_keys,
+                self.decimal_places,
+                self.sort_key,
+                time_unit=self.time_unit,
+                display_scales=self.display_scales,
             )
             if table is None:
                 continue
@@ -133,7 +153,7 @@ class StatTableLatexPlotter(Plotter):
             Complete ``table`` float as a LaTeX string.
         """
         col_spec = "l" + "c" * len(table.col_labels)
-        display_value_key = stat_tables.value_display_label(value_key)
+        display_value_key = stat_tables.value_display_label(value_key, self.time_unit, self.display_scales)
         caption = f"PLACEHOLDER: statistics for '{latex.escape_latex(display_value_key)}'."
         label = f"tab:stat_{latex.sanitize_label(value_key)}"
         headers = [
@@ -152,9 +172,9 @@ class StatTableLatexPlotter(Plotter):
             r"\hline",
         ]
         for r, row_label in enumerate(table.row_labels):
-            cells = [latex.escape_label_line(row_label)]
+            cells = [latex.escape_latex(row_label)]
             for c in range(len(table.col_labels)):
-                cells.append(latex.format_cell(table.cell_values[r][c], table.cell_marks[r][c], self.precision))
+                cells.append(latex.format_cell(table.cell_text[r][c], table.cell_marks[r][c]))
             lines.append(" & ".join(cells) + r" \\")
         lines.extend(
             [
@@ -189,7 +209,7 @@ class StatTableLatexPlotter(Plotter):
         headers = [
             latex.escape_latex(
                 truncate_text(
-                    stat_tables.value_display_label(value_col),
+                    stat_tables.value_display_label(value_col, self.time_unit, self.display_scales),
                     self.style.table_label_width(),
                 )
             )
@@ -211,12 +231,12 @@ class StatTableLatexPlotter(Plotter):
                 continue
             n_sub_rows = end - start + 1
             label_lines = row_label_lines[table.row_labels[group_idx]]
-            merged_label = latex.escape_label_line(one_line_label(label_lines))
+            merged_label = latex.escape_latex(one_line_label(label_lines))
             for r in range(start, end + 1):
                 label_cell = rf"\multirow{{{n_sub_rows}}}{{*}}{{{merged_label}}}" if r == start else ""
                 cells = [label_cell, latex.escape_latex(table.cell_text[r][0])]
                 for c in range(len(table.value_cols)):
-                    cells.append(latex.format_cell(table.cell_values[r][c], table.cell_marks[r][c], self.precision))
+                    cells.append(latex.format_cell(table.cell_text[r][c + 1], table.cell_marks[r][c]))
                 lines.append(" & ".join(cells) + r" \\")
             lines.append(r"\hline")
         lines.extend(
@@ -249,7 +269,9 @@ class StatTableLatexPlotter(Plotter):
         signature.update_with_dict(
             {
                 "stat_keys": self.stat_keys,
-                "precision": self.precision,
+                "time_unit": self.time_unit,
+                "decimal_places": self.decimal_places,
+                "display_scales": self.display_scales,
                 "sort_key": self.sort_key,
             }
         )

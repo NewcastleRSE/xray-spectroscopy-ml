@@ -25,19 +25,9 @@ $defs:
         default: linear
         description: Y-axis scaling for the loss curves.
       start_index:
-        type:
-        - integer
-        - 'null'
-        minimum: 0
-        default: null
-        description: First channel index to plot. Defaults to the first channel.
+        $ref: plotters.schema.yaml#/$defs/channelStartIndex
       end_index:
-        type:
-        - integer
-        - 'null'
-        minimum: 0
-        default: null
-        description: One-past-the-end channel index to plot. Defaults to the last channel.
+        $ref: plotters.schema.yaml#/$defs/channelEndIndex
       y_zoom:
         type:
         - number
