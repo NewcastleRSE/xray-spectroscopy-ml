@@ -156,11 +156,18 @@ class StatTableLatexPlotter(Plotter):
         display_value_key = stat_tables.value_display_label(value_key, self.time_unit, self.display_scales)
         caption = f"PLACEHOLDER: statistics for '{latex.escape_latex(display_value_key)}'."
         label = f"tab:stat_{latex.sanitize_label(value_key)}"
-        headers = [
-            latex.escape_latex(truncate_text(label, self.style.table_label_width()))
-            + (_SORT_INDICATOR if idx == table.sort_col else "")
-            for idx, label in enumerate(table.col_labels)
-        ]
+        time_unit = (
+            stat_tables.value_display_unit(value_key, self.time_unit, self.display_scales)
+            if value_key == "time_per_spectrum"
+            else None
+        )
+        headers = []
+        for idx, label in enumerate(table.col_labels):
+            if time_unit is not None:
+                label = label.removesuffix(f" ({time_unit})")
+            header = latex.escape_latex(truncate_text(label, self.style.table_label_width()))
+            header += _SORT_INDICATOR if idx == table.sort_col else ""
+            headers.append(latex.format_label_cell(header, padding="0pt"))
         lines: list[str] = [
             r"\begin{table}[t]",
             rf"\caption{{{caption}}}",
@@ -172,9 +179,9 @@ class StatTableLatexPlotter(Plotter):
             r"\hline",
         ]
         for r, row_label in enumerate(table.row_labels):
-            cells = [latex.escape_latex(row_label)]
+            cells = [latex.format_label_cell(latex.escape_latex(row_label))]
             for c in range(len(table.col_labels)):
-                cells.append(latex.format_cell(table.cell_text[r][c], table.cell_marks[r][c]))
+                cells.append(latex.format_cell(table.cell_text[r][c], table.cell_marks[r][c], time_unit))
             lines.append(" & ".join(cells) + r" \\")
         lines.extend(
             [
@@ -206,16 +213,15 @@ class StatTableLatexPlotter(Plotter):
         """
         caption = "PLACEHOLDER: combined statistics table."
         label = "tab:stat_combined"
-        headers = [
-            latex.escape_latex(
-                truncate_text(
-                    stat_tables.value_display_label(value_col, self.time_unit, self.display_scales),
-                    self.style.table_label_width(),
-                )
-            )
-            + (_SORT_INDICATOR if idx == table.sort_col else "")
-            for idx, value_col in enumerate(table.value_cols)
-        ]
+        headers = []
+        for idx, value_col in enumerate(table.value_cols):
+            label_text = stat_tables.value_display_label(value_col, self.time_unit, self.display_scales)
+            time_unit = stat_tables.value_display_unit(value_col, self.time_unit, self.display_scales)
+            if value_col == "time_per_spectrum" and time_unit is not None:
+                label_text = label_text.removesuffix(f" ({time_unit})")
+            header = latex.escape_latex(truncate_text(label_text, self.style.table_label_width()))
+            header += _SORT_INDICATOR if idx == table.sort_col else ""
+            headers.append(latex.format_label_cell(header, padding="0pt"))
         lines: list[str] = [
             r"\begin{table}[t]",
             rf"\caption{{{caption}}}",
@@ -233,10 +239,17 @@ class StatTableLatexPlotter(Plotter):
             label_lines = row_label_lines[table.row_labels[group_idx]]
             merged_label = latex.escape_latex(one_line_label(label_lines))
             for r in range(start, end + 1):
-                label_cell = rf"\multirow{{{n_sub_rows}}}{{*}}{{{merged_label}}}" if r == start else ""
-                cells = [label_cell, latex.escape_latex(table.cell_text[r][0])]
+                merged_cell = rf"\multirow{{{n_sub_rows}}}{{*}}{{{merged_label}}}"
+                label_cell = latex.format_label_cell(merged_cell) if r == start else ""
+                cells = [label_cell, latex.format_label_cell(latex.escape_latex(table.cell_text[r][0]))]
                 for c in range(len(table.value_cols)):
-                    cells.append(latex.format_cell(table.cell_text[r][c + 1], table.cell_marks[r][c]))
+                    value_col = table.value_cols[c]
+                    unit = (
+                        stat_tables.value_display_unit(value_col, self.time_unit, self.display_scales)
+                        if value_col == "time_per_spectrum"
+                        else None
+                    )
+                    cells.append(latex.format_cell(table.cell_text[r][c + 1], table.cell_marks[r][c], unit))
                 lines.append(" & ".join(cells) + r" \\")
             lines.append(r"\hline")
         lines.extend(

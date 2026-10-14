@@ -56,7 +56,7 @@ reporters:
 plotters:
   - plotter_type: scalar
     plot_size: small
-    bins: 50
+    bins: 45
     legend_position: outside
 
   - plotter_type: spectra_all
@@ -104,7 +104,7 @@ plotters:
 
   - plotter_type: error_correlation
     plot_size: small
-    sort_key: mse
+    error_key: mse
 
   - plotter_type: stat_table
     plot_size: small

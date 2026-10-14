@@ -358,7 +358,14 @@ def _draw_combined_spectra_panels(
 
     ax_res.axhline(0, color="black", linewidth=style.linewidth("reference"), linestyle=":")
     ax_res.set_xlabel(CHANNEL_INDEX_LABEL)
-    add_legend(ax_spec, style, position=legend_position)
+    add_legend(
+        ax_spec,
+        style,
+        position=legend_position,
+        loc="lower right" if legend_position == "inside" else None,
+        framealpha=0.5,
+        edgecolor="none",
+    )
     style_axis(ax_spec, style)
     style_axis(ax_res, style)
 
@@ -452,7 +459,14 @@ def _draw_spectra_panels(
                 len(x),
             )
     ax_spec.plot(x, pred, label="Prediction", linewidth=style.linewidth("main"), color=COLOR_PREDICTION, linestyle="--")
-    add_legend(ax_spec, style, position=legend_position)
+    add_legend(
+        ax_spec,
+        style,
+        position=legend_position,
+        loc="lower right" if legend_position == "inside" else None,
+        framealpha=0.5,
+        edgecolor="none",
+    )
     ax_res.plot(x, pred - target, color=COLOR_ACCENT_RED, linewidth=style.linewidth("main"))
     ax_res.axhline(0, color="black", linewidth=style.linewidth("reference"), linestyle=":")
     ax_res.set_xlabel(CHANNEL_INDEX_LABEL)

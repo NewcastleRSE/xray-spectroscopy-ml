@@ -37,6 +37,8 @@ from pathlib import Path
 LATEX_PREAMBLE: str = r"""\documentclass{article}
 \usepackage[table]{xcolor}
 \usepackage{multirow}
+\newcommand{\dataCell}[1]{\hspace{4pt}#1\hspace{4pt}}
+\newcommand{\labelCell}[2][4pt]{#2\hspace{#1}}
 \pagestyle{empty}
 \begin{document}
 """
@@ -72,18 +74,28 @@ def escape_latex(text: str) -> str:
     return "".join(replacements.get(character, character) for character in text)
 
 
-def format_cell(text: str, mark: str | None) -> str:
-    """Add an optional best/worst color to preformatted cell text.
+def format_cell(text: str, mark: str | None, unit: str | None = None) -> str:
+    """Format a data cell with optional unit and best/worst color.
 
     Args:
         text: Already formatted cell text.
         mark: Optional ``"best"``/``"worst"`` mark controlling color highlighting.
+        unit: Optional unit appended to non-missing values.
 
     Returns:
-        LaTeX cell content with an optional ``\\cellcolor`` prefix.
+        LaTeX cell content wrapped in ``\\dataCell`` and optionally prefixed
+        with ``\\cellcolor``.
     """
+    if unit is not None and text != "-":
+        text = f"{text}~{unit}"
+    data_cell = rf"\dataCell{{{text}}}"
     color = LATEX_MARK_COLORS[mark] if mark is not None else ""
-    return rf"\cellcolor{{{color}}} {text}" if color else text
+    return rf"\cellcolor{{{color}}} {data_cell}" if color else data_cell
+
+
+def format_label_cell(text: str, padding: str = "4pt") -> str:
+    """Wrap an already escaped table label in ``\\labelCell``."""
+    return rf"\labelCell[{padding}]{{{text}}}"
 
 
 def sanitize_label(text: str) -> str:

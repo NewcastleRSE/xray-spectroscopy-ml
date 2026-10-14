@@ -51,8 +51,6 @@ from .common.formatting import format_decimal, shorten_label
 from .common.layout import pad_figure, save_figure, single_panel
 from .common.structures import add_structure_legend, draw_structure
 from .common.style import (
-    COLOR_ACCENT_GREEN,
-    COLOR_ACCENT_RED,
     COLOR_PREDICTION,
     COLOR_TARGET,
     PlotSize,
@@ -214,16 +212,26 @@ class SelectorOverviewPlotter(Plotter):
         global_mean = float(np.mean([entry.mean_error for entry in rows]))
         labels = [shorten_label([f"{entry.label} (n={entry.n_samples})"], width=22) for entry in rows]
         means = [entry.mean_error for entry in rows]
-        colors = [COLOR_ACCENT_GREEN if mean <= global_mean else COLOR_ACCENT_RED for mean in means]
 
         fig, ax = single_panel(self.style, "square", width=6.5)
         ys = np.arange(len(rows))
-        ax.barh(ys, means, color=colors, alpha=0.85)
+        ax.barh(ys, means, color=COLOR_TARGET, alpha=0.85)
         ax.axvline(
             global_mean,
             color="black",
             linewidth=self.style.linewidth("reference"),
             linestyle="--",
+        )
+        ax.annotate(
+            "Mean",
+            xy=(global_mean, 1.0),
+            xycoords=ax.get_xaxis_transform(),
+            xytext=(4, -2),
+            textcoords="offset points",
+            ha="left",
+            va="top",
+            fontsize=self.style.fontsize("annotation"),
+            color="black",
         )
         ax.set_yticks(ys)
         ax.set_yticklabels(labels, fontsize=self.style.fontsize("tick"))
@@ -317,9 +325,9 @@ class SelectorOverviewPlotter(Plotter):
         )
         if self.legend_position == "outside":
             handles, labels = ax_spec.get_legend_handles_labels()
-            add_figure_legend(fig, handles, labels, self.style, position="outside")
+            add_figure_legend(fig, handles, labels, self.style, position="outside", framealpha=0.5, edgecolor="none")
         else:
-            add_legend(ax_spec, self.style)
+            add_legend(ax_spec, self.style, loc="lower right", framealpha=0.5, edgecolor="none")
         style_axis(ax_spec, self.style)
 
         gs_right = gs[0, 1].subgridspec(

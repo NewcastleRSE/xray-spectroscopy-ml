@@ -29,7 +29,7 @@
 
 import math
 from collections.abc import Iterable
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 from textwrap import shorten
 
 from matplotlib.axes import Axes

@@ -118,7 +118,7 @@ plotters:
 
   - plotter_type: error_correlation
     plot_size: small
-    sort_key: mse
+    error_key: mse
 
   - plotter_type: pca
     plot_size: small

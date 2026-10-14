@@ -207,7 +207,7 @@ def _display_factor(value_key: str, time_unit: str, display_scales: dict[str, fl
     return display_scales.get(value_key, 1.0)
 
 
-def _display_unit(value_key: str, time_unit: str, display_scales: dict[str, float]) -> str | None:
+def value_display_unit(value_key: str, time_unit: str, display_scales: dict[str, float]) -> str | None:
     """Return the visible unit or scale label for a scalar value key."""
     if value_key == "time_per_spectrum":
         return _TIME_UNIT_FORMATS[time_unit][1]
@@ -234,7 +234,7 @@ def value_display_label(
         Display label for the value key.
     """
     label = _VALUE_DISPLAY_LABELS.get(value_key, value_key)
-    unit = _display_unit(value_key, time_unit, display_scales)
+    unit = value_display_unit(value_key, time_unit, display_scales)
     return f"{label} ({unit})" if unit is not None else label
 
 
@@ -294,7 +294,7 @@ def build_single_table(
         Laid-out table, or ``None`` when it would have no rows or columns.
     """
     display_factor = _display_factor(value_key, time_unit, display_scales)
-    display_unit = _display_unit(value_key, time_unit, display_scales)
+    display_unit = value_display_unit(value_key, time_unit, display_scales)
     row_labels = list(rows.keys())
     stat_columns = [key for key in stat_keys if any(key in stats for stats in rows.values())]
     if not stat_columns or not row_labels:

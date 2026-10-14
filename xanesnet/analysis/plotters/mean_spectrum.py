@@ -179,7 +179,6 @@ class MeanSpectrumPlotter(Plotter):
                     worst_std,
                     percent,
                     subtitle,
-                    color,
                     combo_dir / "tail_means.pdf",
                 )
                 self._spread_figure(target_std, pred_std, subtitle, color, combo_dir / "spread.pdf")
@@ -204,7 +203,6 @@ class MeanSpectrumPlotter(Plotter):
         worst_std: np.ndarray,
         percent: float,
         subtitle: str,
-        color: str,
         out: Path,
     ) -> None:
         """Write one figure comparing the mean prediction with its best/worst tails.
@@ -218,7 +216,6 @@ class MeanSpectrumPlotter(Plotter):
             worst_std: Per-channel prediction std of the worst ``percent`` samples.
             percent: Tail size in percent, as configured on the aggregator.
             subtitle: Plot subtitle text describing prediction and selector context.
-            color: Method color used for the mean prediction curve.
             out: Destination PDF path.
         """
         fig, ax = single_panel(self.style, "energy", legend_position=self.legend_position)
@@ -231,7 +228,7 @@ class MeanSpectrumPlotter(Plotter):
             linestyle=":",
             label="Target mean",
         )
-        ax.plot(x, pred_mean, color=color, linewidth=self.style.linewidth("main"), label="Total prediction mean")
+        ax.plot(x, pred_mean, color="black", linewidth=self.style.linewidth("main"), label="Total prediction mean")
         ax.fill_between(
             x,
             best_mean - best_std,
@@ -286,7 +283,7 @@ class MeanSpectrumPlotter(Plotter):
             pred_mean: Per-channel mean predicted spectrum.
             pred_std: Per-channel prediction standard deviation.
             subtitle: Plot subtitle text describing prediction and selector context.
-            color: Method color used for the prediction curve.
+            color: Method color used for the prediction uncertainty band.
             out: Destination PDF path.
         """
         fig, ax = single_panel(self.style, "energy", legend_position=self.legend_position)
@@ -301,7 +298,7 @@ class MeanSpectrumPlotter(Plotter):
             linewidth=0,
             label="Prediction +/- 1 std",
         )
-        ax.plot(x, pred_mean, color=color, linewidth=self.style.linewidth("main"), label="Prediction mean")
+        ax.plot(x, pred_mean, color="black", linewidth=self.style.linewidth("main"), label="Prediction mean")
         ax.set_xlabel(CHANNEL_INDEX_LABEL)
         ax.set_ylabel("Intensity")
         add_legend(ax, self.style, position=self.legend_position)
