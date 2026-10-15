@@ -2,7 +2,7 @@
 #
 # XANESNET
 #
-# Authors:  Hendrik Junkawitsch, Tom J. Penfold, Thomas Pope, C. D. Rankine, B. Li
+# Authors:  Hendrik Junkawitsch, Tom J. Penfold, Thomas J. Pope, C. D. Rankine, B. Li
 #
 # This program is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -16,240 +16,233 @@
 # If not, see <https://www.gnu.org/licenses/>.
 #
 # Citations:
+#   Junkawitsch et al., "XANESNET: A Modular, Extensible, and Flexible Machine Learning Framework for Spectroscopy."
+#   Rankine et al., "A Deep Neural Network for the Rapid Prediction of X-ray Absorption Spectra."
+#   Rankine et al., "Accurate, affordable, and generalizable machine learning simulations of transition metal x-ray absorption spectra using the XANESNET deep neural network."
+#   Penfold et al., "Field-Aware Energy-Conditioned Message Passing Neural Networks for Absorber-Centred Modelling of X-ray Spectroscopy."
+#   Penfold et al., "A deep neural network for valence-to-core X-ray emission spectroscopy."
+#   Falbo et al., "On the Analysis of X-ray Absorption Spectra for Polyoxometallates."
+#   Madkhali et al., "Enhancing the Analysis of Disorder in X-ray Absorption Spectra: Application of Deep Neural Networks to T-Jump X-ray Probe Experiments."
+#   Madkhali et al., "The Role of Structural Representation in the Performance of a Deep Neural Network for X-ray Spectroscopy."
+
+"""Lightning DDP trainer registered like ``BasicTrainer``.
+
+Uses Lightning's standard ``ddp`` launcher. The CLI is re-entered with
+``LOCAL_RANK``; run-directory reuse lives in ``xanesnet.utils.distributed``.
+"""
+
+from __future__ import annotations
+
+import logging
 from typing import Any
 
 import lightning as L
 import torch
-from torch.utils.data import DataLoader
+from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
 
+from xanesnet.checkpointing import Checkpointer
 from xanesnet.datasets import Dataset
 from xanesnet.encodings import SpectraEncoding
 from xanesnet.models import Model
-from xanesnet.batchprocessors import BatchProcessorRegistry
-from xanesnet.losses import LossRegistry, CombinedLoss
-from xanesnet.losses.base import Loss
-from xanesnet.regularizers import RegularizerRegistry
-from xanesnet.regularizers.base import Regularizer
-from xanesnet.components import LRSchedulerRegistry, OptimizerRegistry
 from xanesnet.serialization.config import Config
 
-class LightningModule(L.LightningModule):
-    """Lightning module for training.
+from .base import Trainer
+from .registry import TrainerRegistry
 
-    Lightning manages device placement, distributed training, optimization,
-    gradient synchronization, and the training/validation loop.
 
-    Args:
-        dataset: Dataset used for training and validation.
-        model: Model to train.
-        encoding: Prepared spectra encoding.
-        batch_size: Number of samples per batch per device.
-        shuffle: Whether to shuffle the training data.
-        drop_last: Whether to drop the last incomplete training batch.
-        num_workers: Number of data-loader workers.
-        loss: Non-empty list of loss configurations.
-        regularizer: Configuration for the regularizer.
-        epochs: Total number of training epochs.
-        learning_rate: Initial learning rate.
-        optimizer: Optimizer name.
-        max_norm: Maximum gradient norm, or ``None`` to disable clipping.
-        lr_scheduler: Configuration for the learning-rate scheduler.
-        validation_interval: Number of epochs between validation runs.
-        lr_warmup: Whether to apply per-step linear warm-up.
-        warmup_steps: Number of warm-up steps.
-    """
+class _LightningModule(L.LightningModule):
+    """Lightning module for XANESNET training."""
+    def __init__(self, trainer: LightningTrainer) -> None:
+        super().__init__()
+        self.xn = trainer
+        self.model = self.xn.model
+
+    def transfer_batch_to_device(self, batch: Any, device: torch.device, dataloader_idx: int) -> Any:
+        if hasattr(batch, "to"):
+            return batch.to(device)
+        return super().transfer_batch_to_device(batch, device, dataloader_idx)
+
+    def training_step(self, batch: Any, batch_idx: int) -> torch.Tensor:
+        loss, regularization, total = self._calculate_loss(batch)
+        self.log("train_loss", loss, on_step=False, on_epoch=True, sync_dist=True)
+        self.log("train_regularization", regularization, on_step=False, on_epoch=True, sync_dist=True)
+        self.log("train_total", total, on_step=False, on_epoch=True, sync_dist=True, prog_bar=True)
+        return total
+
+    def validation_step(self, batch: Any, batch_idx: int) -> torch.Tensor:
+        loss, regularization, total = self._calculate_loss(batch)
+        self.log("val_loss", loss, on_step=False, on_epoch=True, sync_dist=True)
+        self.log("val_regularization", regularization, on_step=False, on_epoch=True, sync_dist=True)
+        self.log("val_total", total, on_step=False, on_epoch=True, sync_dist=True, prog_bar=True)
+        return total
+
+    def train_dataloader(self) -> Any:
+        return self.xn.dataloader
+
+    def val_dataloader(self) -> Any:
+        return self.xn.valid_dataloader
+
+    def configure_optimizers(self):
+        schedulers: list[dict[str, Any]] = []
+        if self.xn.warmup_lr_scheduler is not None:
+            schedulers.append({"scheduler": self.xn.warmup_lr_scheduler, "interval": "step"})
+        schedulers.append({"scheduler": self.xn.epoch_lr_scheduler, "interval": "epoch"})
+        return [self.xn.optimizer], schedulers
+
+    def _calculate_loss(self, batch: Any) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        processor = self.xn.batchprocessor
+        inputs = processor.input_preparation(batch)
+        elements = processor.element_preparation(batch)
+        inputs = processor.encode_input(inputs, elements)
+        targets = processor.target_preparation(batch)
+        targets = processor.encode_target(targets, elements)
+        predictions = processor.prediction_preparation(batch, self.model(**inputs))
+        loss = self.xn.loss(predictions, targets)
+        regularization = self.xn.regularizer(self.model)
+        return loss, regularization, loss + regularization
+
+
+@TrainerRegistry.register("lightning")
+class LightningTrainer(Trainer):
+    """Lightning DDP trainer."""
 
     def __init__(
         self,
         dataset: Dataset,
         model: Model,
+        device: str | torch.device,
+        checkpointer: Checkpointer,
         encoding: SpectraEncoding,
-######### runner params:
         batch_size: int,
         shuffle: bool,
         drop_last: bool,
         num_workers: int,
         loss: list[Config],
         regularizer: Config,
-######### trainer params:
+        trainer_type: str,
         epochs: int,
         learning_rate: float,
         optimizer: str,
         max_norm: float | None,
         lr_scheduler: Config,
+        early_stopper: Config,
         validation_interval: int,
+        lr_warmup: bool,
+        warmup_steps: int,
+        num_gpus: int = 1,
     ) -> None:
-        """Initialize the Lightning training module."""
-        super().__init__()
+        """Initialize the Lightning trainer and inherited XANESNET setup."""
+        super().__init__(
+            dataset,
+            model,
+            device,
+            checkpointer,
+            encoding,
+            batch_size,
+            shuffle,
+            drop_last,
+            num_workers,
+            loss,
+            regularizer,
+            trainer_type,
+            epochs,
+            learning_rate,
+            optimizer,
+            max_norm,
+            lr_scheduler,
+            early_stopper,
+            validation_interval,
+            lr_warmup,
+            warmup_steps,
+        )
+        self.num_gpus = num_gpus
 
-        self.dataset = dataset
-        self.model = model
-        self.encoding = encoding
+    def train(self) -> float | None:
+        """Fit with Lightning."""
+        self.model.to(self.device)
+        self.loss.to(self.device)
 
-        self.batch_size = batch_size
-        self.shuffle = shuffle
-        self.drop_last = drop_last
-        self.num_workers = num_workers
-
-        self.epochs = epochs
-        self.learning_rate = learning_rate
-        self.optimizer_type = optimizer
-        self.max_norm = max_norm
-        self.lr_scheduler_config = lr_scheduler
-        self.validation_interval = validation_interval
-
-        self.loss_config = loss
-        self.regularizer_config = regularizer
-
-        self.batchprocessor = BatchProcessorRegistry.create(
-            (self.dataset.dataset_type, self.model.model_type),
-            encoding=self.encoding,
+        accelerator, devices, strategy = self._distributed_settings()
+        logging.info(
+            f"Lightning Trainer: accelerator={accelerator}, devices={devices}, "
+            f"strategy={strategy}, use_distributed_sampler=True"
         )
 
-        self.loss = self._setup_loss()
-        self.regularizer = self._setup_regularizer()
-
-    def forward(self, **inputs: Any) -> Any:
-        """Run a forward pass through the XANESNET model."""
-        return self.model(**inputs)
-
-##### Training
-    def training_step(
-        self,
-        batch: Any,
-        batch_idx: int,
-    ) -> torch.Tensor:
-        """Run one training batch."""
-        loss, regularization, total = self._calculate_loss(batch)
-        self.log("train_loss", loss, on_step=False, on_epoch=True, sync_dist=True)
-        self.log("train_regularization", regularization, on_step=False, on_epoch=True, sync_dist=True)
-        self.log("train_total", total, on_step=False, on_epoch=True, sync_dist=True)
-        return total
-
-##### Validation
-    def validation_step(
-        self,
-        batch: Any,
-        batch_idx: int,
-    ) -> torch.Tensor:
-        """Run one validation batch."""
-        loss, regularization, total = self._calculate_loss(batch)
-        self.log("val_loss", loss, on_step=False, on_epoch=True, sync_dist=True)
-        self.log("val_regularization", regularization, on_step=False, on_epoch=True, sync_dist=True)
-        self.log("val_total", total, on_step=False, on_epoch=True, sync_dist=True)
-        return total
-
-##### Batch processing / loss
-
-    def _calculate_loss(
-        self,
-        batch: Any,
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Calculate loss, regularization, and total loss for a batch."""
-        inputs = self.batchprocessor.input_preparation(batch)
-        elements = self.batchprocessor.element_preparation(batch)
-        inputs = self.batchprocessor.encode_input(inputs,elements)
-        targets = self.batchprocessor.target_preparation(batch)
-        targets = self.batchprocessor.encode_target(targets,elements)
-        predictions = self.model(**inputs)
-        predictions = self.batchprocessor.prediction_preparation(batch,predictions)
-        loss = self.loss(predictions,targets)
-        regularization = self.regularizer(self.model)
-        total = loss + regularization
-        return loss, regularization, total
-
-##### Data loaders
-    def train_dataloader(self) -> DataLoader:
-        if self.dataset.train_subset is None:
-            raise ValueError("Training subset is required but was not provided.")
-        return self._build_dataloader(
-            self.dataset.train_subset,
-            shuffle=self.shuffle,
-            drop_last=self.drop_last,
+        module = _LightningModule(self)
+        pl_trainer = L.Trainer(
+            accelerator=accelerator,
+            devices=devices,
+            strategy=strategy,
+            max_epochs=self.epochs,
+            gradient_clip_val=self.max_norm,
+            gradient_clip_algorithm="norm",
+            check_val_every_n_epoch=self.validation_interval,
+            callbacks=self._callbacks(),
+            logger=False,
+            enable_checkpointing=self.checkpointer.active,
+            use_distributed_sampler=True,
+            default_root_dir=str(self.checkpointer.save_dir) if self.checkpointer.active else None,
         )
+        pl_trainer.fit(module)
+        self._restore_best(pl_trainer, module)
+        return None
 
-    def val_dataloader(self) -> DataLoader | None:
-        if self.dataset.valid_subset is None:
-            return None
-        return self._build_dataloader(
-            self.dataset.valid_subset,
-            shuffle=False,
-            drop_last=False,
-        )
+    def _train_one_epoch(self) -> tuple[float, float, float]:
+        raise RuntimeError("LightningTrainer does not run the XANESNET epoch loop.")
 
-    def _build_dataloader(
-        self,
-        data: Any,
-        shuffle: bool,
-        drop_last: bool,
-    ) -> DataLoader:
-        """Build a data loader.
+    def _validate_one_epoch(self) -> tuple[float, float, float]:
+        raise RuntimeError("LightningTrainer does not run the XANESNET epoch loop.")
 
-        Lightning handles distributed sampling, so no distributed sampler
-        is created manually.
-        """
+    def _distributed_settings(self) -> tuple[str, int, str]:
+        device = str(self.device).lower()
+        if device.startswith("cuda"):
+            devices = max(1, self.num_gpus)
+            return "gpu", devices, "ddp" if devices > 1 else "auto"
+        if device.startswith("mps"):
+            return "mps", 1, "auto"
+        if self.num_gpus > 1:
+            logging.warning(f"num_gpus={self.num_gpus} ignored because device is '{self.device}'.")
+        return "cpu", 1, "auto"
 
-        dataloader_cls = self.dataset.get_dataloader()
-        return dataloader_cls(
-            data,
-            batch_size=self.batch_size,
-            shuffle=shuffle,
-            collate_fn=self.dataset.collate_fn,
-            drop_last=drop_last,
-            num_workers=self.num_workers,
-            pin_memory=torch.cuda.is_available(),
-            persistent_workers=self.num_workers > 0,
-            prefetch_factor=2 if self.num_workers > 0 else None,
-        )
+    def _callbacks(self) -> list[L.Callback]:
+        """Map XANESNET early-stop / checkpoint config to Lightning callbacks."""
+        callbacks: list[L.Callback] = []
+        monitor = "val_total" if self.valid_dataloader is not None else "train_total"
+        stopper_type = self.early_stopper_config.get_str("early_stopper_type").lower()
+        if stopper_type == "basic":
+            callbacks.append(
+                EarlyStopping(
+                    monitor=monitor,
+                    mode="min",
+                    patience=self.early_stopper_config.get_int("patience"),
+                    min_delta=self.early_stopper_config.get_optional_float("min_delta") or 0.0,
+                )
+            )
+        elif stopper_type not in {"none", "no"}:
+            logging.warning(f"Lightning trainer ignores early_stopper_type '{stopper_type}'.")
 
-##### Setups
-    def _setup_loss(self) -> Loss:
-        loss_configs = self.loss_config
-        if not loss_configs:
-            raise ValueError("Loss config list is required but was not provided.")
-        losses: list[Loss] = []
-        raw_weights: list[float] = []
+        if self.checkpointer.active:
+            callbacks.append(
+                ModelCheckpoint(
+                    dirpath=str(self.checkpointer.save_dir),
+                    filename="{epoch:04d}",
+                    monitor=monitor,
+                    mode="min",
+                    save_top_k=1,
+                    save_last=True,
+                    every_n_epochs=self.checkpointer.save_interval,
+                )
+            )
+        return callbacks
 
-        for item_config in loss_configs:
-            loss_type = item_config.get_str("loss_type")
-            raw_weight = item_config.get_optional_float("loss_weight")
-            raw_weights.append(raw_weight if raw_weight is not None else 1.0)
-            kwargs = {
-                k: v
-                for k, v in item_config.as_kwargs().items()
-                if k != "loss_weight"
-            }
-            losses.append(LossRegistry.create(loss_type, **kwargs))
-        return CombinedLoss(losses, raw_weights)
-
-    def _setup_regularizer(self) -> Regularizer:
-        regularizer_config = self.regularizer_config
-        if regularizer_config is None:
-            raise ValueError("Regularizer config is required but was not provided.")
-        regularizer_type = regularizer_config.get_str("regularizer_type")
-        return RegularizerRegistry.create(regularizer_type, **regularizer_config.as_kwargs())
-
-    def configure_optimizers(self):
-        optimizer_cls = OptimizerRegistry.get(self.optimizer_type)
-        optimizer = optimizer_cls(self.model.parameters(),lr=self.learning_rate)
-    
-        lr_scheduler_type = self.lr_scheduler_config.get_str("lr_scheduler_type")
-        lr_scheduler_kwargs = self.lr_scheduler_config.as_kwargs()
-    
-        scheduler_kwargs = {
-            k: v
-            for k, v in lr_scheduler_kwargs.items()
-            if k != "lr_scheduler_type"
-        }
-    
-        scheduler_cls = LRSchedulerRegistry.get(lr_scheduler_type)
-        scheduler = scheduler_cls(optimizer,**scheduler_kwargs)
-    
-        return {
-            "optimizer": optimizer,
-            "lr_scheduler": {
-                "scheduler": scheduler,
-                "interval": "epoch",
-                "frequency": 1,
-            },
-        }
+    def _restore_best(self, pl_trainer: L.Trainer, module: _LightningModule) -> None:
+        """Load the best Lightning checkpoint when ``restore_best`` is set."""
+        if not self.early_stopper_config.get_bool("restore_best"):
+            return
+        callback = getattr(pl_trainer, "checkpoint_callback", None)
+        best_path = getattr(callback, "best_model_path", "") if callback is not None else ""
+        if not best_path:
+            return
+        ckpt = torch.load(best_path, map_location="cpu", weights_only=False)
+        module.load_state_dict(ckpt["state_dict"])
+        logging.info(f"Restored best Lightning checkpoint: {best_path}")

@@ -33,7 +33,9 @@ $defs:
         type: integer
         minimum: 1
         default: 1
-        description: Number of parallel GPUs to be used in training.
+        description: Number of GPUs. Values greater than 1 select Lightning
+          ``ddp`` (DistributedSampler is injected automatically). Launch with
+          ``python``, not torchrun.
       loss:
         $ref: ../../losses/losses.schema.yaml#/$defs/lossList
         default:
@@ -92,5 +94,6 @@ $defs:
           early_stopper_type: none
           restore_best: true
         description: Configuration for the early-stopping criterion.
-    description: Lightning multi-process trainer.
+    description: Lightning DDP trainer registered like basic. Multi-GPU uses
+      ``strategy="ddp"``. The CLI is re-entered with LOCAL_RANK.
 description: Runner schemas backed by trainer and inferencer registries.
