@@ -29,7 +29,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 cd "$REPO_ROOT"
 
 # Override the datasource json_path (leave empty to use the value in each config).
@@ -81,7 +81,7 @@ for enc_name in "${ENCODING_ORDER[@]}"; do
     echo "============================================================"
 
     args=(
-        "scripts/testing/encodings_tester.py"
+        "scripts/testing/src/encodings_tester.py"
         "--config"       "$config"
         "--max-samples"  "$MAX_SAMPLES"
         "--save"         "$save_path"
@@ -90,7 +90,7 @@ for enc_name in "${ENCODING_ORDER[@]}"; do
     [[ -n "$DATA_DIR" ]] && args+=("--data-dir" "$DATA_DIR")
     [[ "$NO_SHOW" == "true" ]] && args+=("--no-show")
 
-    python "${args[@]}" || {
+    python3 "${args[@]}" || {
         echo "WARNING: encodings_tester failed for '${enc_name}' (config: ${config})" >&2
         echo "         Continuing with next encoding type ..." >&2
     }

@@ -29,36 +29,27 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
-cd "$REPO_ROOT"
+GRAPH_DISPATCHER="${SCRIPT_DIR}/graph_tester.sh"
 
-# Path to the training config whose encodings should be visualized.
-# The datasource, dataset, and encoding pipeline are taken from this file.
-CONFIG="./configs/mlp.yaml"
+# Inclusive sample-index range. All graph settings are inherited from graph_tester.sh.
+START_INDEX=20
+END_INDEX=99
+STEP=5
 
-# Override the datasource json_path from the config (leave empty to use the
-# value in the config file).
-DATA_DIR="./data/toy_data/"
+if (( START_INDEX < 0 )); then
+	echo "START_INDEX must be non-negative." >&2
+	exit 1
+fi
+if (( END_INDEX < START_INDEX )); then
+	echo "END_INDEX must be greater than or equal to START_INDEX." >&2
+	exit 1
+fi
+if (( STEP <= 0 )); then
+	echo "STEP must be positive." >&2
+	exit 1
+fi
 
-# Maximum number of spectra drawn per panel (keep small for readability).
-MAX_SAMPLES=12
-
-# Optional output file (PDF with one page per encoding + overview).
-# Leave empty to display interactively.
-SAVE_PATH=""   # e.g. "runs/encoding_check.pdf"
-
-# Set to "true" to suppress plt.show() (useful for headless environments).
-NO_SHOW=false
-
-
-args=(
-    "scripts/testing/encodings_tester.py"
-    "--config"    "$CONFIG"
-    "--max-samples" "$MAX_SAMPLES"
-)
-
-[[ -n "$DATA_DIR"   ]] && args+=("--data-dir" "$DATA_DIR")
-[[ -n "$SAVE_PATH"  ]] && args+=("--save" "$SAVE_PATH")
-[[ "$NO_SHOW" == "true" ]] && args+=("--no-show")
-
-python "${args[@]}"
+for (( sample_index = START_INDEX; sample_index <= END_INDEX; sample_index += STEP )); do
+	echo "Running graph tester for sample index ${sample_index}."
+	SAMPLE_INDEX="${sample_index}" bash "${GRAPH_DISPATCHER}"
+done

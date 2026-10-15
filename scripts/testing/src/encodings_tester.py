@@ -26,9 +26,10 @@
 #   Madkhali et al., "The Role of Structural Representation in the Performance of a Deep Neural Network for X-ray Spectroscopy."
 
 
+"""
 Usage::
 
-    python scripts/encodings_tester.py --config configs/in_mlp.yaml \\
+    python scripts/testing/src/encodings_tester.py --config configs/mlp.yaml \\
         [--max-samples 8] [--save my_plot.pdf] [--no-show]
 """
 
@@ -44,7 +45,7 @@ from matplotlib.axes import Axes
 from matplotlib.colors import to_rgba
 from matplotlib.figure import Figure
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 

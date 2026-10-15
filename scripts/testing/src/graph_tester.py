@@ -39,7 +39,7 @@ from matplotlib.patches import Patch
 from mpl_toolkits.mplot3d.art3d import Line3DCollection, Poly3DCollection
 from pymatgen.core import Element, Molecule, Structure
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 

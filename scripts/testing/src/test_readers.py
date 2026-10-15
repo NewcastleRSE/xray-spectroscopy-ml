@@ -28,11 +28,16 @@
 """Inspect saved prediction files with the available XANESNET prediction readers."""
 
 import argparse
+import sys
 import time
 from pathlib import Path
 from typing import Any
 
 import numpy as np
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from xanesnet.serialization.prediction_readers import (
     HDF5Reader,

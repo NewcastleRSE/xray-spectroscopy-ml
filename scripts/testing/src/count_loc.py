@@ -165,7 +165,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    repo_root = Path(__file__).resolve().parents[2]
+    repo_root = Path(__file__).resolve().parents[3]
     package_root = repo_root / "xanesnet"
     if not package_root.is_dir():
         raise SystemExit(f"Could not find the xanesnet package at {package_root}")
