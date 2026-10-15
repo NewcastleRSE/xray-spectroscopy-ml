@@ -89,9 +89,10 @@ Custom modules
 --------------
 
 Custom modules add analysis outputs beyond the standard selectors, collectors, aggregators, reporters, and plotters.
+Implementations derive from :class:`~xanesnet.analysis.custom_modules.base.CustomModule`.
 Each entry selects a registered implementation with ``custom_module_type``.
 
-The ``tensorboard`` module plots training loss, validation loss, and learning rate from TensorBoard event files.
+The ``tensorboard`` module (:class:`~xanesnet.analysis.custom_modules.tensorboard.module.TensorBoardModule`) plots training loss, validation loss, and learning rate from TensorBoard event files.
 Provide one directory for each inference run passed to ``--inference-runs``, in the same order; the module writes individual learning-curve PDFs and a combined comparison PDF.
 
 .. code-block:: yaml
