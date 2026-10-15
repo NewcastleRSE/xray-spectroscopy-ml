@@ -32,6 +32,7 @@ from argparse import ArgumentParser, Namespace
 
 from xanesnet.analysis.aggregators import AggregatorRegistry
 from xanesnet.analysis.collectors import CollectorRegistry
+from xanesnet.analysis.custom_modules import CustomModuleRegistry
 from xanesnet.analysis.plotters import PlotterRegistry
 from xanesnet.analysis.reporters import ReporterRegistry
 from xanesnet.analysis.selectors import SelectorRegistry
@@ -161,7 +162,7 @@ def main(args: list[str]) -> None:
     logging.debug(f"\tAggregators: {AggregatorRegistry.list()}")
     logging.debug(f"\tPlotters: {PlotterRegistry.list()}")
     logging.debug(f"\tReporters: {ReporterRegistry.list()}")
-    logging.debug(f"\tLosses: {LossRegistry.list()}")
+    logging.debug(f"\tCustom modules: {CustomModuleRegistry.list()}")
 
     # Parsing command line arguments
     args_namespace = parse_args(args)

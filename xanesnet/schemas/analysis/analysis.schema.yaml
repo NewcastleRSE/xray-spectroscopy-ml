@@ -17,4 +17,7 @@ $defs:
   plotter:
     $ref: plotters/plotters.schema.yaml#/$defs/plotter
     description: Union of plotter configuration objects instantiated by ``PlotterRegistry`` in ``core_analyze``.
+  custom_module:
+    $ref: custom_modules/custom_modules.schema.yaml#/$defs/customModule
+    description: Custom module configuration instantiated by ``CustomModuleRegistry`` in ``core_analyze``.
 description: Analysis component schemas used by ``core_analyze`` setup functions and analysis registries.

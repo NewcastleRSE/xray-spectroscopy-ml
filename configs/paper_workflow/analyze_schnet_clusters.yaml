@@ -52,6 +52,8 @@ aggregators:
 
   - aggregator_type: bias_variance
 
+custom_modules: []
+
 reporters:
   - reporter_type: scalar
 

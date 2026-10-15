@@ -1,0 +1,15 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: custom_modules.schema.yaml
+title: XANESNET custom analysis module configuration schemas
+$defs:
+  customModule:
+    type: object
+    required:
+      - custom_module_type
+    properties:
+      custom_module_type:
+        type: string
+        minLength: 1
+        description: Registered custom module name instantiated by ``CustomModuleRegistry``.
+    additionalProperties: true
+description: Custom analysis module configuration. Module-specific options are passed to its constructor.
