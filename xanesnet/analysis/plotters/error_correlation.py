@@ -190,7 +190,7 @@ class ErrorCorrelationPlotter(Plotter):
                 pair = ErrorCorrelationPlotter._pair_values(methods[i][1], methods[j][1])
                 if pair is None:
                     ax.axis("off")
-                    add_grid_label(ax, ["no common samples"], self.style, color="gray")
+                    add_grid_label(ax, ["no common samples"], self.style, color="black")
                     continue
 
                 xs, ys = pair
@@ -247,7 +247,7 @@ class ErrorCorrelationPlotter(Plotter):
             linewidth=self.style.linewidth("grid_reference"),
             linestyle="--",
         )
-        ax.scatter(xs, ys, s=self.style.scatter_size("error_correlation"), alpha=0.5, color="gray")
+        ax.scatter(xs, ys, s=self.style.scatter_size("error_correlation"), alpha=0.5, color="black")
         r = _pearson(xs, ys)
         note = f"r={r:.2f}" if r is not None else "r=n/a"
         add_note(ax, f"{note}\nn={len(xs)}", self.style, location="upper left")
