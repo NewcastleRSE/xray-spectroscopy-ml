@@ -85,6 +85,24 @@ The optional top-level fields are ``seed`` and ``preload``.
 ``preload`` loads prediction records and matched structures during setup instead of reading them on demand.
 This can speed up analysis significantly for small test datasets.
 
+Custom modules
+--------------
+
+Custom modules add analysis outputs beyond the standard selectors, collectors, aggregators, reporters, and plotters.
+Each entry selects a registered implementation with ``custom_module_type``.
+
+The ``tensorboard`` module plots training loss, validation loss, and learning rate from TensorBoard event files.
+Provide one directory for each inference run passed to ``--inference-runs``, in the same order; the module writes individual learning-curve PDFs and a combined comparison PDF.
+
+.. code-block:: yaml
+
+   custom_modules:
+     - custom_module_type: tensorboard
+       tensorboard_dirs:
+         - runs/train_mlp_001/tensorboard
+         - runs/train_schnet_001/tensorboard
+       y_scale: log
+
 Examples
 --------
 

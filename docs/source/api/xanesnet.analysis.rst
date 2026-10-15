@@ -14,6 +14,7 @@ Subpackages
 
    xanesnet.analysis.aggregators
    xanesnet.analysis.collectors
+   xanesnet.analysis.custom_modules
    xanesnet.analysis.plotters
    xanesnet.analysis.reporters
    xanesnet.analysis.selectors

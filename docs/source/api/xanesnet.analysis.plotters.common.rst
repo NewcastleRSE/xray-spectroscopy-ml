@@ -12,6 +12,7 @@ Submodules
 .. toctree::
    :maxdepth: 4
 
+   xanesnet.analysis.plotters.common.channels
    xanesnet.analysis.plotters.common.formatting
    xanesnet.analysis.plotters.common.latex
    xanesnet.analysis.plotters.common.layout
