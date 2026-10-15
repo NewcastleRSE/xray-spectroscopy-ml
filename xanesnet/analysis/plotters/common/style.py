@@ -491,6 +491,7 @@ def _legend_defaults(style: PlotStyle, loc: str, ncol: int) -> dict[str, Any]:
         "ncol": ncol,
         "fontsize": style.fontsize("legend"),
         "framealpha": 0.9,
+        "edgecolor": "none",
         "borderpad": style.spacing("box_pad"),
         "handlelength": style.spacing("legend_handlelength"),
         "handletextpad": style.spacing("legend_handletextpad"),
