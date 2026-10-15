@@ -40,15 +40,25 @@ ANALYSIS_COMPARE_NAME="${ANALYSIS_COMPARE_NAME:-paper_workflow_schnet_vs_mlp}"
 ANALYSIS_ELEMENTS_NAME="${ANALYSIS_ELEMENTS_NAME:-paper_workflow_schnet_elements}"
 ANALYSIS_CLUSTERS_NAME="${ANALYSIS_CLUSTERS_NAME:-paper_workflow_schnet_clusters}"
 ANALYSIS_ELEMENT_CLUSTERS_NAME="${ANALYSIS_ELEMENT_CLUSTERS_NAME:-paper_workflow_schnet_element_clusters}"
+ANALYSIS_TENSORBOARD_NAME="${ANALYSIS_TENSORBOARD_NAME:-paper_workflow_tensorboard}"
+
+TEMP_ANALYSIS_CONFIG=""
+cleanup_analysis_config() {
+    if [[ -n "$TEMP_ANALYSIS_CONFIG" ]]; then
+        rm -f -- "$TEMP_ANALYSIS_CONFIG"
+    fi
+}
+trap cleanup_analysis_config EXIT
 
 # With no arguments, run every analysis. Otherwise, arguments select the numbered analyses to run.
 runs=("$@")
 if [[ ${#runs[@]} -eq 0 ]]; then
-    runs=(1 2 3 4)
+    runs=(1 2 3 4 5)
 fi
 
 needs_mlp=false
 needs_schnet=false
+needs_tensorboard=false
 for run in "${runs[@]}"; do
     case "$run" in
         1)
@@ -58,13 +68,18 @@ for run in "${runs[@]}"; do
         2 | 3 | 4)
             needs_schnet=true
             ;;
+        5)
+            needs_mlp=true
+            needs_schnet=true
+            needs_tensorboard=true
+            ;;
         -h | --help)
-            echo "Usage: $0 [1] [2] [3] [4]"
+            echo "Usage: $0 [1] [2] [3] [4] [5]"
             echo "Run all analyses when no run numbers are provided."
             exit 0
             ;;
         *)
-            echo "ERROR: unknown analysis number '$run'. Choose from 1, 2, 3, or 4." >&2
+            echo "ERROR: unknown analysis number '$run'. Choose from 1, 2, 3, 4, or 5." >&2
             exit 2
             ;;
     esac
@@ -76,6 +91,29 @@ latest_infer_run() {
     ls -dt "${OUT_DIR}"/infer_"${run_name}"_* 2>/dev/null | head -1 || true
 }
 
+latest_train_run() {
+    local run_name="$1"
+    ls -dt "${OUT_DIR}"/train_"${run_name}"_* 2>/dev/null | head -1 || true
+}
+
+create_tensorboard_analysis_config() {
+    local mlp_tensorboard_dir="$1"
+    local schnet_tensorboard_dir="$2"
+    local config_path="$3"
+
+    python - "$mlp_tensorboard_dir" "$schnet_tensorboard_dir" "$config_path" <<'PY'
+import sys
+from pathlib import Path
+
+import yaml
+
+template_path = Path("configs/paper_workflow/analyze_tensorboard.yaml")
+config = yaml.safe_load(template_path.read_text(encoding="utf-8"))
+config["custom_modules"][0]["tensorboard_dirs"] = sys.argv[1:3]
+Path(sys.argv[3]).write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
+PY
+}
+
 if [[ "$needs_mlp" == true ]]; then
     if [[ -z "${MLP_RUN:-}" ]]; then
         MLP_RUN="$(latest_infer_run "$MLP_RUN_NAME")"
@@ -84,6 +122,25 @@ if [[ "$needs_mlp" == true ]]; then
         echo "ERROR: no MLP inference run found. Set MLP_RUN or run infer_paper_workflow.sh first." >&2
         echo "       Expected '${OUT_DIR}/infer_${MLP_RUN_NAME}_<suffix>/' containing predictions/." >&2
         echo "       OUT_DIR defaults to './runs/paper_workflow'; set OUT_DIR or MLP_RUN if it is elsewhere." >&2
+        exit 1
+    fi
+fi
+
+if [[ "$needs_tensorboard" == true ]]; then
+    if [[ -z "${MLP_TRAIN_RUN:-}" ]]; then
+        MLP_TRAIN_RUN="$(latest_train_run "$MLP_RUN_NAME")"
+    fi
+    if [[ -z "${MLP_TRAIN_RUN:-}" || ! -d "${MLP_TRAIN_RUN}/tensorboard" ]]; then
+        echo "ERROR: no MLP TensorBoard logs found. Set MLP_TRAIN_RUN or run train_paper_workflow.sh 1." >&2
+        echo "       Expected '${OUT_DIR}/train_${MLP_RUN_NAME}_<suffix>/tensorboard/'." >&2
+        exit 1
+    fi
+    if [[ -z "${SCHNET_TRAIN_RUN:-}" ]]; then
+        SCHNET_TRAIN_RUN="$(latest_train_run "$SCHNET_RUN_NAME")"
+    fi
+    if [[ -z "${SCHNET_TRAIN_RUN:-}" || ! -d "${SCHNET_TRAIN_RUN}/tensorboard" ]]; then
+        echo "ERROR: no SchNet TensorBoard logs found. Set SCHNET_TRAIN_RUN or run train_paper_workflow.sh 2." >&2
+        echo "       Expected '${OUT_DIR}/train_${SCHNET_RUN_NAME}_<suffix>/tensorboard/'." >&2
         exit 1
     fi
 fi
@@ -105,7 +162,7 @@ run_analysis() {
 
     case "$run" in
         1)
-            echo "[1/4] analyze: configs/paper_workflow/analyze_schnet_vs_mlp.yaml"
+            echo "[1/5] analyze: configs/paper_workflow/analyze_schnet_vs_mlp.yaml"
             python -m xanesnet.cli analyze \
                 -i ./configs/paper_workflow/analyze_schnet_vs_mlp.yaml \
                 -r "$MLP_RUN" \
@@ -116,7 +173,7 @@ run_analysis() {
                 --yes
             ;;
         2)
-            echo "[2/4] analyze: configs/paper_workflow/analyze_schnet_elements.yaml"
+            echo "[2/5] analyze: configs/paper_workflow/analyze_schnet_elements.yaml"
             python -m xanesnet.cli analyze \
                 -i ./configs/paper_workflow/analyze_schnet_elements.yaml \
                 -r "$SCHNET_RUN" \
@@ -126,7 +183,7 @@ run_analysis() {
                 --yes
             ;;
         3)
-            echo "[3/4] analyze: configs/paper_workflow/analyze_schnet_clusters.yaml"
+            echo "[3/5] analyze: configs/paper_workflow/analyze_schnet_clusters.yaml"
             python -m xanesnet.cli analyze \
                 -i ./configs/paper_workflow/analyze_schnet_clusters.yaml \
                 -r "$SCHNET_RUN" \
@@ -136,7 +193,7 @@ run_analysis() {
                 --yes
             ;;
         4)
-            echo "[4/4] analyze: configs/paper_workflow/analyze_schnet_element_clusters.yaml"
+            echo "[4/5] analyze: configs/paper_workflow/analyze_schnet_element_clusters.yaml"
             python -m xanesnet.cli analyze \
                 -i ./configs/paper_workflow/analyze_schnet_element_clusters.yaml \
                 -r "$SCHNET_RUN" \
@@ -144,6 +201,24 @@ run_analysis() {
                 -o "$OUT_DIR" \
                 -n "$ANALYSIS_ELEMENT_CLUSTERS_NAME" \
                 --yes
+            ;;
+        5)
+            TEMP_ANALYSIS_CONFIG="$(mktemp --suffix=.yaml)"
+            create_tensorboard_analysis_config \
+                "$MLP_TRAIN_RUN/tensorboard" \
+                "$SCHNET_TRAIN_RUN/tensorboard" \
+                "$TEMP_ANALYSIS_CONFIG"
+            echo "[5/5] analyze: configs/paper_workflow/analyze_tensorboard.yaml"
+            python -m xanesnet.cli analyze \
+                -i "$TEMP_ANALYSIS_CONFIG" \
+                -r "$MLP_RUN" \
+                -r "$SCHNET_RUN" \
+                -d MLP SchNet \
+                -o "$OUT_DIR" \
+                -n "$ANALYSIS_TENSORBOARD_NAME" \
+                --yes
+            rm -f -- "$TEMP_ANALYSIS_CONFIG"
+            TEMP_ANALYSIS_CONFIG=""
             ;;
     esac
 }

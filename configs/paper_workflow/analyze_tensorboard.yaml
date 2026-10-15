@@ -1,0 +1,11 @@
+seed: 42
+
+custom_modules:
+  - custom_module_type: tensorboard
+    tensorboard_dirs:
+      - runs/paper_workflow/train_paper_workflow_mlp_001/tensorboard
+      - runs/paper_workflow/train_paper_workflow_schnet_001/tensorboard
+    plot_size: small
+    y_scale: log
+    latex_font: true
+    double_width: false

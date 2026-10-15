@@ -29,5 +29,10 @@
 
 from .base import CustomModule
 from .registry import CustomModuleRegistry
+from .tensorboard import TensorBoardModule
 
-__all__ = ["CustomModule", "CustomModuleRegistry"]
+__all__ = [
+    "CustomModule",
+    "CustomModuleRegistry",
+    "TensorBoardModule",
+]
