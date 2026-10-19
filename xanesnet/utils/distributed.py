@@ -26,29 +26,42 @@
 #   Madkhali et al., "The Role of Structural Representation in the Performance of a Deep Neural Network for X-ray Spectroscopy."
 
 
+"""Lightweight environment markers for prepared Lightning training runs."""
+
 import os
 from pathlib import Path
 
-_RUN_DIR = "XANESNET_RUN_DIR"
+from xanesnet.utils.exceptions import ConfigError
+
+LIGHTNING_CONTEXT_ENV = "XANESNET_LIGHTNING_CONTEXT"
+LIGHTNING_LAUNCH_ENVIRONMENT = ("LOCAL_RANK", "RANK", "WORLD_SIZE", "NODE_RANK", "MASTER_ADDR", "MASTER_PORT")
 
 
-def is_ddp_child() -> bool:
-    """Return whether the current process is a XANESNET DDP child."""
-    value = os.environ.get("LOCAL_RANK")
-    return value is not None and int(value) > 0
+def get_lightning_context_path() -> Path | None:
+    """Read the prepared-run marker without importing Lightning.
+
+    Returns:
+        Absolute context path when a bootstrap marker is present, otherwise
+        ``None``. The Lightning core validates the context and process role.
+
+    Raises:
+        ConfigError: If the marker is empty or is not an absolute path.
+    """
+    value = os.environ.get(LIGHTNING_CONTEXT_ENV)
+    if value is None:
+        return None
+    path = Path(value)
+    if not value or not path.is_absolute():
+        raise ConfigError(f"{LIGHTNING_CONTEXT_ENV} must contain an absolute context path.")
+    return path
 
 
-def is_local_rank_zero() -> bool:
-    """Return whether the current process is local rank 0."""
-    return int(os.environ.get("LOCAL_RANK", 0)) == 0
+def validate_lightning_launch() -> None:
+    """Reject unsupported launcher state before initial-run output is created.
 
-
-def set_ddp_run_dir(save_dir: Path) -> None:
-    """Make the prepared run directory available to DDP child processes."""
-    os.environ[_RUN_DIR] = str(save_dir)
-
-
-def get_ddp_run_dir() -> Path | None:
-    """Return the parent run directory when running as a DDP child."""
-    value = os.environ.get(_RUN_DIR)
-    return Path(value) if value else None
+    Raises:
+        ConfigError: If a prepared-run marker or external-launch variables are
+            present for an initial single-node Python launch.
+    """
+    if get_lightning_context_path() is not None or any(name in os.environ for name in LIGHTNING_LAUNCH_ENVIRONMENT):
+        raise ConfigError("Lightning training supports a fresh single-node Python launch, not an external launcher.")

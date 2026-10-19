@@ -55,7 +55,6 @@ from xanesnet.serialization.model_profile import (
 from xanesnet.serialization.models import save_models
 from xanesnet.serialization.splits import save_split_indices
 from xanesnet.strategies import Strategy, StrategyRegistry
-from xanesnet.utils.distributed import get_ddp_run_dir, is_ddp_child, is_local_rank_zero
 
 ###############################################################################
 #################################### TRAIN ####################################
@@ -66,9 +65,8 @@ def train(config: Config, args_namespace: Namespace, save_dir: Path) -> None:
     """Run the complete training pipeline.
 
     Builds the data source and dataset from ``config``, resolves any automatic
-    model fields from the prepared dataset, builds the strategy from the
-    resolved config, runs training, and writes models, checkpoints, and metadata
-    under ``save_dir``.
+    fields, prepares the encoding, builds the strategy from the resolved config,
+    runs training, and writes models, checkpoints, and metadata under ``save_dir``.
 
     Args:
         config: Validated training configuration, possibly containing
@@ -77,24 +75,20 @@ def train(config: Config, args_namespace: Namespace, save_dir: Path) -> None:
             may contain ``dry_run`` to enable profile output).
         save_dir: Root directory for all training outputs.
     """
-    if is_local_rank_zero():
-        logging.info("Training.")
+    logging.info("Training.")
 
     datasource = _setup_datasource(config)
-    dataset = _setup_dataset(config, datasource, save_dir)
+    dataset = _setup_dataset(config, datasource)
 
-    if is_local_rank_zero():
-        logging.info("Resolving 'auto' encoding fields...")
+    logging.info("Resolving 'auto' encoding fields...")
     config = resolve_auto_encoding_config(config, dataset)
 
     encoding = _setup_encoding(config, dataset)
 
-    if is_local_rank_zero():
-        logging.info("Resolving 'auto' model fields...")
+    logging.info("Resolving 'auto' model fields...")
     config = resolve_auto_model_config(config, dataset, encoding)
-    if is_local_rank_zero():
-        resolved_config_save_path = config.save(save_dir / "resolved_train_config.yaml")
-        logging.info(f"Resolved training config saved to: {resolved_config_save_path}.")
+    resolved_config_save_path = config.save(save_dir / "resolved_train_config.yaml")
+    logging.info(f"Resolved training config saved to: {resolved_config_save_path}.")
 
     strategy = _setup_strategy(config, dataset, encoding, save_dir, args_namespace.tensorboard)
     strategy.setup_models()
@@ -111,12 +105,16 @@ def train(config: Config, args_namespace: Namespace, save_dir: Path) -> None:
             "encodings": encoding.signature,
         }
     )
-    if is_local_rank_zero():
-        signature_save_path = signature.save(save_dir / "models" / "signature.yaml")
-        logging.info(f"Signature saved to: {signature_save_path}")
+    signature_save_path = signature.save(save_dir / "models" / "signature.yaml")
+    logging.info(f"Signature saved to: {signature_save_path}")
 
     if strategy.checkpointer is not None:
         strategy.checkpointer.set_signature(signature)
+
+    # Save split indices if they were generated
+    split_indices_save_path = save_dir / "split_indices.json"
+    save_split_indices(split_indices_save_path, dataset.get_all_subset_indices())
+    logging.info(f"Split indices saved to: {split_indices_save_path}")
 
     # Main training
     if args_namespace.dry_run:
@@ -124,33 +122,7 @@ def train(config: Config, args_namespace: Namespace, save_dir: Path) -> None:
 
     model_list, train_time = _run_training(strategy)
 
-    if not is_local_rank_zero():
-        return
-
-    logging.info(f"Number of trained models: {len(model_list)}")
-    logging.info(f"Training completed in {str(timedelta(seconds=int(train_time)))}")
-    if args_namespace.dry_run:
-        peak_gpu_memory_allocated_mb = get_peak_memory_allocated_mb(config.get_str("device"))
-        model_profile = build_model_profile(
-            model_list[0],
-            dataset,
-            config.get_str("device"),
-            peak_gpu_memory_allocated_mb,
-            encoding,
-        )
-        profile_json_path, profile_readable_path = save_model_profile(save_dir, model_profile)
-        logging.info(f"Dry-run model profile JSON saved to: {profile_json_path}")
-        logging.info(f"Dry-run model profile readable report saved to: {profile_readable_path}")
-    try:
-        _summary_models(model_list, dataset, encoding)
-    except Exception as exc:
-        logging.warning(f"Model summary failed and will be skipped: {exc}")
-
-    save_models(save_dir / "models", model_list)
-    logging.info(f"Trained model(s) saved to: {save_dir / 'models'}")
-    final_checkpoint = Checkpoint.build(model_list, signature=signature)
-    final_save_path = final_checkpoint.save(save_dir / "models" / "final.pth")
-    logging.info(f"Final checkpoint without optimizers and epochs saved @ {final_save_path}")
+    _save_results(model_list, train_time, config, dataset, encoding, signature, save_dir, args_namespace.dry_run)
 
 
 ###############################################################################
@@ -175,41 +147,27 @@ def _setup_datasource(config: Config) -> DataSource:
     return datasource
 
 
-def _setup_dataset(config: Config, datasource: DataSource, save_dir: Path) -> Dataset:
-    """Instantiate, prepare, and split the training dataset.
-    Lightning DDP workers skip prepare and reuse rank-0 split indices.
+def _setup_dataset(config: Config, datasource: DataSource) -> Dataset:
+    """Construct the initial dataset.
 
     Args:
         config: Validated configuration containing a ``dataset`` section.
         datasource: Data source providing raw data.
-        save_dir: Run directory used to write or reload split indices.
 
     Returns:
         Dataset with splits set up, ready for training.
     """
     dataset_config = config.section("dataset")
     dataset_type = dataset_config.get_str("dataset_type")
-    dataset_kwargs = dataset_config.as_kwargs()
-    split_indices_save_path = save_dir / "split_indices.json"
 
-    if is_ddp_child():
-        logging.info("DDP child process: reusing existing processed dataset and split indices.")
-        dataset_kwargs["skip_prepare"] = True
-        split_indexfile = (get_ddp_run_dir() or save_dir) / "split_indices.json"
-        if split_indexfile.exists() and not dataset_kwargs.get("split_indexfile"):
-            dataset_kwargs["split_indexfile"] = str(split_indexfile)
-    else:
-        logging.info(f"Initializing training dataset: {dataset_type}")
-
-    dataset = DatasetRegistry.create(dataset_type, **dataset_kwargs, datasource=datasource)
+    logging.info(f"Initializing training dataset: {dataset_type}")
+    dataset = DatasetRegistry.create(dataset_type, **dataset_config.as_kwargs(), datasource=datasource)
     dataset.prepare()
     dataset.setup_splits()
     dataset.check_preload()  # may preload the dataset into memory
 
-    if is_local_rank_zero():
-        save_split_indices(split_indices_save_path, dataset.get_all_subset_indices())
-        logging.info(f"Split indices saved to: {split_indices_save_path}")
-        logging.info(f"Dataset Summary: # of samples = {len(dataset)}")
+    # Log dataset summary
+    logging.info(f"Dataset Summary: # of samples = {len(dataset)}")
 
     return dataset
 
@@ -224,6 +182,9 @@ def _setup_encoding(config: Config, dataset: Dataset) -> SpectraEncoding:
     Returns:
         A :class:`CombinedEncoding` wrapping all configured component
         encodings, prepared for the dataset's spectral width.
+
+    Raises:
+            ValueError: If the first sample has no spectral energy grid.
     """
     encoding = CombinedEncoding.from_configs(config.get_config_list("encodings"))
     energies = getattr(dataset[0], "energies", None)
@@ -243,13 +204,10 @@ def _setup_strategy(
     """Instantiate the training strategy from config.
 
     Args:
-        config: Validated configuration containing ``strategy``, ``model``,
-            and ``trainer`` sections.
+        config: Validated configuration containing ``strategy``, ``model``, and ``trainer`` sections.
         dataset: Prepared and split dataset.
-        encoding: Composed spectra encoding forwarded to the strategy's
-            trainers.
-        save_dir: Root run directory (used to derive checkpoint and
-            TensorBoard paths).
+        encoding: Composed spectra encoding forwarded to the strategy's trainers.
+        save_dir: Root run directory.
         enable_tensorboard: Whether to enable TensorBoard logging.
 
     Returns:
@@ -294,11 +252,11 @@ def _run_training(strategy: Strategy) -> tuple[list[Model], float]:
         A ``(model_list, train_time)`` tuple where ``train_time`` is elapsed
         wall-clock time in seconds.
     """
-    start_time = time.time()
+    start_time = time.perf_counter()
 
     model_list = strategy.run_training()
 
-    train_time = time.time() - start_time
+    train_time = time.perf_counter() - start_time
 
     # Move to CPU
     for model in model_list:
@@ -310,6 +268,48 @@ def _run_training(strategy: Strategy) -> tuple[list[Model], float]:
 ###############################################################################
 ############################### SUMMARY LOGGING ###############################
 ###############################################################################
+
+
+def _save_results(
+    model_list: list[Model],
+    train_time: float,
+    config: Config,
+    dataset: Dataset,
+    encoding: SpectraEncoding,
+    signature: Config,
+    save_dir: Path,
+    dry_run: bool,
+) -> None:
+    """Write trained models, summaries, and optional profiling output.
+
+    Args:
+        model_list: Trained models on CPU.
+        train_time: Elapsed strategy execution time in seconds.
+        config: Resolved training configuration.
+        dataset: Prepared dataset used for summary inputs.
+        encoding: Prepared encoding used during training.
+        signature: Full native checkpoint signature.
+        save_dir: Experiment output directory.
+        dry_run: Whether to write the existing model profiling reports.
+    """
+    logging.info(f"Number of trained models: {len(model_list)}")
+    logging.info(f"Training completed in {timedelta(seconds=int(train_time))}")
+    if dry_run:
+        device = config.get_str("device")
+        peak_gpu_memory_allocated_mb = get_peak_memory_allocated_mb(device)
+        model_profile = build_model_profile(model_list[0], dataset, device, peak_gpu_memory_allocated_mb, encoding)
+        profile_json_path, profile_readable_path = save_model_profile(save_dir, model_profile)
+        logging.info(f"Dry-run model profile JSON saved to: {profile_json_path}")
+        logging.info(f"Dry-run model profile readable report saved to: {profile_readable_path}")
+    try:
+        _summary_models(model_list, dataset, encoding)
+    except Exception as exc:
+        logging.warning(f"Model summary failed and will be skipped: {exc}")
+    save_models(save_dir / "models", model_list)
+    logging.info(f"Trained model(s) saved to: {save_dir / 'models'}")
+    final_checkpoint = Checkpoint.build(model_list, signature=signature)
+    final_save_path = final_checkpoint.save(save_dir / "models" / "final.pth")
+    logging.info(f"Final checkpoint without optimizers and epochs saved @ {final_save_path}")
 
 
 def _summary_models(model_list: list[Model], dataset: Dataset, encoding: SpectraEncoding) -> None:

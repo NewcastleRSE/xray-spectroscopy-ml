@@ -53,10 +53,8 @@ from xanesnet.serialization.schema_validation import validate_config_schema
 from xanesnet.serialization.tensorboard import tb_logger
 from xanesnet.strategies import StrategyRegistry
 from xanesnet.utils.distributed import (
-    get_ddp_run_dir,
-    is_ddp_child,
-    is_local_rank_zero,
-    set_ddp_run_dir,
+    get_lightning_context_path,
+    validate_lightning_launch,
 )
 from xanesnet.utils.filesystem import create_run_dir, create_subfolders
 from xanesnet.utils.logger import setup_file_logging, setup_logging
@@ -133,9 +131,10 @@ def parse_args(args: list[str]) -> Namespace:
 def main(args: list[str]) -> None:
     """Run the full training pipeline.
 
-    Parses arguments, configures prompt behavior, loads and validates
-    configuration, applies dry-run overrides when requested, sets up the run
-    directory, and delegates to the ``train`` core function.
+    Routes prepared Lightning workers before shared startup, then loads and
+    validates configuration, applies dry-run overrides when requested,
+    initializes the run, and dispatches to ``train`` or ``train_initial``.
+    Re-entered workers dispatch directly to ``train_worker``.
 
     Args:
         args: Raw command-line argument strings.
@@ -157,23 +156,34 @@ def main(args: list[str]) -> None:
     args_namespace = parse_args(args)
 
     with auto_yes(args_namespace.yes):
+        # Lighting worker
+        if get_lightning_context_path() is not None:
+            from xanesnet.core_lightning import train_worker
+
+            train_worker()
+            return
+
         # Loading configuration file
         logging.info(f"Loading YAML configuration file @ {args_namespace.in_file}")
         config_raw: ConfigRaw = load_raw_config(args_namespace.in_file)
 
+        # Config validation
+        validated = validate_config_schema(config_raw, "train")
+        config: Config = Config(validated)
+        if args_namespace.dry_run:
+            logging.info("Dry run enabled: trainer epochs will be overridden to 1 for a quick test run.")
+            config_dict = config.as_dict()
+            config_dict["trainer"]["epochs"] = 1
+            config = Config(config_dict)
+
+        trainer_type = config.section("trainer").get_str("trainer_type")
+        if trainer_type == "lightning":
+            validate_lightning_launch()
+
         # Get saving directory
         out_dir = "./runs" if args_namespace.out_dir is None else args_namespace.out_dir
-        if is_ddp_child():
-            save_dir = get_ddp_run_dir()
-            if save_dir is None:
-                raise RuntimeError("DDP child process has no XANESNET_RUN_DIR.")
-
-            logging.info(f"DDP child process reusing run directory: {save_dir}")
-        else:
-            save_dir = create_run_dir(out_dir, name=f"train_{args_namespace.name}" if args_namespace.name else "train")
-            set_ddp_run_dir(save_dir)
-            logging.info(f"Run directory: {save_dir}")
-
+        save_dir = create_run_dir(out_dir, name=f"train_{args_namespace.name}" if args_namespace.name else "train")
+        logging.info(f"Run directory: {save_dir}")
         subfolders = ["models", "checkpoints"] + (["tensorboard"] if args_namespace.tensorboard else [])
         create_subfolders(save_dir, subfolder_names=subfolders)
 
@@ -182,30 +192,16 @@ def main(args: list[str]) -> None:
 
         # Write software and hardware metadata files
         software_info_path, hardware_info_path = write_run_metadata(save_dir, mode="train", command_line_args=args)
-        if is_local_rank_zero():
-            logging.info(f"Software metadata saved to: {software_info_path}")
-            logging.info(f"Hardware metadata saved to: {hardware_info_path}")
+        logging.info(f"Software metadata saved to: {software_info_path}")
+        logging.info(f"Hardware metadata saved to: {hardware_info_path}")
 
         # Copy raw config file
         config_save_path = copy_raw_config(args_namespace.in_file, save_dir, new_name="train_config.yaml")
-        if is_local_rank_zero():
-            logging.info(f"Configuration file saved to: {config_save_path}")
-
-        # Config validation
-        validated = validate_config_schema(config_raw, "train")
-        config: Config = Config(validated)
-        if args_namespace.dry_run:
-            logging.info(f"Dry run enabled: trainer epochs will be overridden to 1 for a quick test run.")
-            config_dict = config.as_dict()
-            config_dict["trainer"]["epochs"] = 1
-            config = Config(config_dict)
-        if is_local_rank_zero():
-            validate_config_save_path = config.save(save_dir / "validated_train_config.yaml")
-            logging.info(f"Validated config file saved to: {validate_config_save_path}.")
+        logging.info(f"Configuration file saved to: {config_save_path}")
 
         # Scale file copying (if configured)
         scale_file = config.section("model").as_kwargs().get("scale_file")
-        if scale_file and is_local_rank_zero():
+        if scale_file:
             src = Path(scale_file)
             if src.exists():
                 dst = save_dir / "models" / "scale_factors.json"
@@ -217,19 +213,30 @@ def main(args: list[str]) -> None:
 
         # Setting global seed for reproducibility
         seed = config.get_optional_int("seed")
-        if seed is None and is_local_rank_zero():
+        if seed is None:
             logging.warning("No global seed specified in configuration file. Choosing random seed.")
         seed = set_global_seed(seed)
-        if is_local_rank_zero():
-            logging.info(f"Global seed: {seed}")
+        logging.info(f"Global seed: {seed}")
+
+        config_dict = config.as_dict()
+        config_dict["seed"] = seed
+        config = Config(config_dict)
+
+        # Save validated configuration file
+        validate_config_save_path = config.save(save_dir / "validated_train_config.yaml")
+        logging.info(f"Validated config file saved to: {validate_config_save_path}.")
 
         # Tensorboard
-        if is_local_rank_zero():
-            if args_namespace.tensorboard:
-                logging.info("TensorBoard logging enabled.")
-                tb_logger.set_config(config)
-            else:
-                logging.info("TensorBoard logging disabled.")
+        if args_namespace.tensorboard:
+            logging.info("TensorBoard logging enabled.")
+            tb_logger.set_config(config)
+        else:
+            logging.info("TensorBoard logging disabled.")
 
         # Branching into training mode
-        train(config, args_namespace, save_dir)
+        if trainer_type == "lightning":
+            from xanesnet.core_lightning import train_initial
+
+            train_initial(config, args_namespace, save_dir)
+        else:
+            train(config, args_namespace, save_dir)
