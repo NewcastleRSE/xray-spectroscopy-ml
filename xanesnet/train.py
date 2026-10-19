@@ -2,7 +2,7 @@
 #
 # XANESNET
 #
-# Authors:  Hendrik Junkawitsch, Tom J. Penfold, Tom W. Pope, C. D. Rankine, B. Li
+# Authors:  Hendrik Junkawitsch, Tom J. Penfold, Thomas J. Pope, C. D. Rankine, B. Li
 #
 # This program is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -52,7 +52,12 @@ from xanesnet.serialization.metadata import write_run_metadata
 from xanesnet.serialization.schema_validation import validate_config_schema
 from xanesnet.serialization.tensorboard import tb_logger
 from xanesnet.strategies import StrategyRegistry
-from xanesnet.utils.distributed import get_ddp_run_dir, is_ddp_child, is_local_rank_zero, set_ddp_run_dir
+from xanesnet.utils.distributed import (
+    get_ddp_run_dir,
+    is_ddp_child,
+    is_local_rank_zero,
+    set_ddp_run_dir,
+)
 from xanesnet.utils.filesystem import create_run_dir, create_subfolders
 from xanesnet.utils.logger import setup_file_logging, setup_logging
 from xanesnet.utils.prompts import auto_yes
@@ -162,13 +167,13 @@ def main(args: list[str]) -> None:
             save_dir = get_ddp_run_dir()
             if save_dir is None:
                 raise RuntimeError("DDP child process has no XANESNET_RUN_DIR.")
- 
+
             logging.info(f"DDP child process reusing run directory: {save_dir}")
         else:
             save_dir = create_run_dir(out_dir, name=f"train_{args_namespace.name}" if args_namespace.name else "train")
             set_ddp_run_dir(save_dir)
             logging.info(f"Run directory: {save_dir}")
-            
+
         subfolders = ["models", "checkpoints"] + (["tensorboard"] if args_namespace.tensorboard else [])
         create_subfolders(save_dir, subfolder_names=subfolders)
 
