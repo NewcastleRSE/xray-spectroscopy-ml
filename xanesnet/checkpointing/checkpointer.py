@@ -172,11 +172,13 @@ class Checkpointer:
         return len(self._checkpoint)
 
     def set_signature(self, signature: Config) -> None:
-        """Replace the checkpoint's signature with a new one.
+        """Replace the signature when active, otherwise leave state unchanged.
 
         Args:
             signature: signature ``Config``.
         """
+        if not self.active:
+            return
         self._checkpoint.signature = signature
 
 
