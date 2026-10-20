@@ -42,6 +42,8 @@ Deep-ensemble example:
    # MLP deep ensemble training configuration with custom run name, TensorBoard logging, and no interactive confirmation
    xanesnet train -i configs/mlp_deep_ensemble.yaml -n mlp_run -t -y
 
+For Lightning trainer settings and multi-device training, see :ref:`multi-device-lightning-training`.
+
 
 Running inference
 -----------------

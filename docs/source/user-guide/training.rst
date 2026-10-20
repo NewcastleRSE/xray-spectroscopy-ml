@@ -22,6 +22,7 @@ Available implementations
 --------------------------
 
 * ``basic`` (:class:`~xanesnet.runners.trainers.basic.BasicTrainer`) provides the training and validation loop.
+* ``lightning`` (:class:`~xanesnet.runners.trainers.lightning.LightningTrainer`) runs the same model and objective through Lightning on CPU, CUDA, or MPS. Multiple CPU processes or CUDA devices use DDP.
 
 Trainer subcomponents are selected from these dedicated registries:
 
@@ -64,6 +65,62 @@ The following shows a trainer section with commonly changed options:
        patience: 25
        min_delta: 0.001
        restore_best: true
+
+.. _multi-device-lightning-training:
+
+Multi-device lightning training
+----------------------------------------
+
+XANESNET supports multi-gpu/multi-cpu training trough Lightning. 
+Use the special Trainer `lightning`, set `trainer.num_devices` to the number of CPU training processes with `device: cpu`, or visible GPUs with `device: cuda`. 
+`device: cuda:N` starts at visible index `N`; 
+MPS always uses one device. `batch_size` and `num_workers` are per process. 
+Launch once with `xanesnet train` or `python -m xanesnet.cli train`, not `torchrun`, MPI, or multi-task `srun`. 
+
+For two CPU training processes, change the following fields in a complete config:
+
+.. code-block:: yaml
+
+   device: cpu
+   trainer:
+     trainer_type: lightning <-- 
+     num_devices: 2
+     batch_size: 4
+     num_workers: 0 <--
+   strategy:
+     strategy_type: single
+
+Run it through the normal CLI:
+
+.. code-block:: bash
+
+   python -m xanesnet.cli train -i configs/lightning_mlp.yaml --yes
+
+``num_devices`` defaults to one in the schema. Its meaning depends on ``device``:
+
+* ``cpu``: number of local training processes.
+* ``cuda``: number of visible CUDA devices, starting at visible index zero.
+* ``cuda:N``: consecutive visible CUDA indices starting at ``N``. For example,
+  ``cuda:1`` with ``num_devices: 2`` selects visible indices 1 and 2.
+  ``CUDA_VISIBLE_DEVICES`` can restrict and remap physical GPUs before launch.
+* ``mps``: one device only. Larger ``num_devices`` values are ignored with a warning.
+
+Lightning must be launched once on one node with ``xanesnet`` or ``python -m xanesnet.cli``.
+It starts its own workers; do not wrap the command in ``torchrun``, MPI, or a multi-task ``srun``.
+A SLURM allocation may provide resources, but use one task on one node and request the intended GPU and CPU resources for that task. 
+
+``batch_size`` and ``num_workers`` are per training process, not global values.
+
+For input-dependent model branches that skip trainable parameters, set ``trainer.find_unused_parameters: true``. 
+The schema default is ``false`` to avoid the extra autograd traversal for models that use every parameter.
+If the used/unused parameter set and model control flow stay fixed for the entire run, ``trainer.static_graph: true`` enables DDP's static-graph mode instead.
+It supports stable unused parameters without repeated unused-parameter discovery and takes precedence over ``find_unused_parameters``. 
+Do not enable it when edge or path availability changes which modules run between steps.
+
+With checkpointing enabled, Lightning writes both native XANESNET snapshots (``checkpoints/checkpoint_<n>_<epoch>.pth``)
+and Lightning recovery files under ``checkpoints/model_<n>/``, including a final ``last.ckpt``. 
+Native ``.pth`` snapshots use the XANESNET inference format and can be used directly. 
+Lightning ``.ckpt`` files contain recovery state, including optimizer, schedulers, and stopper state, and are not native inference inputs. 
 
 API reference
 -------------
