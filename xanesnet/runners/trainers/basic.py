@@ -218,13 +218,14 @@ class BasicTrainer(Trainer):
 
         Returns:
             Tuple of ``(mean_loss, mean_regularization, mean_total)`` averaged
-            over all batches in the training data loader.
+            over all target rows (observation-weighted).
         """
         self.model.train()
 
         epoch_loss = 0.0
         epoch_regularization = 0.0
         epoch_total = 0.0
+        epoch_rows = 0
 
         for batch in self.dataloader:
             batch.to(self.device)
@@ -252,13 +253,17 @@ class BasicTrainer(Trainer):
             # Per-step learning-rate warmup (no-op once warmup phase is over).
             self.step_warmup_scheduler()
 
-            epoch_loss += loss.item()
-            epoch_regularization += regularization.item()
-            epoch_total += total.item()
+            # Regularization is a batch-level scalar, but it is weighted by rows
+            # here so the displayed total stays ``loss + regularization``.
+            rows = int(targets.shape[0])
+            epoch_loss += loss.item() * rows
+            epoch_regularization += regularization.item() * rows
+            epoch_total += total.item() * rows
+            epoch_rows += rows
 
-        epoch_loss = epoch_loss / len(self.dataloader)
-        epoch_regularization = epoch_regularization / len(self.dataloader)
-        epoch_total = epoch_total / len(self.dataloader)
+        epoch_loss = epoch_loss / epoch_rows
+        epoch_regularization = epoch_regularization / epoch_rows
+        epoch_total = epoch_total / epoch_rows
 
         return epoch_loss, epoch_regularization, epoch_total
 
@@ -267,7 +272,8 @@ class BasicTrainer(Trainer):
 
         Returns:
             Tuple of ``(mean_loss, mean_regularization, mean_total)`` averaged
-            over all batches in the validation data loader.
+            over all target rows (observation-weighted), matching the Lightning
+            trainer's epoch metrics.
         """
         assert self.valid_dataloader is not None
 
@@ -276,6 +282,7 @@ class BasicTrainer(Trainer):
         valid_loss = 0.0
         valid_regularization = 0.0
         valid_total = 0.0
+        valid_rows = 0
 
         with torch.no_grad():
             for batch in self.valid_dataloader:
@@ -295,13 +302,17 @@ class BasicTrainer(Trainer):
                 regularization = self.regularizer(self.model)
                 total = loss + regularization
 
-                valid_loss += loss.item()
-                valid_regularization += regularization.item()
-                valid_total += total.item()
+                # Regularization is a batch-level scalar, but it is weighted by
+                # rows here so the displayed total stays ``loss + regularization``.
+                rows = int(targets.shape[0])
+                valid_loss += loss.item() * rows
+                valid_regularization += regularization.item() * rows
+                valid_total += total.item() * rows
+                valid_rows += rows
 
-        valid_loss = valid_loss / len(self.valid_dataloader)
-        valid_regularization = valid_regularization / len(self.valid_dataloader)
-        valid_total = valid_total / len(self.valid_dataloader)
+        valid_loss = valid_loss / valid_rows
+        valid_regularization = valid_regularization / valid_rows
+        valid_total = valid_total / valid_rows
 
         return valid_loss, valid_regularization, valid_total
 
