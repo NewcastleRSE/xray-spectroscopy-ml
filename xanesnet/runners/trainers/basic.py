@@ -27,6 +27,8 @@
 
 """Concrete ``BasicTrainer`` implementation for XANESNET."""
 
+import logging
+
 import torch
 
 from xanesnet.checkpointing import Checkpointer
@@ -34,6 +36,7 @@ from xanesnet.datasets import Dataset
 from xanesnet.encodings import SpectraEncoding
 from xanesnet.models import Model
 from xanesnet.serialization.config import Config
+from xanesnet.serialization.tensorboard import tb_logger
 
 from .base import Trainer
 from .registry import TrainerRegistry
@@ -51,8 +54,7 @@ class BasicTrainer(Trainer):
         model: Model to train.
         device: Device identifier or :class:`torch.device` instance.
         checkpointer: Checkpoint manager for saving model states.
-        encoding: Composed spectra encoding applied to targets before the loss
-            is computed.
+        encoding: Composed spectra encoding applied to targets before the loss is computed.
         batch_size: Number of samples per training batch.
         shuffle: Whether to shuffle training data each epoch.
         drop_last: Whether to drop the last incomplete training batch.
@@ -121,6 +123,95 @@ class BasicTrainer(Trainer):
             lr_warmup,
             warmup_steps,
         )
+        self._global_step = 0
+        self._warmup_complete = self.warmup_lr_scheduler is None
+
+    def train(self) -> float | None:
+        """Run the ordinary epoch loop with existing scheduling and selection.
+
+        Returns:
+            Best monitored score when restoring best weights, otherwise the
+            final validation or training total. Returns ``None`` when no epoch
+            completes.
+        """
+        self.model.to(self.device)
+        self.loss.to(self.device)
+
+        sample_batch = next(iter(self.dataloader))
+        sample_batch.to(self.device)
+        sample_inputs = self.batchprocessor.input_preparation(sample_batch)
+        tb_logger.log_model_graph(self.model, sample_inputs)
+
+        logging.info(f"Start training: {self.epochs} epochs.")
+        train_total = None
+        valid_total = None
+        epoch = -1
+        for epoch in range(self.epochs):
+            train_loss, train_regularization, train_total = self._train_one_epoch()
+            if self.valid_dataloader is not None and (
+                epoch % self.validation_interval == 0 or epoch == self.epochs - 1
+            ):
+                valid_loss, valid_regularization, valid_total = self._validate_one_epoch()
+            else:
+                valid_loss, valid_regularization, valid_total = None, None, None
+
+            self._log_epoch_loss(
+                train_loss,
+                train_regularization,
+                train_total,
+                epoch,
+                valid_loss,
+                valid_regularization,
+                valid_total,
+            )
+            tb_logger.log_epoch_metrics(
+                epoch,
+                train_loss,
+                train_regularization,
+                train_total,
+                valid_loss,
+                valid_regularization,
+                valid_total,
+            )
+            tb_logger.log_learning_rate(epoch, self.optimizer.param_groups[0]["lr"])
+            tb_logger.log_model_weights(epoch, self.model)
+            if self._warmup_complete:
+                self.epoch_lr_scheduler.step()
+
+            stopped = False
+            if self.valid_dataloader is None:
+                stopped = self.early_stopper.step(train_total, self.model, epoch)
+            elif valid_total is not None:
+                stopped = self.early_stopper.step(valid_total, self.model, epoch)
+
+            if epoch == self.epochs - 1 or stopped:
+                saved_checkpoint, checkpoint_name = self.checkpointer.save_checkpoint(epoch, self.model, self.optimizer)
+            else:
+                saved_checkpoint, checkpoint_name = self.checkpointer.step(epoch, self.model, self.optimizer)
+            if saved_checkpoint:
+                logging.info(f"Saved new checkpoint @ {self.checkpointer.save_dir}: {checkpoint_name}")
+            if stopped:
+                logging.info(f"EarlyStopper {self.early_stopper.early_stopper_type} fired in epoch {epoch}!")
+                break
+
+        logging.info("Finished training.")
+        if self.early_stopper.restore_best:
+            score, best_epoch = self.early_stopper.restore(self.model)
+            if score is not None and best_epoch is not None:
+                logging.info(f"Restored best model from epoch {best_epoch} with score {score}.")
+            else:
+                logging.warning(
+                    f"Did not find a best model."
+                    f" Something might be wrong in your EarlyStopper {self.early_stopper.early_stopper_type}."
+                )
+        else:
+            if valid_total is not None:
+                score = valid_total
+                logging.info(f"Using last model from epoch {epoch} as final model with validation score {score}.")
+            else:
+                score = train_total
+                logging.info(f"Using last model from epoch {epoch} as final model with training score {score}.")
+        return score
 
     def _train_one_epoch(self) -> tuple[float, float, float]:
         """Run one training epoch.
@@ -213,3 +304,12 @@ class BasicTrainer(Trainer):
         valid_total = valid_total / len(self.valid_dataloader)
 
         return valid_loss, valid_regularization, valid_total
+
+    def step_warmup_scheduler(self) -> None:
+        """Advance warm-up after an optimizer step until its configured end."""
+        if self.warmup_lr_scheduler is None or self._warmup_complete:
+            return
+        self._global_step += 1
+        self.warmup_lr_scheduler.step()
+        if self._global_step >= self.warmup_steps:
+            self._warmup_complete = True
