@@ -90,6 +90,10 @@ class _LightningModule(L.LightningModule):
         self._validate_this_epoch = self.xn.valid_dataloader is not None and (
             self.current_epoch % self.xn.validation_interval == 0 or self.current_epoch == self.xn.epochs - 1
         )
+        # check_val_every_n_epoch must be a positive integer: Lightning validates
+        # when (current_epoch + 1) % check_val_every_n_epoch == 0. Use 1 to force
+        # validation; otherwise use epochs + 1, which never divides into any
+        # epoch index of this run, so validation is skipped this epoch.
         self.trainer.check_val_every_n_epoch = 1 if self._validate_this_epoch else self.xn.epochs + 1
 
     def on_validation_epoch_start(self) -> None:
