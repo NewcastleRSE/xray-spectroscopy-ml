@@ -26,11 +26,29 @@ $defs:
         - min
         - max
         description: Ordered statistic keys to include as table columns.
-      precision:
+      time_unit:
+        type: string
+        enum:
+        - seconds
+        - milliseconds
+        - nanoseconds
+        default: seconds
+        description: Display unit for time_per_spectrum values.
+      decimal_places:
         type: integer
         minimum: 0
-        default: 4
-        description: Number of significant digits used when formatting table values.
+        default: 3
+        description: Fixed number of digits after the decimal point in table cells.
+      display_scales:
+        type: object
+        propertyNames:
+          not:
+            const: time_per_spectrum
+        additionalProperties:
+          type: number
+          exclusiveMinimum: 0
+        default: {}
+        description: Positive display multipliers keyed by scalar value key; time_per_spectrum uses time_unit.
       sort_key:
         type:
         - string

@@ -42,6 +42,7 @@ from xanesnet.analysis.aggregators import (
     AggregatorResult,
 )
 from xanesnet.analysis.collectors import Collector, CollectorRegistry
+from xanesnet.analysis.custom_modules import CustomModule, CustomModuleRegistry
 from xanesnet.analysis.plotters import Plotter, PlotterRegistry
 from xanesnet.analysis.reporters import Reporter, ReporterRegistry
 from xanesnet.analysis.result import AnalysisResults
@@ -67,9 +68,9 @@ _ComponentT = TypeVar("_ComponentT")
 def analyze(config: Config, args_namespace: Namespace, save_dir: Path) -> None:
     """Run the complete analysis pipeline.
 
-    Sets up readers, selectors, collectors, aggregators, reporters, and
-    plotters from ``config``; executes the pipeline; and writes all outputs
-    under ``save_dir``.
+    Sets up readers, selectors, collectors, aggregators, reporters, plotters,
+    and custom modules from ``config``; executes the pipeline; and writes all
+    outputs under ``save_dir``.
 
     Args:
         config: Validated analysis configuration.
@@ -79,9 +80,6 @@ def analyze(config: Config, args_namespace: Namespace, save_dir: Path) -> None:
     """
     logging.info("Analysis.")
     started = time.perf_counter()
-
-    preload = config.get_bool("preload")
-    logging.info(f"Preload predictions and structures: {preload}")
 
     inference_run_dirs = args_namespace.inference_runs
     logging.info(f"You provided {len(inference_run_dirs)} inference run directories:")
@@ -102,6 +100,24 @@ def analyze(config: Config, args_namespace: Namespace, save_dir: Path) -> None:
         )
     names_padded = (prediction_names + run_dir_names)[: len(run_dir_names)]
 
+    custom_modules, custom_modules_config = _setup_components(config, "custom_modules", CustomModuleRegistry)
+
+    # Custom only branch (returns!)
+    pipeline_sections = ("selectors", "collectors", "aggregators", "reporters", "plotters")
+    if not any(config.get_config_list(section) for section in pipeline_sections):
+        logging.info("Running custom modules only.")
+        for section in pipeline_sections:
+            Config({section: []}).save(save_dir / f"{section}.yaml")
+        custom_modules_config.save(save_dir / "custom_modules.yaml")
+
+        logging.info(f"Running Custom Modules ({len(custom_modules)})")
+        _run_custom_modules(custom_modules, inference_run_dirs, names_padded, save_dir)
+        logging.info(f"Analysis completed in {_format_duration(time.perf_counter() - started)}. Output: '{save_dir}'")
+        return
+
+    preload = config.get_bool("preload")
+    logging.info(f"Preload predictions and structures: {preload}")
+
     predictions_readers = _setup_predictions_readers(inference_run_dirs, preload)
     try:
         logging.info("Setup")
@@ -115,7 +131,7 @@ def analyze(config: Config, args_namespace: Namespace, save_dir: Path) -> None:
         logging.info(
             f"  Pipeline: {len(selectors)} predictions x {len(selectors[0]) if selectors else 0} selectors "
             f"= {n_combinations} method(s); {len(collectors)} collector(s), {len(aggregators)} aggregator(s), "
-            f"{len(reporters)} reporter(s), {len(plotters)} plotter(s)."
+            f"{len(reporters)} reporter(s), {len(plotters)} plotter(s), {len(custom_modules)} custom module(s)."
         )
 
         selectors_config.save(save_dir / "selectors.yaml")
@@ -123,6 +139,7 @@ def analyze(config: Config, args_namespace: Namespace, save_dir: Path) -> None:
         aggregators_config.save(save_dir / "aggregators.yaml")
         reporters_config.save(save_dir / "reporters.yaml")
         plotters_config.save(save_dir / "plotters.yaml")
+        custom_modules_config.save(save_dir / "custom_modules.yaml")
 
         logging.info(f"Running Collectors ({len(collectors)})")
         collector_results = _run_collectors(collectors, selectors, save_dir)
@@ -142,6 +159,9 @@ def analyze(config: Config, args_namespace: Namespace, save_dir: Path) -> None:
 
         logging.info(f"Running Plotters ({len(plotters)})")
         _run_plotters(plotters, results, save_dir)
+
+        logging.info(f"Running Custom Modules ({len(custom_modules)})")
+        _run_custom_modules(custom_modules, inference_run_dirs, names_padded, save_dir)
     finally:
         for predictions_reader in predictions_readers:
             predictions_reader.close()
@@ -467,6 +487,38 @@ def _run_plotters(plotters: list[Plotter], results: AnalysisResults, save_dir: P
         plotter_dir.mkdir(parents=True, exist_ok=True)
         logging.info(f"    Output directory: '{plotter_dir}'.")
         plotter.plot(results, plotter_dir)
+        logging.info(f"    Done in {_format_duration(time.perf_counter() - started)}.")
+
+
+def _run_custom_modules(
+    custom_modules: list[CustomModule],
+    inference_run_dirs: list[str] | list[Path],
+    prediction_names: list[str],
+    save_dir: Path,
+) -> None:
+    """Run each custom module once with all inference runs.
+
+    Each module writes to a unique directory under ``<save_dir>/custom_modules/``.
+
+    Args:
+        custom_modules: Configured custom analysis module instances.
+        inference_run_dirs: Inference run directories in command-line order.
+        prediction_names: Display names aligned with ``inference_run_dirs``.
+        save_dir: Root analysis output directory.
+    """
+    if not custom_modules:
+        return
+
+    custom_modules_dir = save_dir / "custom_modules"
+    inference_run_paths = [Path(directory) for directory in inference_run_dirs]
+
+    for idx, custom_module in enumerate(custom_modules):
+        started = time.perf_counter()
+        logging.info(f"  Custom module {idx + 1}/{len(custom_modules)}: {custom_module!r}")
+        output_dir = custom_modules_dir / f"{str(custom_module)}_{idx:03d}"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        logging.info(f"    Output directory: '{output_dir}'.")
+        custom_module.run(inference_run_paths, prediction_names, output_dir)
         logging.info(f"    Done in {_format_duration(time.perf_counter() - started)}.")
 
 

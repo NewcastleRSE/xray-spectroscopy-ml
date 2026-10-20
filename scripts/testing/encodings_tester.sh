@@ -29,7 +29,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 cd "$REPO_ROOT"
 
 # Path to the training config whose encodings should be visualized.
@@ -52,7 +52,7 @@ NO_SHOW=false
 
 
 args=(
-    "scripts/testing/encodings_tester.py"
+    "scripts/testing/src/encodings_tester.py"
     "--config"    "$CONFIG"
     "--max-samples" "$MAX_SAMPLES"
 )
@@ -61,4 +61,4 @@ args=(
 [[ -n "$SAVE_PATH"  ]] && args+=("--save" "$SAVE_PATH")
 [[ "$NO_SHOW" == "true" ]] && args+=("--no-show")
 
-python "${args[@]}"
+python3 "${args[@]}"

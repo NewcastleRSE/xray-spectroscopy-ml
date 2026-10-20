@@ -43,6 +43,8 @@ aggregators:
 
   - aggregator_type: bias_variance
 
+custom_modules: []
+
 reporters:
   - reporter_type: scalar
 
@@ -83,7 +85,7 @@ plotters:
 
   - plotter_type: error_correlation
     plot_size: default
-    sort_key: mse
+    error_key: mse
 
   - plotter_type: pca
     plot_size: default

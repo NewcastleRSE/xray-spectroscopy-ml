@@ -29,7 +29,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 cd "$REPO_ROOT"
 
 # Required
@@ -80,7 +80,7 @@ SAVE_PATH=""
 NO_SHOW=false
 
 args=(
-	"scripts/testing/gemnet_tester.py"
+	"scripts/testing/src/gemnet_tester.py"
 	"--json-dir" "$JSON_DIR"
 	"--cutoff" "$CUTOFF"
 	"--max-neighbors" "$MAX_NEIGHBORS"

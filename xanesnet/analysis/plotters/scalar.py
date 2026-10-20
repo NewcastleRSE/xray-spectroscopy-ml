@@ -49,7 +49,6 @@ from .common.layout import (
     style_grid_cell,
 )
 from .common.style import (
-    COLOR_ACCENT_RED,
     FIGURE_SIZES,
     PlotSize,
     PlotStyle,
@@ -178,7 +177,7 @@ class ScalarPlotter(Plotter):
         lo, hi = _bin_range(arr, clip)
         heights, edges = _share_heights(arr, self.bins, lo, hi)
         width = edges[1] - edges[0]
-        centers = (edges[:-1] + edges[1:]) / 2
+        centers = (edges[:-1] + edges[1:]) * 0.5
         ax.bar(centers, heights, width=width, color=color, alpha=0.55)
         ax.set_xlim(lo, hi)
         ax.set_xlabel(key)
@@ -228,6 +227,9 @@ class ScalarPlotter(Plotter):
             body.set_facecolor(color)
             body.set_alpha(0.7)
             body.set_linewidth(self.style.linewidth("box"))
+        for artist in vp.values():
+            if not isinstance(artist, list):
+                artist.set_color("black")
         ax.set_ylabel(key)
         ax.set_xticks([1])
         ax.set_xticklabels([""])
@@ -264,7 +266,7 @@ class ScalarPlotter(Plotter):
             ax = axes[idx // ncols][idx % ncols]
             heights, edges = _share_heights(arr, self.bins, lo, hi)
             width = edges[1] - edges[0]
-            centers = (edges[:-1] + edges[1:]) / 2
+            centers = (edges[:-1] + edges[1:]) * 0.5
             ax.bar(centers, heights, width=width, color=color, alpha=0.8)
             ax.set_xlim(lo, hi)
             style_grid_cell(ax, label_lines, self.style)
@@ -300,10 +302,11 @@ class ScalarPlotter(Plotter):
         lo, hi = _bin_range(all_values, clip)
         bins = np.linspace(lo, hi, self.bins + 1)
         width = bins[1] - bins[0]
-        centers = (bins[:-1] + bins[1:]) / 2
+        centers = (bins[:-1] + bins[1:]) * 0.5
 
         n_methods = len(series)
         sub_width = width / n_methods
+        bar_width = sub_width * 1.05
         offsets = (np.arange(n_methods) - (n_methods - 1) / 2) * sub_width
 
         fig, ax = single_panel(
@@ -317,9 +320,9 @@ class ScalarPlotter(Plotter):
             ax.bar(
                 centers + offsets[idx],
                 heights,
-                width=sub_width,
+                width=bar_width,
                 color=color,
-                alpha=0.9,
+                alpha=0.75,
                 edgecolor="white",
                 linewidth=self.style.linewidth("bar_edge"),
                 label=one_line_label(label_lines),
@@ -392,6 +395,9 @@ class ScalarPlotter(Plotter):
         for body, (color, _, _) in zip(bodies, series):
             body.set_facecolor(color)
             body.set_alpha(0.7)
+        for artist in vp.values():
+            if not isinstance(artist, list):
+                artist.set_color("black")
         ax.set_xticks(range(n))
         _set_method_xticklabels(ax, [label_lines for _, label_lines, _ in series], self.style)
         ax.set_ylabel(key)
@@ -449,7 +455,7 @@ def _share_heights(arr: np.ndarray, n_bins: int, lo: float, hi: float) -> tuple[
     """
     counts, edges = np.histogram(arr, bins=n_bins, range=(lo, hi))
     n_in = int(counts.sum())
-    heights = counts / n_in * 100.0 if n_in > 0 else np.zeros_like(counts, dtype=float)
+    heights = counts * (100.0 / n_in) if n_in > 0 else np.zeros_like(counts, dtype=float)
     return heights, edges
 
 
@@ -509,7 +515,7 @@ def _add_clip_note(ax: Axes, clip: tuple[float, float, int] | None, style: PlotS
     note = _clip_note(clip)
     if not note:
         return
-    add_note(ax, note, style, location="upper right", boxed=False, color=COLOR_ACCENT_RED)
+    add_note(ax, note, style, location="upper right", boxed=False, color="black")
 
 
 def _add_cell_clip_note(ax: Axes, clip: tuple[float, float, int] | None, style: PlotStyle) -> None:
@@ -526,7 +532,7 @@ def _add_cell_clip_note(ax: Axes, clip: tuple[float, float, int] | None, style: 
     note = _clip_note(clip)
     if not note:
         return
-    add_note(ax, note, style, location="upper right", boxed=False, color=COLOR_ACCENT_RED)
+    add_note(ax, note, style, location="upper right", boxed=False, color="black")
 
 
 def _set_method_xticklabels(ax: Axes, label_lines: list[list[str]], style: PlotStyle) -> None:

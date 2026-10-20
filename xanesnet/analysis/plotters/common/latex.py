@@ -34,11 +34,11 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from .formatting import format_decimal
-
 LATEX_PREAMBLE: str = r"""\documentclass{article}
 \usepackage[table]{xcolor}
 \usepackage{multirow}
+\newcommand{\dataCell}[1]{\hspace{4pt}#1\hspace{4pt}}
+\newcommand{\labelCell}[2][4pt]{#2\hspace{#1}}
 \pagestyle{empty}
 \begin{document}
 """
@@ -67,43 +67,35 @@ def escape_latex(text: str) -> str:
         "{": r"\{",
         "}": r"\}",
         "_": r"\_",
+        "|": r"\textbar{}",
         "^": r"\textasciicircum{}",
         "~": r"\textasciitilde{}",
     }
     return "".join(replacements.get(character, character) for character in text)
 
 
-def escape_label_line(text: str) -> str:
-    """Escape a table label, using a stacked label for pipe-separated parts.
+def format_cell(text: str, mark: str | None, unit: str | None = None) -> str:
+    """Format a data cell with optional unit and best/worst color.
 
     Args:
-        text: Plain text label line.
-
-    Returns:
-        LaTeX-safe label. Labels such as ``"SchNet | all"`` become a left-
-        aligned ``shortstack`` with one part per line.
-    """
-    parts = [part.strip() for part in text.split("|")]
-    if len(parts) == 1:
-        return escape_latex(text)
-    lines = r"\\".join(escape_latex(part) for part in parts)
-    return rf"\shortstack[l]{{{lines}}}"
-
-
-def format_cell(value: float | None, mark: str | None, precision: int) -> str:
-    """Format one table cell for LaTeX.
-
-    Args:
-        value: Numeric cell value; missing values are rendered as a dash.
+        text: Already formatted cell text.
         mark: Optional ``"best"``/``"worst"`` mark controlling color highlighting.
-        precision: Number of significant digits.
+        unit: Optional unit appended to non-missing values.
 
     Returns:
-        LaTeX cell content with an optional ``\\cellcolor`` prefix.
+        LaTeX cell content wrapped in ``\\dataCell`` and optionally prefixed
+        with ``\\cellcolor``.
     """
-    text = format_decimal(value, precision) if value is not None else "-"
+    if unit is not None and text != "-":
+        text = f"{text}~{unit}"
+    data_cell = rf"\dataCell{{{text}}}"
     color = LATEX_MARK_COLORS[mark] if mark is not None else ""
-    return rf"\cellcolor{{{color}}} {text}" if color else text
+    return rf"\cellcolor{{{color}}} {data_cell}" if color else data_cell
+
+
+def format_label_cell(text: str, padding: str = "4pt") -> str:
+    """Wrap an already escaped table label in ``\\labelCell``."""
+    return rf"\labelCell[{padding}]{{{text}}}"
 
 
 def sanitize_label(text: str) -> str:

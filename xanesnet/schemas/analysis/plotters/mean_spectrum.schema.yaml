@@ -17,6 +17,10 @@ $defs:
         $ref: plotters.schema.yaml#/$defs/latexFont
       legend_position:
         $ref: plotters.schema.yaml#/$defs/legendPosition
+      start_index:
+        $ref: plotters.schema.yaml#/$defs/channelStartIndex
+      end_index:
+        $ref: plotters.schema.yaml#/$defs/channelEndIndex
     description: Plot mean predicted and target spectra plus best/worst tail means
       and per-channel spread. Requires a ``spectrum`` aggregator.
 description: Analysis component schemas used by ``core_analyze`` setup functions

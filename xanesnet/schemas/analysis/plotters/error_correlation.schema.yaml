@@ -7,7 +7,7 @@ $defs:
     additionalProperties: false
     required:
     - plotter_type
-    - sort_key
+    - error_key
     properties:
       plotter_type:
         const: error_correlation
@@ -16,7 +16,7 @@ $defs:
         $ref: plotters.schema.yaml#/$defs/plotSize
       latex_font:
         $ref: plotters.schema.yaml#/$defs/latexFont
-      sort_key:
+      error_key:
         type: string
         description: Scalar collector key used as the per-sample error. Must be
           produced by a configured collector.

@@ -67,6 +67,8 @@ aggregators:
 
   - aggregator_type: bias_variance
 
+custom_modules: []
+
 reporters:
   - reporter_type: scalar
 
@@ -83,20 +85,28 @@ plotters:
   - plotter_type: spectra_all
     plot_size: small
     max_pages: 8
+    start_index: 0
+    end_index: 301
     legend_position: inside
 
   - plotter_type: spectra_comparison
     plot_size: small
     n_samples: 5
     sort_key: mse
+    start_index: 0
+    end_index: 301
     legend_position: inside
 
   - plotter_type: energy_resolved_loss
     plot_size: small
+    start_index: 0
+    end_index: 301
     legend_position: outside
 
   - plotter_type: mean_spectrum
     plot_size: small
+    start_index: 0
+    end_index: 301
     legend_position: outside
 
   - plotter_type: parity
@@ -104,11 +114,13 @@ plotters:
 
   - plotter_type: bias_variance
     plot_size: small
+    start_index: 0
+    end_index: 301
     legend_position: outside
 
   - plotter_type: error_correlation
     plot_size: small
-    sort_key: mse
+    error_key: mse
 
   - plotter_type: pca
     plot_size: small
@@ -121,21 +133,31 @@ plotters:
   - plotter_type: selector_overview
     plot_size: small
     err_key: mse
+    start_index: 0
+    end_index: 301
     legend_position: inside
 
   - plotter_type: selector_overview
     plot_size: small
     err_key: mse
+    start_index: 0
+    end_index: 301
     legend_position: outside
 
   - plotter_type: stat_table
     plot_size: small
     stat_keys: [mean, std, median, min, max]
-    precision: 4
+    time_unit: milliseconds
+    decimal_places: 3
+    display_scales:
+      mse: 1000
     sort_key: mse
 
   - plotter_type: stat_table_latex
     plot_size: small
     stat_keys: [mean, std, median, min, max]
-    precision: 4
+    time_unit: milliseconds
+    decimal_places: 3
+    display_scales:
+      mse: 1000
     sort_key: mse

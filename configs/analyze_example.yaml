@@ -52,6 +52,8 @@ aggregators:
 
   - aggregator_type: "bias_variance"
 
+custom_modules: []
+
 reporters:
   - reporter_type: "scalar"
   
@@ -93,7 +95,7 @@ plotters:
 
   - plotter_type: error_correlation
     plot_size: default
-    sort_key: mse
+    error_key: mse
 
   - plotter_type: pca
     plot_size: default
@@ -107,11 +109,17 @@ plotters:
   - plotter_type: stat_table
     plot_size: default
     stat_keys: ["mean", "std", "median", "min", "max"]
-    precision: 4
+    time_unit: milliseconds
+    decimal_places: 3
+    display_scales:
+      mse: 1000
     sort_key: mse
 
   - plotter_type: stat_table_latex
     plot_size: default
     stat_keys: ["mean", "std", "median", "min", "max"]
-    precision: 4
+    time_unit: milliseconds
+    decimal_places: 3
+    display_scales:
+      mse: 1000
     sort_key: mse

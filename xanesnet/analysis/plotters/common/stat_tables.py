@@ -33,7 +33,7 @@ from typing import Any, cast
 
 from ...result import AnalysisResults
 from ...utils import is_scalar_value
-from .formatting import format_decimal
+from .formatting import format_fixed_decimal
 
 AggregatorKey = tuple[str, int]
 StatValues = dict[str, float]
@@ -192,10 +192,34 @@ def combined_stem(value_keys: list[str]) -> str:
     return "combined" if "combined" not in value_keys else "combined_table"
 
 
-_VALUE_DISPLAY_LABELS: dict[str, str] = {"time_per_spectrum": "time"}
+_VALUE_DISPLAY_LABELS: dict[str, str] = {"time_per_spectrum": "time per spectrum"}
+_TIME_UNIT_FORMATS: dict[str, tuple[float, str]] = {
+    "seconds": (1.0, "s"),
+    "milliseconds": (1e3, "ms"),
+    "nanoseconds": (1e9, "ns"),
+}
 
 
-def value_display_label(value_key: str) -> str:
+def _display_factor(value_key: str, time_unit: str, display_scales: dict[str, float]) -> float:
+    """Return the multiplier applied to one value key for display."""
+    if value_key == "time_per_spectrum":
+        return _TIME_UNIT_FORMATS[time_unit][0]
+    return display_scales.get(value_key, 1.0)
+
+
+def value_display_unit(value_key: str, time_unit: str, display_scales: dict[str, float]) -> str | None:
+    """Return the visible unit or scale label for a scalar value key."""
+    if value_key == "time_per_spectrum":
+        return _TIME_UNIT_FORMATS[time_unit][1]
+    scale = display_scales.get(value_key, 1.0)
+    return f"x{scale:g}" if scale != 1.0 else None
+
+
+def value_display_label(
+    value_key: str,
+    time_unit: str,
+    display_scales: dict[str, float],
+) -> str:
     """Return the presentation label for a raw scalar value key.
 
     The raw key remains unchanged for aggregation, sorting, filenames, and
@@ -203,11 +227,15 @@ def value_display_label(value_key: str) -> str:
 
     Args:
         value_key: Raw scalar value key.
+        time_unit: Display unit for ``time_per_spectrum``.
+        display_scales: Display multipliers keyed by scalar value key.
 
     Returns:
         Display label for the value key.
     """
-    return _VALUE_DISPLAY_LABELS.get(value_key, value_key)
+    label = _VALUE_DISPLAY_LABELS.get(value_key, value_key)
+    unit = value_display_unit(value_key, time_unit, display_scales)
+    return f"{label} ({unit})" if unit is not None else label
 
 
 def _order_rank(value: float | None) -> tuple[int, float]:
@@ -245,7 +273,11 @@ def _first_stat(row_values: dict[str, StatValues], value_col: str, stat_key: str
 def build_single_table(
     rows: dict[str, StatValues],
     stat_keys: list[str],
-    precision: int,
+    decimal_places: int,
+    *,
+    value_key: str,
+    time_unit: str,
+    display_scales: dict[str, float],
 ) -> SingleTable | None:
     """Lay out one method comparison table for a single scalar value key.
 
@@ -253,25 +285,32 @@ def build_single_table(
         rows: Mapping from method row label to its statistic values.
         stat_keys: Ordered statistic keys used as columns; keys absent from the
             data are dropped.
-        precision: Number of significant digits used to format the cell texts.
+        decimal_places: Fixed number of decimal places used for cell text.
+        value_key: Scalar value key represented by this table.
+        time_unit: Display unit used when ``value_key`` is ``time_per_spectrum``.
+        display_scales: Optional display multipliers per scalar value key.
 
     Returns:
         Laid-out table, or ``None`` when it would have no rows or columns.
     """
+    display_factor = _display_factor(value_key, time_unit, display_scales)
+    display_unit = value_display_unit(value_key, time_unit, display_scales)
     row_labels = list(rows.keys())
-    col_labels = [key for key in stat_keys if any(key in stats for stats in rows.values())]
-    if not col_labels or not row_labels:
+    stat_columns = [key for key in stat_keys if any(key in stats for stats in rows.values())]
+    if not stat_columns or not row_labels:
         return None
+    col_labels = [f"{label} ({display_unit})" if display_unit is not None else label for label in stat_columns]
 
     # Order rows by the first column so the best value sits at the top and the
     # worst at the bottom; missing values sort last.
-    row_labels.sort(key=lambda label: _order_rank(rows[label].get(col_labels[0])))
+    row_labels.sort(key=lambda label: _order_rank(rows[label].get(stat_columns[0])))
 
     cell_text: list[list[str]] = []
     cell_values: list[list[float | None]] = []
     for row_label in row_labels:
         stats = rows[row_label]
-        text_row, value_row = _format_row([stats.get(key) for key in col_labels], precision)
+        stat_values = [stats.get(key) for key in stat_columns]
+        text_row, value_row = _format_row(stat_values, decimal_places, [display_factor] * len(stat_values))
         cell_text.append(text_row)
         cell_values.append(value_row)
 
@@ -283,8 +322,11 @@ def build_combined_table(
     row_order: list[str],
     value_keys: list[str],
     stat_keys: list[str],
-    precision: int,
-    sort_key: str | None = None,
+    decimal_places: int,
+    sort_key: str | None,
+    *,
+    time_unit: str,
+    display_scales: dict[str, float],
 ) -> CombinedTable | None:
     """Lay out the combined table covering all scalar value keys of one aggregator.
 
@@ -294,9 +336,11 @@ def build_combined_table(
         value_keys: Scalar value keys in first-seen order.
         stat_keys: Ordered statistic keys used as sub-rows; keys absent from the
             data are dropped.
-        precision: Number of significant digits used to format the cell texts.
+        decimal_places: Fixed number of decimal places used for cell text.
         sort_key: Scalar value key whose first statistic orders the rows. When
             ``None`` or absent from the data, the first value key is used.
+        time_unit: Display unit used for ``time_per_spectrum`` values.
+        display_scales: Optional display multipliers per scalar value key.
 
     Returns:
         Laid-out table, or ``None`` when it would have no rows or columns.
@@ -347,7 +391,8 @@ def build_combined_table(
             stat_key: Statistic key to add as the sub-row label.
         """
         raw = [rows[row_label].get(value_key, {}).get(stat_key) for value_key in value_cols]
-        text_row, value_row = _format_row(raw, precision)
+        row_factors = [_display_factor(key, time_unit, display_scales) for key in value_cols]
+        text_row, value_row = _format_row(raw, decimal_places, row_factors)
         cell_text.append([stat_key, *text_row])
         cell_values.append(value_row)
         row_stats.append(stat_key)
@@ -411,15 +456,25 @@ def cell_marks(
     return marks
 
 
-def _format_row(values: list[float | None], precision: int) -> tuple[list[str], list[float | None]]:
+def _format_row(
+    values: list[float | None],
+    decimal_places: int,
+    display_factors: list[float],
+) -> tuple[list[str], list[float | None]]:
     """Format one row of raw statistic values.
 
     Args:
         values: Raw values in column order; ``None`` marks a missing statistic.
-        precision: Number of significant digits used to format the cell texts.
+        decimal_places: Fixed number of decimal places used for cell text.
+        display_factors: Per-cell multipliers applied only to the formatted text.
 
     Returns:
         ``(texts, values)`` where missing values render as a dash.
     """
-    texts = [format_decimal(value, precision) if value is not None else "-" for value in values]
+    if len(display_factors) != len(values):
+        raise ValueError("display_factors must match the number of values")
+    texts = [
+        format_fixed_decimal(value * factor, decimal_places) if value is not None else "-"
+        for value, factor in zip(values, display_factors, strict=True)
+    ]
     return texts, list(values)

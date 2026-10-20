@@ -68,6 +68,7 @@ run_training() {
                 -i ./configs/paper_workflow/mlp_train.yaml \
                 -o "$OUT_DIR" \
                 -n "$MLP_RUN_NAME" \
+                --tensorboard \
                 --yes
             ;;
         2)
@@ -76,6 +77,7 @@ run_training() {
                 -i ./configs/paper_workflow/schnet_train.yaml \
                 -o "$OUT_DIR" \
                 -n "$SCHNET_RUN_NAME" \
+                --tensorboard \
                 --yes
             ;;
     esac

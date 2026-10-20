@@ -29,6 +29,7 @@
 
 from .aggregators import AggregatorRegistry
 from .collectors import CollectorRegistry
+from .custom_modules import CustomModuleRegistry
 from .plotters import PlotterRegistry
 from .reporters import ReporterRegistry
 from .selectors import SelectorRegistry
@@ -36,6 +37,7 @@ from .selectors import SelectorRegistry
 __all__ = [
     "SelectorRegistry",
     "CollectorRegistry",
+    "CustomModuleRegistry",
     "AggregatorRegistry",
     "PlotterRegistry",
     "ReporterRegistry",

@@ -69,6 +69,8 @@ class AllSpectraPlotter(Plotter):
         plotter_type: Registered plotter name from the analysis configuration.
         latex_font: Render figures in a LaTeX-style serif font when ``True``.
         max_pages: Maximum number of pages per PDF. ``None`` writes all selected samples.
+        start_index: First channel index to plot; ``None`` starts at channel zero.
+        end_index: One-past-the-end channel index; ``None`` includes the remaining channels.
         legend_position: Place spectra legends ``"inside"`` the axes or
             ``"outside"`` them on the right.
         plot_size: Shared figure size profile: ``"small"`` or ``"default"``.
@@ -78,6 +80,8 @@ class AllSpectraPlotter(Plotter):
         self,
         plotter_type: str,
         max_pages: int | None,
+        start_index: int | None,
+        end_index: int | None,
         legend_position: str,
         latex_font: bool,
         plot_size: PlotSize,
@@ -85,6 +89,8 @@ class AllSpectraPlotter(Plotter):
         """Initialize an all-spectra comparison plotter."""
         super().__init__(plotter_type, latex_font=latex_font, plot_size=plot_size)
         self.max_pages = max_pages
+        self.start_index = start_index
+        self.end_index = end_index
         self.legend_position = legend_position
 
     def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
@@ -139,6 +145,8 @@ class AllSpectraPlotter(Plotter):
                         subtitle,
                         self.style,
                         legend_position=self.legend_position,
+                        start_index=self.start_index,
+                        end_index=self.end_index,
                     )
                 else:
                     fig = spectra_page_figure(
@@ -146,6 +154,8 @@ class AllSpectraPlotter(Plotter):
                         subtitle,
                         self.style,
                         legend_position=self.legend_position,
+                        start_index=self.start_index,
+                        end_index=self.end_index,
                     )
                 save_figure(fig, pdf, self.style)
 
@@ -206,6 +216,8 @@ class AllSpectraPlotter(Plotter):
                         subtitle,
                         self.style,
                         legend_position=self.legend_position,
+                        start_index=self.start_index,
+                        end_index=self.end_index,
                     )
                     save_figure(fig, pdf, self.style)
 
@@ -217,7 +229,14 @@ class AllSpectraPlotter(Plotter):
             Configuration values needed to recreate this plotter.
         """
         signature = super().signature
-        signature.update_with_dict({"max_pages": self.max_pages, "legend_position": self.legend_position})
+        signature.update_with_dict(
+            {
+                "max_pages": self.max_pages,
+                "start_index": self.start_index,
+                "end_index": self.end_index,
+                "legend_position": self.legend_position,
+            }
+        )
         return signature
 
 

@@ -29,6 +29,7 @@
 
 import math
 from collections.abc import Iterable
+from decimal import ROUND_HALF_UP, Decimal
 from textwrap import shorten
 
 from matplotlib.axes import Axes
@@ -67,6 +68,29 @@ def format_decimal(value: float, precision: int) -> str:
     if "." in text:
         text = text.rstrip("0").rstrip(".")
     return text
+
+
+def format_fixed_decimal(value: float, decimal_places: int) -> str:
+    """Format a number with exactly ``decimal_places`` digits after the point.
+
+    Args:
+        value: Numeric value to format.
+        decimal_places: Number of digits to retain after the decimal point.
+
+    Returns:
+        A fixed-point string with exactly the requested number of decimal places.
+
+    """
+    number = float(value)
+    if not math.isfinite(number):
+        return str(number)
+    rounded = Decimal(str(number)).quantize(Decimal(1).scaleb(-decimal_places), rounding=ROUND_HALF_UP)
+    return f"{rounded:.{decimal_places}f}"
+
+
+def loss_energy_label(key: str) -> str:
+    """Format a per-energy loss key for display on a plot axis."""
+    return f"{key.removesuffix('_energy').upper()}(E)"
 
 
 def truncate_text(value: str, width: int) -> str:

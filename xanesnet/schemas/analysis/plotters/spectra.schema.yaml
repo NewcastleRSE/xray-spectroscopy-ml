@@ -17,6 +17,10 @@ $defs:
         $ref: plotters.schema.yaml#/$defs/latexFont
       legend_position:
         $ref: plotters.schema.yaml#/$defs/legendPosition
+      start_index:
+        $ref: plotters.schema.yaml#/$defs/channelStartIndex
+      end_index:
+        $ref: plotters.schema.yaml#/$defs/channelEndIndex
       max_pages:
         type:
         - integer

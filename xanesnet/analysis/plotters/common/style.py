@@ -44,7 +44,6 @@ from .visual_constants import (
     CANVAS_PADDING,
     COLOR_ACCENT_GREEN,
     COLOR_ACCENT_RED,
-    COLOR_BOX_EDGE,
     COLOR_PREDICTION,
     COLOR_TARGET,
     COLORBAR_RECTS,
@@ -492,6 +491,7 @@ def _legend_defaults(style: PlotStyle, loc: str, ncol: int) -> dict[str, Any]:
         "ncol": ncol,
         "fontsize": style.fontsize("legend"),
         "framealpha": 0.9,
+        "edgecolor": "none",
         "borderpad": style.spacing("box_pad"),
         "handlelength": style.spacing("legend_handlelength"),
         "handletextpad": style.spacing("legend_handletextpad"),
@@ -507,7 +507,7 @@ def add_note(
     style: PlotStyle,
     *,
     location: Literal["upper left", "upper right", "lower left", "lower right"] = "upper right",
-    alpha: float = 0.8,
+    alpha: float = 0.5,
     boxed: bool = True,
     color: str | None = None,
 ) -> Text:
@@ -546,7 +546,7 @@ def add_note(
                 boxstyle=f"round,pad={style.spacing('box_pad')}",
                 facecolor="white",
                 alpha=alpha,
-                edgecolor=COLOR_BOX_EDGE,
+                edgecolor="none",
             ),
         )
     return ax.text(

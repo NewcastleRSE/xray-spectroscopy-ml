@@ -38,6 +38,7 @@ from xanesnet.serialization.config import Config
 from ..result import AnalysisResults
 from ..utils import one_line_label
 from .base import Plotter
+from .common.channels import CHANNEL_INDEX_LABEL, slice_channels
 from .common.layout import (
     finish_grid,
     method_grid,
@@ -75,6 +76,8 @@ class BiasVariancePlotter(Plotter):
     Args:
         plotter_type: Registered plotter name from the analysis configuration.
         latex_font: Render figures in a LaTeX-style serif font when ``True``.
+        start_index: First channel index to plot; ``None`` starts at channel zero.
+        end_index: One-past-the-end channel index; ``None`` includes the remaining channels.
         legend_position: Place the per-method legend ``"inside"`` the axes or
             ``"outside"`` it on the right. The combined grid keeps one shared
             legend above its cells.
@@ -84,12 +87,16 @@ class BiasVariancePlotter(Plotter):
     def __init__(
         self,
         plotter_type: str,
+        start_index: int | None,
+        end_index: int | None,
         legend_position: str,
         latex_font: bool,
         plot_size: PlotSize,
     ) -> None:
         """Initialize a bias-variance plotter."""
         super().__init__(plotter_type, latex_font=latex_font, plot_size=plot_size)
+        self.start_index = start_index
+        self.end_index = end_index
         self.legend_position = legend_position
 
     def _plot(self, results: AnalysisResults, output_dir: Path) -> None:
@@ -121,14 +128,23 @@ class BiasVariancePlotter(Plotter):
                 data = results.aggregation(reader_idx, sel_idx, "bias_variance").data
                 if not data:
                     continue
-                stats = (data["mse"], data["bias2"], data["variance"])
+                mse = slice_channels(data["mse"], self.start_index, self.end_index)
+                bias2 = slice_channels(data["bias2"], self.start_index, self.end_index)
+                variance = slice_channels(data["variance"], self.start_index, self.end_index)
 
                 color = method_color(len(methods))
-                methods.append((label.lines, color, *stats))
+                methods.append((label.lines, color, mse, bias2, variance))
 
                 combo_dir = root / label.dir_name
                 combo_dir.mkdir(parents=True, exist_ok=True)
-                self._stats_figure(*stats, one_line_label(label.lines), color, combo_dir / "bias_variance.pdf")
+                self._stats_figure(
+                    mse,
+                    bias2,
+                    variance,
+                    one_line_label(label.lines),
+                    color,
+                    combo_dir / "bias_variance.pdf",
+                )
 
         if not methods:
             logging.info("    No samples selected, skipping.")
@@ -190,7 +206,7 @@ class BiasVariancePlotter(Plotter):
         """
         fig, ax = single_panel(self.style, "energy", legend_position=self.legend_position)
         self._draw_decomposition(ax, mse, bias2, variance, color)
-        ax.set_xlabel("Energy")
+        ax.set_xlabel(CHANNEL_INDEX_LABEL)
         ax.set_ylabel("Loss")
         add_legend(ax, self.style, position=self.legend_position)
         set_context_title(ax, subtitle, self.style)
@@ -216,7 +232,7 @@ class BiasVariancePlotter(Plotter):
             self._draw_decomposition(ax, mse, bias2, variance, color)
             style_grid_cell(ax, label_lines, self.style)
 
-        finish_grid(axes, n, "Energy", "Loss", self.style)
+        finish_grid(axes, n, CHANNEL_INDEX_LABEL, "Loss", self.style)
         handles, labels = axes[0][0].get_legend_handles_labels()
         add_figure_legend(fig, handles, labels, self.style, ncol=3, bbox_to_anchor=(0.5, 0.98))
         save_figure(fig, out)
@@ -229,5 +245,11 @@ class BiasVariancePlotter(Plotter):
             Configuration values needed to recreate this plotter.
         """
         signature = super().signature
-        signature.update_with_dict({"legend_position": self.legend_position})
+        signature.update_with_dict(
+            {
+                "start_index": self.start_index,
+                "end_index": self.end_index,
+                "legend_position": self.legend_position,
+            }
+        )
         return signature
