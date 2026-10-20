@@ -40,13 +40,15 @@ model:
   activation: prelu
 
 trainer:
-  # Lightning DDP. num_gpus>1 uses strategy="ddp".
+  # For CPU or CUDA, num_devices>1 uses strategy="ddp".
   trainer_type: lightning
   batch_size: 4
   shuffle: True
   drop_last: False
   num_workers: 8
-  num_gpus: 1
+  num_devices: 2
+  find_unused_parameters: false
+  static_graph: false
   # params:
   epochs: 50
   learning_rate: 0.001

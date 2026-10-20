@@ -29,13 +29,26 @@ $defs:
         minimum: 0
         default: 0
         description: Number of data-loader worker processes.
-      num_gpus:
+      num_devices:
         type: integer
         minimum: 1
         default: 1
-        description: Number of GPUs. Values greater than 1 select Lightning
-          ``ddp`` (DistributedSampler is injected automatically). Launch with
-          ``python``, not torchrun.
+        description: Number of CUDA devices or CPU training processes. Values
+          greater than 1 select Lightning ``ddp``. MPS uses one device. Launch
+          with ``python``, not torchrun.
+      find_unused_parameters:
+        type: boolean
+        default: false
+        description: Enable DDP detection of parameters skipped by input-dependent
+          branches, such as E3EE interactions on edge-free graphs. Leave disabled
+          when all trainable parameters contribute to every training step.
+      static_graph:
+        type: boolean
+        default: false
+        description: Use DDP static-graph mode when the used and unused parameter
+          sets and model control flow remain unchanged throughout training. This
+          supports stable unused parameters without searching the graph each step
+          and takes precedence over find_unused_parameters. Multi-device DDP only.
       loss:
         $ref: ../../losses/losses.schema.yaml#/$defs/lossList
         default:
