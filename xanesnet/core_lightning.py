@@ -34,7 +34,6 @@ import os
 from argparse import Namespace
 from collections.abc import Generator
 from contextlib import contextmanager
-from datetime import timedelta
 from hashlib import sha256
 from pathlib import Path
 from uuid import uuid4
@@ -56,12 +55,12 @@ from xanesnet.serialization.model_profile import (
     reset_peak_memory_stats,
 )
 from xanesnet.serialization.splits import save_split_indices
-from xanesnet.utils.distributed import (
+from xanesnet.utils.exceptions import ConfigError
+from xanesnet.utils.lightning import (
     LIGHTNING_CONTEXT_ENV,
     LIGHTNING_LAUNCH_ENVIRONMENT,
     get_lightning_context_path,
 )
-from xanesnet.utils.exceptions import ConfigError
 from xanesnet.utils.logger import setup_file_logging
 from xanesnet.utils.random import set_global_seed
 
@@ -70,7 +69,15 @@ _CONTEXT_NAME = "lightning_context.json"
 
 def _register_lightning_trainer() -> None:
     """Load the optional trainer module so it registers in this process."""
-    importlib.import_module("xanesnet.runners.trainers.lightning")
+    try:
+        importlib.import_module("xanesnet.runners.trainers.lightning")
+    except ModuleNotFoundError as exc:
+        if not (exc.name or "").startswith("lightning"):
+            raise
+        raise ConfigError(
+            "Lightning training requires the optional dependency. "
+            "Install it with `python -m pip install 'xanesnet[lightning]'`."
+        ) from exc
 
 
 ###############################################################################
@@ -90,10 +97,10 @@ def train_initial(config: Config, args_namespace: Namespace, save_dir: Path) -> 
         config: Validated training configuration with the effective seed set
             by the CLI, possibly containing supported ``"auto"`` fields.
         args_namespace: Parsed CLI arguments (must contain ``tensorboard``;
-            may contain ``dry_run`` to enable profile output).
+            must contain ``dry_run`` to select profile output).
         save_dir: Root directory for all training outputs.
     """
-    logging.info("Lighting training.")
+    logging.info("Lightning training.")
 
     _register_lightning_trainer()
 
@@ -141,8 +148,9 @@ def train_initial(config: Config, args_namespace: Namespace, save_dir: Path) -> 
     save_split_indices(split_path, dataset.get_all_subset_indices())
     logging.info(f"Split indices saved to: {split_path}")
 
-    # Build lighting context
-    processes = config.section("trainer").get_int("num_gpus") if config.get_str("device").startswith("cuda") else 1
+    # Build Lightning context
+    device = config.get_str("device").lower()
+    processes = 1 if device.startswith("mps") else config.section("trainer").get_int("num_devices")
     context = Config(
         {
             "version": 1,

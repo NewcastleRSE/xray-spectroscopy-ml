@@ -54,14 +54,3 @@ def get_lightning_context_path() -> Path | None:
     if not value or not path.is_absolute():
         raise ConfigError(f"{LIGHTNING_CONTEXT_ENV} must contain an absolute context path.")
     return path
-
-
-def validate_lightning_launch() -> None:
-    """Reject unsupported launcher state before initial-run output is created.
-
-    Raises:
-        ConfigError: If a prepared-run marker or external-launch variables are
-            present for an initial single-node Python launch.
-    """
-    if get_lightning_context_path() is not None or any(name in os.environ for name in LIGHTNING_LAUNCH_ENVIRONMENT):
-        raise ConfigError("Lightning training supports a fresh single-node Python launch, not an external launcher.")

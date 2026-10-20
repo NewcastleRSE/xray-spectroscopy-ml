@@ -52,11 +52,8 @@ from xanesnet.serialization.metadata import write_run_metadata
 from xanesnet.serialization.schema_validation import validate_config_schema
 from xanesnet.serialization.tensorboard import tb_logger
 from xanesnet.strategies import StrategyRegistry
-from xanesnet.utils.distributed import (
-    get_lightning_context_path,
-    validate_lightning_launch,
-)
 from xanesnet.utils.filesystem import create_run_dir, create_subfolders
+from xanesnet.utils.lightning import get_lightning_context_path
 from xanesnet.utils.logger import setup_file_logging, setup_logging
 from xanesnet.utils.prompts import auto_yes
 from xanesnet.utils.random import set_global_seed
@@ -177,8 +174,6 @@ def main(args: list[str]) -> None:
             config = Config(config_dict)
 
         trainer_type = config.section("trainer").get_str("trainer_type")
-        if trainer_type == "lightning":
-            validate_lightning_launch()
 
         # Get saving directory
         out_dir = "./runs" if args_namespace.out_dir is None else args_namespace.out_dir
