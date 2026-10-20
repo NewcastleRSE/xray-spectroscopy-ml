@@ -85,8 +85,8 @@ class DescriptorMultiheadBatchProcessor(ForwardBatchProcessor):
         """
         return batch.element
 
-    def sample_id_extraction(self, batch: DescriptorMultiheadData) -> np.ndarray:
-        """Extract file names from a descriptor multi-head batch.
+    def sample_id_preparation(self, batch: DescriptorMultiheadData) -> np.ndarray:
+        """Prepare file names from a descriptor multi-head batch.
 
         Args:
             batch: Collated descriptor multi-head batch.
