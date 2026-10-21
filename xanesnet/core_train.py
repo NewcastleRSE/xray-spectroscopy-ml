@@ -2,7 +2,7 @@
 #
 # XANESNET
 #
-# Authors:  Hendrik Junkawitsch, Tom J. Penfold, Tom W. Pope, C. D. Rankine, B. Li
+# Authors:  Hendrik Junkawitsch, Tom J. Penfold, Thomas J. Pope, C. D. Rankine, B. Li
 #
 # This program is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -65,9 +65,8 @@ def train(config: Config, args_namespace: Namespace, save_dir: Path) -> None:
     """Run the complete training pipeline.
 
     Builds the data source and dataset from ``config``, resolves any automatic
-    model fields from the prepared dataset, builds the strategy from the
-    resolved config, runs training, and writes models, checkpoints, and metadata
-    under ``save_dir``.
+    fields, prepares the encoding, builds the strategy from the resolved config,
+    runs training, and writes models, checkpoints, and metadata under ``save_dir``.
 
     Args:
         config: Validated training configuration, possibly containing
@@ -123,32 +122,7 @@ def train(config: Config, args_namespace: Namespace, save_dir: Path) -> None:
 
     model_list, train_time = _run_training(strategy)
 
-    # Display model summary and training duration
-    logging.info(f"Number of trained models: {len(model_list)}")
-    logging.info(f"Training completed in {str(timedelta(seconds=int(train_time)))}")
-    if args_namespace.dry_run:
-        peak_gpu_memory_allocated_mb = get_peak_memory_allocated_mb(config.get_str("device"))
-        model_profile = build_model_profile(
-            model_list[0],
-            dataset,
-            config.get_str("device"),
-            peak_gpu_memory_allocated_mb,
-            encoding,
-        )
-        profile_json_path, profile_readable_path = save_model_profile(save_dir, model_profile)
-        logging.info(f"Dry-run model profile JSON saved to: {profile_json_path}")
-        logging.info(f"Dry-run model profile readable report saved to: {profile_readable_path}")
-    try:
-        _summary_models(model_list, dataset, encoding)
-    except Exception as exc:
-        logging.warning(f"Model summary failed and will be skipped: {exc}")
-
-    # Save model(s)
-    save_models(save_dir / "models", model_list)
-    logging.info(f"Trained model(s) saved to: {save_dir / 'models'}")
-    final_checkpoint = Checkpoint.build(model_list, signature=signature)
-    final_save_path = final_checkpoint.save(save_dir / "models" / "final.pth")
-    logging.info(f"Final checkpoint without optimizers and epochs saved @ {final_save_path}")
+    _save_results(model_list, train_time, config, dataset, encoding, signature, save_dir, args_namespace.dry_run)
 
 
 ###############################################################################
@@ -174,7 +148,7 @@ def _setup_datasource(config: Config) -> DataSource:
 
 
 def _setup_dataset(config: Config, datasource: DataSource) -> Dataset:
-    """Instantiate, prepare, and split the training dataset.
+    """Construct the initial dataset.
 
     Args:
         config: Validated configuration containing a ``dataset`` section.
@@ -208,6 +182,9 @@ def _setup_encoding(config: Config, dataset: Dataset) -> SpectraEncoding:
     Returns:
         A :class:`CombinedEncoding` wrapping all configured component
         encodings, prepared for the dataset's spectral width.
+
+    Raises:
+            ValueError: If the first sample has no spectral energy grid.
     """
     encoding = CombinedEncoding.from_configs(config.get_config_list("encodings"))
     energies = getattr(dataset[0], "energies", None)
@@ -227,13 +204,10 @@ def _setup_strategy(
     """Instantiate the training strategy from config.
 
     Args:
-        config: Validated configuration containing ``strategy``, ``model``,
-            and ``trainer`` sections.
+        config: Validated configuration containing ``strategy``, ``model``, and ``trainer`` sections.
         dataset: Prepared and split dataset.
-        encoding: Composed spectra encoding forwarded to the strategy's
-            trainers.
-        save_dir: Root run directory (used to derive checkpoint and
-            TensorBoard paths).
+        encoding: Composed spectra encoding forwarded to the strategy's trainers.
+        save_dir: Root run directory.
         enable_tensorboard: Whether to enable TensorBoard logging.
 
     Returns:
@@ -278,11 +252,11 @@ def _run_training(strategy: Strategy) -> tuple[list[Model], float]:
         A ``(model_list, train_time)`` tuple where ``train_time`` is elapsed
         wall-clock time in seconds.
     """
-    start_time = time.time()
+    start_time = time.perf_counter()
 
     model_list = strategy.run_training()
 
-    train_time = time.time() - start_time
+    train_time = time.perf_counter() - start_time
 
     # Move to CPU
     for model in model_list:
@@ -294,6 +268,48 @@ def _run_training(strategy: Strategy) -> tuple[list[Model], float]:
 ###############################################################################
 ############################### SUMMARY LOGGING ###############################
 ###############################################################################
+
+
+def _save_results(
+    model_list: list[Model],
+    train_time: float,
+    config: Config,
+    dataset: Dataset,
+    encoding: SpectraEncoding,
+    signature: Config,
+    save_dir: Path,
+    dry_run: bool,
+) -> None:
+    """Write trained models, summaries, and optional profiling output.
+
+    Args:
+        model_list: Trained models on CPU.
+        train_time: Elapsed strategy execution time in seconds.
+        config: Resolved training configuration.
+        dataset: Prepared dataset used for summary inputs.
+        encoding: Prepared encoding used during training.
+        signature: Full native checkpoint signature.
+        save_dir: Experiment output directory.
+        dry_run: Whether to write the existing model profiling reports.
+    """
+    logging.info(f"Number of trained models: {len(model_list)}")
+    logging.info(f"Training completed in {timedelta(seconds=int(train_time))}")
+    if dry_run:
+        device = config.get_str("device")
+        peak_gpu_memory_allocated_mb = get_peak_memory_allocated_mb(device)
+        model_profile = build_model_profile(model_list[0], dataset, device, peak_gpu_memory_allocated_mb, encoding)
+        profile_json_path, profile_readable_path = save_model_profile(save_dir, model_profile)
+        logging.info(f"Dry-run model profile JSON saved to: {profile_json_path}")
+        logging.info(f"Dry-run model profile readable report saved to: {profile_readable_path}")
+    try:
+        _summary_models(model_list, dataset, encoding)
+    except Exception as exc:
+        logging.warning(f"Model summary failed and will be skipped: {exc}")
+    save_models(save_dir / "models", model_list)
+    logging.info(f"Trained model(s) saved to: {save_dir / 'models'}")
+    final_checkpoint = Checkpoint.build(model_list, signature=signature)
+    final_save_path = final_checkpoint.save(save_dir / "models" / "final.pth")
+    logging.info(f"Final checkpoint without optimizers and epochs saved @ {final_save_path}")
 
 
 def _summary_models(model_list: list[Model], dataset: Dataset, encoding: SpectraEncoding) -> None:
